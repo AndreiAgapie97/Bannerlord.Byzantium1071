@@ -1,9 +1,12 @@
 ﻿using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Patches;
+using Byzantium1071.Campaign.UI;
+using Bannerlord.UIExtenderEx;
 using HarmonyLib;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 
@@ -12,6 +15,7 @@ namespace Byzantium1071
     public class SubModule : MBSubModuleBase
     {
         private Harmony? _harmony;
+        private UIExtender? _uiExtender;
 
         protected override void OnSubModuleLoad()
         {
@@ -20,6 +24,12 @@ namespace Byzantium1071
             _harmony = new Harmony("com.andrei.byzantium1071");
             _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
+            _uiExtender = UIExtender.Create("com.andrei.byzantium1071.ui");
+            _uiExtender.Register(Assembly.GetExecutingAssembly());
+            _uiExtender.Enable();
+
+            Debug.Print("[Byzantium1071] UIExtender registered and enabled.");
+
             B1071_SettlementTooltipManpowerPatch.TryEnableAndPatch(_harmony);
 
         }
@@ -27,6 +37,12 @@ namespace Byzantium1071
         protected override void OnSubModuleUnloaded()
         {
             base.OnSubModuleUnloaded();
+
+            _uiExtender?.Disable();
+            _uiExtender?.Deregister();
+            _uiExtender = null;
+
+            Debug.Print("[Byzantium1071] UIExtender disabled and deregistered.");
 
         }
 
@@ -44,6 +60,20 @@ namespace Byzantium1071
             {
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerVolunteerModel());
+            }
+        }
+
+        protected override void OnApplicationTick(float dt)
+        {
+            base.OnApplicationTick(dt);
+
+            try
+            {
+                B1071_OverlayController.Tick(dt);
+            }
+            catch
+            {
+                // Overlay must never crash gameplay or screen transitions.
             }
         }
     }

@@ -94,5 +94,21 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Diagnostics", GroupOrder = 3)]
         [SettingPropertyBool("Log AI manpower consumption", Order = 2, HintText = "Logs AI manpower consumption bands to the Bannerlord logs.")]
         public bool LogAiManpowerConsumption { get; set; } = true;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyBool("Enable in-game overlay", Order = 0, HintText = "Enables the standalone Byzantium 1071 overlay on campaign map.")]
+        public bool EnableOverlay { get; set; } = true;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyBool("Enable M hotkey toggle", Order = 1, HintText = "Press M on campaign map to show/hide the overlay.")]
+        public bool EnableOverlayHotkey { get; set; } = true;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyBool("Show settlement name", Order = 2, HintText = "Adds current settlement name to overlay text when available.")]
+        public bool OverlayShowSettlementName { get; set; } = true;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyBool("Show pool identifier", Order = 3, HintText = "Shows the pool settlement used for manpower calculations.")]
+        public bool OverlayShowPoolName { get; set; } = false;
     }
 }

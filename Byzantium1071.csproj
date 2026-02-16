@@ -68,4 +68,11 @@
     <PackageReference Include="Bannerlord.MCM" Version="5.10.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="GUI\Prefabs\B1071Overlay.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>GUI\Prefabs\B1071Overlay.xml</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>
