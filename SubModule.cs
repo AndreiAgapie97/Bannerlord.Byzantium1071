@@ -6,7 +6,6 @@ using HarmonyLib;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 
@@ -28,8 +27,6 @@ namespace Byzantium1071
             _uiExtender.Register(Assembly.GetExecutingAssembly());
             _uiExtender.Enable();
 
-            Debug.Print("[Byzantium1071] UIExtender registered and enabled.");
-
             B1071_SettlementTooltipManpowerPatch.TryEnableAndPatch(_harmony);
 
         }
@@ -41,8 +38,6 @@ namespace Byzantium1071
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
             _uiExtender = null;
-
-            Debug.Print("[Byzantium1071] UIExtender disabled and deregistered.");
 
         }
 

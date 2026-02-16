@@ -17,21 +17,21 @@ namespace Byzantium1071.Campaign.UI
 
         [PrefabExtensionText(false)]
         public string Text =>
-            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"18\" MarginTop=\"60\" IsVisible=\"@B1071PanelVisible\">" +
+            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"22\" MarginTop=\"92\" IsVisible=\"@B1071PanelVisible\">" +
             "<Children>" +
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"138\" SuggestedHeight=\"34\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleExpanded\">" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleExpanded\">" +
             "<Children>" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
             "</ButtonWidget>" +
-            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"420\" MarginTop=\"6\" Sprite=\"MapBar\\mapbar_right_frame\" NinePatchLeft=\"70\" NinePatchTop=\"87\" NinePatchRight=\"10\" NinePatchBottom=\"11\" IsVisible=\"@B1071PanelExpanded\">" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"360\" MarginTop=\"4\" Sprite=\"MapBar\\mapbar_right_frame\" NinePatchLeft=\"70\" NinePatchTop=\"87\" NinePatchRight=\"10\" NinePatchBottom=\"11\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"24\" MarginRight=\"24\" MarginTop=\"22\" MarginBottom=\"18\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"22\" MarginRight=\"22\" MarginTop=\"20\" MarginBottom=\"16\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"20\" Text=\"Byzantium 1071\" />" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"17\" MarginTop=\"6\" Text=\"@B1071PanelText\" />" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"19\" Brush.TextHorizontalAlignment=\"Center\" Text=\"Byzantium 1071\" />" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" MarginTop=\"6\" Text=\"@B1071PanelText\" />" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -52,21 +52,21 @@ namespace Byzantium1071.Campaign.UI
 
         [PrefabExtensionText(false)]
         public string Text =>
-            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"18\" MarginTop=\"60\" IsVisible=\"@B1071PanelVisible\">" +
+            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"22\" MarginTop=\"92\" IsVisible=\"@B1071PanelVisible\">" +
             "<Children>" +
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"138\" SuggestedHeight=\"34\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleExpanded\">" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleExpanded\">" +
             "<Children>" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
             "</ButtonWidget>" +
-            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"420\" MarginTop=\"6\" Sprite=\"MapBar\\mapbar_right_frame\" NinePatchLeft=\"70\" NinePatchTop=\"87\" NinePatchRight=\"10\" NinePatchBottom=\"11\" IsVisible=\"@B1071PanelExpanded\">" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"360\" MarginTop=\"4\" Sprite=\"MapBar\\mapbar_right_frame\" NinePatchLeft=\"70\" NinePatchTop=\"87\" NinePatchRight=\"10\" NinePatchBottom=\"11\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"24\" MarginRight=\"24\" MarginTop=\"22\" MarginBottom=\"18\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"22\" MarginRight=\"22\" MarginTop=\"20\" MarginBottom=\"16\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"20\" Text=\"Byzantium 1071\" />" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"17\" MarginTop=\"6\" Text=\"@B1071PanelText\" />" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"19\" Brush.TextHorizontalAlignment=\"Center\" Text=\"Byzantium 1071\" />" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" MarginTop=\"6\" Text=\"@B1071PanelText\" />" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -83,30 +83,16 @@ namespace Byzantium1071.Campaign.UI
         private bool _panelVisible = true;
         private bool _panelExpanded = true;
         private string _panelText = "Byzantium 1071 Overlay\n[Press M to toggle]";
-        private string _toggleText = "Byz 1071";
-        private bool _panelModeInitialized;
-        private static bool _loggedMixinActivation;
+        private string _toggleText = "Hide";
 
         public B1071_MapBarVMMixin(MapBarVM vm) : base(vm)
         {
             B1071_OverlayController.SetPanelMode(true);
-
-            if (!_loggedMixinActivation)
-            {
-                _loggedMixinActivation = true;
-                Debug.Print("[Byzantium1071] MapBar mixin constructed.");
-            }
         }
 
         public override void OnRefresh()
         {
             base.OnRefresh();
-
-            if (!_panelModeInitialized)
-            {
-                _panelModeInitialized = true;
-                Debug.Print("[Byzantium1071] MapBar mixin activated.");
-            }
 
             B1071PanelVisible = B1071_OverlayController.IsVisible;
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
@@ -157,8 +143,6 @@ namespace Byzantium1071.Campaign.UI
 
             OnPropertyChangedWithValue(B1071PanelExpanded, nameof(B1071PanelExpanded));
             OnPropertyChangedWithValue(B1071ToggleText, nameof(B1071ToggleText));
-
-            Debug.Print($"[Byzantium1071] Toggle button clicked. Expanded={B1071PanelExpanded}");
         }
     }
 }

@@ -1,11 +1,13 @@
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
+using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -16,7 +18,7 @@ namespace Byzantium1071.Campaign.UI
         private static bool _panelModeActive;
         private static float _refreshTimer;
         private static string _lastText = string.Empty;
-        private static string _currentText = "No settlement context.\n[Press M to toggle]";
+        private static string _currentText = "Loading manpower...\n[Press M to toggle]";
 
         private static readonly B1071_McmSettings FallbackSettings = new();
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
@@ -88,13 +90,13 @@ namespace Byzantium1071.Campaign.UI
 
         private static string BuildOverlayText()
         {
-            Settlement? settlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
-            if (settlement == null || settlement.IsHideout)
-                return "No settlement context.";
-
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior == null)
                 return "Manpower behavior unavailable.";
+
+            Settlement? settlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
+            if (settlement == null || settlement.IsHideout)
+                return BuildNearbyManpowerText(behavior);
 
             behavior.GetManpowerPool(settlement, out int current, out int maximum, out Settlement pool);
 
@@ -108,6 +110,57 @@ namespace Byzantium1071.Campaign.UI
 
             text += "\n[Press M to toggle]";
             return text;
+        }
+
+        private static string BuildNearbyManpowerText(B1071_ManpowerBehavior behavior)
+        {
+            MobileParty? mainParty = MobileParty.MainParty;
+            if (mainParty == null)
+                return "No nearby party context.\n[Press M to toggle]";
+
+            Vec2 partyPosition = mainParty.GetPosition2D;
+            var nearby = FindNearestSettlements(partyPosition, 3);
+
+            if (nearby.Count == 0)
+                return "No nearby settlements found.\n[Press M to toggle]";
+
+            string text = "Nearby manpower:";
+            for (int i = 0; i < nearby.Count; i++)
+            {
+                Settlement candidate = nearby[i];
+                behavior.GetManpowerPool(candidate, out int current, out int maximum, out _);
+
+                text += "\n- " + candidate.Name + ": " + current + "/" + maximum;
+            }
+
+            text += "\n[Press M to toggle]";
+            return text;
+        }
+
+        private static List<Settlement> FindNearestSettlements(Vec2 position, int count)
+        {
+            var ranked = new List<(Settlement Settlement, float DistanceSquared)>();
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || settlement.IsHideout)
+                    continue;
+
+                if (!settlement.IsTown && !settlement.IsCastle)
+                    continue;
+
+                float distanceSquared = (settlement.GetPosition2D - position).LengthSquared;
+                ranked.Add((settlement, distanceSquared));
+            }
+
+            ranked.Sort((a, b) => a.DistanceSquared.CompareTo(b.DistanceSquared));
+
+            int take = ranked.Count < count ? ranked.Count : count;
+            var result = new List<Settlement>(take);
+            for (int i = 0; i < take; i++)
+                result.Add(ranked[i].Settlement);
+
+            return result;
         }
 
         internal static void ToggleVisibility()
