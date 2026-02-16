@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -26,17 +27,9 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string> _savedIds = new();
         private List<int> _savedValues = new();
 
-        private static readonly bool bDebugPlayerMessages = true;
-
-        // Setează TRUE doar ca să testezi rapid (pool-uri foarte mici).
-        private static readonly bool bTestModeTinyPools = true;
-        private const int TestModeDivisor = 50; // 6000 -> 120
-
-        // Player enforcement uses OnUnitRecruitedEvent (in practice, more reliable per-click).
-        private static readonly bool bUseOnUnitRecruitedFallbackForEnforcement = true;
-
-        // AI logging (to rgl_log / launcher logs). Throttled by “bands”, not every recruit.
-        private static readonly bool bLogAiManpowerConsumption = true;
+        // MCM settings live source. If MCM is unavailable for any reason, fall back to defaults.
+        private static readonly B1071_McmSettings FallbackSettings = new();
+        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
 
         private bool _seeded;
 
@@ -105,7 +98,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
-            if (!bDebugPlayerMessages) return;
+            if (!Settings.ShowPlayerDebugMessages) return;
             if (hero != Hero.MainHero) return;
             if (settlement == null || settlement.IsHideout) return;
 
@@ -125,7 +118,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
-            if (!bUseOnUnitRecruitedFallbackForEnforcement) return;
+            if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
             if (troop == null || amount <= 0) return;
 
             Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
@@ -185,10 +178,17 @@ namespace Byzantium1071.Campaign.Behaviors
             // Player recruitment is enforced via OnUnitRecruitedEvent (more granular per click).
             if (isPlayer) return;
 
+            //1. Normal AI party recruitment: recruiterHero is party leader, recruitmentSettlement is where they recruit from.
             MobileParty? party = recruiterHero.PartyBelongedTo;
             if (party == null) return;
 
-            ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: "TroopRecruited(AI)");
+            //2. Garrison recruitment: recruiterHero is town's governor, recruitmentSettlement is the town, party is the garrison. 
+            if (party == null)
+                party = recruitmentSettlement.Town?.GarrisonParty; // GarrisonParty e pe fief/town. :contentReference[oaicite:1]{index=1}
+
+            if (party == null) return;
+
+            ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
         }
 
         // Centralized manpower consumption logic.
@@ -232,7 +232,7 @@ namespace Byzantium1071.Campaign.Behaviors
             int after = Math.Max(0, available - consumed);
             _manpowerByPoolId[poolId] = after;
 
-            if (bDebugPlayerMessages && isPlayer)
+            if (Settings.ShowPlayerDebugMessages && isPlayer)
             {
                 string where = recruitmentSettlement == pool
                     ? $"{recruitmentSettlement.Name}"
@@ -245,7 +245,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             // AI: log to file, throttled
-            if (!isPlayer && bLogAiManpowerConsumption)
+            if (!isPlayer && Settings.LogAiManpowerConsumption)
             {
                 bool shouldLog = false;
 
@@ -327,19 +327,29 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static int GetMaxManpower(Settlement pool)
         {
-            int value =
-                pool.IsTown ? 6000 :
-                pool.IsCastle ? 3000 :
-                1000;
+            var settings = Settings;
 
-            if (bTestModeTinyPools)
-                value = Math.Max(10, value / TestModeDivisor);
+            int value =
+                pool.IsTown ? settings.TownPoolMax :
+                pool.IsCastle ? settings.CastlePoolMax :
+                settings.OtherPoolMax;
+
+            value = Math.Max(1, value);
+
+            if (settings.UseTinyPoolsForTesting)
+            {
+                int divisor = Math.Max(1, settings.TinyPoolDivisor);
+                int minimumScaledPool = Math.Max(1, settings.TinyPoolMinimum);
+                value = Math.Max(minimumScaledPool, value / divisor);
+            }
 
             return value;
         }
 
         private static int GetDailyRegen(Settlement pool, int max)
         {
+            var settings = Settings;
+
             // Economic-based regen:
             // - Town: Prosperity
             // - Castle: Security
@@ -350,17 +360,21 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f; // typical values: a few thousand+
                 float pN = Clamp01(prosperity / 8000f);
-                pct = 0.008f + (0.012f * pN); // 0.8% .. 2.0% / day
+                float minPct = Math.Max(0f, settings.TownRegenMinPercent) / 100f;
+                float maxPct = Math.Max(minPct, settings.TownRegenMaxPercent / 100f);
+                pct = minPct + ((maxPct - minPct) * pN);
             }
             else if (pool.IsCastle)
             {
                 float security = (pool.Town != null) ? pool.Town.Security : 50f; // 0..100
                 float sN = Clamp01(security / 100f);
-                pct = 0.006f + (0.008f * sN); // 0.6% .. 1.4% / day
+                float minPct = Math.Max(0f, settings.CastleRegenMinPercent) / 100f;
+                float maxPct = Math.Max(minPct, settings.CastleRegenMaxPercent / 100f);
+                pct = minPct + ((maxPct - minPct) * sN);
             }
             else
             {
-                pct = 0.010f;
+                pct = Math.Max(0f, settings.OtherRegenPercent) / 100f;
             }
 
             // Hearth contribution (bound villages)
@@ -374,20 +388,31 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
-            float hN = Clamp01(hearthSum / 3000f); // tune as you like
-            pct += 0.002f * hN; // up to +0.2%
+            float hearthNormalizer = Math.Max(1f, settings.HearthNormalizer);
+            float hN = Clamp01(hearthSum / hearthNormalizer);
+            float hearthBonus = Math.Max(0f, settings.HearthBonusMaxPercent) / 100f;
+            pct += hearthBonus * hN;
 
             if (pool.IsUnderSiege)
-                pct *= 0.25f;
+                pct *= Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
 
             int regen = (int)(max * pct);
-            return Math.Max(1, regen);
+            int minDailyRegen = Math.Max(0, settings.MinimumDailyRegen);
+            return Math.Max(minDailyRegen, regen);
         }
 
         private static int GetManpowerCostPerTroop(CharacterObject troop)
         {
+            var settings = Settings;
+
+            int baseCost = Math.Max(1, settings.BaseManpowerCostPerTroop);
+            int tiersPerStep = Math.Max(1, settings.TiersPerExtraCost);
             int tier = Math.Max(1, troop.Tier);
-            return 1 + ((tier - 1) / 2);
+            int baseFormula = baseCost + ((tier - 1) / tiersPerStep);
+
+            double scaled = baseFormula * (Math.Max(1, settings.CostMultiplierPercent) / 100.0);
+            int cost = (int)Math.Round(scaled, MidpointRounding.AwayFromZero);
+            return Math.Max(1, cost);
         }
 
         private static float Clamp01(float v)

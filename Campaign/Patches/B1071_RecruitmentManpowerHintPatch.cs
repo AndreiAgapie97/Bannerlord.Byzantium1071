@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -27,12 +27,11 @@ namespace Byzantium1071.Campaign.Patches
                 var behavior = Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior.Instance;
                 if (behavior == null) return;
 
-                // Visibil pe ecran (hint UI), fără XAML.
                 MBInformationManager.ShowHint(behavior.GetManpowerUiLine(s));
             }
             catch
             {
-                // silent: nu vrem crash în UI
+                // Keep UI patch fail-safe.
             }
         }
 
