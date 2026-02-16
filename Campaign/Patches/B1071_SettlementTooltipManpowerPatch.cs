@@ -1,4 +1,4 @@
-using System;
+using System.Reflection;
 using HarmonyLib;
 using Byzantium1071.Campaign.Behaviors;
 using TaleWorlds.CampaignSystem;
@@ -11,22 +11,65 @@ using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Patches
 {
-    [HarmonyPatch(typeof(TooltipRefresherCollection), "RefreshSettlementTooltip")]
     internal static class B1071_SettlementTooltipManpowerPatch
     {
-        private const string ManpowerLabel = "Manpower";
+        private static bool EnableSettlementTooltipPatch => false;
+        private static bool _patchApplied;
+        private static bool _loggedFirstInjection;
 
-        [HarmonyPostfix]
-        private static void Postfix(PropertyBasedTooltipVM propertyBasedTooltipVM, object[] args)
+        internal static void TryEnableAndPatch(Harmony harmony)
+        {
+            if (!EnableSettlementTooltipPatch) return;
+            if (_patchApplied || harmony == null) return;
+
+            MethodInfo? original = AccessTools.Method(
+                typeof(TooltipRefresherCollection),
+                "RefreshSettlementTooltip",
+                new[] { typeof(PropertyBasedTooltipVM), typeof(object[]) });
+
+            MethodInfo? prefix = AccessTools.Method(typeof(B1071_SettlementTooltipManpowerPatch), nameof(Prefix));
+            MethodInfo? postfix = AccessTools.Method(typeof(B1071_SettlementTooltipManpowerPatch), nameof(Postfix));
+
+            if (original == null || prefix == null || postfix == null) return;
+
+            harmony.Patch(original, new HarmonyMethod(prefix), new HarmonyMethod(postfix));
+            _patchApplied = true;
+
+            try
+            {
+                Debug.Print("[Byzantium1071] Settlement tooltip manpower patch applied.");
+            }
+            catch
+            {
+            }
+        }
+
+        private const string ManpowerLabel = "Manpower";
+        private static readonly FieldInfo? GameTextManagerField =
+            typeof(GameTexts).GetField("_gameTextManager", BindingFlags.NonPublic | BindingFlags.Static);
+
+        private static bool Prefix(PropertyBasedTooltipVM propertyBasedTooltipVM, object[] __args)
+        {
+            if (propertyBasedTooltipVM == null) return false;
+            if (!IsMapTooltipContextReady()) return false;
+            if (!IsGameTextSystemReady()) return false;
+
+            Settlement? settlement = ResolveSettlement(__args);
+            return settlement != null && !settlement.IsHideout;
+        }
+
+        private static void Postfix(PropertyBasedTooltipVM propertyBasedTooltipVM, object[] __args, bool __runOriginal)
         {
             try
             {
+                if (!__runOriginal) return;
                 if (!IsMapTooltipContextReady()) return;
+                if (!IsGameTextSystemReady()) return;
 
                 var behavior = B1071_ManpowerBehavior.Instance;
                 if (behavior == null || propertyBasedTooltipVM == null) return;
 
-                Settlement? settlement = ResolveSettlement(args);
+                Settlement? settlement = ResolveSettlement(__args);
                 if (settlement == null || settlement.IsHideout) return;
 
                 behavior.GetManpowerPool(settlement, out int current, out int maximum, out _);
@@ -35,28 +78,23 @@ namespace Byzantium1071.Campaign.Patches
                     $"{current}/{maximum}",
                     0,
                     TooltipProperty.TooltipPropertyFlags.None);
+
+                if (!_loggedFirstInjection)
+                {
+                    _loggedFirstInjection = true;
+                    try
+                    {
+                        Debug.Print($"[Byzantium1071] Manpower tooltip injected for {settlement.StringId}: {current}/{maximum}");
+                    }
+                    catch
+                    {
+                    }
+                }
             }
             catch
             {
                 // Keep campaign UI patch fail-safe.
             }
-        }
-
-        [HarmonyFinalizer]
-        private static Exception? Finalizer(Exception? __exception)
-        {
-            if (__exception == null) return null;
-
-            try
-            {
-                Debug.Print($"[Byzantium1071] Swallowed settlement tooltip exception: {__exception.GetType().Name}: {__exception.Message}");
-            }
-            catch
-            {
-            }
-
-            // Tooltip should never hard-crash campaign load.
-            return null;
         }
 
         private static bool IsMapTooltipContextReady()
@@ -71,6 +109,18 @@ namespace Byzantium1071.Campaign.Patches
             if (campaign == null || campaign.MapSceneWrapper == null) return false;
 
             return true;
+        }
+
+        private static bool IsGameTextSystemReady()
+        {
+            try
+            {
+                return GameTextManagerField?.GetValue(null) != null;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static Settlement? ResolveSettlement(object[]? args)

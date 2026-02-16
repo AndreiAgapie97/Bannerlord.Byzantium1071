@@ -20,6 +20,8 @@ namespace Byzantium1071
             _harmony = new Harmony("com.andrei.byzantium1071");
             _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
+            B1071_SettlementTooltipManpowerPatch.TryEnableAndPatch(_harmony);
+
         }
 
         protected override void OnSubModuleUnloaded()
