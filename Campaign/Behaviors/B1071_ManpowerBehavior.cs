@@ -40,11 +40,6 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private bool _seeded;
 
-        // Anti-double-consume for player if game fires multiple events in the same moment.
-        private CampaignTime _lastPlayerRecruitTime;
-        private string? _lastPlayerRecruitPoolId;
-        private string? _lastPlayerRecruitTroopId;
-        private int _lastPlayerRecruitAmount;
 
         // Throttle AI logs: we only log when a pool drops to a lower “band” (75/50/25/0) or when manpower blocks recruitment.
         private readonly Dictionary<string, int> _aiPoolBandByPoolId = new();
@@ -138,23 +133,6 @@ namespace Byzantium1071.Campaign.Behaviors
 
             Settlement pool = GetPoolSettlement(playerSettlement);
             string poolId = pool.StringId;
-
-            // Anti-double-consume if another path fires the same recruit at same time.
-            if (Hero.MainHero != null)
-            {
-                if (_lastPlayerRecruitTime == CampaignTime.Now &&
-                    _lastPlayerRecruitPoolId == poolId &&
-                    _lastPlayerRecruitTroopId == troop.StringId &&
-                    _lastPlayerRecruitAmount == amount)
-                {
-                    return;
-                }
-            }
-
-            _lastPlayerRecruitTime = CampaignTime.Now;
-            _lastPlayerRecruitPoolId = poolId;
-            _lastPlayerRecruitTroopId = troop.StringId;
-            _lastPlayerRecruitAmount = amount;
 
             MobileParty? main = MobileParty.MainParty;
             if (main != null)
