@@ -4,7 +4,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.TroopSuppliers;
 using TaleWorlds.Core;
 
-namespace Byzantium1071.Patches
+namespace Byzantium1071.Campaign.Patches
 {
     // Signature observed in callstacks: PartyGroupTroopSupplier.OnTroopScoreHit(..., bool isFatal, ...) :contentReference[oaicite:6]{index=6}
     [HarmonyPatch(typeof(PartyGroupTroopSupplier), "OnTroopScoreHit")]

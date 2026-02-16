@@ -1,5 +1,5 @@
 ﻿using Byzantium1071.Campaign.Behaviors;
-using Byzantium1071.Patches;
+using Byzantium1071.Campaign.Patches;
 using HarmonyLib;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;

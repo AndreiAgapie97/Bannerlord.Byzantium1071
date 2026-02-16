@@ -1,24 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
-    /// Simple manpower pool per settlement:
+    /// Regional manpower pool:
+    /// - Villages do NOT have their own pool; they draw from their bound Town/Castle pool.
     /// - Seeded to Max on campaign start
-    /// - Regens daily per settlement
+    /// - Regens daily per pool-settlement (Town/Castle)
     /// - Recruitment consumes manpower; if insufficient, removes the extra troops immediately
     /// </summary>
     public sealed class B1071_ManpowerBehavior : CampaignBehaviorBase
     {
-        private readonly Dictionary<string, int> _manpowerBySettlementId = new();
+        public static B1071_ManpowerBehavior? Instance { get; private set; }
 
-        // Save-friendly backing lists (IDataStore serialization is safest this way).
+        // NOTE: Key is POOL settlement StringId (Town/Castle). Villages map to their bound settlement pool.
+        private readonly Dictionary<string, int> _manpowerByPoolId = new();
+
+        // Save-friendly backing lists.
         private List<string> _savedIds = new();
         private List<int> _savedValues = new();
 
@@ -28,18 +32,33 @@ namespace Byzantium1071.Campaign.Behaviors
         private static readonly bool bTestModeTinyPools = true;
         private const int TestModeDivisor = 50; // 6000 -> 120
 
+        // Player enforcement uses OnUnitRecruitedEvent (in practice, more reliable per-click).
+        private static readonly bool bUseOnUnitRecruitedFallbackForEnforcement = true;
+
+        // AI logging (to rgl_log / launcher logs). Throttled by “bands”, not every recruit.
+        private static readonly bool bLogAiManpowerConsumption = true;
+
         private bool _seeded;
 
+        // Anti-double-consume for player if game fires multiple events in the same moment.
+        private CampaignTime _lastPlayerRecruitTime;
+        private string? _lastPlayerRecruitPoolId;
+        private string? _lastPlayerRecruitTroopId;
+        private int _lastPlayerRecruitAmount;
+
+        // Throttle AI logs: we only log when a pool drops to a lower “band” (75/50/25/0) or when manpower blocks recruitment.
+        private readonly Dictionary<string, int> _aiPoolBandByPoolId = new();
 
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlement);
+
             CampaignEvents.OnTroopRecruitedEvent.AddNonSerializedListener(this, OnTroopRecruited);
-            CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
-            CampaignEvents.AfterSettlementEntered.AddNonSerializedListener(this, OnAfterSettlementEntered);
             CampaignEvents.OnUnitRecruitedEvent.AddNonSerializedListener(this, OnUnitRecruitedFallback);
 
+            CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
+            CampaignEvents.AfterSettlementEntered.AddNonSerializedListener(this, OnAfterSettlementEntered);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -52,7 +71,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedIds.Clear();
                 _savedValues.Clear();
 
-                foreach (var kvp in _manpowerBySettlementId)
+                foreach (var kvp in _manpowerByPoolId)
                 {
                     _savedIds.Add(kvp.Key);
                     _savedValues.Add(kvp.Value);
@@ -67,86 +86,94 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _manpowerBySettlementId.Clear();
+                _manpowerByPoolId.Clear();
 
                 int n = Math.Min(_savedIds.Count, _savedValues.Count);
                 for (int i = 0; i < n; i++)
                 {
                     var id = _savedIds[i];
                     if (!string.IsNullOrEmpty(id))
-                        _manpowerBySettlementId[id] = _savedValues[i];
+                        _manpowerByPoolId[id] = _savedValues[i];
                 }
             }
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
-            SeedAllSettlementsIfNeeded();
+            Instance = this;
 
-            // Tiny confirmation for the player (avoid spam).
+            SeedAllPoolsIfNeeded();
+
             if (Hero.MainHero != null)
                 InformationManager.DisplayMessage(new InformationMessage("[Byzantium1071] Manpower active."));
         }
 
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
-
+            if (!bDebugPlayerMessages) return;
             if (hero != Hero.MainHero) return;
             if (settlement == null || settlement.IsHideout) return;
 
-            EnsureEntry(settlement, fillToMax: false);
+            GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
 
-            string id = settlement.StringId;
-            int max = GetMaxManpower(settlement);
-            int cur = _manpowerBySettlementId.TryGetValue(id, out var v) ? v : 0;
+            string where = settlement == pool
+                ? $"{settlement.Name}"
+                : $"{settlement.Name} (pool: {pool.Name})";
 
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"[Manpower] {settlement.Name}: {cur}/{max}"
-            ));
+            InformationManager.DisplayMessage(new InformationMessage($"[Manpower] {where}: {cur}/{max}"));
         }
 
         private void OnAfterSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
-            // Some flows fire AfterSettlementEntered more reliably than SettlementEntered.
             OnSettlementEntered(party, settlement, hero);
         }
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
-            if (!bDebugPlayerMessages) return;
+            if (!bUseOnUnitRecruitedFallbackForEnforcement) return;
             if (troop == null || amount <= 0) return;
 
-            // This event doesn't include recruiter/settlement; for debug we only show when the player is in a settlement.
             Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
             if (playerSettlement == null || playerSettlement.IsHideout) return;
 
-            InformationManager.DisplayMessage(new InformationMessage(
-                $"[Manpower] OnUnitRecruitedEvent: {troop.Name} x{amount} (tier {troop.Tier}) @ {playerSettlement.Name}"
-            ));
+            Settlement pool = GetPoolSettlement(playerSettlement);
+            string poolId = pool.StringId;
 
-
-            // Enforce manpower for the player when recruiting inside a settlement.
-            // OnUnitRecruitedEvent fires reliably per recruit in your setup. :contentReference[oaicite:2]{index=2}
+            // Anti-double-consume if another path fires the same recruit at same time.
             if (Hero.MainHero != null)
             {
-                MobileParty? main = MobileParty.MainParty;
-                if (main != null)
+                if (_lastPlayerRecruitTime == CampaignTime.Now &&
+                    _lastPlayerRecruitPoolId == poolId &&
+                    _lastPlayerRecruitTroopId == troop.StringId &&
+                    _lastPlayerRecruitAmount == amount)
                 {
-                    ConsumeManpower(playerSettlement, main, troop, amount, isPlayer: true, context: "UnitRecruited");
+                    return;
                 }
+            }
+
+            _lastPlayerRecruitTime = CampaignTime.Now;
+            _lastPlayerRecruitPoolId = poolId;
+            _lastPlayerRecruitTroopId = troop.StringId;
+            _lastPlayerRecruitAmount = amount;
+
+            MobileParty? main = MobileParty.MainParty;
+            if (main != null)
+            {
+                ConsumeManpower(playerSettlement, main, troop, amount, isPlayer: true, context: "UnitRecruited");
             }
         }
 
-        private void SeedAllSettlementsIfNeeded()
+        private void SeedAllPoolsIfNeeded()
         {
             if (_seeded) return;
             _seeded = true;
 
-            // Settlement.All exists (static list). :contentReference[oaicite:2]{index=2}
             foreach (var settlement in Settlement.All)
             {
                 if (settlement == null || settlement.IsHideout) continue;
-                EnsureEntry(settlement, fillToMax: true);
+
+                // Ensures pool entry exists (villages map to their bound pool).
+                EnsureEntry(settlement, fillToMaxClamp: true);
             }
         }
 
@@ -154,69 +181,20 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (settlement == null || settlement.IsHideout) return;
 
-            EnsureEntry(settlement, fillToMax: false);
+            // Regen ONLY on pool settlements (Town/Castle), not per village.
+            Settlement pool = GetPoolSettlement(settlement);
+            if (pool != settlement) return;
 
-            string id = settlement.StringId;
-            int max = GetMaxManpower(settlement);
+            EnsureEntry(pool, fillToMaxClamp: false);
 
-            int cur = _manpowerBySettlementId[id];
-            int regen = GetDailyRegen(settlement, max);
+            string poolId = pool.StringId;
+            int max = GetMaxManpower(pool);
 
-            _manpowerBySettlementId[id] = Math.Min(max, cur + regen);
+            int cur = _manpowerByPoolId[poolId];
+            int regen = GetDailyRegen(pool, max);
+
+            _manpowerByPoolId[poolId] = Math.Min(max, cur + regen);
         }
-
-        // Centralized manpower consumption logic, used by OnTroopRecruited and optionally by OnUnitRecruited fallback.
-        private void ConsumeManpower(Settlement settlement, MobileParty party, CharacterObject troop, int amount, bool isPlayer, string context)
-        {
-            if (settlement == null || party == null || troop == null) return;
-            if (amount <= 0) return;
-
-            EnsureEntry(settlement, fillToMax: false);
-
-            int costPer = GetManpowerCostPerTroop(troop);
-            if (costPer <= 0) return;
-
-            string id = settlement.StringId;
-            int available = _manpowerBySettlementId[id];
-            int before = available;
-
-            int allowed = Math.Min(amount, available / costPer);
-            int toRemove = amount - allowed;
-
-            if (toRemove > 0)
-            {
-                // Safe remove: don’t try to remove more than roster currently has.
-                int have = party.MemberRoster.GetTroopCount(troop); // TroopRoster.GetTroopCount exists. :contentReference[oaicite:1]{index=1}
-                int removeNow = Math.Min(toRemove, have);
-
-                if (removeNow > 0)
-                {
-                    party.MemberRoster.AddToCounts(troop, -removeNow, insertAtFront: false, woundedCount: 0, xpChange: 0, removeDepleted: true, index: -1);
-                }
-
-                if (isPlayer)
-                {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"Not enough manpower in {settlement.Name}. Allowed {allowed}/{amount}."
-                    ));
-                }
-            }
-
-            int consumed = allowed * costPer;
-            _manpowerBySettlementId[id] = Math.Max(0, available - consumed);
-
-            if (bDebugPlayerMessages && isPlayer)
-            {
-                int after = _manpowerBySettlementId[id];
-                int max = GetMaxManpower(settlement);
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"[Manpower:{context}] {troop.Name} x{amount} (tier {troop.Tier}) @ {settlement.Name} | " +
-                    $"costPer={costPer} allowed={allowed} removed={toRemove} | pool {before}->{after}/{max}"
-                ));
-            }
-        }
-
-
 
         private void OnTroopRecruited(Hero recruiterHero, Settlement recruitmentSettlement, Hero recruitmentSource, CharacterObject troop, int amount)
         {
@@ -226,8 +204,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             bool isPlayer = recruiterHero == Hero.MainHero;
 
-            // Player recruitment is handled via OnUnitRecruitedEvent to get correct per-troop counts.
-            // This avoids undercounting (and avoids double consuming).
+            // Player recruitment is enforced via OnUnitRecruitedEvent (more granular per click).
             if (isPlayer) return;
 
             MobileParty? party = recruiterHero.PartyBelongedTo;
@@ -236,43 +213,145 @@ namespace Byzantium1071.Campaign.Behaviors
             ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: "TroopRecruited(AI)");
         }
 
-        private void EnsureEntry(Settlement settlement, bool fillToMax)
+        // Centralized manpower consumption logic.
+        private void ConsumeManpower(Settlement recruitmentSettlement, MobileParty party, CharacterObject troop, int amount, bool isPlayer, string context)
         {
-            string id = settlement.StringId;
-            if (string.IsNullOrEmpty(id)) return;
+            if (recruitmentSettlement == null || party == null || troop == null) return;
+            if (amount <= 0) return;
 
-            int max = GetMaxManpower(settlement);
+            Settlement pool = GetPoolSettlement(recruitmentSettlement);
+            EnsureEntry(pool, fillToMaxClamp: false);
 
-            if (!_manpowerBySettlementId.TryGetValue(id, out int cur) || cur < 0)
+            int costPer = GetManpowerCostPerTroop(troop);
+            if (costPer <= 0) return;
+
+            string poolId = pool.StringId;
+            int max = GetMaxManpower(pool);
+
+            int available = _manpowerByPoolId[poolId];
+            int before = available;
+
+            int allowed = Math.Min(amount, available / costPer);
+            int toRemove = amount - allowed;
+
+            if (toRemove > 0)
             {
-                _manpowerBySettlementId[id] = max;
+                int have = party.MemberRoster.GetTroopCount(troop);
+                int removeNow = Math.Min(toRemove, have);
+
+                if (removeNow > 0)
+                    party.MemberRoster.AddToCounts(troop, -removeNow, insertAtFront: false, woundedCount: 0, xpChange: 0, removeDepleted: true, index: -1);
+
+                if (isPlayer)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"Not enough manpower in {pool.Name}. Allowed {allowed}/{amount}."
+                    ));
+                }
+            }
+
+            int consumed = allowed * costPer;
+            int after = Math.Max(0, available - consumed);
+            _manpowerByPoolId[poolId] = after;
+
+            if (bDebugPlayerMessages && isPlayer)
+            {
+                string where = recruitmentSettlement == pool
+                    ? $"{recruitmentSettlement.Name}"
+                    : $"{recruitmentSettlement.Name} (pool: {pool.Name})";
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[Manpower:{context}] {troop.Name} x{amount} (tier {troop.Tier}) @ {where} | " +
+                    $"costPer={costPer} allowed={allowed} removed={toRemove} | pool {before}->{after}/{max}"
+                ));
+            }
+
+            // AI: log to file, throttled
+            if (!isPlayer && bLogAiManpowerConsumption)
+            {
+                bool shouldLog = false;
+
+                int band = GetPoolBand(after, max);
+                if (!_aiPoolBandByPoolId.TryGetValue(poolId, out int prevBand))
+                    prevBand = band;
+
+                if (band < prevBand) shouldLog = true; // crossed into a worse band (e.g., 75% -> 50%)
+                if (toRemove > 0) shouldLog = true;    // manpower actually blocked recruits
+                if (after == 0 && before > 0) shouldLog = true;
+
+                if (shouldLog)
+                {
+                    Debug.Print(
+                        $"[Byzantium1071][AIManpower] Pool {pool.Name} {before}->{after}/{max} | " +
+                        $"recruit {troop.Name} x{amount} (tier {troop.Tier}) costPer={costPer} allowed={allowed} removed={toRemove} | from {recruitmentSettlement.Name}"
+                    );
+                }
+
+                _aiPoolBandByPoolId[poolId] = band;
+            }
+        }
+
+        private void EnsureEntry(Settlement anySettlement, bool fillToMaxClamp)
+        {
+            Settlement pool = GetPoolSettlement(anySettlement);
+
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
+            int max = GetMaxManpower(pool);
+
+            if (!_manpowerByPoolId.TryGetValue(poolId, out int cur) || cur < 0)
+            {
+                _manpowerByPoolId[poolId] = max;
                 return;
             }
 
-            if (fillToMax)
-                _manpowerBySettlementId[id] = Math.Min(cur, max); // clamp down if needed
+            if (fillToMaxClamp)
+                _manpowerByPoolId[poolId] = Math.Min(cur, max); // clamp down if needed
+        }
+
+        public void GetManpowerPool(Settlement settlement, out int cur, out int max, out Settlement pool)
+        {
+            pool = GetPoolSettlement(settlement);
+            EnsureEntry(pool, fillToMaxClamp: false);
+
+            string poolId = pool.StringId;
+            max = GetMaxManpower(pool);
+            cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+        }
+
+        public string GetManpowerUiLine(Settlement settlement)
+        {
+            GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
+            return $"Manpower: {cur}/{max}";
         }
 
         public float GetManpowerRatio(Settlement settlement)
         {
-            if (settlement == null) return 1f;
-
-            EnsureEntry(settlement, fillToMax: false);
-
-            string id = settlement.StringId;
-            int max = GetMaxManpower(settlement);
-            int cur = _manpowerBySettlementId.TryGetValue(id, out var v) ? v : max;
-
+            GetManpowerPool(settlement, out int cur, out int max, out _);
             if (max <= 0) return 1f;
-            return MathF.Max(0f, MathF.Min(1f, (float)cur / max));
+
+            float ratio = (float)cur / (float)max;
+            return Clamp01(ratio);
         }
 
-        private static int GetMaxManpower(Settlement s)
+        private static Settlement GetPoolSettlement(Settlement s)
+        {
+            if (s.IsVillage)
+            {
+                Settlement? bound = s.Village?.Bound;
+                if (bound != null)
+                    return bound;
+            }
+
+            return s;
+        }
+
+        private static int GetMaxManpower(Settlement pool)
         {
             int value =
-                s.IsTown ? 6000 :
-                s.IsCastle ? 3000 :
-                s.IsVillage ? (1200 + (int)((s.Village?.Hearth ?? 600f) * 0.5f)) :
+                pool.IsTown ? 6000 :
+                pool.IsCastle ? 3000 :
                 1000;
 
             if (bTestModeTinyPools)
@@ -281,11 +360,46 @@ namespace Byzantium1071.Campaign.Behaviors
             return value;
         }
 
-        private static int GetDailyRegen(Settlement s, int max)
+        private static int GetDailyRegen(Settlement pool, int max)
         {
-            float pct = s.IsTown ? 0.015f : (s.IsCastle ? 0.012f : 0.010f);
+            // Economic-based regen:
+            // - Town: Prosperity
+            // - Castle: Security
+            // - Both: plus contribution from bound villages' hearths
+            float pct;
 
-            if (s.IsUnderSiege)
+            if (pool.IsTown)
+            {
+                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f; // typical values: a few thousand+
+                float pN = Clamp01(prosperity / 8000f);
+                pct = 0.008f + (0.012f * pN); // 0.8% .. 2.0% / day
+            }
+            else if (pool.IsCastle)
+            {
+                float security = (pool.Town != null) ? pool.Town.Security : 50f; // 0..100
+                float sN = Clamp01(security / 100f);
+                pct = 0.006f + (0.008f * sN); // 0.6% .. 1.4% / day
+            }
+            else
+            {
+                pct = 0.010f;
+            }
+
+            // Hearth contribution (bound villages)
+            float hearthSum = 0f;
+            if (pool.Town != null && pool.Town.Villages != null)
+            {
+                foreach (var v in pool.Town.Villages)
+                {
+                    if (v != null)
+                        hearthSum += v.Hearth;
+                }
+            }
+
+            float hN = Clamp01(hearthSum / 3000f); // tune as you like
+            pct += 0.002f * hN; // up to +0.2%
+
+            if (pool.IsUnderSiege)
                 pct *= 0.25f;
 
             int regen = (int)(max * pct);
@@ -294,11 +408,27 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static int GetManpowerCostPerTroop(CharacterObject troop)
         {
-            // CharacterObject.Tier exists. :contentReference[oaicite:4]{index=4}
             int tier = Math.Max(1, troop.Tier);
-
-            // 1-2 => 1 manpower; 3-4 => 2; 5-6 => 3; etc.
             return 1 + ((tier - 1) / 2);
+        }
+
+        private static float Clamp01(float v)
+        {
+            if (v < 0f) return 0f;
+            if (v > 1f) return 1f;
+            return v;
+        }
+
+        private static int GetPoolBand(int cur, int max)
+        {
+            if (max <= 0) return 0;
+            float r = (float)cur / (float)max;
+
+            if (cur <= 0) return 0;
+            if (r < 0.25f) return 1;
+            if (r < 0.50f) return 2;
+            if (r < 0.75f) return 3;
+            return 4;
         }
     }
 }
