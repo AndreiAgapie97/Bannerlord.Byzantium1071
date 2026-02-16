@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Byzantium 1071 — Custom Item Categories
+  b1071_slaves: Trade good category for the slave economy system.
+
+  Demand values are calibrated against vanilla trade goods (which are code-registered
+  via DefaultItemCategories and have no XML counterpart).
+
+  base_demand:    Daily consumption rate by the town market. 0.3 = moderate (comparable
+                  to mid-tier goods like wool or hides). Causes visible but not extreme
+                  stock decay in towns that hold slaves.
+
+  luxury_demand:  Signals to AI caravan trade routes that this item has luxury-tier value.
+                  1.0 = standard luxury good. Caravans optimize for luxury trade, so this
+                  value directly determines whether caravans will seek and move slaves between
+                  towns. Too low (< 0.5) and caravans see no profitable route; 1.0 ensures
+                  caravans treat slaves like velvet, wine, or jewelry.
+-->
+<ItemCategories>
+  <ItemCategory
+    id="b1071_slaves"
+    name="{=b1071_slaves_cat}Slaves"
+    base_demand="0.3"
+    luxury_demand="1.0"
+    is_trade_good="true"
+    is_animal="false" />
+</ItemCategories>
