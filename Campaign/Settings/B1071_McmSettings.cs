@@ -110,5 +110,17 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Overlay", GroupOrder = 4)]
         [SettingPropertyBool("Show pool identifier", Order = 3, HintText = "Shows the pool settlement used for manpower calculations.")]
         public bool OverlayShowPoolName { get; set; } = false;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyInteger("Ledger default tab (0-3)", 0, 3, "0", Order = 4, HintText = "0=Nearby, 1=Pools, 2=World, 3=Factions.")]
+        public int OverlayLedgerDefaultTab { get; set; } = 0;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 5, HintText = "How many ledger rows are shown per page.")]
+        public int OverlayLedgerRowsPerPage { get; set; } = 7;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 4)]
+        [SettingPropertyBool("World tab includes villages", Order = 6, HintText = "If enabled, World/Factions tabs include villages in addition to towns and castles.")]
+        public bool OverlayLedgerIncludeVillages { get; set; } = true;
     }
 }
