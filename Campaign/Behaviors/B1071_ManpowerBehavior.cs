@@ -356,26 +356,27 @@ namespace Byzantium1071.Campaign.Behaviors
             baseMax = Math.Max(1, baseMax);
 
             // --- Economic scaling ---
+            // Both towns and castles use prosperity as the primary driver (population/economy)
+            // and security as a secondary multiplier (safe settlements attract more volunteers).
 
-            // Prosperity scaling (towns): lerp between min..max scale based on prosperity/8000.
-            // Security scaling (castles): lerp between min..max scale based on security/100.
-            float ecoScale = 1.0f;
+            float prosperityScale = 1.0f;
+            float securityBonus = 1.0f;
 
-            if (pool.IsTown && pool.Town != null)
+            if (pool.Town != null)
             {
+                // Prosperity → primary pool scaling (both towns and castles).
                 float prosperity = pool.Town.Prosperity;
                 float pN = Clamp01(prosperity / Math.Max(1f, settings.ProsperityNormalizer));
-                float minS = Math.Max(0.01f, settings.MaxPoolProsperityMinScale / 100f);
-                float maxS = Math.Max(minS, settings.MaxPoolProsperityMaxScale / 100f);
-                ecoScale = minS + ((maxS - minS) * pN);
-            }
-            else if (pool.IsCastle && pool.Town != null)
-            {
-                float security = pool.Town.Security;
+                float prosMin = Math.Max(0.01f, settings.MaxPoolProsperityMinScale / 100f);
+                float prosMax = Math.Max(prosMin, settings.MaxPoolProsperityMaxScale / 100f);
+                prosperityScale = prosMin + ((prosMax - prosMin) * pN);
+
+                // Security → secondary multiplier (both towns and castles).
+                float security = pool.Town.Security; // 0..100
                 float sN = Clamp01(security / 100f);
-                float minS = Math.Max(0.01f, settings.MaxPoolSecurityMinScale / 100f);
-                float maxS = Math.Max(minS, settings.MaxPoolSecurityMaxScale / 100f);
-                ecoScale = minS + ((maxS - minS) * sN);
+                float secMin = Math.Max(0.01f, settings.SecurityBonusMinScale / 100f);
+                float secMax = Math.Max(secMin, settings.SecurityBonusMaxScale / 100f);
+                securityBonus = secMin + ((secMax - secMin) * sN);
             }
 
             // Hearth bonus: each village adds hearth × multiplier as flat manpower.
@@ -390,7 +391,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
-            int value = (int)(baseMax * ecoScale) + hearthBonus;
+            int value = (int)(baseMax * prosperityScale * securityBonus) + hearthBonus;
             value = Math.Max(1, value);
 
             // Tiny pool testing override.
@@ -408,27 +409,26 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             var settings = Settings;
 
-            // Economic-based regen:
-            // - Town: Prosperity
-            // - Castle: Security
-            // - Both: plus contribution from bound villages' hearths
+            // Both towns and castles use prosperity for base regen rate.
+            // Prosperity represents population/economy → how fast new recruits appear.
             float pct;
+            float prosperityNorm = Math.Max(1f, settings.ProsperityNormalizer);
 
             if (pool.IsTown)
             {
-                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f; // typical values: a few thousand+
-                float pN = Clamp01(prosperity / 8000f);
+                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f;
+                float pN = Clamp01(prosperity / prosperityNorm);
                 float minPct = Math.Max(0f, settings.TownRegenMinPercent) / 100f;
                 float maxPct = Math.Max(minPct, settings.TownRegenMaxPercent / 100f);
                 pct = minPct + ((maxPct - minPct) * pN);
             }
             else if (pool.IsCastle)
             {
-                float security = (pool.Town != null) ? pool.Town.Security : 50f; // 0..100
-                float sN = Clamp01(security / 100f);
+                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f;
+                float pN = Clamp01(prosperity / prosperityNorm);
                 float minPct = Math.Max(0f, settings.CastleRegenMinPercent) / 100f;
                 float maxPct = Math.Max(minPct, settings.CastleRegenMaxPercent / 100f);
-                pct = minPct + ((maxPct - minPct) * sN);
+                pct = minPct + ((maxPct - minPct) * pN);
             }
             else
             {
@@ -451,6 +451,39 @@ namespace Byzantium1071.Campaign.Behaviors
             float hearthBonus = Math.Max(0f, settings.HearthBonusMaxPercent) / 100f;
             pct += hearthBonus * hN;
 
+            // Security modifier on regen (both towns and castles).
+            // Safe settlements attract more volunteers.
+            if (pool.Town != null)
+            {
+                float security = pool.Town.Security; // 0..100
+                float sN = Clamp01(security / 100f);
+                float secMin = Math.Max(0f, settings.SecurityRegenMinScale) / 100f;
+                float secMax = Math.Max(secMin, settings.SecurityRegenMaxScale / 100f);
+                pct *= secMin + ((secMax - secMin) * sN);
+            }
+
+            // Food modifier on regen: starving settlements regen much slower.
+            if (pool.Town != null)
+            {
+                float foodStocks = pool.Town.FoodStocks;
+                float foodNorm = Math.Max(1f, settings.FoodStocksNormalizer);
+                float fN = Clamp01(foodStocks / foodNorm);
+                float foodMin = Math.Max(0f, settings.FoodRegenMinScale) / 100f;
+                float foodMax = Math.Max(foodMin, settings.FoodRegenMaxScale / 100f);
+                pct *= foodMin + ((foodMax - foodMin) * fN);
+            }
+
+            // Loyalty modifier on regen: disloyal populations won't volunteer.
+            if (pool.Town != null)
+            {
+                float loyalty = pool.Town.Loyalty; // 0..100
+                float lN = Clamp01(loyalty / 100f);
+                float loyMin = Math.Max(0f, settings.LoyaltyRegenMinScale) / 100f;
+                float loyMax = Math.Max(loyMin, settings.LoyaltyRegenMaxScale / 100f);
+                pct *= loyMin + ((loyMax - loyMin) * lN);
+            }
+
+            // Siege penalty.
             if (pool.IsUnderSiege)
                 pct *= Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
 
