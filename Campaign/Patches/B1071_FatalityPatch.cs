@@ -17,11 +17,11 @@ namespace Byzantium1071.Campaign.Patches
         /// </summary>
         public static void Prefix(BasicCharacterObject __1, ref bool __3)
         {
-            if (!__3) return; // only intervene when it's currently fatal
+            if (__1 == null || !__3) return; // null guard + only intervene when fatal
 
             int tier = 1;
 
-            // If it’s a troop (CharacterObject), use Tier directly. :contentReference[oaicite:7]{index=7}
+            // If itï¿½s a troop (CharacterObject), use Tier directly. :contentReference[oaicite:7]{index=7}
             if (__1 is CharacterObject co)
                 tier = co.Tier;
             else

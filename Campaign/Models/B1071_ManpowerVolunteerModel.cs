@@ -12,6 +12,19 @@ namespace Byzantium1071.Campaign.Models
         private static B1071_ManpowerBehavior? GetMP()
             => global::TaleWorlds.CampaignSystem.Campaign.Current?.GetCampaignBehavior<B1071_ManpowerBehavior>();
 
+        /// <summary>
+        /// Converts manpower ratio to a recruitment slot cap.
+        /// 0-25%: 0 slots, 25-50%: 1, 50-75%: 2, 75%+: baseMax.
+        /// </summary>
+        private static int GetSlotCapForRatio(float ratio, int baseMax)
+        {
+            if (ratio <= 0.01f) return -1;
+            if (ratio < 0.25f) return 0;
+            if (ratio < 0.50f) return 1;
+            if (ratio < 0.75f) return 2;
+            return baseMax;
+        }
+
 
         private static Settlement? ResolveRecruitmentSettlement(Hero? buyer, Hero? seller, Settlement? provided = null)
         {
@@ -48,16 +61,9 @@ namespace Byzantium1071.Campaign.Models
             if (s == null) return baseMax;
 
             float ratio = mp.GetManpowerRatio(s);
-            if (ratio <= 0.01f) return -1; // nimic recruitabil
 
-            // Slot cap by manpower ratio (simplu, dar “feels right”):
-            int cap =
-                ratio < 0.25f ? 0 :
-                ratio < 0.50f ? 1 :
-                ratio < 0.75f ? 2 :
-                baseMax;
-
-            return Math.Min(baseMax, cap);
+            int cap = GetSlotCapForRatio(ratio, baseMax);
+            return cap < 0 ? -1 : Math.Min(baseMax, cap);
         }
 
         public override int MaximumIndexGarrisonCanRecruitFromHero(Settlement settlement, Hero sellerHero)
@@ -69,15 +75,9 @@ namespace Byzantium1071.Campaign.Models
             if (mp == null) return baseMax;
 
             float ratio = mp.GetManpowerRatio(settlement);
-            if (ratio <= 0.01f) return -1;
 
-            int cap =
-                ratio < 0.25f ? 0 :
-                ratio < 0.50f ? 1 :
-                ratio < 0.75f ? 2 :
-                baseMax;
-
-            return Math.Min(baseMax, cap);
+            int cap = GetSlotCapForRatio(ratio, baseMax);
+            return cap < 0 ? -1 : Math.Min(baseMax, cap);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Pool Sizes", GroupOrder = 0)]
         [SettingPropertyBool("Use tiny pools for testing", Order = 3, HintText = "Scales down all pool sizes by the divisor below.")]
-        public bool UseTinyPoolsForTesting { get; set; } = true;
+        public bool UseTinyPoolsForTesting { get; set; } = false;
 
         [SettingPropertyGroup("Pool Sizes", GroupOrder = 0)]
         [SettingPropertyInteger("Tiny pool divisor", 1, 500, "0", Order = 4, HintText = "If tiny pools are enabled, poolSize = max(minTinyPool, poolSize / divisor).")]

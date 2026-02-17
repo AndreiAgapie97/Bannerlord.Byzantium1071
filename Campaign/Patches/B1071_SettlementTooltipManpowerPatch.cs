@@ -50,12 +50,9 @@ namespace Byzantium1071.Campaign.Patches
 
         private static bool Prefix(PropertyBasedTooltipVM propertyBasedTooltipVM, object[] __args)
         {
-            if (propertyBasedTooltipVM == null) return false;
-            if (!IsMapTooltipContextReady()) return false;
-            if (!IsGameTextSystemReady()) return false;
-
-            Settlement? settlement = ResolveSettlement(__args);
-            return settlement != null && !settlement.IsHideout;
+            // Always return true so the vanilla tooltip runs.
+            // Guards here only protect the Postfix via __runOriginal; we no longer skip the original.
+            return true;
         }
 
         private static void Postfix(PropertyBasedTooltipVM propertyBasedTooltipVM, object[] __args, bool __runOriginal)

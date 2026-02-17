@@ -35,6 +35,11 @@ namespace Byzantium1071
         {
             base.OnSubModuleUnloaded();
 
+            _harmony?.UnpatchAll("com.andrei.byzantium1071");
+            _harmony = null;
+
+            B1071_ManpowerBehavior.Instance = null;
+
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
             _uiExtender = null;
@@ -66,9 +71,10 @@ namespace Byzantium1071
             {
                 B1071_OverlayController.Tick(dt);
             }
-            catch
+            catch (System.Exception ex)
             {
                 // Overlay must never crash gameplay or screen transitions.
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Overlay tick error: {ex.Message}");
             }
         }
     }

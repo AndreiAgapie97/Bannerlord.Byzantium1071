@@ -670,17 +670,6 @@ namespace Byzantium1071.Campaign.UI
             return rows;
         }
 
-        private static string BuildFooter(int totalEntries, int pageSize)
-        {
-            int totalPages = Math.Max(1, (int)Math.Ceiling(totalEntries / (float)pageSize));
-            _pageLabel = "Page " + (_pageIndex + 1) + "/" + totalPages;
-
-            if (_panelModeActive)
-                return string.Empty;
-
-            return _pageLabel + " | " + SortText + "\n[Press M to toggle]";
-        }
-
         private static string FormatTabText(string label, bool active)
         {
             return label;

@@ -18,7 +18,7 @@ namespace Byzantium1071.Campaign.Behaviors
     /// </summary>
     public sealed class B1071_ManpowerBehavior : CampaignBehaviorBase
     {
-        public static B1071_ManpowerBehavior? Instance { get; private set; }
+        public static B1071_ManpowerBehavior? Instance { get; internal set; }
 
         // NOTE: Key is POOL settlement StringId (Town/Castle). Villages map to their bound settlement pool.
         private readonly Dictionary<string, int> _manpowerByPoolId = new();
@@ -46,7 +46,6 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnUnitRecruitedEvent.AddNonSerializedListener(this, OnUnitRecruitedFallback);
 
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
-            CampaignEvents.AfterSettlementEntered.AddNonSerializedListener(this, OnAfterSettlementEntered);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -109,11 +108,6 @@ namespace Byzantium1071.Campaign.Behaviors
                 : $"{settlement.Name} (pool: {pool.Name})";
 
             InformationManager.DisplayMessage(new InformationMessage($"[Manpower] {where}: {cur}/{max}"));
-        }
-
-        private void OnAfterSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
-        {
-            OnSettlementEntered(party, settlement, hero);
         }
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
@@ -180,11 +174,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             //1. Normal AI party recruitment: recruiterHero is party leader, recruitmentSettlement is where they recruit from.
             MobileParty? party = recruiterHero.PartyBelongedTo;
-            if (party == null) return;
 
             //2. Garrison recruitment: recruiterHero is town's governor, recruitmentSettlement is the town, party is the garrison. 
             if (party == null)
-                party = recruitmentSettlement.Town?.GarrisonParty; // GarrisonParty e pe fief/town. :contentReference[oaicite:1]{index=1}
+                party = recruitmentSettlement.Town?.GarrisonParty;
 
             if (party == null) return;
 
