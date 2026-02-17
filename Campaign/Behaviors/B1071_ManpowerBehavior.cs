@@ -110,10 +110,24 @@ namespace Byzantium1071.Campaign.Behaviors
             InformationManager.DisplayMessage(new InformationMessage($"[Manpower] {where}: {cur}/{max}"));
         }
 
+        // Guards against double-deduction: OnUnitRecruitedEvent fires for ALL recruitments
+        // (not just player), but provides no recruiter context. We track AI recruitments
+        // from OnTroopRecruited so the fallback can skip them.
+        private CharacterObject? _lastAiRecruitedTroop;
+        private int _lastAiRecruitedAmount;
+
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
             if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
             if (troop == null || amount <= 0) return;
+
+            // If OnTroopRecruited already handled this exact recruitment (AI), skip it.
+            if (_lastAiRecruitedTroop == troop && _lastAiRecruitedAmount == amount)
+            {
+                _lastAiRecruitedTroop = null;
+                _lastAiRecruitedAmount = 0;
+                return;
+            }
 
             Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
             if (playerSettlement == null || playerSettlement.IsHideout) return;
@@ -180,6 +194,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 party = recruitmentSettlement.Town?.GarrisonParty;
 
             if (party == null) return;
+
+            // Track this AI recruitment so OnUnitRecruitedFallback can skip it.
+            _lastAiRecruitedTroop = troop;
+            _lastAiRecruitedAmount = amount;
 
             ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
         }
@@ -271,9 +289,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int max = GetMaxManpower(pool);
 
-            if (!_manpowerByPoolId.TryGetValue(poolId, out int cur) || cur < 0)
+            if (!_manpowerByPoolId.TryGetValue(poolId, out int cur))
             {
                 _manpowerByPoolId[poolId] = max;
+                return;
+            }
+
+            if (cur < 0)
+            {
+                _manpowerByPoolId[poolId] = 0; // clamp negative to 0, not max
                 return;
             }
 
@@ -308,6 +332,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static Settlement GetPoolSettlement(Settlement s)
         {
+            if (s == null) return s!; // caller must handle null
             if (s.IsVillage)
             {
                 Settlement? bound = s.Village?.Bound;

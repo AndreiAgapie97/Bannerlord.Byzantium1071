@@ -16,9 +16,9 @@ namespace Byzantium1071.Campaign.Patches
 
             mp.GetManpowerPool(settlement, out int cur, out _, out _);
             if (cur <= 0)
-            {
                 __result = 0;
-            }
+            else if (__result > cur)
+                __result = cur; // cap to available manpower so troops aren't created then destroyed
         }
     }
 }
