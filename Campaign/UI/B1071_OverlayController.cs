@@ -201,6 +201,7 @@ namespace Byzantium1071.Campaign.UI
                 return "Nearby Pools\nNo entries found.\n[Press M to toggle]";
 
             string text = "Nearby Pools";
+            text += "\n";
             for (int i = startIndex; i < endIndex; i++)
             {
                 LedgerRow row = rows[i];
@@ -233,6 +234,7 @@ namespace Byzantium1071.Campaign.UI
                 return "Pool Ledger\nNo entries found.\n[Press M to toggle]";
 
             string text = "Pool Ledger";
+            text += "\n";
             for (int i = startIndex; i < endIndex; i++)
             {
                 LedgerRow row = rows[i];
@@ -265,6 +267,7 @@ namespace Byzantium1071.Campaign.UI
                 return "World Ledger\nNo entries found.\n[Press M to toggle]";
 
             string text = "World Ledger";
+            text += "\n";
             for (int i = startIndex; i < endIndex; i++)
             {
                 LedgerRow row = rows[i];
@@ -321,6 +324,7 @@ namespace Byzantium1071.Campaign.UI
                 return "Faction Ledger\nNo entries found.\n[Press M to toggle]";
 
             string text = "Faction Ledger";
+            text += "\n";
             for (int i = startIndex; i < endIndex; i++)
             {
                 FactionLedgerRow row = factionRows[i];
