@@ -7,7 +7,9 @@ using TaleWorlds.Core;
 
 namespace Byzantium1071.Campaign.Patches
 {
-    [HarmonyPatch]
+    // DISABLED: Overlaps the game's native recruitment panel tooltips.
+    // To re-enable, uncomment [HarmonyPatch] below.
+    // [HarmonyPatch]
     internal static class B1071_RecruitmentManpowerHintPatch
     {
         private static Settlement? GetPlayerSettlement()

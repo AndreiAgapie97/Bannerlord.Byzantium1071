@@ -111,29 +111,30 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         // Guards against double-deduction: OnUnitRecruitedEvent fires for ALL recruitments
-        // (not just player), but provides no recruiter context. We track AI recruitments
-        // from OnTroopRecruited so the fallback can skip them.
-        private CharacterObject? _lastAiRecruitedTroop;
-        private int _lastAiRecruitedAmount;
+        // (not just player), but provides no recruiter context. We queue AI recruitments
+        // from OnTroopRecruited so the fallback can skip them (handles multiple AI recruits per tick).
+        private readonly Queue<(CharacterObject troop, int amount)> _aiRecruitQueue = new();
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
             if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
             if (troop == null || amount <= 0) return;
 
-            // If OnTroopRecruited already handled this exact recruitment (AI), skip it.
-            if (_lastAiRecruitedTroop == troop && _lastAiRecruitedAmount == amount)
+            // Drain any matching AI recruitment from the queue.
+            if (_aiRecruitQueue.Count > 0)
             {
-                _lastAiRecruitedTroop = null;
-                _lastAiRecruitedAmount = 0;
-                return;
+                var peek = _aiRecruitQueue.Peek();
+                if (peek.troop == troop && peek.amount == amount)
+                {
+                    _aiRecruitQueue.Dequeue();
+                    return;
+                }
             }
 
             Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
             if (playerSettlement == null || playerSettlement.IsHideout) return;
 
             Settlement pool = GetPoolSettlement(playerSettlement);
-            string poolId = pool.StringId;
 
             MobileParty? main = MobileParty.MainParty;
             if (main != null)
@@ -195,9 +196,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (party == null) return;
 
-            // Track this AI recruitment so OnUnitRecruitedFallback can skip it.
-            _lastAiRecruitedTroop = troop;
-            _lastAiRecruitedAmount = amount;
+            // Queue this AI recruitment so OnUnitRecruitedFallback can skip it.
+            _aiRecruitQueue.Enqueue((troop, amount));
 
             ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
         }
@@ -347,13 +347,53 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             var settings = Settings;
 
-            int value =
+            // Base pool from MCM.
+            int baseMax =
                 pool.IsTown ? settings.TownPoolMax :
                 pool.IsCastle ? settings.CastlePoolMax :
                 settings.OtherPoolMax;
 
+            baseMax = Math.Max(1, baseMax);
+
+            // --- Economic scaling ---
+
+            // Prosperity scaling (towns): lerp between min..max scale based on prosperity/8000.
+            // Security scaling (castles): lerp between min..max scale based on security/100.
+            float ecoScale = 1.0f;
+
+            if (pool.IsTown && pool.Town != null)
+            {
+                float prosperity = pool.Town.Prosperity;
+                float pN = Clamp01(prosperity / Math.Max(1f, settings.ProsperityNormalizer));
+                float minS = Math.Max(0.01f, settings.MaxPoolProsperityMinScale / 100f);
+                float maxS = Math.Max(minS, settings.MaxPoolProsperityMaxScale / 100f);
+                ecoScale = minS + ((maxS - minS) * pN);
+            }
+            else if (pool.IsCastle && pool.Town != null)
+            {
+                float security = pool.Town.Security;
+                float sN = Clamp01(security / 100f);
+                float minS = Math.Max(0.01f, settings.MaxPoolSecurityMinScale / 100f);
+                float maxS = Math.Max(minS, settings.MaxPoolSecurityMaxScale / 100f);
+                ecoScale = minS + ((maxS - minS) * sN);
+            }
+
+            // Hearth bonus: each village adds hearth × multiplier as flat manpower.
+            int hearthBonus = 0;
+            if (pool.Town?.Villages != null)
+            {
+                float mult = Math.Max(0f, settings.MaxPoolHearthMultiplier);
+                foreach (var v in pool.Town.Villages)
+                {
+                    if (v != null)
+                        hearthBonus += (int)(v.Hearth * mult);
+                }
+            }
+
+            int value = (int)(baseMax * ecoScale) + hearthBonus;
             value = Math.Max(1, value);
 
+            // Tiny pool testing override.
             if (settings.UseTinyPoolsForTesting)
             {
                 int divisor = Math.Max(1, settings.TinyPoolDivisor);
