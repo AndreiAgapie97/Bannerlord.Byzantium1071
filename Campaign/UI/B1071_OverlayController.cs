@@ -2,6 +2,7 @@ using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
@@ -30,8 +31,24 @@ namespace Byzantium1071.Campaign.UI
         private static string _lastText = string.Empty;
         private static string _currentText = "Loading ledger...\n[Press M to toggle]";
 
+        // Column data for widget-based layout
+        private static string _titleText = "Loading...";
+        private static string _col1Text = string.Empty;
+        private static string _col2Text = string.Empty;
+        private static string _col3Text = string.Empty;
+        private static string _col4Text = string.Empty;
+        private static string _totals1 = string.Empty;
+        private static string _totals2 = string.Empty;
+        private static string _totals3 = string.Empty;
+        private static string _totals4 = string.Empty;
+        private static string _header1 = string.Empty;
+        private static string _header2 = string.Empty;
+        private static string _header3 = string.Empty;
+        private static string _header4 = string.Empty;
+
         private static B1071LedgerTab _activeTab = B1071LedgerTab.NearbyPools;
         private static int _pageIndex;
+        private static int _sortColumn;
         private static bool _sortAscending;
         private static string _pageLabel = "Page 1/1";
 
@@ -41,6 +58,19 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsVisible => _isVisible;
         internal static bool IsExpanded => _isExpanded;
         internal static string CurrentText => _currentText;
+        internal static string TitleText => _titleText;
+        internal static string Col1Text => _col1Text;
+        internal static string Col2Text => _col2Text;
+        internal static string Col3Text => _col3Text;
+        internal static string Col4Text => _col4Text;
+        internal static string Totals1 => _totals1;
+        internal static string Totals2 => _totals2;
+        internal static string Totals3 => _totals3;
+        internal static string Totals4 => _totals4;
+        internal static string Header1 => _header1;
+        internal static string Header2 => _header2;
+        internal static string Header3 => _header3;
+        internal static string Header4 => _header4;
         internal static string TabNearbyText => FormatTabText("Nearby", _activeTab == B1071LedgerTab.NearbyPools);
         internal static string TabPoolsText => FormatTabText("Pools", _activeTab == B1071LedgerTab.Pools);
         internal static string TabWorldText => FormatTabText("World", _activeTab == B1071LedgerTab.World);
@@ -49,7 +79,24 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabPoolsActive => _activeTab == B1071LedgerTab.Pools;
         internal static bool IsTabWorldActive => _activeTab == B1071LedgerTab.World;
         internal static bool IsTabFactionsActive => _activeTab == B1071LedgerTab.Factions;
-        internal static string SortText => _sortAscending ? "Sort ↑" : "Sort ↓";
+        private static readonly string[][] _sortKeys = new[]
+        {
+            new[] { "Dist", "MP", "%", "Name" },
+            new[] { "%", "MP", "Owner", "Name" },
+            new[] { "MP", "Prosp", "Sec", "Name" },
+            new[] { "%", "MP", "Prosp", "Name" }
+        };
+
+        internal static string SortText
+        {
+            get
+            {
+                int tab = (int)_activeTab;
+                int col = Math.Min(_sortColumn, _sortKeys[tab].Length - 1);
+                string arrow = _sortAscending ? " ↑" : " ↓";
+                return _sortKeys[tab][col] + arrow;
+            }
+        }
         internal static string PageText => _pageLabel;
 
         internal static void SetPanelMode(bool active)
@@ -71,6 +118,8 @@ namespace Byzantium1071.Campaign.UI
 
             _activeTab = tab;
             _pageIndex = 0;
+            _sortColumn = 0;
+            _sortAscending = false;
             ForceRefresh();
         }
 
@@ -91,7 +140,19 @@ namespace Byzantium1071.Campaign.UI
 
         internal static void ToggleSort()
         {
-            _sortAscending = !_sortAscending;
+            int tab = (int)_activeTab;
+            int maxCol = _sortKeys[tab].Length - 1;
+            if (_sortAscending)
+            {
+                _sortAscending = false;
+                _sortColumn++;
+                if (_sortColumn > maxCol)
+                    _sortColumn = 0;
+            }
+            else
+            {
+                _sortAscending = true;
+            }
             _pageIndex = 0;
             ForceRefresh();
         }
@@ -176,53 +237,119 @@ namespace Byzantium1071.Campaign.UI
         {
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior == null)
-                return "Manpower behavior unavailable.";
-
-            return _activeTab switch
             {
-                B1071LedgerTab.NearbyPools => BuildNearbyPoolsText(behavior),
-                B1071LedgerTab.Pools => BuildPoolsText(behavior),
-                B1071LedgerTab.World => BuildWorldText(behavior),
-                B1071LedgerTab.Factions => BuildFactionsText(behavior),
-                _ => BuildNearbyPoolsText(behavior)
-            };
+                ClearColumns("Manpower behavior unavailable.");
+                return "Manpower behavior unavailable.";
+            }
+
+            switch (_activeTab)
+            {
+                case B1071LedgerTab.NearbyPools: return BuildNearbyPoolsColumns(behavior);
+                case B1071LedgerTab.Pools: return BuildPoolsColumns(behavior);
+                case B1071LedgerTab.World: return BuildWorldColumns(behavior);
+                case B1071LedgerTab.Factions: return BuildFactionsColumns(behavior);
+                default: return BuildNearbyPoolsColumns(behavior);
+            }
         }
 
-        private static string BuildNearbyPoolsText(B1071_ManpowerBehavior behavior)
+        private static void ClearColumns(string fallback)
+        {
+            _titleText = fallback;
+            _col1Text = string.Empty;
+            _col2Text = string.Empty;
+            _col3Text = string.Empty;
+            _col4Text = string.Empty;
+            _totals1 = string.Empty;
+            _totals2 = string.Empty;
+            _totals3 = string.Empty;
+            _totals4 = string.Empty;
+            _header1 = string.Empty;
+            _header2 = string.Empty;
+            _header3 = string.Empty;
+            _header4 = string.Empty;
+        }
+
+        private static string BuildNearbyPoolsColumns(B1071_ManpowerBehavior behavior)
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: false);
-            rows.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => a.Current.CompareTo(b.Current),
+                    2 => a.RatioPercent.CompareTo(b.RatioPercent),
+                    3 => string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal),
+                    _ => a.Distance.CompareTo(b.Distance)
+                };
+                if (!_sortAscending && _sortColumn != 3) compare = -compare;
+                if (_sortColumn == 3 && _sortAscending) compare = -compare;
+                if (compare != 0) return compare;
+                return _sortColumn == 0 ? string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal)
+                    : a.Distance.CompareTo(b.Distance);
+            });
 
             int pageSize = GetRowsPerPage();
             int startIndex = GetPageStart(rows.Count, pageSize);
             int endIndex = Math.Min(rows.Count, startIndex + pageSize);
 
             if (rows.Count == 0)
-                return "Nearby Pools\nNo entries found.\n[Press M to toggle]";
-
-            string text = "Nearby Pools";
-            text += "\n";
-            for (int i = startIndex; i < endIndex; i++)
             {
-                LedgerRow row = rows[i];
-                text += "\n- " + row.SettlementName + "  " + row.Current + "/" + row.Maximum + " (" + row.RatioPercent + "%)";
+                ClearColumns("Nearby Pools - No entries found.");
+                return "Nearby Pools\nNo entries found.";
             }
 
-            text += "\n" + BuildFooter(rows.Count, pageSize);
-            return text;
+            string playerFaction = GetPlayerFactionName();
+            int totalCurrent = 0, totalMaximum = 0;
+            foreach (LedgerRow r in rows) { totalCurrent += r.Current; totalMaximum += r.Maximum; }
+
+            _titleText = "Nearby Pools  (" + rows.Count + " entries)";
+            _header1 = "Settlement";
+            _header2 = "Manpower";
+            _header3 = "%";
+            _header4 = "Distance";
+            ApplySortIndicator(new[] { 4, 2, 3, 1 });
+
+            var c1 = new StringBuilder();
+            var c2 = new StringBuilder();
+            var c3 = new StringBuilder();
+            var c4 = new StringBuilder();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                LedgerRow row = rows[i];
+                int rank = i + 1;
+                string prefix = row.FactionName == playerFaction ? "> " : "";
+
+                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                c2.Append(FormatMp(row.Current, row.Maximum));
+                c3.Append(row.RatioPercent + "%");
+                c4.Append(row.Distance.ToString("F1") + " km");
+            }
+
+            _col1Text = c1.ToString();
+            _col2Text = c2.ToString();
+            _col3Text = c3.ToString();
+            _col4Text = c4.ToString();
+            SetTotals(totalCurrent, totalMaximum);
+            return _titleText;
         }
 
-        private static string BuildPoolsText(B1071_ManpowerBehavior behavior)
+        private static string BuildPoolsColumns(B1071_ManpowerBehavior behavior)
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: false);
             rows.Sort((a, b) =>
             {
-                int ratioCompare = a.RatioPercent.CompareTo(b.RatioPercent);
-                if (!_sortAscending)
-                    ratioCompare = -ratioCompare;
-                if (ratioCompare != 0)
-                    return ratioCompare;
-
+                int compare = _sortColumn switch
+                {
+                    1 => a.Current.CompareTo(b.Current),
+                    2 => string.Compare(a.OwnerName ?? "", b.OwnerName ?? "", StringComparison.Ordinal),
+                    3 => string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal),
+                    _ => a.RatioPercent.CompareTo(b.RatioPercent)
+                };
+                if (_sortColumn <= 1) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
                 return string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal);
             });
 
@@ -231,31 +358,63 @@ namespace Byzantium1071.Campaign.UI
             int endIndex = Math.Min(rows.Count, startIndex + pageSize);
 
             if (rows.Count == 0)
-                return "Pool Ledger\nNo entries found.\n[Press M to toggle]";
-
-            string text = "Pool Ledger";
-            text += "\n";
-            for (int i = startIndex; i < endIndex; i++)
             {
-                LedgerRow row = rows[i];
-                text += "\n- " + row.SettlementName + "  " + row.Current + "/" + row.Maximum + " (" + row.RatioPercent + "%)";
+                ClearColumns("Pool Ledger - No entries found.");
+                return "Pool Ledger\nNo entries found.";
             }
 
-            text += "\n" + BuildFooter(rows.Count, pageSize);
-            return text;
+            string playerFaction = GetPlayerFactionName();
+            int totalCurrent = 0, totalMaximum = 0;
+            foreach (LedgerRow r in rows) { totalCurrent += r.Current; totalMaximum += r.Maximum; }
+
+            _titleText = "Pool Ledger  (" + rows.Count + " entries)";
+            _header1 = "Settlement";
+            _header2 = "Manpower";
+            _header3 = "%";
+            _header4 = "Owner";
+            ApplySortIndicator(new[] { 3, 2, 4, 1 });
+
+            var c1 = new StringBuilder();
+            var c2 = new StringBuilder();
+            var c3 = new StringBuilder();
+            var c4 = new StringBuilder();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                LedgerRow row = rows[i];
+                int rank = i + 1;
+                string prefix = row.FactionName == playerFaction ? "> " : "";
+
+                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                c2.Append(FormatMp(row.Current, row.Maximum));
+                c3.Append(row.RatioPercent + "%");
+                c4.Append(TruncateForColumn(row.OwnerName, 16));
+            }
+
+            _col1Text = c1.ToString();
+            _col2Text = c2.ToString();
+            _col3Text = c3.ToString();
+            _col4Text = c4.ToString();
+            SetTotals(totalCurrent, totalMaximum);
+            return _titleText;
         }
 
-        private static string BuildWorldText(B1071_ManpowerBehavior behavior)
+        private static string BuildWorldColumns(B1071_ManpowerBehavior behavior)
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: Settings.OverlayLedgerIncludeVillages);
             rows.Sort((a, b) =>
             {
-                int compare = a.Current.CompareTo(b.Current);
-                if (!_sortAscending)
-                    compare = -compare;
-                if (compare != 0)
-                    return compare;
-
+                int compare = _sortColumn switch
+                {
+                    1 => (a.Type == "Village" ? a.Hearth : a.Prosperity).CompareTo(b.Type == "Village" ? b.Hearth : b.Prosperity),
+                    2 => (a.Type == "Village" ? 0f : a.Security).CompareTo(b.Type == "Village" ? 0f : b.Security),
+                    3 => string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal),
+                    _ => a.Current.CompareTo(b.Current)
+                };
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
                 return string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal);
             });
 
@@ -264,25 +423,53 @@ namespace Byzantium1071.Campaign.UI
             int endIndex = Math.Min(rows.Count, startIndex + pageSize);
 
             if (rows.Count == 0)
-                return "World Ledger\nNo entries found.\n[Press M to toggle]";
-
-            string text = "World Ledger";
-            text += "\n";
-            for (int i = startIndex; i < endIndex; i++)
             {
-                LedgerRow row = rows[i];
-                text += "\n- " + row.SettlementName + "  " + row.Type + " · MP " + row.Current + "/" + row.Maximum;
-                if (row.Type == "Village")
-                    text += " · H " + row.Hearth;
-                else
-                    text += " · P " + row.Prosperity + " · S " + row.Security;
+                ClearColumns("World Ledger - No entries found.");
+                return "World Ledger\nNo entries found.";
             }
 
-            text += "\n" + BuildFooter(rows.Count, pageSize);
-            return text;
+            string playerFaction = GetPlayerFactionName();
+            int totalCurrent = 0, totalMaximum = 0;
+            foreach (LedgerRow r in rows) { totalCurrent += r.Current; totalMaximum += r.Maximum; }
+
+            _titleText = "World Ledger  (" + rows.Count + " entries)";
+            _header1 = "Settlement";
+            _header2 = "Manpower";
+            _header3 = "Hearth/Prosp";
+            _header4 = "Security";
+            ApplySortIndicator(new[] { 2, 3, 4, 1 });
+
+            var c1 = new StringBuilder();
+            var c2 = new StringBuilder();
+            var c3 = new StringBuilder();
+            var c4 = new StringBuilder();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                LedgerRow row = rows[i];
+                int rank = i + 1;
+                string prefix = row.FactionName == playerFaction ? "> " : "";
+
+                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 20) + " [" + row.Type + "]");
+                c2.Append(FormatMp(row.Current, row.Maximum));
+                c3.Append(row.Type == "Village"
+                    ? row.Hearth.ToString("N0")
+                    : row.Prosperity.ToString("N0"));
+                c4.Append(row.Type == "Village"
+                    ? "-"
+                    : row.Security.ToString("N0"));
+            }
+
+            _col1Text = c1.ToString();
+            _col2Text = c2.ToString();
+            _col3Text = c3.ToString();
+            _col4Text = c4.ToString();
+            SetTotals(totalCurrent, totalMaximum);
+            return _titleText;
         }
 
-        private static string BuildFactionsText(B1071_ManpowerBehavior behavior)
+        private static string BuildFactionsColumns(B1071_ManpowerBehavior behavior)
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: Settings.OverlayLedgerIncludeVillages);
             var byFaction = new Dictionary<string, FactionLedgerRow>();
@@ -295,10 +482,11 @@ namespace Byzantium1071.Campaign.UI
                     factionRow = new FactionLedgerRow { Name = key };
                     byFaction[key] = factionRow;
                 }
-
                 factionRow.Current += row.Current;
                 factionRow.Maximum += row.Maximum;
                 factionRow.Settlements += 1;
+                if (row.Type != "Village")
+                    factionRow.TotalProsperity += row.Prosperity;
             }
 
             var factionRows = new List<FactionLedgerRow>(byFaction.Values);
@@ -306,13 +494,16 @@ namespace Byzantium1071.Campaign.UI
             {
                 int aRatio = a.Maximum <= 0 ? 0 : (int)((100f * a.Current) / a.Maximum);
                 int bRatio = b.Maximum <= 0 ? 0 : (int)((100f * b.Current) / b.Maximum);
-
-                int compare = aRatio.CompareTo(bRatio);
-                if (!_sortAscending)
-                    compare = -compare;
-                if (compare != 0)
-                    return compare;
-
+                int compare = _sortColumn switch
+                {
+                    1 => a.Current.CompareTo(b.Current),
+                    2 => a.TotalProsperity.CompareTo(b.TotalProsperity),
+                    3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
+                    _ => aRatio.CompareTo(bRatio)
+                };
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
                 return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
             });
 
@@ -321,19 +512,95 @@ namespace Byzantium1071.Campaign.UI
             int endIndex = Math.Min(factionRows.Count, startIndex + pageSize);
 
             if (factionRows.Count == 0)
-                return "Faction Ledger\nNo entries found.\n[Press M to toggle]";
-
-            string text = "Faction Ledger";
-            text += "\n";
-            for (int i = startIndex; i < endIndex; i++)
             {
-                FactionLedgerRow row = factionRows[i];
-                int ratio = row.Maximum <= 0 ? 0 : (int)((100f * row.Current) / row.Maximum);
-                text += "\n- " + row.Name + "  MP " + row.Current + "/" + row.Maximum + " (" + ratio + "%)";
+                ClearColumns("Faction Ledger - No entries found.");
+                return "Faction Ledger\nNo entries found.";
             }
 
-            text += "\n" + BuildFooter(factionRows.Count, pageSize);
-            return text;
+            string playerFaction = GetPlayerFactionName();
+            int totalCurrent = 0, totalMaximum = 0, grandProsperity = 0;
+            foreach (FactionLedgerRow r in factionRows) { totalCurrent += r.Current; totalMaximum += r.Maximum; grandProsperity += r.TotalProsperity; }
+
+            _titleText = "Faction Ledger  (" + factionRows.Count + " entries)";
+            _header1 = "Faction";
+            _header2 = "Manpower";
+            _header3 = "%";
+            _header4 = "Prosperity";
+            ApplySortIndicator(new[] { 3, 2, 4, 1 });
+
+            var c1 = new StringBuilder();
+            var c2 = new StringBuilder();
+            var c3 = new StringBuilder();
+            var c4 = new StringBuilder();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                FactionLedgerRow row = factionRows[i];
+                int ratio = row.Maximum <= 0 ? 0 : (int)((100f * row.Current) / row.Maximum);
+                int rank = i + 1;
+                string prefix = row.Name == playerFaction ? "> " : "";
+
+                c1.Append(prefix + rank + ". " + TruncateForColumn(row.Name, 24));
+                c2.Append(FormatMp(row.Current, row.Maximum));
+                c3.Append(ratio + "%");
+                c4.Append(row.TotalProsperity.ToString("N0"));
+            }
+
+            _col1Text = c1.ToString();
+            _col2Text = c2.ToString();
+            _col3Text = c3.ToString();
+            _col4Text = c4.ToString();
+            SetTotals(totalCurrent, totalMaximum, grandProsperity.ToString("N0"));
+            return _titleText;
+        }
+
+        private static void SetTotals(int totalCurrent, int totalMaximum, string col4Value = "")
+        {
+            int totalRatio = totalMaximum <= 0 ? 0 : (int)((100f * totalCurrent) / totalMaximum);
+            _totals1 = "Total";
+            _totals2 = FormatMp(totalCurrent, totalMaximum);
+            _totals3 = totalRatio + "%";
+            _totals4 = col4Value;
+        }
+
+        private static void ApplySortIndicator(int[] sortToHeader)
+        {
+            string arrow = _sortAscending ? " \u2191" : " \u2193";
+            int h = sortToHeader[_sortColumn];
+            if (h == 1) _header1 += arrow;
+            else if (h == 2) _header2 += arrow;
+            else if (h == 3) _header3 += arrow;
+            else if (h == 4) _header4 += arrow;
+        }
+
+        private static string GetPlayerFactionName()
+        {
+            try
+            {
+                IFaction? playerFaction = Hero.MainHero?.MapFaction;
+                return playerFaction?.Name?.ToString() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string FormatMp(int current, int maximum)
+        {
+            return current.ToString("N0") + "/" + maximum.ToString("N0");
+        }
+
+        private static string TruncateForColumn(string text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+
+            if (maxLength <= 1)
+                return text.Substring(0, maxLength);
+
+            return text.Substring(0, maxLength - 1) + "…";
         }
 
         private static List<LedgerRow> BuildSettlementRows(B1071_ManpowerBehavior behavior, bool includeVillages)
@@ -430,6 +697,7 @@ namespace Byzantium1071.Campaign.UI
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
+            _sortColumn = 0;
             _sortAscending = false;
             _ledgerInitialized = true;
             ForceRefresh();
@@ -480,6 +748,7 @@ namespace Byzantium1071.Campaign.UI
             public int Current;
             public int Maximum;
             public int Settlements;
+            public int TotalProsperity;
         }
     }
 }
