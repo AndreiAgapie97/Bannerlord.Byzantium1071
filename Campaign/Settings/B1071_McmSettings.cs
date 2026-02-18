@@ -61,19 +61,19 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Town regen min %", 0f, 20f, "0.00", Order = 0, HintText = "Minimum daily town regen as a percent of max pool (at 0 prosperity).")]
-        public float TownRegenMinPercent { get; set; } = 0.20f;
+        public float TownRegenMinPercent { get; set; } = 0.10f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Town regen max %", 0f, 20f, "0.00", Order = 1, HintText = "Maximum daily town regen as a percent of max pool (at full prosperity).")]
-        public float TownRegenMaxPercent { get; set; } = 0.80f;
+        public float TownRegenMaxPercent { get; set; } = 0.50f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Castle regen min %", 0f, 20f, "0.00", Order = 2, HintText = "Minimum daily castle regen as a percent of max pool (at 0 prosperity).")]
-        public float CastleRegenMinPercent { get; set; } = 0.10f;
+        public float CastleRegenMinPercent { get; set; } = 0.05f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Castle regen max %", 0f, 20f, "0.00", Order = 3, HintText = "Maximum daily castle regen as a percent of max pool (at full prosperity).")]
-        public float CastleRegenMaxPercent { get; set; } = 0.50f;
+        public float CastleRegenMaxPercent { get; set; } = 0.30f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Other settlement regen %", 0f, 20f, "0.00", Order = 4, HintText = "Daily regen percent for non-town/non-castle settlements.")]
@@ -85,7 +85,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Hearth bonus max %", 0f, 10f, "0.00", Order = 6, HintText = "Maximum additional regen percent from hearth contribution.")]
-        public float HearthBonusMaxPercent { get; set; } = 0.20f;
+        public float HearthBonusMaxPercent { get; set; } = 0.10f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Siege regen multiplier %", 0f, 200f, "0.00", Order = 7, HintText = "While under siege, regen is multiplied by this percent.")]
@@ -94,6 +94,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyInteger("Minimum daily regen", 0, 500, "0", Order = 8, HintText = "Absolute minimum manpower regenerated per day.")]
         public int MinimumDailyRegen { get; set; } = 1;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyFloatingInteger("Regen cap % of pool/day", 0.1f, 20f, "0.00", Order = 9, HintText = "Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full).")]
+        public float RegenCapPercent { get; set; } = 2.0f;
 
         [SettingPropertyGroup("Regen Modifiers", GroupOrder = 3)]
         [SettingPropertyFloatingInteger("Security regen min %", 0f, 150f, "0", Order = 0, HintText = "Regen multiplier when security is 0. E.g., 80 = insecure settlement regens at 80%.")]
@@ -164,15 +168,143 @@ namespace Byzantium1071.Campaign.Settings
         public bool OverlayShowPoolName { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyInteger("Ledger default tab (0-3)", 0, 3, "0", Order = 4, HintText = "0=Nearby, 1=Pools, 2=World, 3=Factions.")]
+        [SettingPropertyInteger("Ledger default tab (0-4)", 0, 4, "0", Order = 4, HintText = "0=Nearby, 1=Castles, 2=Towns, 3=Villages, 4=Factions.")]
         public int OverlayLedgerDefaultTab { get; set; } = 0;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 5, HintText = "How many ledger rows are shown per page.")]
         public int OverlayLedgerRowsPerPage { get; set; } = 7;
 
-        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("World tab includes villages", Order = 6, HintText = "If enabled, World/Factions tabs include villages in addition to towns and castles.")]
-        public bool OverlayLedgerIncludeVillages { get; set; } = true;
+        // ─── War Effects ───
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyBool("Enable war effects", Order = 0, HintText = "Master toggle for raid/siege/battle/conquest manpower consequences.")]
+        public bool EnableWarEffects { get; set; } = true;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Raid drain %", 0, 50, "0", Order = 1, HintText = "% of max pool drained when a bound village is raided.")]
+        public int RaidManpowerDrainPercent { get; set; } = 15;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Siege devastate retain %", 0, 100, "0", Order = 2, HintText = "% of max pool retained after choosing Devastate.")]
+        public int SiegeDevastateRetainPercent { get; set; } = 10;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Siege pillage retain %", 0, 100, "0", Order = 3, HintText = "% of max pool retained after choosing Pillage.")]
+        public int SiegePillageRetainPercent { get; set; } = 40;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Siege mercy retain %", 0, 100, "0", Order = 4, HintText = "% of max pool retained after choosing Show Mercy.")]
+        public int SiegeMercyRetainPercent { get; set; } = 70;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyFloatingInteger("Battle casualty drain multiplier", 0f, 2f, "0.00", Order = 5, HintText = "Each battle casualty drains this × 1 manpower from the party's home pool.")]
+        public float BattleCasualtyDrainMultiplier { get; set; } = 0.5f;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 6, HintText = "% of current pool retained when settlement changes hands.")]
+        public int ConquestPoolRetainPercent { get; set; } = 50;
+
+        // ─── Immersion Modifiers ───
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyBool("Enable seasonal regen", Order = 0, HintText = "Spring/summer boosts regen, winter penalizes it.")]
+        public bool EnableSeasonalRegen { get; set; } = true;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyInteger("Spring/summer regen %", 50, 200, "0", Order = 1, HintText = "Regen multiplier during spring and summer campaign seasons.")]
+        public int SpringSummerRegenMultiplier { get; set; } = 115;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyInteger("Winter regen %", 25, 100, "0", Order = 2, HintText = "Regen multiplier during winter. E.g., 75 = regen at 75% rate.")]
+        public int WinterRegenMultiplier { get; set; } = 75;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyBool("Enable peace dividend", Order = 3, HintText = "Pools regen faster when your kingdom is at peace with all factions.")]
+        public bool EnablePeaceDividend { get; set; } = true;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyInteger("Peace dividend regen %", 100, 200, "0", Order = 4, HintText = "Regen multiplier when kingdom is at peace. E.g., 125 = 25% bonus.")]
+        public int PeaceDividendMultiplier { get; set; } = 125;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyBool("Enable culture discount", Order = 5, HintText = "Recruiting in matching-culture settlements costs less manpower.")]
+        public bool EnableCultureDiscount { get; set; } = true;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyInteger("Culture discount cost %", 50, 100, "0", Order = 6, HintText = "Manpower cost multiplier when recruiting from same culture. E.g., 75 = 25% discount.")]
+        public int CultureDiscountPercent { get; set; } = 75;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyBool("Enable governor bonus", Order = 7, HintText = "Governor Steward skill boosts regen; Leadership boosts max pool.")]
+        public bool EnableGovernorBonus { get; set; } = true;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyFloatingInteger("Governor steward regen divisor", 100f, 500000f, "0", Order = 8, HintText = "Steward skill is divided by this, then divided by 100 to get additional regen %. E.g., 100000 means 200 Steward adds +0.002 regen pct (0.2% of pool/day).")]
+        public float GovernorStewardRegenDivisor { get; set; } = 100000f;
+
+        [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
+        [SettingPropertyFloatingInteger("Governor leadership pool divisor", 100f, 5000f, "0", Order = 9, HintText = "Leadership skill / this value multiplies max pool. E.g., 500 means 200 Leadership adds +40% to max.")]
+        public float GovernorLeadershipPoolDivisor { get; set; } = 500f;
+
+        // ─── Alerts & Militia ───
+
+        [SettingPropertyGroup("Alerts & Militia", GroupOrder = 9)]
+        [SettingPropertyBool("Enable manpower alerts", Order = 0, HintText = "Shows a warning when your settlements' manpower drops below the threshold.")]
+        public bool EnableManpowerAlerts { get; set; } = true;
+
+        [SettingPropertyGroup("Alerts & Militia", GroupOrder = 9)]
+        [SettingPropertyInteger("Alert threshold %", 5, 50, "0", Order = 1, HintText = "Pool % below which a crisis alert is shown.")]
+        public int AlertThresholdPercent { get; set; } = 25;
+
+        [SettingPropertyGroup("Alerts & Militia", GroupOrder = 9)]
+        [SettingPropertyBool("Enable militia-manpower link", Order = 2, HintText = "Militia growth scales with manpower ratio. Depleted pools produce less militia.")]
+        public bool EnableMilitiaLink { get; set; } = true;
+
+        [SettingPropertyGroup("Alerts & Militia", GroupOrder = 9)]
+        [SettingPropertyInteger("Militia min scale % at 0% MP", 0, 100, "0", Order = 3, HintText = "Militia growth multiplier when manpower is at 0%.")]
+        public int MilitiaManpowerMinScale { get; set; } = 0;
+
+        [SettingPropertyGroup("Alerts & Militia", GroupOrder = 9)]
+        [SettingPropertyInteger("Militia max scale % at 100% MP", 50, 200, "0", Order = 4, HintText = "Militia growth multiplier when manpower is at 100%.")]
+        public int MilitiaManpowerMaxScale { get; set; } = 100;
+
+        // ─── War Exhaustion ───
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyBool("Enable war exhaustion", Order = 0, HintText = "Tracks per-kingdom exhaustion from battles, raids, and sieges. Reduces regen when high.")]
+        public bool EnableWarExhaustion { get; set; } = true;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Daily decay", 0.1f, 5f, "0.0", Order = 1, HintText = "How much exhaustion decays per day toward 0.")]
+        public float ExhaustionDailyDecay { get; set; } = 0.5f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Regen penalty divisor", 50f, 500f, "0", Order = 2, HintText = "Regen is multiplied by (1 - exhaustion/divisor). Higher = softer penalty. E.g., 200 means 100 exhaustion halves regen.")]
+        public float ExhaustionRegenDivisor { get; set; } = 200f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Max exhaustion score", 50f, 200f, "0", Order = 3, HintText = "Maximum exhaustion a kingdom can accumulate.")]
+        public float ExhaustionMaxScore { get; set; } = 100f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Battle exhaustion per casualty", 0.001f, 0.1f, "0.000", Order = 4, HintText = "Exhaustion gained per battle casualty.")]
+        public float BattleExhaustionPerCasualty { get; set; } = 0.001f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Raid exhaustion gain", 0f, 10f, "0.0", Order = 5, HintText = "Exhaustion gained by defending kingdom when a village is raided.")]
+        public float RaidExhaustionGain { get; set; } = 2f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Siege exhaustion (defender)", 0f, 20f, "0.0", Order = 6, HintText = "Exhaustion gained by defending kingdom after siege aftermath.")]
+        public float SiegeExhaustionDefender { get; set; } = 5f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Siege exhaustion (attacker)", 0f, 20f, "0.0", Order = 7, HintText = "Exhaustion gained by attacking kingdom after siege aftermath.")]
+        public float SiegeExhaustionAttacker { get; set; } = 3f;
+
+        [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
+        [SettingPropertyFloatingInteger("Conquest exhaustion gain", 0f, 20f, "0.0", Order = 8, HintText = "Exhaustion gained by losing kingdom when a settlement changes hands.")]
+        public float ConquestExhaustionGain { get; set; } = 4f;
     }
 }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -32,20 +34,30 @@ namespace Byzantium1071.Campaign.Behaviors
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
 
         private bool _seeded;
-
-
+        // Alert tracking: only fire crisis alerts on downward band transitions.
+        private readonly Dictionary<string, int> _lastAlertBand = new();
         // Throttle AI logs: we only log when a pool drops to a lower “band” (75/50/25/0) or when manpower blocks recruitment.
         private readonly Dictionary<string, int> _aiPoolBandByPoolId = new();
-
+        // War exhaustion per kingdom (key = kingdom StringId, value = 0..MaxExhaustionScore).
+        private readonly Dictionary<string, float> _warExhaustion = new();
+        private List<string> _savedExhaustionIds = new();
+        private List<float> _savedExhaustionValues = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlement);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
 
             CampaignEvents.OnTroopRecruitedEvent.AddNonSerializedListener(this, OnTroopRecruited);
             CampaignEvents.OnUnitRecruitedEvent.AddNonSerializedListener(this, OnUnitRecruitedFallback);
 
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
+
+            // War consequences
+            CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, OnRaidCompleted);
+            CampaignEvents.OnSiegeAftermathAppliedEvent.AddNonSerializedListener(this, OnSiegeAftermath);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -81,6 +93,41 @@ namespace Byzantium1071.Campaign.Behaviors
                     var id = _savedIds[i];
                     if (!string.IsNullOrEmpty(id))
                         _manpowerByPoolId[id] = _savedValues[i];
+                }
+            }
+
+            // War Exhaustion save/load.
+            _savedExhaustionIds ??= new List<string>();
+            _savedExhaustionValues ??= new List<float>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedExhaustionIds.Clear();
+                _savedExhaustionValues.Clear();
+
+                foreach (var kvp in _warExhaustion)
+                {
+                    _savedExhaustionIds.Add(kvp.Key);
+                    _savedExhaustionValues.Add(kvp.Value);
+                }
+            }
+
+            dataStore.SyncData("B1071_WarExhaustion_Ids", ref _savedExhaustionIds);
+            dataStore.SyncData("B1071_WarExhaustion_Values", ref _savedExhaustionValues);
+
+            _savedExhaustionIds ??= new List<string>();
+            _savedExhaustionValues ??= new List<float>();
+
+            if (dataStore.IsLoading)
+            {
+                _warExhaustion.Clear();
+
+                int ne = Math.Min(_savedExhaustionIds.Count, _savedExhaustionValues.Count);
+                for (int i = 0; i < ne; i++)
+                {
+                    var id = _savedExhaustionIds[i];
+                    if (!string.IsNullOrEmpty(id))
+                        _warExhaustion[id] = _savedExhaustionValues[i];
                 }
             }
         }
@@ -173,7 +220,71 @@ namespace Byzantium1071.Campaign.Behaviors
             int cur = _manpowerByPoolId[poolId];
             int regen = GetDailyRegen(pool, max);
 
-            _manpowerByPoolId[poolId] = Math.Min(max, cur + regen);
+            int newCur = Math.Min(max, cur + regen);
+            _manpowerByPoolId[poolId] = newCur;
+
+            // Crisis alerts for player settlements.
+            if (Settings.EnableManpowerAlerts && IsPlayerSettlement(pool))
+            {
+                int pct = max <= 0 ? 100 : (int)((100f * newCur) / max);
+                int threshold = Math.Max(1, Settings.AlertThresholdPercent);
+                int band = GetPoolBand(newCur, max);
+
+                if (!_lastAlertBand.TryGetValue(poolId, out int prevBand))
+                    prevBand = band;
+
+                if (band < prevBand && pct <= threshold)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"\u26A0 Manpower critical at {pool.Name} ({pct}% - {newCur}/{max})",
+                        Colors.Red));
+                }
+
+                _lastAlertBand[poolId] = band;
+            }
+        }
+
+        private void OnDailyTick()
+        {
+            // Notify the overlay to rebuild its cached settlement data.
+            UI.B1071_OverlayController.MarkCacheStale();
+
+            if (!Settings.EnableWarExhaustion) return;
+
+            float decay = Math.Max(0f, Settings.ExhaustionDailyDecay);
+            if (decay <= 0f) return;
+
+            var keys = new List<string>(_warExhaustion.Keys);
+            foreach (string key in keys)
+            {
+                float val = _warExhaustion[key] - decay;
+                if (val <= 0f)
+                    _warExhaustion.Remove(key);
+                else
+                    _warExhaustion[key] = val;
+            }
+        }
+
+        /// <summary>
+        /// Adds war exhaustion to a kingdom by StringId.
+        /// </summary>
+        private void AddWarExhaustion(string? kingdomId, float amount)
+        {
+            if (!Settings.EnableWarExhaustion) return;
+            if (string.IsNullOrEmpty(kingdomId) || amount <= 0f) return;
+
+            float maxScore = Math.Max(1f, Settings.ExhaustionMaxScore);
+            float cur = _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
+            _warExhaustion[kingdomId!] = Math.Min(maxScore, cur + amount);
+        }
+
+        /// <summary>
+        /// Returns the war exhaustion score for a kingdom (0 = fresh, max = crisis).
+        /// </summary>
+        public float GetWarExhaustion(string? kingdomId)
+        {
+            if (string.IsNullOrEmpty(kingdomId)) return 0f;
+            return _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
         }
 
         private void OnTroopRecruited(Hero recruiterHero, Settlement recruitmentSettlement, Hero recruitmentSource, CharacterObject troop, int amount)
@@ -208,10 +319,24 @@ namespace Byzantium1071.Campaign.Behaviors
             if (recruitmentSettlement == null || party == null || troop == null) return;
             if (amount <= 0) return;
 
+            var settings = Settings;
             Settlement pool = GetPoolSettlement(recruitmentSettlement);
             EnsureEntry(pool, fillToMaxClamp: false);
 
             int costPer = GetManpowerCostPerTroop(troop);
+
+            // Culture discount: recruiting in matching-culture settlements is cheaper.
+            if (settings.EnableCultureDiscount && party.LeaderHero != null)
+            {
+                var settlementCulture = recruitmentSettlement.Culture;
+                var heroCulture = party.LeaderHero.Culture;
+                if (settlementCulture != null && heroCulture != null && settlementCulture == heroCulture)
+                {
+                    float discountPct = Math.Max(0f, settings.CultureDiscountPercent) / 100f;
+                    costPer = Math.Max(1, (int)(costPer * discountPct));
+                }
+            }
+
             if (costPer <= 0) return;
 
             string poolId = pool.StringId;
@@ -343,7 +468,26 @@ namespace Byzantium1071.Campaign.Behaviors
             return s;
         }
 
-        private static int GetMaxManpower(Settlement pool)
+        private static bool IsPlayerSettlement(Settlement s)
+        {
+            try
+            {
+                Clan? playerClan = Hero.MainHero?.Clan;
+                if (playerClan == null) return false;
+
+                // Owned by player clan.
+                if (s.OwnerClan == playerClan) return true;
+
+                // Owned by a clan in the player's kingdom.
+                Kingdom? kingdom = playerClan.Kingdom;
+                if (kingdom != null && s.OwnerClan?.Kingdom == kingdom) return true;
+
+                return false;
+            }
+            catch { return false; }
+        }
+
+        internal static int GetMaxManpower(Settlement pool)
         {
             var settings = Settings;
 
@@ -392,6 +536,15 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             int value = (int)(baseMax * prosperityScale * securityBonus) + hearthBonus;
+
+            // Governor bonus: Leadership skill boosts max pool.
+            if (settings.EnableGovernorBonus && pool.Town?.Governor is Hero governor)
+            {
+                int leadership = governor.GetSkillValue(DefaultSkills.Leadership);
+                float govDivisor = Math.Max(1f, settings.GovernorLeadershipPoolDivisor);
+                value += (int)(value * (leadership / govDivisor));
+            }
+
             value = Math.Max(1, value);
 
             // Tiny pool testing override.
@@ -405,7 +558,7 @@ namespace Byzantium1071.Campaign.Behaviors
             return value;
         }
 
-        private static int GetDailyRegen(Settlement pool, int max)
+        internal static int GetDailyRegen(Settlement pool, int max)
         {
             var settings = Settings;
 
@@ -487,7 +640,56 @@ namespace Byzantium1071.Campaign.Behaviors
             if (pool.IsUnderSiege)
                 pct *= Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
 
+            // Seasonal modifier: spring/summer = bonus, winter = penalty.
+            if (settings.EnableSeasonalRegen)
+            {
+                var season = CampaignTime.Now.GetSeasonOfYear;
+                if (season == CampaignTime.Seasons.Spring || season == CampaignTime.Seasons.Summer)
+                    pct *= Math.Max(0f, settings.SpringSummerRegenMultiplier) / 100f;
+                else if (season == CampaignTime.Seasons.Winter)
+                    pct *= Math.Max(0f, settings.WinterRegenMultiplier) / 100f;
+                // Autumn = 1.0× (no change)
+            }
+
+            // Peace dividend: pools regen faster when kingdom is at peace.
+            if (settings.EnablePeaceDividend && pool.OwnerClan?.Kingdom is Kingdom kingdom)
+            {
+                if (kingdom.FactionsAtWarWith.Count == 0)
+                    pct *= Math.Max(1f, settings.PeaceDividendMultiplier) / 100f;
+            }
+
+            // Governor bonus: Steward skill boosts regen.
+            if (settings.EnableGovernorBonus && pool.Town?.Governor is Hero governor)
+            {
+                int steward = governor.GetSkillValue(DefaultSkills.Steward);
+                float govDivisor = Math.Max(1f, settings.GovernorStewardRegenDivisor);
+                pct += steward / govDivisor;
+            }
+
+            // War exhaustion penalty: strained kingdoms regen slower.
+            if (settings.EnableWarExhaustion)
+            {
+                string? kingdomId = pool.OwnerClan?.Kingdom?.StringId;
+                if (!string.IsNullOrEmpty(kingdomId))
+                {
+                    float exhaustion = Instance?.GetWarExhaustion(kingdomId) ?? 0f;
+                    if (exhaustion > 0f)
+                    {
+                        float divisor = Math.Max(1f, settings.ExhaustionRegenDivisor);
+                        float penalty = 1f - (exhaustion / divisor);
+                        if (penalty < 0.1f) penalty = 0.1f; // never reduce below 10%
+                        pct *= penalty;
+                    }
+                }
+            }
+
             int regen = (int)(max * pct);
+
+            // Hard cap: never exceed RegenCapPercent of pool per day.
+            int cap = (int)(max * Math.Max(0.001f, settings.RegenCapPercent) / 100f);
+            if (regen > cap)
+                regen = cap;
+
             int minDailyRegen = Math.Max(0, settings.MinimumDailyRegen);
             return Math.Max(minDailyRegen, regen);
         }
@@ -524,5 +726,178 @@ namespace Byzantium1071.Campaign.Behaviors
             if (r < 0.75f) return 3;
             return 4;
         }
+
+        // ───────────────────────  WAR CONSEQUENCES  ───────────────────────
+
+        private void OnRaidCompleted(BattleSideEnum winnerSide, RaidEventComponent raidComponent)
+        {
+            if (!Settings.EnableWarEffects) return;
+
+            Settlement? village = raidComponent?.MapEventSettlement;
+            if (village == null || !village.IsVillage) return;
+
+            Settlement pool = GetPoolSettlement(village);
+            EnsureEntry(pool, fillToMaxClamp: false);
+
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
+            int max = GetMaxManpower(pool);
+            float drainPct = Math.Max(0f, Settings.RaidManpowerDrainPercent) / 100f;
+            int drain = (int)(max * drainPct);
+
+            if (drain <= 0) return;
+
+            int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            int newVal = Math.Max(0, cur - drain);
+            _manpowerByPoolId[poolId] = newVal;
+
+            if (Settings.ShowPlayerDebugMessages)
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[B1071] Raid on {village.Name}: {pool.Name} pool -{drain} ({cur}→{newVal})",
+                    Colors.Red));
+            // War exhaustion: raid costs the defending kingdom.
+            AddWarExhaustion(pool.OwnerClan?.Kingdom?.StringId, Settings.RaidExhaustionGain);        }
+
+        private void OnSiegeAftermath(
+            MobileParty attackerParty,
+            Settlement settlement,
+            SiegeAftermathAction.SiegeAftermath aftermathType,
+            Clan previousOwnerClan,
+            Dictionary<MobileParty, float> contributionShares)
+        {
+            if (!Settings.EnableWarEffects) return;
+            if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
+
+            Settlement pool = GetPoolSettlement(settlement);
+            EnsureEntry(pool, fillToMaxClamp: false);
+
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
+            int max = GetMaxManpower(pool);
+            float retainPct;
+            switch (aftermathType)
+            {
+                case SiegeAftermathAction.SiegeAftermath.Devastate:
+                    retainPct = Math.Max(0f, Settings.SiegeDevastateRetainPercent) / 100f;
+                    break;
+                case SiegeAftermathAction.SiegeAftermath.Pillage:
+                    retainPct = Math.Max(0f, Settings.SiegePillageRetainPercent) / 100f;
+                    break;
+                default: // ShowMercy
+                    retainPct = Math.Max(0f, Settings.SiegeMercyRetainPercent) / 100f;
+                    break;
+            }
+
+            int newVal = Math.Max(0, (int)(max * retainPct));
+            int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            _manpowerByPoolId[poolId] = Math.Min(cur, newVal); // only reduce, never increase
+
+            if (Settings.ShowPlayerDebugMessages)
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[B1071] Siege aftermath ({aftermathType}) at {settlement.Name}: pool set to {newVal} ({retainPct:P0} of max)",
+                    Colors.Red));
+
+            // War exhaustion: siege costs both sides.
+            AddWarExhaustion(previousOwnerClan?.Kingdom?.StringId, Settings.SiegeExhaustionDefender);
+            AddWarExhaustion(attackerParty?.LeaderHero?.Clan?.Kingdom?.StringId, Settings.SiegeExhaustionAttacker);
+        }
+
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            if (!Settings.EnableWarEffects) return;
+            if (mapEvent == null) return;
+            if (!mapEvent.IsFieldBattle && !mapEvent.IsSiegeOutside) return;
+
+            float multiplier = Math.Max(0f, Settings.BattleCasualtyDrainMultiplier);
+            if (multiplier <= 0f) return;
+
+            DrainPoolFromSide(mapEvent.AttackerSide, multiplier);
+            DrainPoolFromSide(mapEvent.DefenderSide, multiplier);
+
+            // War exhaustion from battle casualties.
+            AccumulateBattleExhaustion(mapEvent.AttackerSide);
+            AccumulateBattleExhaustion(mapEvent.DefenderSide);
+        }
+
+        private void AccumulateBattleExhaustion(MapEventSide side)
+        {
+            if (side?.Parties == null || !Settings.EnableWarExhaustion) return;
+
+            float perCasualty = Math.Max(0f, Settings.BattleExhaustionPerCasualty);
+            if (perCasualty <= 0f) return;
+
+            foreach (MapEventParty mep in side.Parties)
+            {
+                MobileParty? mp = mep.Party?.MobileParty;
+                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
+
+                int casualties = mep.DiedInBattle.TotalManCount + mep.WoundedInBattle.TotalManCount;
+                if (casualties <= 0) continue;
+
+                string? kingdomId = mp.LeaderHero?.Clan?.Kingdom?.StringId;
+                AddWarExhaustion(kingdomId, casualties * perCasualty);
+            }
+        }
+
+        private void DrainPoolFromSide(MapEventSide side, float multiplier)
+        {
+            if (side?.Parties == null) return;
+
+            foreach (MapEventParty mep in side.Parties)
+            {
+                MobileParty? mp = mep.Party?.MobileParty;
+                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
+
+                int casualties = mep.DiedInBattle.TotalManCount + mep.WoundedInBattle.TotalManCount;
+                if (casualties <= 0) continue;
+
+                Settlement? home = mp.HomeSettlement;
+                if (home == null) continue;
+
+                Settlement pool = GetPoolSettlement(home);
+                EnsureEntry(pool, fillToMaxClamp: false);
+
+                string poolId = pool.StringId;
+                if (string.IsNullOrEmpty(poolId)) continue;
+
+                int drain = Math.Max(1, (int)(casualties * multiplier));
+                int max = GetMaxManpower(pool);
+                int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+                int newVal = Math.Max(0, cur - drain);
+                _manpowerByPoolId[poolId] = newVal;
+            }
+        }
+
+        private void OnSettlementOwnerChanged(
+            Settlement settlement,
+            bool openToClaim,
+            Hero newOwner,
+            Hero oldOwner,
+            Hero capturerHero,
+            ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
+        {
+            if (!Settings.EnableWarEffects) return;
+            if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
+
+            Settlement pool = GetPoolSettlement(settlement);
+            EnsureEntry(pool, fillToMaxClamp: false);
+
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
+            int max = GetMaxManpower(pool);
+            float retainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
+            int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            int newVal = Math.Max(0, (int)(cur * retainPct));
+            _manpowerByPoolId[poolId] = newVal;
+
+            if (Settings.ShowPlayerDebugMessages)
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[B1071] Ownership changed at {settlement.Name}: pool {cur}→{newVal} ({retainPct:P0} retained)",
+                    Colors.Yellow));
+            // War exhaustion: losing a settlement costs the old owner.
+            AddWarExhaustion(oldOwner?.Clan?.Kingdom?.StringId, Settings.ConquestExhaustionGain);        }
     }
 }

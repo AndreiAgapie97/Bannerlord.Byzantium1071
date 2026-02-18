@@ -60,6 +60,7 @@ namespace Byzantium1071
             {
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerVolunteerModel());
+                starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerMilitiaModel());
             }
         }
 
