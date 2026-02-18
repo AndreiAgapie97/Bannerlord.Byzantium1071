@@ -58,6 +58,25 @@ namespace Byzantium1071.Campaign.UI
         private static List<LedgerRow>? _cachedVillageRows;
         private static bool _cacheStale = true;
 
+        // Scratch lists reused each refresh to avoid GC pressure.
+        private static List<LedgerRow>? _scratchRows;
+        private static List<LedgerRow>? _scratchVillageRows;
+        private static List<LedgerRow>? _scratchCombined;
+
+        // Reusable StringBuilders for column rendering.
+        private static readonly StringBuilder _sb1 = new StringBuilder(512);
+        private static readonly StringBuilder _sb2 = new StringBuilder(512);
+        private static readonly StringBuilder _sb3 = new StringBuilder(512);
+        private static readonly StringBuilder _sb4 = new StringBuilder(512);
+
+        // Party position tracking for dirty-flag distance recalculation.
+        private static Vec2 _lastPartyPos;
+        private static bool _distancesDirty = true;
+
+        // View dirty flag — set when data changes so the UI mixin only syncs when needed.
+        private static bool _viewDirty = true;
+        private static string _sortTextCached = string.Empty;
+
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         /// <summary>
@@ -94,6 +113,13 @@ namespace Byzantium1071.Campaign.UI
             _cachedRows = null;
             _cachedVillageRows = null;
             _cacheStale = true;
+            _scratchRows = null;
+            _scratchVillageRows = null;
+            _scratchCombined = null;
+            _lastPartyPos = default;
+            _distancesDirty = true;
+            _viewDirty = true;
+            _sortTextCached = string.Empty;
         }
 
         internal static bool IsVisible => _isVisible;
@@ -131,16 +157,7 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Prosp", "MP", "Exhaust", "Name" }
         };
 
-        internal static string SortText
-        {
-            get
-            {
-                int tab = (int)_activeTab;
-                int col = Math.Min(_sortColumn, _sortKeys[tab].Length - 1);
-                string arrow = _sortAscending ? " ↑" : " ↓";
-                return _sortKeys[tab][col] + arrow;
-            }
-        }
+        internal static string SortText => _sortTextCached;
         internal static string PageText => _pageLabel;
 
         internal static void SetPanelMode(bool active)
@@ -153,6 +170,7 @@ namespace Byzantium1071.Campaign.UI
         internal static void ToggleExpanded()
         {
             _isExpanded = !_isExpanded;
+            _viewDirty = true;
         }
 
         internal static void SetLedgerTab(B1071LedgerTab tab)
@@ -164,6 +182,7 @@ namespace Byzantium1071.Campaign.UI
             _pageIndex = 0;
             _sortColumn = 0;
             _sortAscending = false;
+            UpdateSortTextCache();
             ForceRefresh();
         }
 
@@ -174,6 +193,7 @@ namespace Byzantium1071.Campaign.UI
         internal static void MarkCacheStale()
         {
             _cacheStale = true;
+            _distancesDirty = true;
         }
 
         internal static void NextPage()
@@ -207,6 +227,7 @@ namespace Byzantium1071.Campaign.UI
                 _sortAscending = true;
             }
             _pageIndex = 0;
+            UpdateSortTextCache();
             ForceRefresh();
         }
 
@@ -215,6 +236,7 @@ namespace Byzantium1071.Campaign.UI
             EnsureLedgerInitialized();
             _currentText = BuildOverlayText();
             _lastText = _currentText;
+            _viewDirty = true;
         }
 
         internal static void Tick(float dt)
@@ -238,20 +260,18 @@ namespace Byzantium1071.Campaign.UI
                 ToggleVisibility();
             }
 
-            if (!_isVisible)
+            if (!_isVisible || !_isExpanded)
                 return;
 
             _refreshTimer -= dt;
             if (_refreshTimer > 0f)
                 return;
 
-            _refreshTimer = 0.35f;
+            _refreshTimer = 2.0f;
             string text = BuildOverlayText();
-            if (text == _lastText)
-                return;
-
             _lastText = text;
             _currentText = text;
+            _viewDirty = true;
             if (!_panelModeActive)
                 MBInformationManager.ShowHint("Byzantium 1071 Overlay\n" + text);
         }
@@ -270,10 +290,30 @@ namespace Byzantium1071.Campaign.UI
             }
         }
 
+        /// <summary>
+        /// Returns true once when view data has changed, then false until next update.
+        /// Called by the UI mixin to avoid redundant property syncs every frame.
+        /// </summary>
+        internal static bool ConsumeViewDirty()
+        {
+            if (!_viewDirty) return false;
+            _viewDirty = false;
+            return true;
+        }
+
+        private static void UpdateSortTextCache()
+        {
+            int tab = (int)_activeTab;
+            int col = Math.Min(_sortColumn, _sortKeys[tab].Length - 1);
+            string arrow = _sortAscending ? " \u2191" : " \u2193";
+            _sortTextCached = _sortKeys[tab][col] + arrow;
+        }
+
         internal static void ToggleVisibility()
         {
             _isVisible = !_isVisible;
             _refreshTimer = 0f;
+            _viewDirty = true;
 
             if (_isVisible)
             {
@@ -347,13 +387,13 @@ namespace Byzantium1071.Campaign.UI
                     1 => a.Current.CompareTo(b.Current),
                     2 => a.RatioPercent.CompareTo(b.RatioPercent),
                     3 => string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal),
-                    _ => a.Distance.CompareTo(b.Distance)
+                    _ => a.DistanceSq.CompareTo(b.DistanceSq)
                 };
                 if (!_sortAscending && _sortColumn != 3) compare = -compare;
                 if (_sortColumn == 3 && _sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return _sortColumn == 0 ? string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal)
-                    : a.Distance.CompareTo(b.Distance);
+                    : a.DistanceSq.CompareTo(b.DistanceSq);
             });
 
             int pageSize = GetRowsPerPage();
@@ -377,28 +417,26 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Distance";
             ApplySortIndicator(new[] { 4, 2, 3, 1 });
 
-            var c1 = new StringBuilder();
-            var c2 = new StringBuilder();
-            var c3 = new StringBuilder();
-            var c4 = new StringBuilder();
+            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
 
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 LedgerRow row = rows[i];
+                float dist = (float)Math.Sqrt(row.DistanceSq);
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
-                c2.Append(FormatMp(row.Current, row.Maximum));
-                c3.Append(row.RatioPercent + "% " + row.Trend);
-                c4.Append(row.Distance.ToString("F1") + " km");
+                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                _sb2.Append(FormatMp(row.Current, row.Maximum));
+                _sb3.Append(row.RatioPercent + "% " + row.Trend);
+                _sb4.Append(dist.ToString("F1") + " km");
             }
 
-            _col1Text = c1.ToString();
-            _col2Text = c2.ToString();
-            _col3Text = c3.ToString();
-            _col4Text = c4.ToString();
+            _col1Text = _sb1.ToString();
+            _col2Text = _sb2.ToString();
+            _col3Text = _sb3.ToString();
+            _col4Text = _sb4.ToString();
             SetTotals(totalCurrent, totalMaximum);
             return _titleText;
         }
@@ -458,28 +496,25 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Regen/Day";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
-            var c1 = new StringBuilder();
-            var c2 = new StringBuilder();
-            var c3 = new StringBuilder();
-            var c4 = new StringBuilder();
+            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
 
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 LedgerRow row = rows[i];
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
-                c2.Append(FormatMp(row.Current, row.Maximum));
-                c3.Append(row.Prosperity.ToString("N0"));
-                c4.Append("+" + row.DailyRegen.ToString("N0") + "/d");
+                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                _sb2.Append(FormatMp(row.Current, row.Maximum));
+                _sb3.Append(row.Prosperity.ToString("N0"));
+                _sb4.Append("+" + row.DailyRegen.ToString("N0") + "/d");
             }
 
-            _col1Text = c1.ToString();
-            _col2Text = c2.ToString();
-            _col3Text = c3.ToString();
-            _col4Text = c4.ToString();
+            _col1Text = _sb1.ToString();
+            _col2Text = _sb2.ToString();
+            _col3Text = _sb3.ToString();
+            _col4Text = _sb4.ToString();
             SetTotals(totalCurrent, totalMaximum);
             return _titleText;
         }
@@ -523,28 +558,25 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Bound To";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
-            var c1 = new StringBuilder();
-            var c2 = new StringBuilder();
-            var c3 = new StringBuilder();
-            var c4 = new StringBuilder();
+            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
 
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 LedgerRow row = rows[i];
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                c1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
-                c2.Append(row.Hearth.ToString("N0"));
-                c3.Append(TruncateForColumn(row.FactionName, 18));
-                c4.Append(TruncateForColumn(row.BoundTo, 18));
+                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                _sb2.Append(row.Hearth.ToString("N0"));
+                _sb3.Append(TruncateForColumn(row.FactionName, 18));
+                _sb4.Append(TruncateForColumn(row.BoundTo, 18));
             }
 
-            _col1Text = c1.ToString();
-            _col2Text = c2.ToString();
-            _col3Text = c3.ToString();
-            _col4Text = c4.ToString();
+            _col1Text = _sb1.ToString();
+            _col2Text = _sb2.ToString();
+            _col3Text = _sb3.ToString();
+            _col4Text = _sb4.ToString();
             _totals1 = "Total";
             _totals2 = totalHearth.ToString("N0");
             _totals3 = string.Empty;
@@ -621,28 +653,25 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Exhaustion";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
-            var c1 = new StringBuilder();
-            var c2 = new StringBuilder();
-            var c3 = new StringBuilder();
-            var c4 = new StringBuilder();
+            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
 
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (i > startIndex) { c1.Append('\n'); c2.Append('\n'); c3.Append('\n'); c4.Append('\n'); }
+                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 FactionLedgerRow row = factionRows[i];
                 int rank = i + 1;
                 string prefix = row.Name == playerFaction ? "> " : "";
 
-                c1.Append(prefix + rank + ". " + TruncateForColumn(row.Name, 24));
-                c2.Append(FormatMp(row.Current, row.Maximum));
-                c3.Append(row.TotalProsperity.ToString("N0"));
-                c4.Append(GetExhaustionLabel(row.Exhaustion));
+                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.Name, 24));
+                _sb2.Append(FormatMp(row.Current, row.Maximum));
+                _sb3.Append(row.TotalProsperity.ToString("N0"));
+                _sb4.Append(GetExhaustionLabel(row.Exhaustion));
             }
 
-            _col1Text = c1.ToString();
-            _col2Text = c2.ToString();
-            _col3Text = c3.ToString();
-            _col4Text = c4.ToString();
+            _col1Text = _sb1.ToString();
+            _col2Text = _sb2.ToString();
+            _col3Text = _sb3.ToString();
+            _col4Text = _sb4.ToString();
             int totalProsperity = 0;
             foreach (FactionLedgerRow r in factionRows) totalProsperity += r.TotalProsperity;
             SetTotals(totalCurrent, totalMaximum);
@@ -712,27 +741,26 @@ namespace Byzantium1071.Campaign.UI
             {
                 RebuildCache(behavior);
                 _cacheStale = false;
+                _distancesDirty = true; // force distance refresh after cache rebuild
             }
 
-            // Update distances (cheap — no Settlement.All iteration).
-            MobileParty? mainParty = MobileParty.MainParty;
-            Vec2 partyPos = mainParty != null ? mainParty.GetPosition2D : new Vec2(0f, 0f);
-            bool hasPos = mainParty != null;
-            var source = includeVillages ? _cachedRows! : _cachedRows!;
-            foreach (LedgerRow r in source)
-                r.Distance = hasPos ? (r._position - partyPos).Length : 0f;
-            if (includeVillages && _cachedVillageRows != null)
-                foreach (LedgerRow r in _cachedVillageRows)
-                    r.Distance = hasPos ? (r._position - partyPos).Length : 0f;
+            // Only recalculate distances when the party has moved enough.
+            UpdateDistancesIfNeeded();
 
-            // Return a copy so callers can sort without disturbing the cache.
+            // Return a scratch-list copy so callers can sort without disturbing the cache.
             if (!includeVillages)
-                return new List<LedgerRow>(_cachedRows!);
+            {
+                if (_scratchRows == null) _scratchRows = new List<LedgerRow>(_cachedRows!.Count);
+                _scratchRows.Clear();
+                _scratchRows.AddRange(_cachedRows!);
+                return _scratchRows;
+            }
 
-            var combined = new List<LedgerRow>(_cachedRows!.Count + _cachedVillageRows!.Count);
-            combined.AddRange(_cachedRows);
-            combined.AddRange(_cachedVillageRows);
-            return combined;
+            if (_scratchCombined == null) _scratchCombined = new List<LedgerRow>(_cachedRows!.Count + _cachedVillageRows!.Count);
+            _scratchCombined.Clear();
+            _scratchCombined.AddRange(_cachedRows!);
+            _scratchCombined.AddRange(_cachedVillageRows!);
+            return _scratchCombined;
         }
 
         private static List<LedgerRow> GetVillageRows(B1071_ManpowerBehavior behavior)
@@ -741,21 +769,61 @@ namespace Byzantium1071.Campaign.UI
             {
                 RebuildCache(behavior);
                 _cacheStale = false;
+                _distancesDirty = true;
             }
 
-            MobileParty? mainParty = MobileParty.MainParty;
-            Vec2 partyPos = mainParty != null ? mainParty.GetPosition2D : new Vec2(0f, 0f);
-            bool hasPos = mainParty != null;
-            foreach (LedgerRow r in _cachedVillageRows!)
-                r.Distance = hasPos ? (r._position - partyPos).Length : 0f;
+            UpdateDistancesIfNeeded();
 
-            return new List<LedgerRow>(_cachedVillageRows);
+            if (_scratchVillageRows == null) _scratchVillageRows = new List<LedgerRow>(_cachedVillageRows!.Count);
+            _scratchVillageRows.Clear();
+            _scratchVillageRows.AddRange(_cachedVillageRows!);
+            return _scratchVillageRows;
+        }
+
+        /// <summary>
+        /// Recalculates DistanceSq for every cached row, but only when the
+        /// player's party has moved more than a small threshold (avoids
+        /// hundreds of sqrts every refresh while stationary).
+        /// </summary>
+        private static void UpdateDistancesIfNeeded()
+        {
+            MobileParty? mainParty = MobileParty.MainParty;
+            if (mainParty == null)
+            {
+                // No party — zero out distances once and skip.
+                if (_distancesDirty)
+                {
+                    foreach (LedgerRow r in _cachedRows!) { r.DistanceSq = 0f; r.Distance = 0f; }
+                    if (_cachedVillageRows != null)
+                        foreach (LedgerRow r in _cachedVillageRows) { r.DistanceSq = 0f; r.Distance = 0f; }
+                    _distancesDirty = false;
+                }
+                return;
+            }
+
+            Vec2 partyPos = mainParty.GetPosition2D;
+            float delta = (partyPos - _lastPartyPos).LengthSquared;
+
+            // Threshold: ~0.25 world-unit of movement before recalculating.
+            if (!_distancesDirty && delta < 0.0625f) return;
+
+            _lastPartyPos = partyPos;
+            _distancesDirty = false;
+
+            // Use LengthSquared for sorting. Compute sqrt only for display rows later.
+            foreach (LedgerRow r in _cachedRows!)
+                r.DistanceSq = (r._position - partyPos).LengthSquared;
+
+            if (_cachedVillageRows != null)
+                foreach (LedgerRow r in _cachedVillageRows)
+                    r.DistanceSq = (r._position - partyPos).LengthSquared;
         }
 
         private static void RebuildCache(B1071_ManpowerBehavior behavior)
         {
             var towns = new List<LedgerRow>();
             var villages = new List<LedgerRow>();
+            var regenByPool = new Dictionary<string, int>();   // poolId → cached regen
 
             foreach (Settlement settlement in Settlement.All)
             {
@@ -772,7 +840,16 @@ namespace Byzantium1071.Campaign.UI
                 float security = town != null ? town.Security : 0f;
                 float hearth = settlement.IsVillage && settlement.Village != null ? settlement.Village.Hearth : 0f;
                 int ratio = maximum <= 0 ? 0 : (int)((100f * current) / maximum);
-                int dailyRegen = B1071_ManpowerBehavior.GetDailyRegen(pool, maximum);
+
+                // Cache GetDailyRegen per pool so villages sharing a pool
+                // don't redundantly recalculate the heavy regen formula.
+                string poolId = pool.StringId ?? string.Empty;
+                if (!regenByPool.TryGetValue(poolId, out int dailyRegen))
+                {
+                    dailyRegen = B1071_ManpowerBehavior.GetDailyRegen(pool, maximum);
+                    regenByPool[poolId] = dailyRegen;
+                }
+
                 string trend = current >= maximum ? "=" : (dailyRegen > 0 ? "\u2191" : "\u2193");
 
                 string boundTo = string.Empty;
@@ -848,6 +925,7 @@ namespace Byzantium1071.Campaign.UI
             _sortColumn = 0;
             _sortAscending = false;
             _ledgerInitialized = true;
+            UpdateSortTextCache();
             ForceRefresh();
         }
 
@@ -855,6 +933,7 @@ namespace Byzantium1071.Campaign.UI
         {
             _refreshTimer = 0f;
             _lastText = string.Empty;
+            _viewDirty = true;
         }
 
         private static bool IsCampaignMapReady()
@@ -888,6 +967,7 @@ namespace Byzantium1071.Campaign.UI
             public int Security;
             public int Hearth;
             public float Distance;
+            public float DistanceSq;
             public int DailyRegen;
             public string Trend = "=";
             public string KingdomId = string.Empty;

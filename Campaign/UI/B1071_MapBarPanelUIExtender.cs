@@ -179,7 +179,8 @@ namespace Byzantium1071.Campaign.UI
         public override void OnRefresh()
         {
             base.OnRefresh();
-            SyncFromController(notifyAll: false);
+            if (B1071_OverlayController.ConsumeViewDirty())
+                SyncFromController(notifyAll: false);
         }
 
         public override void OnFinalize()
