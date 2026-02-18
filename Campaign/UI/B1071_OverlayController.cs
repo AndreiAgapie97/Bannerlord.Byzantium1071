@@ -427,10 +427,10 @@ namespace Byzantium1071.Campaign.UI
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
-                _sb2.Append(FormatMp(row.Current, row.Maximum));
-                _sb3.Append(row.RatioPercent + "% " + row.Trend);
-                _sb4.Append(dist.ToString("F1") + " km");
+                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
+                AppendMp(_sb2, row.Current, row.Maximum);
+                _sb3.Append(row.RatioPercent).Append("% ").Append(row.Trend);
+                _sb4.Append(dist.ToString("F1")).Append(" km");
             }
 
             _col1Text = _sb1.ToString();
@@ -505,10 +505,10 @@ namespace Byzantium1071.Campaign.UI
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
-                _sb2.Append(FormatMp(row.Current, row.Maximum));
+                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
+                AppendMp(_sb2, row.Current, row.Maximum);
                 _sb3.Append(row.Prosperity.ToString("N0"));
-                _sb4.Append("+" + row.DailyRegen.ToString("N0") + "/d");
+                _sb4.Append('+').Append(row.DailyRegen.ToString("N0")).Append("/d");
             }
 
             _col1Text = _sb1.ToString();
@@ -567,7 +567,7 @@ namespace Byzantium1071.Campaign.UI
                 int rank = i + 1;
                 string prefix = row.FactionName == playerFaction ? "> " : "";
 
-                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24));
+                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
                 _sb2.Append(row.Hearth.ToString("N0"));
                 _sb3.Append(TruncateForColumn(row.FactionName, 18));
                 _sb4.Append(TruncateForColumn(row.BoundTo, 18));
@@ -662,8 +662,8 @@ namespace Byzantium1071.Campaign.UI
                 int rank = i + 1;
                 string prefix = row.Name == playerFaction ? "> " : "";
 
-                _sb1.Append(prefix + rank + ". " + TruncateForColumn(row.Name, 24));
-                _sb2.Append(FormatMp(row.Current, row.Maximum));
+                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.Name, 24));
+                AppendMp(_sb2, row.Current, row.Maximum);
                 _sb3.Append(row.TotalProsperity.ToString("N0"));
                 _sb4.Append(GetExhaustionLabel(row.Exhaustion));
             }
@@ -709,6 +709,11 @@ namespace Byzantium1071.Campaign.UI
             {
                 return string.Empty;
             }
+        }
+
+        private static void AppendMp(StringBuilder sb, int current, int maximum)
+        {
+            sb.Append(current.ToString("N0")).Append('/').Append(maximum.ToString("N0"));
         }
 
         private static string FormatMp(int current, int maximum)

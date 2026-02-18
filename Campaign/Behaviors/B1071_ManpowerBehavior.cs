@@ -39,6 +39,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, int> _aiPoolBandByPoolId = new();
         // War exhaustion per kingdom (key = kingdom StringId, value = 0..MaxExhaustionScore).
         private readonly Dictionary<string, float> _warExhaustion = new();
+        private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
         public override void RegisterEvents()
@@ -213,7 +214,7 @@ namespace Byzantium1071.Campaign.Behaviors
             EnsureEntry(pool);
 
             string poolId = pool.StringId;
-            int max = GetMaxManpower(pool);
+            int max = GetMaxManpowerCached(pool);
 
             int cur = _manpowerByPoolId[poolId];
             int regen = GetDailyRegen(pool, max);
@@ -244,6 +245,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnDailyTick()
         {
+            // Clear per-day caches so GetMaxManpower is recomputed with fresh data.
+            _maxManpowerCache.Clear();
+
             // Notify the overlay to rebuild its cached settlement data.
             UI.B1071_OverlayController.MarkCacheStale();
 
@@ -252,8 +256,12 @@ namespace Byzantium1071.Campaign.Behaviors
             float decay = Math.Max(0f, Settings.ExhaustionDailyDecay);
             if (decay <= 0f) return;
 
-            var keys = new List<string>(_warExhaustion.Keys);
-            foreach (string key in keys)
+            // Reuse a scratch list to avoid allocating a new List<string> each day.
+            if (_exhaustionKeysScratch == null)
+                _exhaustionKeysScratch = new List<string>(_warExhaustion.Count);
+            _exhaustionKeysScratch.Clear();
+            _exhaustionKeysScratch.AddRange(_warExhaustion.Keys);
+            foreach (string key in _exhaustionKeysScratch)
             {
                 float val = _warExhaustion[key] - decay;
                 if (val <= 0f)
@@ -316,7 +324,8 @@ namespace Byzantium1071.Campaign.Behaviors
                     int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : 0;
                     int consumed = Math.Min(available, amount * costPer);
                     _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
-                    Debug.Print($"[Byzantium1071][AIManpower] Partyless recruit {troop.Name} x{amount} from {recruitmentSettlement.Name}, pool {available}->{available - consumed}");
+                    if (Settings.LogAiManpowerConsumption)
+                        Debug.Print($"[Byzantium1071][AIManpower] Partyless recruit {troop.Name} x{amount} from {recruitmentSettlement.Name}, pool {available}->{available - consumed}");
                 }
                 // Flag so fallback skips it.
                 _lastRecruitWasAI = true;
@@ -361,7 +370,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (costPer <= 0) return;
 
             string poolId = pool.StringId;
-            int max = GetMaxManpower(pool);
+            int max = GetMaxManpowerCached(pool);
 
             int available = _manpowerByPoolId[poolId];
             int before = available;
@@ -434,22 +443,35 @@ namespace Byzantium1071.Campaign.Behaviors
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
 
+            if (_manpowerByPoolId.TryGetValue(poolId, out int cur))
+            {
+                if (cur < 0)
+                    _manpowerByPoolId[poolId] = 0;
+                return; // Entry exists — skip GetMaxManpower entirely
+            }
+
+            // First time: seed to max
+            _manpowerByPoolId[poolId] = GetMaxManpowerCached(pool);
+        }
+
+        // Per-day cache for GetMaxManpower to avoid recomputing the same heavy
+        // formula thousands of times per daily-tick cycle (volunteer model, militia
+        // model, garrison patch, overlay rebuild all call GetManpowerPool).
+        private readonly Dictionary<string, int> _maxManpowerCache = new();
+
+        /// <summary>
+        /// Returns GetMaxManpower result, caching per pool per daily-tick cycle.
+        /// Cleared in OnDailyTick via ClearDailyCache().
+        /// </summary>
+        private int GetMaxManpowerCached(Settlement pool)
+        {
+            string poolId = pool.StringId;
+            if (_maxManpowerCache.TryGetValue(poolId, out int cached))
+                return cached;
+
             int max = GetMaxManpower(pool);
-
-            if (!_manpowerByPoolId.TryGetValue(poolId, out int cur))
-            {
-                _manpowerByPoolId[poolId] = max;
-                return;
-            }
-
-            if (cur < 0)
-            {
-                _manpowerByPoolId[poolId] = 0; // clamp negative to 0, not max
-                return;
-            }
-
-            // No downward clamp: if a user lowers MCM pool max mid-campaign,
-            // existing pools keep their current value. New max only caps future regen.
+            _maxManpowerCache[poolId] = max;
+            return max;
         }
 
         public void GetManpowerPool(Settlement? settlement, out int cur, out int max, out Settlement pool)
@@ -461,7 +483,7 @@ namespace Byzantium1071.Campaign.Behaviors
             EnsureEntry(pool);
 
             string poolId = pool.StringId;
-            max = GetMaxManpower(pool);
+            max = GetMaxManpowerCached(pool);
             cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
         }
 
@@ -770,7 +792,7 @@ namespace Byzantium1071.Campaign.Behaviors
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
 
-            int max = GetMaxManpower(pool);
+            int max = GetMaxManpowerCached(pool);
             float drainPct = Math.Max(0f, Settings.RaidManpowerDrainPercent) / 100f;
             int drain = (int)(max * drainPct);
 
@@ -804,7 +826,7 @@ namespace Byzantium1071.Campaign.Behaviors
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
 
-            int max = GetMaxManpower(pool);
+            int max = GetMaxManpowerCached(pool);
             float retainPct;
             switch (aftermathType)
             {
@@ -893,7 +915,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (string.IsNullOrEmpty(poolId)) continue;
 
                 int drain = Math.Max(1, (int)(casualties * multiplier));
-                int max = GetMaxManpower(pool);
+                int max = GetMaxManpowerCached(pool);
                 int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
                 int newVal = Math.Max(0, cur - drain);
                 _manpowerByPoolId[poolId] = newVal;
@@ -918,7 +940,7 @@ namespace Byzantium1071.Campaign.Behaviors
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
 
-            int max = GetMaxManpower(pool);
+            int max = GetMaxManpowerCached(pool);
             float retainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
             int newVal = Math.Max(0, (int)(cur * retainPct));
