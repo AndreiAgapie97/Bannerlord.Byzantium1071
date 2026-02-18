@@ -73,9 +73,19 @@ namespace Byzantium1071.Campaign.UI
         private static Vec2 _lastPartyPos;
         private static bool _distancesDirty = true;
 
+        // Tiered distance updates: top N closest updated every 2s, rest on daily tick / every 30s.
+        private const int NEAR_SET_SIZE = 30;
+        private const int FULL_DISTANCE_EVERY_N = 15; // 15 × 2s = 30 real seconds
+        private static int _partialDistanceCount;
+        private static List<LedgerRow>? _nearSet;
+
         // View dirty flag — set when data changes so the UI mixin only syncs when needed.
         private static bool _viewDirty = true;
         private static string _sortTextCached = string.Empty;
+
+        // Columns dirty — set on daily tick or user action (tab/sort/page).
+        // Non-Nearby tabs only rebuild when this is true.
+        private static bool _columnsDirty = true;
 
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
@@ -85,6 +95,7 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         internal static void Reset()
         {
+            B1071_PanelInjectionGuard.Reset();
             _isVisible = true;
             _isExpanded = true;
             _panelModeActive = false;
@@ -118,7 +129,10 @@ namespace Byzantium1071.Campaign.UI
             _scratchCombined = null;
             _lastPartyPos = default;
             _distancesDirty = true;
+            _partialDistanceCount = 0;
+            _nearSet = null;
             _viewDirty = true;
+            _columnsDirty = true;
             _sortTextCached = string.Empty;
         }
 
@@ -194,6 +208,7 @@ namespace Byzantium1071.Campaign.UI
         {
             _cacheStale = true;
             _distancesDirty = true;
+            _columnsDirty = true;
         }
 
         internal static void NextPage()
@@ -268,6 +283,13 @@ namespace Byzantium1071.Campaign.UI
                 return;
 
             _refreshTimer = 2.0f;
+
+            // Non-Nearby tabs: only rebuild when data actually changed (daily tick, sort/page/tab).
+            // Nearby tab: always rebuild (distance updates every 2s).
+            if (_activeTab != B1071LedgerTab.NearbyPools && !_columnsDirty)
+                return;
+
+            _columnsDirty = false;
             string text = BuildOverlayText();
             _lastText = text;
             _currentText = text;
@@ -380,6 +402,7 @@ namespace Byzantium1071.Campaign.UI
         private static string BuildNearbyPoolsColumns(B1071_ManpowerBehavior behavior)
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: false);
+            UpdateDistancesIfNeeded();
             rows.Sort((a, b) =>
             {
                 int compare = _sortColumn switch
@@ -749,9 +772,6 @@ namespace Byzantium1071.Campaign.UI
                 _distancesDirty = true; // force distance refresh after cache rebuild
             }
 
-            // Only recalculate distances when the party has moved enough.
-            UpdateDistancesIfNeeded();
-
             // Return a scratch-list copy so callers can sort without disturbing the cache.
             if (!includeVillages)
             {
@@ -777,8 +797,6 @@ namespace Byzantium1071.Campaign.UI
                 _distancesDirty = true;
             }
 
-            UpdateDistancesIfNeeded();
-
             if (_scratchVillageRows == null) _scratchVillageRows = new List<LedgerRow>(_cachedVillageRows!.Count);
             _scratchVillageRows.Clear();
             _scratchVillageRows.AddRange(_cachedVillageRows!);
@@ -786,22 +804,23 @@ namespace Byzantium1071.Campaign.UI
         }
 
         /// <summary>
-        /// Recalculates DistanceSq for every cached row, but only when the
-        /// player's party has moved more than a small threshold (avoids
-        /// hundreds of sqrts every refresh while stationary).
+        /// Tiered distance recalculation:
+        /// - Full recalc (all ~200 towns/castles): on daily tick or every ~30 real seconds.
+        /// - Partial recalc (top 30 closest): every 2-second refresh when party moves.
+        /// - Skipped entirely when the Nearby tab is not active.
         /// </summary>
         private static void UpdateDistancesIfNeeded()
         {
+            if (_cachedRows == null || _cachedRows.Count == 0) return;
+
             MobileParty? mainParty = MobileParty.MainParty;
             if (mainParty == null)
             {
-                // No party — zero out distances once and skip.
                 if (_distancesDirty)
                 {
-                    foreach (LedgerRow r in _cachedRows!) { r.DistanceSq = 0f; r.Distance = 0f; }
-                    if (_cachedVillageRows != null)
-                        foreach (LedgerRow r in _cachedVillageRows) { r.DistanceSq = 0f; r.Distance = 0f; }
+                    foreach (LedgerRow r in _cachedRows) { r.DistanceSq = 0f; r.Distance = 0f; }
                     _distancesDirty = false;
+                    _nearSet?.Clear();
                 }
                 return;
             }
@@ -809,19 +828,56 @@ namespace Byzantium1071.Campaign.UI
             Vec2 partyPos = mainParty.GetPosition2D;
             float delta = (partyPos - _lastPartyPos).LengthSquared;
 
-            // Threshold: ~0.25 world-unit of movement before recalculating.
-            if (!_distancesDirty && delta < 0.0625f) return;
+            _partialDistanceCount++;
+            bool fullRecalc = _distancesDirty || _partialDistanceCount >= FULL_DISTANCE_EVERY_N;
+
+            if (fullRecalc)
+            {
+                _lastPartyPos = partyPos;
+                _distancesDirty = false;
+                _partialDistanceCount = 0;
+
+                foreach (LedgerRow r in _cachedRows)
+                    r.DistanceSq = (r._position - partyPos).LengthSquared;
+
+                RebuildNearSet();
+                return;
+            }
+
+            // Partial update: skip if barely moved.
+            if (delta < 0.0625f) return;
 
             _lastPartyPos = partyPos;
-            _distancesDirty = false;
 
-            // Use LengthSquared for sorting. Compute sqrt only for display rows later.
-            foreach (LedgerRow r in _cachedRows!)
-                r.DistanceSq = (r._position - partyPos).LengthSquared;
-
-            if (_cachedVillageRows != null)
-                foreach (LedgerRow r in _cachedVillageRows)
+            // Only update near set distances.
+            if (_nearSet != null)
+            {
+                foreach (LedgerRow r in _nearSet)
                     r.DistanceSq = (r._position - partyPos).LengthSquared;
+            }
+        }
+
+        /// <summary>
+        /// Selects the top NEAR_SET_SIZE closest settlements from _cachedRows
+        /// so that only these get frequent distance updates.
+        /// </summary>
+        private static void RebuildNearSet()
+        {
+            if (_cachedRows == null || _cachedRows.Count == 0) return;
+
+            if (_nearSet == null) _nearSet = new List<LedgerRow>(NEAR_SET_SIZE);
+            _nearSet.Clear();
+
+            if (_cachedRows.Count <= NEAR_SET_SIZE)
+            {
+                _nearSet.AddRange(_cachedRows);
+                return;
+            }
+
+            // Copy, sort by current DistanceSq, take top N.
+            _nearSet.AddRange(_cachedRows);
+            _nearSet.Sort((a, b) => a.DistanceSq.CompareTo(b.DistanceSq));
+            _nearSet.RemoveRange(NEAR_SET_SIZE, _nearSet.Count - NEAR_SET_SIZE);
         }
 
         private static void RebuildCache(B1071_ManpowerBehavior behavior)
@@ -938,6 +994,7 @@ namespace Byzantium1071.Campaign.UI
         {
             _refreshTimer = 0f;
             _lastText = string.Empty;
+            _columnsDirty = true;
             _viewDirty = true;
         }
 
