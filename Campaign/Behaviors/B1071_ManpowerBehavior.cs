@@ -362,19 +362,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (pool == null) return;
             EnsureEntry(pool);
 
-            int costPer = GetManpowerCostPerTroop(troop);
-
-            // Culture discount: recruiting in matching-culture settlements is cheaper.
-            if (settings.EnableCultureDiscount && party.LeaderHero != null)
-            {
-                var settlementCulture = recruitmentSettlement.Culture;
-                var heroCulture = party.LeaderHero.Culture;
-                if (settlementCulture != null && heroCulture != null && settlementCulture == heroCulture)
-                {
-                    float costPct = Math.Max(0.01f, settings.CultureCostPercent) / 100f;
-                    costPer = Math.Max(1, (int)(costPer * costPct));
-                }
-            }
+            int costPer = GetRecruitCostForParty(recruitmentSettlement, party, troop);
 
             if (costPer <= 0) return;
 
@@ -766,6 +754,114 @@ namespace Byzantium1071.Campaign.Behaviors
             double scaled = baseFormula * (Math.Max(1, settings.CostMultiplierPercent) / 100.0);
             int cost = (int)Math.Round(scaled, MidpointRounding.AwayFromZero);
             return Math.Max(1, cost);
+        }
+
+        private static int ApplyCultureDiscountIfAny(int baseCost, Settlement recruitmentSettlement, MobileParty party)
+        {
+            int costPer = Math.Max(1, baseCost);
+            var settings = Settings;
+
+            if (settings.EnableCultureDiscount && party.LeaderHero != null)
+            {
+                var settlementCulture = recruitmentSettlement.Culture;
+                var heroCulture = party.LeaderHero.Culture;
+                if (settlementCulture != null && heroCulture != null && settlementCulture == heroCulture)
+                {
+                    float costPct = Math.Max(0.01f, settings.CultureCostPercent) / 100f;
+                    costPer = Math.Max(1, (int)(costPer * costPct));
+                }
+            }
+
+            return costPer;
+        }
+
+        internal int GetRecruitCostForParty(Settlement recruitmentSettlement, MobileParty party, CharacterObject troop)
+        {
+            if (recruitmentSettlement == null || party == null || troop == null) return 1;
+            int baseCost = GetManpowerCostPerTroop(troop);
+            return ApplyCultureDiscountIfAny(baseCost, recruitmentSettlement, party);
+        }
+
+        internal bool CanRecruitCountForPlayer(
+            Settlement recruitmentSettlement,
+            MobileParty party,
+            CharacterObject troop,
+            int amount,
+            out int available,
+            out int costPer,
+            out Settlement? pool)
+        {
+            available = 0;
+            costPer = 1;
+            pool = null;
+
+            if (recruitmentSettlement == null || party == null || troop == null || amount <= 0)
+                return false;
+
+            pool = GetPoolSettlement(recruitmentSettlement);
+            if (pool == null)
+                return false;
+
+            EnsureEntry(pool);
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId))
+                return false;
+
+            int max = GetMaxManpowerCached(pool);
+            available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            costPer = GetRecruitCostForParty(recruitmentSettlement, party, troop);
+
+            long required = (long)costPer * amount;
+            return available >= required;
+        }
+
+        internal bool CanRecruitSequenceAllOrNothing(
+            Settlement recruitmentSettlement,
+            MobileParty party,
+            IEnumerable<CharacterObject> troops,
+            out CharacterObject? blockedTroop,
+            out int neededCost,
+            out int availableBefore,
+            out Settlement? pool)
+        {
+            blockedTroop = null;
+            neededCost = 0;
+            availableBefore = 0;
+            pool = null;
+
+            if (recruitmentSettlement == null || party == null || troops == null)
+                return false;
+
+            pool = GetPoolSettlement(recruitmentSettlement);
+            if (pool == null)
+                return false;
+
+            EnsureEntry(pool);
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId))
+                return false;
+
+            int max = GetMaxManpowerCached(pool);
+            int remaining = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            availableBefore = remaining;
+
+            foreach (CharacterObject troop in troops)
+            {
+                if (troop == null)
+                    continue;
+
+                int costPer = GetRecruitCostForParty(recruitmentSettlement, party, troop);
+                if (remaining < costPer)
+                {
+                    blockedTroop = troop;
+                    neededCost = costPer;
+                    return false;
+                }
+
+                remaining -= costPer;
+            }
+
+            return true;
         }
 
         private static float Clamp01(float v)
