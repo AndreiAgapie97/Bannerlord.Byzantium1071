@@ -19,7 +19,8 @@ namespace Byzantium1071.Campaign.UI
         Castles = 1,
         Towns = 2,
         Villages = 3,
-        Factions = 4
+        Factions = 4,
+        Armies = 5
     }
 
     internal static class B1071_OverlayController
@@ -56,6 +57,7 @@ namespace Byzantium1071.Campaign.UI
         // Row data cache — rebuilt once per in-game day, not per frame.
         private static List<LedgerRow>? _cachedRows;
         private static List<LedgerRow>? _cachedVillageRows;
+        private static List<ArmiesLedgerRow>? _cachedArmiesRows;
         private static bool _cacheStale = true;
 
         // Scratch lists reused each refresh to avoid GC pressure.
@@ -123,6 +125,7 @@ namespace Byzantium1071.Campaign.UI
             _pageLabel = "Page 1/1";
             _cachedRows = null;
             _cachedVillageRows = null;
+            _cachedArmiesRows = null;
             _cacheStale = true;
             _scratchRows = null;
             _scratchVillageRows = null;
@@ -157,18 +160,21 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabTownsText => FormatTabText("Towns", _activeTab == B1071LedgerTab.Towns);
         internal static string TabVillagesText => FormatTabText("Villages", _activeTab == B1071LedgerTab.Villages);
         internal static string TabFactionsText => FormatTabText("Factions", _activeTab == B1071LedgerTab.Factions);
+        internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
         internal static bool IsTabTownsActive => _activeTab == B1071LedgerTab.Towns;
         internal static bool IsTabVillagesActive => _activeTab == B1071LedgerTab.Villages;
         internal static bool IsTabFactionsActive => _activeTab == B1071LedgerTab.Factions;
+        internal static bool IsTabArmiesActive => _activeTab == B1071LedgerTab.Armies;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "Dist", "MP", "%", "Name" },
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "Hearth", "Fact", "Bound", "Name" },
-            new[] { "Prosp", "MP", "Exhaust", "Name" }
+            new[] { "Prosp", "MP", "Exhaust", "Name" },
+            new[] { "Power", "Troops", "Parties", "Name" }
         };
 
         internal static string SortText => _sortTextCached;
@@ -378,6 +384,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Towns: return BuildTownsColumns(behavior);
                 case B1071LedgerTab.Factions: return BuildFactionsColumns(behavior);
                 case B1071LedgerTab.Villages: return BuildVillagesColumns(behavior);
+                case B1071LedgerTab.Armies: return BuildArmiesColumns();
                 default: return BuildNearbyPoolsColumns(behavior);
             }
         }
@@ -979,7 +986,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 4) tabValue = 4;
+            if (tabValue > 5) tabValue = 5;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
@@ -1047,6 +1054,139 @@ namespace Byzantium1071.Campaign.UI
             public int TotalProsperity;
             public int TotalDailyRegen;
             public float Exhaustion;
+        }
+
+        private sealed class ArmiesLedgerRow
+        {
+            public string Name = string.Empty;
+            public int TotalTroops;
+            public int MilitaryPower;   // Σ(tier² × count)
+            public int PartyCount;
+        }
+
+        // ─── Armies tab ───
+
+        private static void RebuildArmiesCache()
+        {
+            if (_cachedArmiesRows == null)
+                _cachedArmiesRows = new List<ArmiesLedgerRow>();
+            _cachedArmiesRows.Clear();
+
+            var byFaction = new Dictionary<string, ArmiesLedgerRow>();
+
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+
+                string factionName = kingdom.Name?.ToString() ?? "Unknown";
+                if (!byFaction.TryGetValue(factionName, out ArmiesLedgerRow row))
+                {
+                    row = new ArmiesLedgerRow { Name = factionName };
+                    byFaction[factionName] = row;
+                }
+
+                foreach (Clan clan in kingdom.Clans)
+                {
+                    if (clan == null) continue;
+
+                    foreach (var component in clan.WarPartyComponents)
+                    {
+                        MobileParty? party = component?.MobileParty;
+                        if (party == null || party.MemberRoster == null) continue;
+                        if (party.IsDisbanding) continue;
+
+                        row.PartyCount++;
+
+                        var roster = party.MemberRoster.GetTroopRoster();
+                        for (int i = 0; i < roster.Count; i++)
+                        {
+                            var element = roster[i];
+                            int count = element.Number;
+                            if (count <= 0) continue;
+
+                            int tier = element.Character != null ? Math.Max(1, element.Character.Tier) : 1;
+                            row.TotalTroops += count;
+                            row.MilitaryPower += tier * tier * count;
+                        }
+                    }
+                }
+            }
+
+            _cachedArmiesRows.AddRange(byFaction.Values);
+        }
+
+        private static string BuildArmiesColumns()
+        {
+            if (_cacheStale || _cachedArmiesRows == null || _cachedArmiesRows.Count == 0)
+                RebuildArmiesCache();
+
+            var rows = _cachedArmiesRows!;
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => a.TotalTroops.CompareTo(b.TotalTroops),
+                    2 => a.PartyCount.CompareTo(b.PartyCount),
+                    3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
+                    _ => a.MilitaryPower.CompareTo(b.MilitaryPower)
+                };
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
+                return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Armies Ledger - No entries found.");
+                return "Armies Ledger\nNo entries found.";
+            }
+
+            string playerFaction = GetPlayerFactionName();
+            int totalPower = 0, totalTroops = 0, totalParties = 0;
+            foreach (ArmiesLedgerRow r in rows)
+            {
+                totalPower += r.MilitaryPower;
+                totalTroops += r.TotalTroops;
+                totalParties += r.PartyCount;
+            }
+
+            _titleText = "Armies Ledger  (" + rows.Count + " entries)";
+            _header1 = "Faction";
+            _header2 = "Power";
+            _header3 = "Troops";
+            _header4 = "Parties";
+            ApplySortIndicator(new[] { 2, 3, 4, 1 });
+
+            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
+
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
+                ArmiesLedgerRow row = rows[i];
+                int rank = i + 1;
+                string prefix = row.Name == playerFaction ? "> " : "";
+
+                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.Name, 24));
+                _sb2.Append(row.MilitaryPower.ToString("N0"));
+                _sb3.Append(row.TotalTroops.ToString("N0"));
+                _sb4.Append(row.PartyCount.ToString("N0"));
+            }
+
+            _col1Text = _sb1.ToString();
+            _col2Text = _sb2.ToString();
+            _col3Text = _sb3.ToString();
+            _col4Text = _sb4.ToString();
+            _totals1 = "Total";
+            _totals2 = totalPower.ToString("N0");
+            _totals3 = totalTroops.ToString("N0");
+            _totals4 = totalParties.ToString("N0");
+            return _titleText;
         }
     }
 }
