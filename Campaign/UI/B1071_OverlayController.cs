@@ -177,6 +177,18 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Power", "Troops", "Parties", "Name" }
         };
 
+        // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
+        // Maps header position (0-based: H1=0, H2=1, H3=2, H4=3) → _sortColumn index.
+        private static readonly int[][] _headerToSort = new[]
+        {
+            new[] { 3, 1, 2, 0 },  // NearbyPools: H1→Name(3), H2→MP(1), H3→%(2), H4→Dist(0)
+            new[] { 3, 0, 1, 2 },  // Castles:     H1→Name(3), H2→MP(0), H3→Prosp(1), H4→Regen(2)
+            new[] { 3, 0, 1, 2 },  // Towns:       same as Castles
+            new[] { 3, 0, 1, 2 },  // Villages:    H1→Name(3), H2→Hearth(0), H3→Fact(1), H4→Bound(2)
+            new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Exhaust(2)
+            new[] { 3, 0, 1, 2 }   // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Parties(2)
+        };
+
         internal static string SortText => _sortTextCached;
         internal static string PageText => _pageLabel;
 
@@ -232,21 +244,29 @@ namespace Byzantium1071.Campaign.UI
             }
         }
 
-        internal static void ToggleSort()
+        /// <summary>
+        /// Sort by clicking a column header (1-based: 1=H1, 2=H2, 3=H3, 4=H4).
+        /// If already sorting on that column, toggles asc/desc.
+        /// If switching to a new column, defaults to descending.
+        /// </summary>
+        internal static void SortByHeader(int headerIndex)
         {
             int tab = (int)_activeTab;
-            int maxCol = _sortKeys[tab].Length - 1;
-            if (_sortAscending)
+            if (tab < 0 || tab >= _headerToSort.Length) return;
+
+            int h = Math.Max(0, Math.Min(3, headerIndex - 1)); // 1-based → 0-based
+            int newSortCol = _headerToSort[tab][h];
+
+            if (newSortCol == _sortColumn)
             {
-                _sortAscending = false;
-                _sortColumn++;
-                if (_sortColumn > maxCol)
-                    _sortColumn = 0;
+                _sortAscending = !_sortAscending;
             }
             else
             {
-                _sortAscending = true;
+                _sortColumn = newSortCol;
+                _sortAscending = false; // default descending for new column
             }
+
             _pageIndex = 0;
             UpdateSortTextCache();
             ForceRefresh();
