@@ -64,7 +64,8 @@ namespace Byzantium1071.Campaign.Patches
                 foreach (RecruitVolunteerTroopVM troop in volunteer.Troops)
                 {
                     if (troop == null || troop.Character == null) continue;
-                    if (!troop.CanBeRecruited) continue;
+                    if (troop.IsInCart || troop.IsTroopEmpty) continue;
+                    if (!troop.PlayerHasEnoughRelation) continue;
                     requestedTroops.Add(troop.Character);
                 }
             }
