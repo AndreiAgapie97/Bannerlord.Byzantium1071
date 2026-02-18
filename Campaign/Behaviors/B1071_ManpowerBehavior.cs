@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
@@ -29,9 +29,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string> _savedIds = new();
         private List<int> _savedValues = new();
 
-        // MCM settings live source. If MCM is unavailable for any reason, fall back to defaults.
-        private static readonly B1071_McmSettings FallbackSettings = new();
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
+        // MCM settings live source. If MCM is unavailable for any reason, fall back to shared defaults.
+        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         private bool _seeded;
         // Alert tracking: only fire crisis alerts on downward band transitions.
@@ -135,6 +134,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             Instance = this;
+            UI.B1071_OverlayController.Reset();
 
             SeedAllPoolsIfNeeded();
 
@@ -158,30 +158,28 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         // Guards against double-deduction: OnUnitRecruitedEvent fires for ALL recruitments
-        // (not just player), but provides no recruiter context. We queue AI recruitments
-        // from OnTroopRecruited so the fallback can skip them (handles multiple AI recruits per tick).
-        private readonly Queue<(CharacterObject troop, int amount)> _aiRecruitQueue = new();
+        // (not just player), but provides no recruiter context. We track whether the
+        // last OnTroopRecruited call was AI so the fallback can skip it.
+        private bool _lastRecruitWasAI;
+        private CharacterObject? _lastAIRecruitTroop;
+        private int _lastAIRecruitAmount;
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
             if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
             if (troop == null || amount <= 0) return;
 
-            // Drain any matching AI recruitment from the queue.
-            if (_aiRecruitQueue.Count > 0)
+            // Skip if this is the AI recruitment we already handled in OnTroopRecruited.
+            if (_lastRecruitWasAI && _lastAIRecruitTroop == troop && _lastAIRecruitAmount == amount)
             {
-                var peek = _aiRecruitQueue.Peek();
-                if (peek.troop == troop && peek.amount == amount)
-                {
-                    _aiRecruitQueue.Dequeue();
-                    return;
-                }
+                _lastRecruitWasAI = false;
+                _lastAIRecruitTroop = null;
+                _lastAIRecruitAmount = 0;
+                return;
             }
 
             Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
             if (playerSettlement == null || playerSettlement.IsHideout) return;
-
-            Settlement pool = GetPoolSettlement(playerSettlement);
 
             MobileParty? main = MobileParty.MainParty;
             if (main != null)
@@ -200,7 +198,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (settlement == null || settlement.IsHideout) continue;
 
                 // Ensures pool entry exists (villages map to their bound pool).
-                EnsureEntry(settlement, fillToMaxClamp: true);
+                EnsureEntry(settlement);
             }
         }
 
@@ -209,10 +207,10 @@ namespace Byzantium1071.Campaign.Behaviors
             if (settlement == null || settlement.IsHideout) return;
 
             // Regen ONLY on pool settlements (Town/Castle), not per village.
-            Settlement pool = GetPoolSettlement(settlement);
+            Settlement? pool = GetPoolSettlement(settlement);
             if (pool != settlement) return;
 
-            EnsureEntry(pool, fillToMaxClamp: false);
+            EnsureEntry(pool);
 
             string poolId = pool.StringId;
             int max = GetMaxManpower(pool);
@@ -305,10 +303,32 @@ namespace Byzantium1071.Campaign.Behaviors
             if (party == null)
                 party = recruitmentSettlement.Town?.GarrisonParty;
 
-            if (party == null) return;
+            if (party == null)
+            {
+                // Still consume manpower even without a party (e.g., notable/non-party hero recruitment).
+                // We can't remove excess troops but we can at least drain the pool.
+                Settlement? pool = GetPoolSettlement(recruitmentSettlement);
+                if (pool != null)
+                {
+                    EnsureEntry(pool);
+                    int costPer = GetManpowerCostPerTroop(troop);
+                    string poolId = pool.StringId;
+                    int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : 0;
+                    int consumed = Math.Min(available, amount * costPer);
+                    _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
+                    Debug.Print($"[Byzantium1071][AIManpower] Partyless recruit {troop.Name} x{amount} from {recruitmentSettlement.Name}, pool {available}->{available - consumed}");
+                }
+                // Flag so fallback skips it.
+                _lastRecruitWasAI = true;
+                _lastAIRecruitTroop = troop;
+                _lastAIRecruitAmount = amount;
+                return;
+            }
 
-            // Queue this AI recruitment so OnUnitRecruitedFallback can skip it.
-            _aiRecruitQueue.Enqueue((troop, amount));
+            // Flag this AI recruitment so OnUnitRecruitedFallback can skip it.
+            _lastRecruitWasAI = true;
+            _lastAIRecruitTroop = troop;
+            _lastAIRecruitAmount = amount;
 
             ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
         }
@@ -320,8 +340,9 @@ namespace Byzantium1071.Campaign.Behaviors
             if (amount <= 0) return;
 
             var settings = Settings;
-            Settlement pool = GetPoolSettlement(recruitmentSettlement);
-            EnsureEntry(pool, fillToMaxClamp: false);
+            Settlement? pool = GetPoolSettlement(recruitmentSettlement);
+            if (pool == null) return;
+            EnsureEntry(pool);
 
             int costPer = GetManpowerCostPerTroop(troop);
 
@@ -332,8 +353,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 var heroCulture = party.LeaderHero.Culture;
                 if (settlementCulture != null && heroCulture != null && settlementCulture == heroCulture)
                 {
-                    float discountPct = Math.Max(0f, settings.CultureDiscountPercent) / 100f;
-                    costPer = Math.Max(1, (int)(costPer * discountPct));
+                    float costPct = Math.Max(0.01f, settings.CultureCostPercent) / 100f;
+                    costPer = Math.Max(1, (int)(costPer * costPct));
                 }
             }
 
@@ -405,9 +426,10 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
-        private void EnsureEntry(Settlement anySettlement, bool fillToMaxClamp)
+        private void EnsureEntry(Settlement? anySettlement)
         {
-            Settlement pool = GetPoolSettlement(anySettlement);
+            Settlement? pool = GetPoolSettlement(anySettlement);
+            if (pool == null) return;
 
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
@@ -426,14 +448,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
             }
 
-            if (fillToMaxClamp)
-                _manpowerByPoolId[poolId] = Math.Min(cur, max); // clamp down if needed
+            // No downward clamp: if a user lowers MCM pool max mid-campaign,
+            // existing pools keep their current value. New max only caps future regen.
         }
 
-        public void GetManpowerPool(Settlement settlement, out int cur, out int max, out Settlement pool)
+        public void GetManpowerPool(Settlement? settlement, out int cur, out int max, out Settlement pool)
         {
-            pool = GetPoolSettlement(settlement);
-            EnsureEntry(pool, fillToMaxClamp: false);
+            Settlement? resolved = GetPoolSettlement(settlement);
+            if (resolved == null) { cur = 0; max = 1; pool = null!; return; }
+
+            pool = resolved;
+            EnsureEntry(pool);
 
             string poolId = pool.StringId;
             max = GetMaxManpower(pool);
@@ -455,9 +480,9 @@ namespace Byzantium1071.Campaign.Behaviors
             return Clamp01(ratio);
         }
 
-        private static Settlement GetPoolSettlement(Settlement s)
+        private static Settlement? GetPoolSettlement(Settlement? s)
         {
-            if (s == null) return s!; // caller must handle null
+            if (s == null) return null;
             if (s.IsVillage)
             {
                 Settlement? bound = s.Village?.Bound;
@@ -542,7 +567,8 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int leadership = governor.GetSkillValue(DefaultSkills.Leadership);
                 float govDivisor = Math.Max(1f, settings.GovernorLeadershipPoolDivisor);
-                value += (int)(value * (leadership / govDivisor));
+                float leadershipBonus = Math.Min(1.0f, leadership / govDivisor); // cap at +100%
+                value += (int)(value * leadershipBonus);
             }
 
             value = Math.Max(1, value);
@@ -654,7 +680,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Peace dividend: pools regen faster when kingdom is at peace.
             if (settings.EnablePeaceDividend && pool.OwnerClan?.Kingdom is Kingdom kingdom)
             {
-                if (kingdom.FactionsAtWarWith.Count == 0)
+                if (kingdom.FactionsAtWarWith?.Count == 0)
                     pct *= Math.Max(1f, settings.PeaceDividendMultiplier) / 100f;
             }
 
@@ -691,7 +717,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 regen = cap;
 
             int minDailyRegen = Math.Max(0, settings.MinimumDailyRegen);
-            return Math.Max(minDailyRegen, regen);
+            // Cap always wins: ensure minimum never exceeds the hard cap.
+            return Math.Min(cap, Math.Max(minDailyRegen, regen));
         }
 
         private static int GetManpowerCostPerTroop(CharacterObject troop)
@@ -736,8 +763,9 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? village = raidComponent?.MapEventSettlement;
             if (village == null || !village.IsVillage) return;
 
-            Settlement pool = GetPoolSettlement(village);
-            EnsureEntry(pool, fillToMaxClamp: false);
+            Settlement? pool = GetPoolSettlement(village);
+            if (pool == null) return;
+            EnsureEntry(pool);
 
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
@@ -769,8 +797,9 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableWarEffects) return;
             if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
 
-            Settlement pool = GetPoolSettlement(settlement);
-            EnsureEntry(pool, fillToMaxClamp: false);
+            Settlement? pool = GetPoolSettlement(settlement);
+            if (pool == null) return;
+            EnsureEntry(pool);
 
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;
@@ -856,8 +885,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 Settlement? home = mp.HomeSettlement;
                 if (home == null) continue;
 
-                Settlement pool = GetPoolSettlement(home);
-                EnsureEntry(pool, fillToMaxClamp: false);
+                Settlement? pool = GetPoolSettlement(home);
+                if (pool == null) continue;
+                EnsureEntry(pool);
 
                 string poolId = pool.StringId;
                 if (string.IsNullOrEmpty(poolId)) continue;
@@ -881,8 +911,9 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableWarEffects) return;
             if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
 
-            Settlement pool = GetPoolSettlement(settlement);
-            EnsureEntry(pool, fillToMaxClamp: false);
+            Settlement? pool = GetPoolSettlement(settlement);
+            if (pool == null) return;
+            EnsureEntry(pool);
 
             string poolId = pool.StringId;
             if (string.IsNullOrEmpty(poolId)) return;

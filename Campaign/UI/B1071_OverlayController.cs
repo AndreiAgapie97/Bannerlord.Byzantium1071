@@ -58,8 +58,43 @@ namespace Byzantium1071.Campaign.UI
         private static List<LedgerRow>? _cachedVillageRows;
         private static bool _cacheStale = true;
 
-        private static readonly B1071_McmSettings FallbackSettings = new();
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
+        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        /// <summary>
+        /// Resets all static overlay state. Call on session launch / unload
+        /// to prevent stale data from a previous save leaking into the new one.
+        /// </summary>
+        internal static void Reset()
+        {
+            _isVisible = true;
+            _isExpanded = true;
+            _panelModeActive = false;
+            _ledgerInitialized = false;
+            _refreshTimer = 0f;
+            _lastText = string.Empty;
+            _currentText = "Loading ledger...\n[Press M to toggle]";
+            _titleText = "Loading...";
+            _col1Text = string.Empty;
+            _col2Text = string.Empty;
+            _col3Text = string.Empty;
+            _col4Text = string.Empty;
+            _totals1 = string.Empty;
+            _totals2 = string.Empty;
+            _totals3 = string.Empty;
+            _totals4 = string.Empty;
+            _header1 = string.Empty;
+            _header2 = string.Empty;
+            _header3 = string.Empty;
+            _header4 = string.Empty;
+            _activeTab = B1071LedgerTab.NearbyPools;
+            _pageIndex = 0;
+            _sortColumn = 0;
+            _sortAscending = false;
+            _pageLabel = "Page 1/1";
+            _cachedRows = null;
+            _cachedVillageRows = null;
+            _cacheStale = true;
+        }
 
         internal static bool IsVisible => _isVisible;
         internal static bool IsExpanded => _isExpanded;
@@ -198,7 +233,7 @@ namespace Byzantium1071.Campaign.UI
 
             EnsureLedgerInitialized();
 
-            if (Settings.EnableOverlayHotkey && Input.IsKeyPressed(InputKey.M))
+            if (Settings.EnableOverlayHotkey && Input.IsKeyPressed(GetConfiguredHotkey()))
             {
                 ToggleVisibility();
             }
@@ -219,6 +254,20 @@ namespace Byzantium1071.Campaign.UI
             _currentText = text;
             if (!_panelModeActive)
                 MBInformationManager.ShowHint("Byzantium 1071 Overlay\n" + text);
+        }
+
+        private static InputKey GetConfiguredHotkey()
+        {
+            switch (Settings.OverlayHotkeyChoice)
+            {
+                case 1: return InputKey.N;
+                case 2: return InputKey.K;
+                case 3: return InputKey.F9;
+                case 4: return InputKey.F10;
+                case 5: return InputKey.F11;
+                case 6: return InputKey.F12;
+                default: return InputKey.M;
+            }
         }
 
         internal static void ToggleVisibility()

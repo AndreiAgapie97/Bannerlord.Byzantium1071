@@ -6,6 +6,11 @@ namespace Byzantium1071.Campaign.Settings
 {
     public sealed class B1071_McmSettings : AttributeGlobalSettings<B1071_McmSettings>
     {
+        // Shared fallback instance — avoids creating multiple AttributeGlobalSettings
+        // objects that could confuse MCM's lifecycle. All consumers share this one.
+        private static B1071_McmSettings? _defaults;
+        internal static B1071_McmSettings Defaults => _defaults ??= new();
+
         public override string Id => "Byzantium1071";
         public override string DisplayName => "Byzantium 1071";
         public override string FolderName => "Byzantium1071";
@@ -156,23 +161,27 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableOverlay { get; set; } = true;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Enable M hotkey toggle", Order = 1, HintText = "Press M on campaign map to show/hide the overlay.")]
+        [SettingPropertyBool("Enable hotkey toggle", Order = 1, HintText = "Press the chosen key on campaign map to show/hide the overlay.")]
         public bool EnableOverlayHotkey { get; set; } = true;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Show settlement name", Order = 2, HintText = "Adds current settlement name to overlay text when available.")]
+        [SettingPropertyInteger("Hotkey (0-6)", 0, 6, "0", Order = 2, HintText = "0=M, 1=N, 2=K, 3=F9, 4=F10, 5=F11, 6=F12. Default: 0 (M).")]
+        public int OverlayHotkeyChoice { get; set; } = 0;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
+        [SettingPropertyBool("Show settlement name", Order = 3, HintText = "Adds current settlement name to overlay text when available.")]
         public bool OverlayShowSettlementName { get; set; } = true;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Show pool identifier", Order = 3, HintText = "Shows the pool settlement used for manpower calculations.")]
+        [SettingPropertyBool("Show pool identifier", Order = 4, HintText = "Shows the pool settlement used for manpower calculations.")]
         public bool OverlayShowPoolName { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyInteger("Ledger default tab (0-4)", 0, 4, "0", Order = 4, HintText = "0=Nearby, 1=Castles, 2=Towns, 3=Villages, 4=Factions.")]
+        [SettingPropertyInteger("Ledger default tab (0-4)", 0, 4, "0", Order = 5, HintText = "0=Nearby, 1=Castles, 2=Towns, 3=Villages, 4=Factions.")]
         public int OverlayLedgerDefaultTab { get; set; } = 0;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 5, HintText = "How many ledger rows are shown per page.")]
+        [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 6, HintText = "How many ledger rows are shown per page.")]
         public int OverlayLedgerRowsPerPage { get; set; } = 7;
 
         // ─── War Effects ───
@@ -232,8 +241,8 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableCultureDiscount { get; set; } = true;
 
         [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
-        [SettingPropertyInteger("Culture discount cost %", 50, 100, "0", Order = 6, HintText = "Manpower cost multiplier when recruiting from same culture. E.g., 75 = 25% discount.")]
-        public int CultureDiscountPercent { get; set; } = 75;
+        [SettingPropertyInteger("Culture cost %", 50, 100, "0", Order = 6, HintText = "Manpower cost % when recruiting from matching culture. 75 = troops cost 75% of normal manpower (25% discount).")]
+        public int CultureCostPercent { get; set; } = 75;
 
         [SettingPropertyGroup("Immersion Modifiers", GroupOrder = 8)]
         [SettingPropertyBool("Enable governor bonus", Order = 7, HintText = "Governor Steward skill boosts regen; Leadership boosts max pool.")]

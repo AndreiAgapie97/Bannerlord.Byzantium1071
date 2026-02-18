@@ -104,28 +104,38 @@ namespace Byzantium1071.Campaign.UI
             "</Widget>";
     }
 
+    // Injection guard: prevents the panel from being inserted multiple times
+    // if multiple PrefabExtension paths match in a given game version.
+    internal static class B1071_PanelInjectionGuard
+    {
+        private static bool _injected;
+        internal static bool TryInject()
+        {
+            if (_injected) return false;
+            _injected = true;
+            return true;
+        }
+        internal static void Reset() => _injected = false;
+    }
+
     [PrefabExtension("MapBar", "descendant::ListPanel[@Id='MapBar']")]
     [PrefabExtension("Map/MapBar", "descendant::ListPanel[@Id='MapBar']")]
-    [PrefabExtension("MapBarView", "descendant::ListPanel[@Id='MapBar']")]
-    [PrefabExtension("Map\\MapBar", "descendant::ListPanel[@Id='MapBar']")]
     public sealed class B1071_MapBarPanelPrefabExtension : PrefabExtensionInsertPatch
     {
         public override InsertType Type => InsertType.Append;
 
         [PrefabExtensionText(false)]
-        public string Text => B1071_MapBarPanelLayout.Text;
+        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
     }
 
     [PrefabExtension("MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
     [PrefabExtension("Map/MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    [PrefabExtension("MapBarView", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    [PrefabExtension("Map\\MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
     public sealed class B1071_MapBarPanelPrefabExtensionAlt : PrefabExtensionInsertPatch
     {
         public override InsertType Type => InsertType.Append;
 
         [PrefabExtensionText(false)]
-        public string Text => B1071_MapBarPanelLayout.Text;
+        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
     }
 
     [ViewModelMixin(nameof(MapBarVM.OnRefresh), true)]
@@ -169,36 +179,7 @@ namespace Byzantium1071.Campaign.UI
         public override void OnRefresh()
         {
             base.OnRefresh();
-
-            B1071PanelVisible = B1071_OverlayController.IsVisible;
-            B1071PanelExpanded = B1071_OverlayController.IsExpanded;
-            B1071PanelText = B1071_OverlayController.CurrentText;
-            B1071ToggleText = B1071PanelExpanded ? "Hide" : "Byz 1071";
-            B1071TabNearbyText = B1071_OverlayController.TabNearbyText;
-            B1071TabCastlesText = B1071_OverlayController.TabCastlesText;
-            B1071TabTownsText = B1071_OverlayController.TabTownsText;
-            B1071TabFactionsText = B1071_OverlayController.TabFactionsText;
-            B1071TabVillagesText = B1071_OverlayController.TabVillagesText;
-            B1071TabNearbySelected = B1071_OverlayController.IsTabNearbyActive;
-            B1071TabCastlesSelected = B1071_OverlayController.IsTabCastlesActive;
-            B1071TabTownsSelected = B1071_OverlayController.IsTabTownsActive;
-            B1071TabFactionsSelected = B1071_OverlayController.IsTabFactionsActive;
-            B1071TabVillagesSelected = B1071_OverlayController.IsTabVillagesActive;
-            B1071SortText = B1071_OverlayController.SortText;
-            B1071PageText = B1071_OverlayController.PageText;
-            B1071TitleText = B1071_OverlayController.TitleText;
-            B1071Col1 = B1071_OverlayController.Col1Text;
-            B1071Col2 = B1071_OverlayController.Col2Text;
-            B1071Col3 = B1071_OverlayController.Col3Text;
-            B1071Col4 = B1071_OverlayController.Col4Text;
-            B1071Totals1 = B1071_OverlayController.Totals1;
-            B1071Totals2 = B1071_OverlayController.Totals2;
-            B1071Totals3 = B1071_OverlayController.Totals3;
-            B1071Totals4 = B1071_OverlayController.Totals4;
-            B1071Header1 = B1071_OverlayController.Header1;
-            B1071Header2 = B1071_OverlayController.Header2;
-            B1071Header3 = B1071_OverlayController.Header3;
-            B1071Header4 = B1071_OverlayController.Header4;
+            SyncFromController(notifyAll: false);
         }
 
         public override void OnFinalize()
@@ -480,8 +461,15 @@ namespace Byzantium1071.Campaign.UI
         private void RefreshLedgerBindings()
         {
             B1071_OverlayController.RefreshNow();
+            SyncFromController(notifyAll: true);
+        }
 
+        private void SyncFromController(bool notifyAll)
+        {
+            B1071PanelVisible = B1071_OverlayController.IsVisible;
+            B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelText = B1071_OverlayController.CurrentText;
+            B1071ToggleText = B1071PanelExpanded ? "Hide" : "Byz 1071";
             B1071TabNearbyText = B1071_OverlayController.TabNearbyText;
             B1071TabCastlesText = B1071_OverlayController.TabCastlesText;
             B1071TabTownsText = B1071_OverlayController.TabTownsText;
@@ -507,6 +495,8 @@ namespace Byzantium1071.Campaign.UI
             B1071Header2 = B1071_OverlayController.Header2;
             B1071Header3 = B1071_OverlayController.Header3;
             B1071Header4 = B1071_OverlayController.Header4;
+
+            if (!notifyAll) return;
 
             OnPropertyChangedWithValue(B1071PanelText, nameof(B1071PanelText));
             OnPropertyChangedWithValue(B1071TabNearbyText, nameof(B1071TabNearbyText));

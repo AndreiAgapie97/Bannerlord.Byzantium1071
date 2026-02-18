@@ -14,8 +14,7 @@ namespace Byzantium1071.Campaign.Models
     /// </summary>
     public sealed class B1071_ManpowerMilitiaModel : DefaultSettlementMilitiaModel
     {
-        private static readonly B1071_McmSettings FallbackSettings = new();
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? FallbackSettings;
+        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         public override ExplainedNumber CalculateMilitiaChange(Settlement settlement, bool includeDescriptions = false)
         {

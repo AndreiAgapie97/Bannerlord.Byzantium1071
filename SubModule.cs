@@ -1,5 +1,4 @@
 ﻿using Byzantium1071.Campaign.Behaviors;
-using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.UI;
 using Bannerlord.UIExtenderEx;
 using HarmonyLib;
@@ -15,6 +14,8 @@ namespace Byzantium1071
     {
         private Harmony? _harmony;
         private UIExtender? _uiExtender;
+        // Error dedup: only log each unique exception type once per session to prevent spam.
+        private readonly System.Collections.Generic.HashSet<string> _loggedExceptionTypes = new();
 
         protected override void OnSubModuleLoad()
         {
@@ -26,9 +27,6 @@ namespace Byzantium1071
             _uiExtender = UIExtender.Create("com.andrei.byzantium1071.ui");
             _uiExtender.Register(Assembly.GetExecutingAssembly());
             _uiExtender.Enable();
-
-            B1071_SettlementTooltipManpowerPatch.TryEnableAndPatch(_harmony);
-
         }
 
         protected override void OnSubModuleUnloaded()
@@ -39,6 +37,7 @@ namespace Byzantium1071
             _harmony = null;
 
             B1071_ManpowerBehavior.Instance = null;
+            B1071_OverlayController.Reset();
 
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
@@ -74,8 +73,9 @@ namespace Byzantium1071
             }
             catch (System.Exception ex)
             {
-                // Overlay must never crash gameplay or screen transitions.
-                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Overlay tick error: {ex.Message}");
+                string exType = ex.GetType().FullName ?? ex.GetType().Name;
+                if (_loggedExceptionTypes.Add(exType))
+                    TaleWorlds.Library.Debug.Print($"[Byzantium1071] Overlay tick error ({exType}): {ex.Message}");
             }
         }
     }
