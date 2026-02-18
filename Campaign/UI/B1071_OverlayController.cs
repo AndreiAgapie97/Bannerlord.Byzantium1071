@@ -2,7 +2,6 @@ using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.CampaignSystem.Party;
@@ -35,10 +34,6 @@ namespace Byzantium1071.Campaign.UI
 
         // Column data for widget-based layout
         private static string _titleText = "Loading...";
-        private static string _col1Text = string.Empty;
-        private static string _col2Text = string.Empty;
-        private static string _col3Text = string.Empty;
-        private static string _col4Text = string.Empty;
         private static string _totals1 = string.Empty;
         private static string _totals2 = string.Empty;
         private static string _totals3 = string.Empty;
@@ -47,6 +42,9 @@ namespace Byzantium1071.Campaign.UI
         private static string _header2 = string.Empty;
         private static string _header3 = string.Empty;
         private static string _header4 = string.Empty;
+
+        // Row-based data for the UI — replaces the old 4x StringBuilder text-blob approach.
+        private static readonly MBBindingList<B1071_LedgerRowVM> _ledgerRows = new MBBindingList<B1071_LedgerRowVM>();
 
         private static B1071LedgerTab _activeTab = B1071LedgerTab.NearbyPools;
         private static int _pageIndex;
@@ -59,17 +57,12 @@ namespace Byzantium1071.Campaign.UI
         private static List<LedgerRow>? _cachedVillageRows;
         private static List<ArmiesLedgerRow>? _cachedArmiesRows;
         private static bool _cacheStale = true;
+        private static bool _armiesCacheStale = true;
 
         // Scratch lists reused each refresh to avoid GC pressure.
         private static List<LedgerRow>? _scratchRows;
         private static List<LedgerRow>? _scratchVillageRows;
         private static List<LedgerRow>? _scratchCombined;
-
-        // Reusable StringBuilders for column rendering.
-        private static readonly StringBuilder _sb1 = new StringBuilder(512);
-        private static readonly StringBuilder _sb2 = new StringBuilder(512);
-        private static readonly StringBuilder _sb3 = new StringBuilder(512);
-        private static readonly StringBuilder _sb4 = new StringBuilder(512);
 
         // Party position tracking for dirty-flag distance recalculation.
         private static Vec2 _lastPartyPos;
@@ -106,10 +99,7 @@ namespace Byzantium1071.Campaign.UI
             _lastText = string.Empty;
             _currentText = "Loading ledger...\n[Press M to toggle]";
             _titleText = "Loading...";
-            _col1Text = string.Empty;
-            _col2Text = string.Empty;
-            _col3Text = string.Empty;
-            _col4Text = string.Empty;
+            _ledgerRows.Clear();
             _totals1 = string.Empty;
             _totals2 = string.Empty;
             _totals3 = string.Empty;
@@ -127,6 +117,7 @@ namespace Byzantium1071.Campaign.UI
             _cachedVillageRows = null;
             _cachedArmiesRows = null;
             _cacheStale = true;
+            _armiesCacheStale = true;
             _scratchRows = null;
             _scratchVillageRows = null;
             _scratchCombined = null;
@@ -143,10 +134,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsExpanded => _isExpanded;
         internal static string CurrentText => _currentText;
         internal static string TitleText => _titleText;
-        internal static string Col1Text => _col1Text;
-        internal static string Col2Text => _col2Text;
-        internal static string Col3Text => _col3Text;
-        internal static string Col4Text => _col4Text;
+        internal static MBBindingList<B1071_LedgerRowVM> LedgerRows => _ledgerRows;
         internal static string Totals1 => _totals1;
         internal static string Totals2 => _totals2;
         internal static string Totals3 => _totals3;
@@ -225,6 +213,7 @@ namespace Byzantium1071.Campaign.UI
         internal static void MarkCacheStale()
         {
             _cacheStale = true;
+            _armiesCacheStale = true;
             _distancesDirty = true;
             _columnsDirty = true;
         }
@@ -412,10 +401,7 @@ namespace Byzantium1071.Campaign.UI
         private static void ClearColumns(string fallback)
         {
             _titleText = fallback;
-            _col1Text = string.Empty;
-            _col2Text = string.Empty;
-            _col3Text = string.Empty;
-            _col4Text = string.Empty;
+            _ledgerRows.Clear();
             _totals1 = string.Empty;
             _totals2 = string.Empty;
             _totals3 = string.Empty;
@@ -467,26 +453,17 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Distance";
             ApplySortIndicator(new[] { 4, 2, 3, 1 });
 
-            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
-
-            for (int i = startIndex; i < endIndex; i++)
+            PopulateRows(startIndex, endIndex, rows, playerFaction, (row, rank, prefix) =>
             {
-                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
-                LedgerRow row = rows[i];
                 float dist = (float)Math.Sqrt(row.DistanceSq);
-                int rank = i + 1;
-                string prefix = row.FactionName == playerFaction ? "> " : "";
+                return (
+                    prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24),
+                    FormatMp(row.Current, row.Maximum),
+                    row.RatioPercent + "% " + row.Trend,
+                    dist.ToString("F1") + " km"
+                );
+            });
 
-                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
-                AppendMp(_sb2, row.Current, row.Maximum);
-                _sb3.Append(row.RatioPercent).Append("% ").Append(row.Trend);
-                _sb4.Append(dist.ToString("F1")).Append(" km");
-            }
-
-            _col1Text = _sb1.ToString();
-            _col2Text = _sb2.ToString();
-            _col3Text = _sb3.ToString();
-            _col4Text = _sb4.ToString();
             SetTotals(totalCurrent, totalMaximum);
             return _titleText;
         }
@@ -546,25 +523,16 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Regen/Day";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
-            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
-
-            for (int i = startIndex; i < endIndex; i++)
+            PopulateRows(startIndex, endIndex, rows, playerFaction, (row, rank, prefix) =>
             {
-                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
-                LedgerRow row = rows[i];
-                int rank = i + 1;
-                string prefix = row.FactionName == playerFaction ? "> " : "";
+                return (
+                    prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24),
+                    FormatMp(row.Current, row.Maximum),
+                    row.Prosperity.ToString("N0"),
+                    "+" + row.DailyRegen.ToString("N0") + "/d"
+                );
+            });
 
-                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
-                AppendMp(_sb2, row.Current, row.Maximum);
-                _sb3.Append(row.Prosperity.ToString("N0"));
-                _sb4.Append('+').Append(row.DailyRegen.ToString("N0")).Append("/d");
-            }
-
-            _col1Text = _sb1.ToString();
-            _col2Text = _sb2.ToString();
-            _col3Text = _sb3.ToString();
-            _col4Text = _sb4.ToString();
             SetTotals(totalCurrent, totalMaximum);
             return _titleText;
         }
@@ -608,25 +576,16 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Bound To";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
-            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
-
-            for (int i = startIndex; i < endIndex; i++)
+            PopulateRows(startIndex, endIndex, rows, playerFaction, (row, rank, prefix) =>
             {
-                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
-                LedgerRow row = rows[i];
-                int rank = i + 1;
-                string prefix = row.FactionName == playerFaction ? "> " : "";
+                return (
+                    prefix + rank + ". " + TruncateForColumn(row.SettlementName, 24),
+                    row.Hearth.ToString("N0"),
+                    TruncateForColumn(row.FactionName, 18),
+                    TruncateForColumn(row.BoundTo, 18)
+                );
+            });
 
-                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.SettlementName, 24));
-                _sb2.Append(row.Hearth.ToString("N0"));
-                _sb3.Append(TruncateForColumn(row.FactionName, 18));
-                _sb4.Append(TruncateForColumn(row.BoundTo, 18));
-            }
-
-            _col1Text = _sb1.ToString();
-            _col2Text = _sb2.ToString();
-            _col3Text = _sb3.ToString();
-            _col4Text = _sb4.ToString();
             _totals1 = "Total";
             _totals2 = totalHearth.ToString("N0");
             _totals3 = string.Empty;
@@ -703,25 +662,24 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Exhaustion";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
-            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
-
-            for (int i = startIndex; i < endIndex; i++)
+            _ledgerRows.Clear();
+            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            for (int i = endIndex - 1; i >= startIndex; i--)
             {
-                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 FactionLedgerRow row = factionRows[i];
                 int rank = i + 1;
                 string prefix = row.Name == playerFaction ? "> " : "";
+                bool highlight = row.Name == playerFaction;
+                bool even = (i - startIndex) % 2 == 0;
 
-                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.Name, 24));
-                AppendMp(_sb2, row.Current, row.Maximum);
-                _sb3.Append(row.TotalProsperity.ToString("N0"));
-                _sb4.Append(GetExhaustionLabel(row.Exhaustion));
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    prefix + rank + ". " + TruncateForColumn(row.Name, 24),
+                    FormatMp(row.Current, row.Maximum),
+                    row.TotalProsperity.ToString("N0"),
+                    GetExhaustionLabel(row.Exhaustion),
+                    highlight, even));
             }
 
-            _col1Text = _sb1.ToString();
-            _col2Text = _sb2.ToString();
-            _col3Text = _sb3.ToString();
-            _col4Text = _sb4.ToString();
             int totalProsperity = 0;
             foreach (FactionLedgerRow r in factionRows) totalProsperity += r.TotalProsperity;
             SetTotals(totalCurrent, totalMaximum);
@@ -761,9 +719,25 @@ namespace Byzantium1071.Campaign.UI
             }
         }
 
-        private static void AppendMp(StringBuilder sb, int current, int maximum)
+        /// <summary>
+        /// Populates _ledgerRows from a slice of LedgerRow data using a cell formatter delegate.
+        /// </summary>
+        private static void PopulateRows(int startIndex, int endIndex, List<LedgerRow> rows,
+            string playerFaction, Func<LedgerRow, int, string, (string c1, string c2, string c3, string c4)> formatter)
         {
-            sb.Append(current.ToString("N0")).Append('/').Append(maximum.ToString("N0"));
+            _ledgerRows.Clear();
+            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                LedgerRow row = rows[i];
+                int rank = i + 1;
+                string prefix = row.FactionName == playerFaction ? "> " : "";
+                bool highlight = row.FactionName == playerFaction;
+                bool even = (i - startIndex) % 2 == 0;
+
+                var (c1, c2, c3, c4) = formatter(row, rank, prefix);
+                _ledgerRows.Add(new B1071_LedgerRowVM(c1, c2, c3, c4, highlight, even));
+            }
         }
 
         private static string FormatMp(int current, int maximum)
@@ -1137,8 +1111,11 @@ namespace Byzantium1071.Campaign.UI
 
         private static string BuildArmiesColumns()
         {
-            if (_cacheStale || _cachedArmiesRows == null || _cachedArmiesRows.Count == 0)
+            if (_armiesCacheStale || _cachedArmiesRows == null || _cachedArmiesRows.Count == 0)
+            {
                 RebuildArmiesCache();
+                _armiesCacheStale = false;
+            }
 
             var rows = _cachedArmiesRows!;
 
@@ -1183,25 +1160,24 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Parties";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
-            _sb1.Clear(); _sb2.Clear(); _sb3.Clear(); _sb4.Clear();
-
-            for (int i = startIndex; i < endIndex; i++)
+            _ledgerRows.Clear();
+            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            for (int i = endIndex - 1; i >= startIndex; i--)
             {
-                if (i > startIndex) { _sb1.Append('\n'); _sb2.Append('\n'); _sb3.Append('\n'); _sb4.Append('\n'); }
                 ArmiesLedgerRow row = rows[i];
                 int rank = i + 1;
                 string prefix = row.Name == playerFaction ? "> " : "";
+                bool highlight = row.Name == playerFaction;
+                bool even = (i - startIndex) % 2 == 0;
 
-                _sb1.Append(prefix).Append(rank).Append(". ").Append(TruncateForColumn(row.Name, 24));
-                _sb2.Append(row.MilitaryPower.ToString("N0"));
-                _sb3.Append(row.TotalTroops.ToString("N0"));
-                _sb4.Append(row.PartyCount.ToString("N0"));
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    prefix + rank + ". " + TruncateForColumn(row.Name, 24),
+                    row.MilitaryPower.ToString("N0"),
+                    row.TotalTroops.ToString("N0"),
+                    row.PartyCount.ToString("N0"),
+                    highlight, even));
             }
 
-            _col1Text = _sb1.ToString();
-            _col2Text = _sb2.ToString();
-            _col3Text = _sb3.ToString();
-            _col4Text = _sb4.ToString();
             _totals1 = "Total";
             _totals2 = totalPower.ToString("N0");
             _totals3 = totalTroops.ToString("N0");

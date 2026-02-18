@@ -164,6 +164,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private bool _lastRecruitWasAI;
         private CharacterObject? _lastAIRecruitTroop;
         private int _lastAIRecruitAmount;
+        private string? _lastAIRecruitSettlementId;
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
@@ -171,11 +172,17 @@ namespace Byzantium1071.Campaign.Behaviors
             if (troop == null || amount <= 0) return;
 
             // Skip if this is the AI recruitment we already handled in OnTroopRecruited.
-            if (_lastRecruitWasAI && _lastAIRecruitTroop == troop && _lastAIRecruitAmount == amount)
+            // Use settlement context in addition to troop+amount to avoid false dedupe
+            // when two different settlements recruit the same troop type and count.
+            Settlement? currentSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
+            string? currentSettlementId = currentSettlement?.StringId;
+            if (_lastRecruitWasAI && _lastAIRecruitTroop == troop && _lastAIRecruitAmount == amount
+                && _lastAIRecruitSettlementId == currentSettlementId)
             {
                 _lastRecruitWasAI = false;
                 _lastAIRecruitTroop = null;
                 _lastAIRecruitAmount = 0;
+                _lastAIRecruitSettlementId = null;
                 return;
             }
 
@@ -331,6 +338,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 _lastRecruitWasAI = true;
                 _lastAIRecruitTroop = troop;
                 _lastAIRecruitAmount = amount;
+                _lastAIRecruitSettlementId = recruitmentSettlement?.StringId;
                 return;
             }
 
@@ -338,6 +346,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _lastRecruitWasAI = true;
             _lastAIRecruitTroop = troop;
             _lastAIRecruitAmount = amount;
+            _lastAIRecruitSettlementId = recruitmentSettlement?.StringId;
 
             ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
         }

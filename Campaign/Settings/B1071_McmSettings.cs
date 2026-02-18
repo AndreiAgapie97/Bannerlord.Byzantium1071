@@ -177,7 +177,7 @@ namespace Byzantium1071.Campaign.Settings
         public bool OverlayShowPoolName { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyInteger("Ledger default tab (0-4)", 0, 4, "0", Order = 5, HintText = "0=Nearby, 1=Castles, 2=Towns, 3=Villages, 4=Factions.")]
+        [SettingPropertyInteger("Ledger default tab (0-5)", 0, 5, "0", Order = 5, HintText = "0=Nearby, 1=Castles, 2=Towns, 3=Villages, 4=Factions, 5=Armies.")]
         public int OverlayLedgerDefaultTab { get; set; } = 0;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]

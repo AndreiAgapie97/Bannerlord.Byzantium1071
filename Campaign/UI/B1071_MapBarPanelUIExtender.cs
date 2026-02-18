@@ -54,14 +54,18 @@ namespace Byzantium1071.Campaign.UI
             "</ListPanel>" +
             // Data-total divider (appears above Total row visually)
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.75\"/>" +
-            // Data columns
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginTop=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            // Data rows — collection-bound row template
+            "<ListPanel DataSource=\"{B1071LedgerRows}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginTop=\"2\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
+            "<ItemTemplate>" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"268\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Col1\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"120\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Col2\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"100\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Col3\" />" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Col4\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"268\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell1\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"120\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell2\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"100\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@Cell3\" />" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@Cell4\" />" +
             "</Children>" +
+            "</ListPanel>" +
+            "</ItemTemplate>" +
             "</ListPanel>" +
             // Settlement-data divider (appears below header row visually)
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.62\"/>" +
@@ -164,10 +168,6 @@ namespace Byzantium1071.Campaign.UI
         private string _sortText = "Sort ↓";
         private string _pageText = "Page 1/1";
         private string _titleText = "Loading...";
-        private string _col1 = string.Empty;
-        private string _col2 = string.Empty;
-        private string _col3 = string.Empty;
-        private string _col4 = string.Empty;
         private string _totals1 = string.Empty;
         private string _totals2 = string.Empty;
         private string _totals3 = string.Empty;
@@ -329,32 +329,7 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
-        public string B1071Col1
-        {
-            get => _col1;
-            set => SetField(ref _col1, value, nameof(B1071Col1));
-        }
-
-        [DataSourceProperty]
-        public string B1071Col2
-        {
-            get => _col2;
-            set => SetField(ref _col2, value, nameof(B1071Col2));
-        }
-
-        [DataSourceProperty]
-        public string B1071Col3
-        {
-            get => _col3;
-            set => SetField(ref _col3, value, nameof(B1071Col3));
-        }
-
-        [DataSourceProperty]
-        public string B1071Col4
-        {
-            get => _col4;
-            set => SetField(ref _col4, value, nameof(B1071Col4));
-        }
+        public MBBindingList<B1071_LedgerRowVM> B1071LedgerRows => B1071_OverlayController.LedgerRows;
 
         [DataSourceProperty]
         public string B1071Totals1
@@ -534,10 +509,7 @@ namespace Byzantium1071.Campaign.UI
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
-            B1071Col1 = B1071_OverlayController.Col1Text;
-            B1071Col2 = B1071_OverlayController.Col2Text;
-            B1071Col3 = B1071_OverlayController.Col3Text;
-            B1071Col4 = B1071_OverlayController.Col4Text;
+            // B1071LedgerRows is bound directly to the controller's MBBindingList (no copy needed)
             B1071Totals1 = B1071_OverlayController.Totals1;
             B1071Totals2 = B1071_OverlayController.Totals2;
             B1071Totals3 = B1071_OverlayController.Totals3;
@@ -565,10 +537,6 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071SortText, nameof(B1071SortText));
             OnPropertyChangedWithValue(B1071PageText, nameof(B1071PageText));
             OnPropertyChangedWithValue(B1071TitleText, nameof(B1071TitleText));
-            OnPropertyChangedWithValue(B1071Col1, nameof(B1071Col1));
-            OnPropertyChangedWithValue(B1071Col2, nameof(B1071Col2));
-            OnPropertyChangedWithValue(B1071Col3, nameof(B1071Col3));
-            OnPropertyChangedWithValue(B1071Col4, nameof(B1071Col4));
             OnPropertyChangedWithValue(B1071Totals1, nameof(B1071Totals1));
             OnPropertyChangedWithValue(B1071Totals2, nameof(B1071Totals2));
             OnPropertyChangedWithValue(B1071Totals3, nameof(B1071Totals3));

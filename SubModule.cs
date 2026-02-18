@@ -14,8 +14,9 @@ namespace Byzantium1071
     {
         private Harmony? _harmony;
         private UIExtender? _uiExtender;
-        // Error dedup: only log each unique exception type once per session to prevent spam.
-        private readonly System.Collections.Generic.HashSet<string> _loggedExceptionTypes = new();
+        // Error dedup: log each unique exception type periodically (not just once) to aid diagnostics.
+        private readonly System.Collections.Generic.Dictionary<string, int> _exceptionCounts = new();
+        private const int EXCEPTION_LOG_INTERVAL = 100; // re-log every N occurrences
 
         protected override void OnSubModuleLoad()
         {
@@ -74,8 +75,13 @@ namespace Byzantium1071
             catch (System.Exception ex)
             {
                 string exType = ex.GetType().FullName ?? ex.GetType().Name;
-                if (_loggedExceptionTypes.Add(exType))
-                    TaleWorlds.Library.Debug.Print($"[Byzantium1071] Overlay tick error ({exType}): {ex.Message}");
+                if (!_exceptionCounts.TryGetValue(exType, out int count))
+                    count = 0;
+                count++;
+                _exceptionCounts[exType] = count;
+                // Log on first occurrence and every EXCEPTION_LOG_INTERVAL thereafter
+                if (count == 1 || count % EXCEPTION_LOG_INTERVAL == 0)
+                    TaleWorlds.Library.Debug.Print($"[Byzantium1071] Overlay tick error ({exType}, #{count}): {ex.Message}");
             }
         }
     }
