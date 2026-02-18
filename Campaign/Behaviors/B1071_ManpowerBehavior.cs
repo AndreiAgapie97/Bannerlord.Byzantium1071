@@ -384,7 +384,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 int removeNow = Math.Min(toRemove, have);
 
                 if (removeNow > 0)
+                {
                     party.MemberRoster.AddToCounts(troop, -removeNow, insertAtFront: false, woundedCount: 0, xpChange: 0, removeDepleted: true, index: -1);
+                }
 
                 if (isPlayer)
                 {

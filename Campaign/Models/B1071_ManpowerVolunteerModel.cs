@@ -10,7 +10,7 @@ namespace Byzantium1071.Campaign.Models
     public sealed class B1071_ManpowerVolunteerModel : DefaultVolunteerModel
     {
         private static B1071_ManpowerBehavior? GetMP()
-            => global::TaleWorlds.CampaignSystem.Campaign.Current?.GetCampaignBehavior<B1071_ManpowerBehavior>();
+            => B1071_ManpowerBehavior.Instance;
 
         public override float GetDailyVolunteerProductionProbability(Hero hero, int index, Settlement settlement)
         {
