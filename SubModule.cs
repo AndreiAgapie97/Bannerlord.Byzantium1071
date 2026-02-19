@@ -2,6 +2,9 @@
 using Byzantium1071.Campaign.UI;
 using Bannerlord.UIExtenderEx;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
@@ -23,11 +26,38 @@ namespace Byzantium1071
             base.OnSubModuleLoad();
 
             _harmony = new Harmony("com.andrei.byzantium1071");
-            _harmony.PatchAll(Assembly.GetExecutingAssembly());
+            PatchAssemblySafely(_harmony, Assembly.GetExecutingAssembly());
 
             _uiExtender = UIExtender.Create("com.andrei.byzantium1071.ui");
             _uiExtender.Register(Assembly.GetExecutingAssembly());
             _uiExtender.Enable();
+        }
+
+        private static void PatchAssemblySafely(Harmony harmony, Assembly assembly)
+        {
+            List<Type> patchTypes = assembly
+                .GetTypes()
+                .Where(type => type.GetCustomAttributes(typeof(HarmonyPatch), inherit: false).Any())
+                .ToList();
+
+            int ok = 0;
+            int failed = 0;
+
+            foreach (Type patchType in patchTypes)
+            {
+                try
+                {
+                    harmony.CreateClassProcessor(patchType).Patch();
+                    ok++;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    TaleWorlds.Library.Debug.Print($"[Byzantium1071] Harmony patch skipped: {patchType.FullName} ({ex.GetType().Name}: {ex.Message})");
+                }
+            }
+
+            TaleWorlds.Library.Debug.Print($"[Byzantium1071] Harmony patches applied: {ok}, failed: {failed}");
         }
 
         protected override void OnSubModuleUnloaded()

@@ -389,5 +389,17 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
         [SettingPropertyBool("Enable diplomacy debug logs", Order = 16, HintText = "Logs detailed reasons for forced-peace and war-gate decisions.")]
         public bool DiplomacyDebugLogs { get; set; } = false;
+
+        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyBool("Enable settlement manpower tooltips", Order = 0, HintText = "Appends manpower info to settlement property tooltips in campaign UI.")]
+        public bool EnableSettlementManpowerTooltips { get; set; } = false;
+
+        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyBool("Enable experimental map-hover fallback", Order = 1, HintText = "Reserved for an optional world-map hover fallback path. Keep disabled unless explicitly testing.")]
+        public bool EnableExperimentalHoverFallback { get; set; } = false;
+
+        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyInteger("Tooltip refresh (ms)", 100, 2000, "0", Order = 2, HintText = "Throttle interval for any tooltip refresh logic that may run repeatedly.")]
+        public int TooltipRefreshMs { get; set; } = 300;
     }
 }
