@@ -54,6 +54,10 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<float> _savedForcedPeaceCooldownDays = new();
         private List<string> _savedTruceKeys = new();
         private List<float> _savedTruceExpiryDays = new();
+        private List<string> _savedRaidDrainVillageIds = new();
+        private List<int> _savedRaidDrainDays = new();
+        private List<string> _savedRaidPoolDayKeys = new();
+        private List<int> _savedRaidPoolDaySpent = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -206,6 +210,72 @@ namespace Byzantium1071.Campaign.Behaviors
                     string key = _savedTruceKeys[i];
                     if (!string.IsNullOrEmpty(key))
                         _truceExpiryByPair[key] = _savedTruceExpiryDays[i];
+                }
+            }
+
+            // Raid drain dedupe save/load.
+            _savedRaidDrainVillageIds ??= new List<string>();
+            _savedRaidDrainDays ??= new List<int>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedRaidDrainVillageIds.Clear();
+                _savedRaidDrainDays.Clear();
+                foreach (var kvp in _lastRaidDrainDayByVillageId)
+                {
+                    _savedRaidDrainVillageIds.Add(kvp.Key);
+                    _savedRaidDrainDays.Add(kvp.Value);
+                }
+            }
+
+            dataStore.SyncData("B1071_RaidDrainDedupe_VillageIds", ref _savedRaidDrainVillageIds);
+            dataStore.SyncData("B1071_RaidDrainDedupe_Days", ref _savedRaidDrainDays);
+
+            _savedRaidDrainVillageIds ??= new List<string>();
+            _savedRaidDrainDays ??= new List<int>();
+
+            if (dataStore.IsLoading)
+            {
+                _lastRaidDrainDayByVillageId.Clear();
+                int nrv = Math.Min(_savedRaidDrainVillageIds.Count, _savedRaidDrainDays.Count);
+                for (int i = 0; i < nrv; i++)
+                {
+                    string villageId = _savedRaidDrainVillageIds[i];
+                    if (!string.IsNullOrEmpty(villageId))
+                        _lastRaidDrainDayByVillageId[villageId] = _savedRaidDrainDays[i];
+                }
+            }
+
+            // Raid pool-day cap spend save/load.
+            _savedRaidPoolDayKeys ??= new List<string>();
+            _savedRaidPoolDaySpent ??= new List<int>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedRaidPoolDayKeys.Clear();
+                _savedRaidPoolDaySpent.Clear();
+                foreach (var kvp in _raidDrainSpentByPoolDay)
+                {
+                    _savedRaidPoolDayKeys.Add(kvp.Key);
+                    _savedRaidPoolDaySpent.Add(kvp.Value);
+                }
+            }
+
+            dataStore.SyncData("B1071_RaidDrainCap_PoolDayKeys", ref _savedRaidPoolDayKeys);
+            dataStore.SyncData("B1071_RaidDrainCap_Spent", ref _savedRaidPoolDaySpent);
+
+            _savedRaidPoolDayKeys ??= new List<string>();
+            _savedRaidPoolDaySpent ??= new List<int>();
+
+            if (dataStore.IsLoading)
+            {
+                _raidDrainSpentByPoolDay.Clear();
+                int nrp = Math.Min(_savedRaidPoolDayKeys.Count, _savedRaidPoolDaySpent.Count);
+                for (int i = 0; i < nrp; i++)
+                {
+                    string poolDayKey = _savedRaidPoolDayKeys[i];
+                    if (!string.IsNullOrEmpty(poolDayKey))
+                        _raidDrainSpentByPoolDay[poolDayKey] = _savedRaidPoolDaySpent[i];
                 }
             }
         }
@@ -1263,73 +1333,15 @@ namespace Byzantium1071.Campaign.Behaviors
             if (village == null || !village.IsVillage)
                 return false;
 
-            if (TryReadBoolProperty(village, "IsBeingRaided", out bool settlementBeingRaided) && settlementBeingRaided)
+            Village? villageComponent = village.Village;
+            if (villageComponent == null)
                 return false;
 
-            if (TryReadBoolProperty(village, "IsRaided", out bool settlementIsRaided))
-                return settlementIsRaided;
-
-            object? villageData = village.GetType().GetProperty("Village")?.GetValue(village);
-            if (villageData == null)
+            Village.VillageStates state = villageComponent.VillageState;
+            if (state == Village.VillageStates.BeingRaided)
                 return false;
 
-            if (TryReadBoolProperty(villageData, "IsBeingRaided", out bool villageBeingRaided) && villageBeingRaided)
-                return false;
-
-            if (TryReadBoolProperty(villageData, "IsRaided", out bool villageIsRaided))
-                return villageIsRaided;
-
-            if (TryReadStringProperty(villageData, "VillageState", out string? stateText))
-            {
-                if (string.IsNullOrEmpty(stateText))
-                    return false;
-
-                if (stateText.IndexOf("BeingRaided", StringComparison.OrdinalIgnoreCase) >= 0)
-                    return false;
-
-                if (stateText.IndexOf("Raided", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    stateText.IndexOf("Looted", StringComparison.OrdinalIgnoreCase) >= 0)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static bool TryReadBoolProperty(object source, string propertyName, out bool value)
-        {
-            value = false;
-            if (source == null)
-                return false;
-
-            var prop = source.GetType().GetProperty(propertyName);
-            if (prop?.PropertyType != typeof(bool))
-                return false;
-
-            if (prop.GetValue(source) is bool boolValue)
-            {
-                value = boolValue;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool TryReadStringProperty(object source, string propertyName, out string? value)
-        {
-            value = null;
-            if (source == null)
-                return false;
-
-            var prop = source.GetType().GetProperty(propertyName);
-            if (prop == null)
-                return false;
-
-            object? propertyValue = prop.GetValue(source);
-            if (propertyValue == null)
-                return false;
-
-            value = propertyValue.ToString();
-            return true;
+            return state == Village.VillageStates.Looted;
         }
 
         private void OnSiegeAftermath(
