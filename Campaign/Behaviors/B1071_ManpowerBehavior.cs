@@ -39,6 +39,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, int> _aiPoolBandByPoolId = new();
         // War exhaustion per kingdom (key = kingdom StringId, value = 0..MaxExhaustionScore).
         private readonly Dictionary<string, float> _warExhaustion = new();
+        // Last day a forced peace was applied per kingdom (key = kingdom StringId).
+        private readonly Dictionary<string, float> _lastForcedPeaceDayByKingdom = new();
         private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
@@ -258,23 +260,27 @@ namespace Byzantium1071.Campaign.Behaviors
             // Notify the overlay to rebuild its cached settlement data.
             UI.B1071_OverlayController.MarkCacheStale();
 
-            if (!Settings.EnableWarExhaustion) return;
-
-            float decay = Math.Max(0f, Settings.ExhaustionDailyDecay);
-            if (decay <= 0f) return;
-
-            // Reuse a scratch list to avoid allocating a new List<string> each day.
-            if (_exhaustionKeysScratch == null)
-                _exhaustionKeysScratch = new List<string>(_warExhaustion.Count);
-            _exhaustionKeysScratch.Clear();
-            _exhaustionKeysScratch.AddRange(_warExhaustion.Keys);
-            foreach (string key in _exhaustionKeysScratch)
+            if (Settings.EnableWarExhaustion)
             {
-                float val = _warExhaustion[key] - decay;
-                if (val <= 0f)
-                    _warExhaustion.Remove(key);
-                else
-                    _warExhaustion[key] = val;
+                float decay = Math.Max(0f, Settings.ExhaustionDailyDecay);
+                if (decay > 0f)
+                {
+                    // Reuse a scratch list to avoid allocating a new List<string> each day.
+                    if (_exhaustionKeysScratch == null)
+                        _exhaustionKeysScratch = new List<string>(_warExhaustion.Count);
+                    _exhaustionKeysScratch.Clear();
+                    _exhaustionKeysScratch.AddRange(_warExhaustion.Keys);
+                    foreach (string key in _exhaustionKeysScratch)
+                    {
+                        float val = _warExhaustion[key] - decay;
+                        if (val <= 0f)
+                            _warExhaustion.Remove(key);
+                        else
+                            _warExhaustion[key] = val;
+                    }
+                }
+
+                TryApplyForcedPeaceAtCrisis();
             }
         }
 
@@ -298,6 +304,67 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (string.IsNullOrEmpty(kingdomId)) return 0f;
             return _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
+        }
+
+        private void TryApplyForcedPeaceAtCrisis()
+        {
+            if (!Settings.EnableExhaustionDiplomacyPressure || !Settings.EnableForcedPeaceAtCrisis)
+                return;
+
+            float threshold = Math.Max(1f, Settings.DiplomacyForcedPeaceThreshold);
+            int maxActiveWars = Math.Max(0, Settings.DiplomacyForcedPeaceMaxActiveWars);
+            int cooldownDays = Math.Max(1, Settings.DiplomacyForcedPeaceCooldownDays);
+            float nowDays = (float)CampaignTime.Now.ToDays;
+
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated)
+                    continue;
+
+                if (Clan.PlayerClan?.Kingdom == kingdom)
+                    continue;
+
+                float exhaustion = GetWarExhaustion(kingdom.StringId);
+                if (exhaustion < threshold)
+                    continue;
+
+                if (_lastForcedPeaceDayByKingdom.TryGetValue(kingdom.StringId, out float lastDay))
+                {
+                    if (nowDays - lastDay < cooldownDays)
+                        continue;
+                }
+
+                IFaction? bestFactionToPeace = null;
+                float bestPeaceScore = float.MinValue;
+                int activeWarCount = 0;
+
+                for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
+                {
+                    IFaction enemy = kingdom.FactionsAtWarWith[i];
+                    if (enemy == null || enemy.IsEliminated)
+                        continue;
+
+                    if (!kingdom.IsAtWarWith(enemy))
+                        continue;
+
+                    activeWarCount++;
+
+                    float score = TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel.GetScoreOfDeclaringPeace(kingdom, enemy);
+                    if (score > bestPeaceScore)
+                    {
+                        bestPeaceScore = score;
+                        bestFactionToPeace = enemy;
+                    }
+                }
+
+                if (activeWarCount <= maxActiveWars || bestFactionToPeace == null)
+                    continue;
+
+                MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
+                _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
+
+                Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
+            }
         }
 
         private void OnTroopRecruited(Hero recruiterHero, Settlement recruitmentSettlement, Hero recruitmentSource, CharacterObject troop, int amount)

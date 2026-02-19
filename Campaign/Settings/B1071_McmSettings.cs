@@ -337,5 +337,21 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
         [SettingPropertyFloatingInteger("Peace support bonus / point", 0f, 100f, "0.0", Order = 4, HintText = "Support bonus applied to make-peace outcomes per exhaustion point.")]
         public float DiplomacyPeaceSupportBonusPerPoint { get; set; } = 5f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyBool("Enable forced peace at crisis", Order = 5, HintText = "If exhaustion is critically high, AI kingdoms will automatically end one war per cooldown period.")]
+        public bool EnableForcedPeaceAtCrisis { get; set; } = true;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("Forced peace threshold", 1f, 200f, "0.0", Order = 6, HintText = "At or above this exhaustion score, forced peace checks become active.")]
+        public float DiplomacyForcedPeaceThreshold { get; set; } = 75f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyInteger("Forced peace cooldown (days)", 1, 30, "0", Order = 7, HintText = "Minimum number of days between automatic peaces for the same kingdom.")]
+        public int DiplomacyForcedPeaceCooldownDays { get; set; } = 3;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyInteger("Forced peace max active wars", 0, 10, "0", Order = 8, HintText = "Forced peace only triggers when active wars exceed this number.")]
+        public int DiplomacyForcedPeaceMaxActiveWars { get; set; } = 0;
     }
 }
