@@ -344,6 +344,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (enemy == null || enemy.IsEliminated)
                         continue;
 
+                    if (enemy is not Kingdom)
+                        continue;
+
                     if (!kingdom.IsAtWarWith(enemy))
                         continue;
 

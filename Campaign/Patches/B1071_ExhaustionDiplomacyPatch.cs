@@ -45,6 +45,16 @@ namespace Byzantium1071.Campaign.Patches
 
         internal static float PeaceBonusPerPoint =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeaceSupportBonusPerPoint;
+
+        internal static bool IsKingdomVsKingdomWarTarget(DeclareWarDecision decision)
+        {
+            return decision?.Kingdom != null && decision.FactionToDeclareWarOn is Kingdom;
+        }
+
+        internal static bool IsKingdomVsKingdomPeaceTarget(MakePeaceKingdomDecision decision)
+        {
+            return decision?.Kingdom != null && decision.FactionToMakePeaceWith is Kingdom;
+        }
     }
 
     [HarmonyPatch(typeof(DeclareWarDecision), nameof(DeclareWarDecision.DetermineSupport))]
@@ -53,6 +63,9 @@ namespace Byzantium1071.Campaign.Patches
         static void Postfix(DeclareWarDecision __instance, Clan clan, DecisionOutcome possibleOutcome, ref float __result)
         {
             if (__instance?.Kingdom == null || clan == null)
+                return;
+
+            if (!B1071_ExhaustionDiplomacyHelpers.IsKingdomVsKingdomWarTarget(__instance))
                 return;
 
             if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(__instance.Kingdom, clan))
@@ -90,6 +103,9 @@ namespace Byzantium1071.Campaign.Patches
             if (__instance?.Kingdom == null || clan == null)
                 return;
 
+            if (!B1071_ExhaustionDiplomacyHelpers.IsKingdomVsKingdomPeaceTarget(__instance))
+                return;
+
             if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(__instance.Kingdom, clan))
                 return;
 
@@ -120,6 +136,9 @@ namespace Byzantium1071.Campaign.Patches
         static bool Prefix(KingdomDecision kingdomDecision)
         {
             if (kingdomDecision is not DeclareWarDecision declareWarDecision)
+                return true;
+
+            if (!B1071_ExhaustionDiplomacyHelpers.IsKingdomVsKingdomWarTarget(declareWarDecision))
                 return true;
 
             Kingdom? kingdom = declareWarDecision.Kingdom;
