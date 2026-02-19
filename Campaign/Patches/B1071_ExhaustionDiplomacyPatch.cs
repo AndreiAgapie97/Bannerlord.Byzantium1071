@@ -27,6 +27,9 @@ namespace Byzantium1071.Campaign.Patches
 
         internal static bool IsPlayerInfluencedContext(Kingdom kingdom, Clan? clan = null)
         {
+            if (Settings.DiplomacyEnforcePlayerParity)
+                return false;
+
             if (Clan.PlayerClan?.Kingdom == kingdom)
                 return true;
 
@@ -35,6 +38,8 @@ namespace Byzantium1071.Campaign.Patches
 
             return false;
         }
+
+        internal static bool EnableDebugLogs => Settings.DiplomacyDebugLogs;
 
         internal static float NoWarThreshold =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyNoNewWarThreshold;
@@ -99,6 +104,8 @@ namespace Byzantium1071.Campaign.Patches
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior != null && behavior.IsKingdomPairUnderTruce(__instance.Kingdom, __instance.FactionToDeclareWarOn, out _))
             {
+                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
+                    Debug.Print($"[Byzantium1071][Diplomacy][Debug] DeclareWar support forced against war due to active truce: {__instance.Kingdom.Name} vs {__instance.FactionToDeclareWarOn.Name}.");
                 if (outcome.ShouldWarBeDeclared)
                     __result = -10000f;
                 else
@@ -182,7 +189,8 @@ namespace Byzantium1071.Campaign.Patches
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior != null && behavior.IsKingdomPairUnderTruce(kingdom, declareWarDecision.FactionToDeclareWarOn, out float truceDaysLeft))
             {
-                Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
+                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
+                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
                 return false;
             }
 
@@ -193,7 +201,8 @@ namespace Byzantium1071.Campaign.Patches
             if (exhaustion < threshold)
                 return true;
 
-            Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
+            if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
+                Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
             return false;
         }
     }

@@ -381,5 +381,13 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
         [SettingPropertyFloatingInteger("Forced peace threshold reduction/war", 0f, 100f, "0.0", Order = 14, HintText = "Lowers forced-peace exhaustion threshold per extra major war.")]
         public float DiplomacyForcedPeaceThresholdReductionPerMajorWar { get; set; } = 8f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyBool("Enforce player parity", Order = 15, HintText = "If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
+        public bool DiplomacyEnforcePlayerParity { get; set; } = false;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyBool("Enable diplomacy debug logs", Order = 16, HintText = "Logs detailed reasons for forced-peace and war-gate decisions.")]
+        public bool DiplomacyDebugLogs { get; set; } = false;
     }
 }

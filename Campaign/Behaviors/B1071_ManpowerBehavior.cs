@@ -50,6 +50,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
+        private List<string> _savedForcedPeaceCooldownIds = new();
+        private List<float> _savedForcedPeaceCooldownDays = new();
         private List<string> _savedTruceKeys = new();
         private List<float> _savedTruceExpiryDays = new();
         public override void RegisterEvents()
@@ -138,6 +140,39 @@ namespace Byzantium1071.Campaign.Behaviors
                     var id = _savedExhaustionIds[i];
                     if (!string.IsNullOrEmpty(id))
                         _warExhaustion[id] = _savedExhaustionValues[i];
+                }
+            }
+
+            // Forced-peace cooldown save/load.
+            _savedForcedPeaceCooldownIds ??= new List<string>();
+            _savedForcedPeaceCooldownDays ??= new List<float>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedForcedPeaceCooldownIds.Clear();
+                _savedForcedPeaceCooldownDays.Clear();
+                foreach (var kvp in _lastForcedPeaceDayByKingdom)
+                {
+                    _savedForcedPeaceCooldownIds.Add(kvp.Key);
+                    _savedForcedPeaceCooldownDays.Add(kvp.Value);
+                }
+            }
+
+            dataStore.SyncData("B1071_ForcedPeaceCooldown_Ids", ref _savedForcedPeaceCooldownIds);
+            dataStore.SyncData("B1071_ForcedPeaceCooldown_Days", ref _savedForcedPeaceCooldownDays);
+
+            _savedForcedPeaceCooldownIds ??= new List<string>();
+            _savedForcedPeaceCooldownDays ??= new List<float>();
+
+            if (dataStore.IsLoading)
+            {
+                _lastForcedPeaceDayByKingdom.Clear();
+                int nf = Math.Min(_savedForcedPeaceCooldownIds.Count, _savedForcedPeaceCooldownDays.Count);
+                for (int i = 0; i < nf; i++)
+                {
+                    string id = _savedForcedPeaceCooldownIds[i];
+                    if (!string.IsNullOrEmpty(id))
+                        _lastForcedPeaceDayByKingdom[id] = _savedForcedPeaceCooldownDays[i];
                 }
             }
 
@@ -442,7 +477,10 @@ namespace Byzantium1071.Campaign.Behaviors
                     continue;
 
                 if (Clan.PlayerClan?.Kingdom == kingdom)
+                {
+                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: player kingdom context.");
                     continue;
+                }
 
                 int activeMajorWars = CountActiveMajorWars(kingdom);
                 int extraWarCount = Math.Max(0, activeMajorWars - pressureStartWars + 1);
@@ -450,12 +488,18 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 float exhaustion = GetWarExhaustion(kingdom.StringId);
                 if (exhaustion < threshold)
+                {
+                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: exhaustion {exhaustion:0.0} below threshold {threshold:0.0}.");
                     continue;
+                }
 
                 if (_lastForcedPeaceDayByKingdom.TryGetValue(kingdom.StringId, out float lastDay))
                 {
                     if (nowDays - lastDay < cooldownDays)
+                    {
+                        DebugDiplomacy($"Skip forced peace for {kingdom.Name}: cooldown active ({(cooldownDays - (nowDays - lastDay)):0.0} days left).");
                         continue;
+                    }
                 }
 
                 IFaction? bestFactionToPeace = null;
@@ -475,17 +519,26 @@ namespace Byzantium1071.Campaign.Behaviors
                         continue;
 
                     if (IsKingdomPairUnderTruce(kingdom, enemy, out _))
+                    {
+                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: truce active.");
                         continue;
+                    }
 
                     StanceLink? stance = kingdom.GetStanceWith(enemy);
                     if (stance == null || !stance.IsAtWar)
                         continue;
 
                     if (minWarDays > 0 && stance.WarStartDate.ElapsedDaysUntilNow < minWarDays)
+                    {
+                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: war age {stance.WarStartDate.ElapsedDaysUntilNow:0.0} < {minWarDays} days.");
                         continue;
+                    }
 
                     if (ignoreIfBesiegingCore && IsEnemyBesiegingCoreSettlement(kingdom, enemy))
+                    {
+                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: enemy besieging core settlement.");
                         continue;
+                    }
 
                     activeWarCount++;
 
@@ -498,13 +551,24 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 if (activeWarCount <= maxActiveWars || bestFactionToPeace == null)
+                {
+                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: eligible wars {activeWarCount} <= configured minimum {maxActiveWars}.");
                     continue;
+                }
 
                 MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
                 _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
 
                 Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
             }
+        }
+
+        private static void DebugDiplomacy(string message)
+        {
+            if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyDebugLogs)
+                return;
+
+            Debug.Print($"[Byzantium1071][Diplomacy][Debug] {message}");
         }
 
         private static int CountActiveMajorWars(Kingdom kingdom)
