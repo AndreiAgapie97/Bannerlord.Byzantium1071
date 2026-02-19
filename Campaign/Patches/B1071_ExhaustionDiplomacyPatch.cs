@@ -1,7 +1,9 @@
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using HarmonyLib;
+using System;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.Library;
 
@@ -46,6 +48,23 @@ namespace Byzantium1071.Campaign.Patches
         internal static float PeaceBonusPerPoint =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeaceSupportBonusPerPoint;
 
+        internal static float GetMajorWarPressureBias(Kingdom kingdom)
+        {
+            int pressureStart = Math.Max(1, Settings.DiplomacyMajorWarPressureStartCount);
+            float biasPerWar = Math.Max(0f, Settings.DiplomacyExtraPeaceBiasPerMajorWar);
+
+            int majorWars = 0;
+            for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
+            {
+                IFaction enemy = kingdom.FactionsAtWarWith[i];
+                if (enemy is Kingdom && kingdom.IsAtWarWith(enemy))
+                    majorWars++;
+            }
+
+            int extraWarCount = Math.Max(0, majorWars - pressureStart + 1);
+            return extraWarCount * biasPerWar;
+        }
+
         internal static bool IsKingdomVsKingdomWarTarget(DeclareWarDecision decision)
         {
             return decision?.Kingdom != null && decision.FactionToDeclareWarOn is Kingdom;
@@ -77,6 +96,16 @@ namespace Byzantium1071.Campaign.Patches
             if (possibleOutcome is not DeclareWarDecision.DeclareWarDecisionOutcome outcome)
                 return;
 
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            if (behavior != null && behavior.IsKingdomPairUnderTruce(__instance.Kingdom, __instance.FactionToDeclareWarOn, out _))
+            {
+                if (outcome.ShouldWarBeDeclared)
+                    __result = -10000f;
+                else
+                    __result = 10000f;
+                return;
+            }
+
             float threshold = B1071_ExhaustionDiplomacyHelpers.NoWarThreshold;
             if (exhaustion >= threshold)
             {
@@ -88,6 +117,7 @@ namespace Byzantium1071.Campaign.Patches
             }
 
             float penalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint;
+            penalty += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
             if (outcome.ShouldWarBeDeclared)
                 __result -= penalty;
             else
@@ -123,6 +153,7 @@ namespace Byzantium1071.Campaign.Patches
             }
 
             float bonus = exhaustion * B1071_ExhaustionDiplomacyHelpers.PeaceBonusPerPoint;
+            bonus += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
             if (outcome.ShouldPeaceBeDeclared)
                 __result += bonus;
             else
@@ -148,6 +179,13 @@ namespace Byzantium1071.Campaign.Patches
             if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(kingdom))
                 return true;
 
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            if (behavior != null && behavior.IsKingdomPairUnderTruce(kingdom, declareWarDecision.FactionToDeclareWarOn, out float truceDaysLeft))
+            {
+                Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
+                return false;
+            }
+
             if (!B1071_ExhaustionDiplomacyHelpers.TryGetExhaustion(kingdom, out float exhaustion))
                 return true;
 
@@ -157,6 +195,24 @@ namespace Byzantium1071.Campaign.Patches
 
             Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(MakePeaceAction), nameof(MakePeaceAction.Apply))]
+    public static class B1071_RegisterTruceAfterAnyPeacePatch
+    {
+        static void Postfix(IFaction faction1, IFaction faction2)
+        {
+            B1071_ManpowerBehavior.Instance?.RegisterKingdomPairTruce(faction1, faction2);
+        }
+    }
+
+    [HarmonyPatch(typeof(MakePeaceAction), nameof(MakePeaceAction.ApplyByKingdomDecision))]
+    public static class B1071_RegisterTruceAfterDecisionPeacePatch
+    {
+        static void Postfix(IFaction faction1, IFaction faction2, int dailyTributeFrom1To2, int dailyTributeDuration)
+        {
+            B1071_ManpowerBehavior.Instance?.RegisterKingdomPairTruce(faction1, faction2);
         }
     }
 }

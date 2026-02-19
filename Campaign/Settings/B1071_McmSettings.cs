@@ -353,5 +353,29 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
         [SettingPropertyInteger("Forced peace max active wars", 0, 10, "0", Order = 8, HintText = "Forced peace only triggers when active wars exceed this number.")]
         public int DiplomacyForcedPeaceMaxActiveWars { get; set; } = 0;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyInteger("Min war days before forced peace", 0, 365, "0", Order = 9, HintText = "Forced peace cannot end a war younger than this many days.")]
+        public int MinWarDurationDaysBeforeForcedPeace { get; set; } = 20;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyBool("Ignore if enemy besieges core fief", Order = 10, HintText = "Do not force peace with an enemy currently besieging one of your owned towns/castles.")]
+        public bool IgnoreForcedPeaceIfEnemyBesiegingCoreSettlement { get; set; } = true;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyInteger("Forced peace truce days", 0, 365, "0", Order = 11, HintText = "After any peace between two kingdoms, block re-declaration for this many days.")]
+        public int ForcedPeaceTruceDays { get; set; } = 30;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyInteger("Major-war pressure starts at", 1, 10, "0", Order = 12, HintText = "When active kingdom wars reach this count, extra peace pressure is applied.")]
+        public int DiplomacyMajorWarPressureStartCount { get; set; } = 2;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("Extra peace bias per major war", 0f, 500f, "0.0", Order = 13, HintText = "Additional support bias toward peace for each war above the pressure start count.")]
+        public float DiplomacyExtraPeaceBiasPerMajorWar { get; set; } = 40f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("Forced peace threshold reduction/war", 0f, 100f, "0.0", Order = 14, HintText = "Lowers forced-peace exhaustion threshold per extra major war.")]
+        public float DiplomacyForcedPeaceThresholdReductionPerMajorWar { get; set; } = 8f;
     }
 }

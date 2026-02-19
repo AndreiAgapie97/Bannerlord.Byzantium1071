@@ -41,9 +41,15 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, float> _warExhaustion = new();
         // Last day a forced peace was applied per kingdom (key = kingdom StringId).
         private readonly Dictionary<string, float> _lastForcedPeaceDayByKingdom = new();
+        // Per-pair truce expiry day after peace (key = normalized kingdomA|kingdomB).
+        private readonly Dictionary<string, float> _truceExpiryByPair = new();
+        // Raid drain dedupe (key = village StringId, value = campaign day) to avoid duplicate callbacks draining twice.
+        private readonly Dictionary<string, int> _lastRaidDrainDayByVillageId = new();
         private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
+        private List<string> _savedTruceKeys = new();
+        private List<float> _savedTruceExpiryDays = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -130,6 +136,39 @@ namespace Byzantium1071.Campaign.Behaviors
                     var id = _savedExhaustionIds[i];
                     if (!string.IsNullOrEmpty(id))
                         _warExhaustion[id] = _savedExhaustionValues[i];
+                }
+            }
+
+            // Kingdom pair truce save/load.
+            _savedTruceKeys ??= new List<string>();
+            _savedTruceExpiryDays ??= new List<float>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedTruceKeys.Clear();
+                _savedTruceExpiryDays.Clear();
+                foreach (var kvp in _truceExpiryByPair)
+                {
+                    _savedTruceKeys.Add(kvp.Key);
+                    _savedTruceExpiryDays.Add(kvp.Value);
+                }
+            }
+
+            dataStore.SyncData("B1071_TrucePair_Keys", ref _savedTruceKeys);
+            dataStore.SyncData("B1071_TrucePair_ExpiryDays", ref _savedTruceExpiryDays);
+
+            _savedTruceKeys ??= new List<string>();
+            _savedTruceExpiryDays ??= new List<float>();
+
+            if (dataStore.IsLoading)
+            {
+                _truceExpiryByPair.Clear();
+                int nt = Math.Min(_savedTruceKeys.Count, _savedTruceExpiryDays.Count);
+                for (int i = 0; i < nt; i++)
+                {
+                    string key = _savedTruceKeys[i];
+                    if (!string.IsNullOrEmpty(key))
+                        _truceExpiryByPair[key] = _savedTruceExpiryDays[i];
                 }
             }
         }
@@ -260,6 +299,8 @@ namespace Byzantium1071.Campaign.Behaviors
             // Notify the overlay to rebuild its cached settlement data.
             UI.B1071_OverlayController.MarkCacheStale();
 
+            CleanupExpiredTruces();
+
             if (Settings.EnableWarExhaustion)
             {
                 float decay = Math.Max(0f, Settings.ExhaustionDailyDecay);
@@ -306,14 +347,87 @@ namespace Byzantium1071.Campaign.Behaviors
             return _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
         }
 
+        public void RegisterKingdomPairTruce(IFaction? faction1, IFaction? faction2)
+        {
+            if (faction1 is not Kingdom kingdom1 || faction2 is not Kingdom kingdom2)
+                return;
+
+            int truceDays = Math.Max(0, Settings.ForcedPeaceTruceDays);
+            if (truceDays <= 0)
+                return;
+
+            string key = MakeKingdomPairKey(kingdom1, kingdom2);
+            if (string.IsNullOrEmpty(key))
+                return;
+
+            float expiryDay = (float)CampaignTime.Now.ToDays + truceDays;
+            _truceExpiryByPair[key] = expiryDay;
+        }
+
+        public bool IsKingdomPairUnderTruce(Kingdom? kingdom, IFaction? otherFaction, out float daysRemaining)
+        {
+            daysRemaining = 0f;
+            if (kingdom == null || otherFaction is not Kingdom otherKingdom)
+                return false;
+
+            string key = MakeKingdomPairKey(kingdom, otherKingdom);
+            if (string.IsNullOrEmpty(key))
+                return false;
+
+            if (!_truceExpiryByPair.TryGetValue(key, out float expiryDay))
+                return false;
+
+            float now = (float)CampaignTime.Now.ToDays;
+            daysRemaining = expiryDay - now;
+            if (daysRemaining <= 0f)
+            {
+                _truceExpiryByPair.Remove(key);
+                daysRemaining = 0f;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string MakeKingdomPairKey(Kingdom kingdomA, Kingdom kingdomB)
+        {
+            string idA = kingdomA.StringId ?? string.Empty;
+            string idB = kingdomB.StringId ?? string.Empty;
+            if (string.IsNullOrEmpty(idA) || string.IsNullOrEmpty(idB))
+                return string.Empty;
+
+            return string.CompareOrdinal(idA, idB) <= 0 ? $"{idA}|{idB}" : $"{idB}|{idA}";
+        }
+
+        private void CleanupExpiredTruces()
+        {
+            if (_truceExpiryByPair.Count == 0)
+                return;
+
+            float now = (float)CampaignTime.Now.ToDays;
+            List<string> toRemove = new();
+            foreach (var kvp in _truceExpiryByPair)
+            {
+                if (kvp.Value <= now)
+                    toRemove.Add(kvp.Key);
+            }
+
+            for (int i = 0; i < toRemove.Count; i++)
+                _truceExpiryByPair.Remove(toRemove[i]);
+        }
+
         private void TryApplyForcedPeaceAtCrisis()
         {
             if (!Settings.EnableExhaustionDiplomacyPressure || !Settings.EnableForcedPeaceAtCrisis)
                 return;
 
-            float threshold = Math.Max(1f, Settings.DiplomacyForcedPeaceThreshold);
+            float baseThreshold = Math.Max(1f, Settings.DiplomacyForcedPeaceThreshold);
+            int pressureStartWars = Math.Max(1, Settings.DiplomacyMajorWarPressureStartCount);
+            float thresholdReductionPerWar = Math.Max(0f, Settings.DiplomacyForcedPeaceThresholdReductionPerMajorWar);
             int maxActiveWars = Math.Max(0, Settings.DiplomacyForcedPeaceMaxActiveWars);
             int cooldownDays = Math.Max(1, Settings.DiplomacyForcedPeaceCooldownDays);
+            int minWarDays = Math.Max(0, Settings.MinWarDurationDaysBeforeForcedPeace);
+            bool ignoreIfBesiegingCore = Settings.IgnoreForcedPeaceIfEnemyBesiegingCoreSettlement;
             float nowDays = (float)CampaignTime.Now.ToDays;
 
             foreach (Kingdom kingdom in Kingdom.All)
@@ -323,6 +437,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (Clan.PlayerClan?.Kingdom == kingdom)
                     continue;
+
+                int activeMajorWars = CountActiveMajorWars(kingdom);
+                int extraWarCount = Math.Max(0, activeMajorWars - pressureStartWars + 1);
+                float threshold = Math.Max(1f, baseThreshold - (extraWarCount * thresholdReductionPerWar));
 
                 float exhaustion = GetWarExhaustion(kingdom.StringId);
                 if (exhaustion < threshold)
@@ -350,6 +468,19 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (!kingdom.IsAtWarWith(enemy))
                         continue;
 
+                    if (IsKingdomPairUnderTruce(kingdom, enemy, out _))
+                        continue;
+
+                    StanceLink? stance = kingdom.GetStanceWith(enemy);
+                    if (stance == null || !stance.IsAtWar)
+                        continue;
+
+                    if (minWarDays > 0 && stance.WarStartDate.ElapsedDaysUntilNow < minWarDays)
+                        continue;
+
+                    if (ignoreIfBesiegingCore && IsEnemyBesiegingCoreSettlement(kingdom, enemy))
+                        continue;
+
                     activeWarCount++;
 
                     float score = TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel.GetScoreOfDeclaringPeace(kingdom, enemy);
@@ -368,6 +499,42 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
             }
+        }
+
+        private static int CountActiveMajorWars(Kingdom kingdom)
+        {
+            int count = 0;
+            for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
+            {
+                IFaction enemy = kingdom.FactionsAtWarWith[i];
+                if (enemy is Kingdom && kingdom.IsAtWarWith(enemy))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static bool IsEnemyBesiegingCoreSettlement(Kingdom defender, IFaction attacker)
+        {
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || (!settlement.IsTown && !settlement.IsCastle))
+                    continue;
+
+                if (settlement.OwnerClan?.Kingdom != defender)
+                    continue;
+
+                if (!settlement.IsUnderSiege || settlement.SiegeEvent == null)
+                    continue;
+
+                foreach (PartyBase attackerParty in settlement.SiegeEvent.GetSiegeEventSide(BattleSideEnum.Attacker).GetInvolvedPartiesForEventType())
+                {
+                    if (attackerParty?.MapFaction == attacker)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         private void OnTroopRecruited(Hero recruiterHero, Settlement recruitmentSettlement, Hero recruitmentSource, CharacterObject troop, int amount)
@@ -958,9 +1125,19 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnRaidCompleted(BattleSideEnum winnerSide, RaidEventComponent raidComponent)
         {
             if (!Settings.EnableWarEffects) return;
+            if (winnerSide != BattleSideEnum.Attacker) return;
 
             Settlement? village = raidComponent?.MapEventSettlement;
             if (village == null || !village.IsVillage) return;
+
+            string villageId = village.StringId;
+            if (string.IsNullOrEmpty(villageId)) return;
+
+            int today = (int)CampaignTime.Now.ToDays;
+            if (_lastRaidDrainDayByVillageId.TryGetValue(villageId, out int lastDrainDay) && lastDrainDay == today)
+                return;
+
+            _lastRaidDrainDayByVillageId[villageId] = today;
 
             Settlement? pool = GetPoolSettlement(village);
             if (pool == null) return;
@@ -1036,6 +1213,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (!Settings.EnableWarEffects) return;
             if (mapEvent == null) return;
+            if (IsVillageRaidRelatedMapEvent(mapEvent)) return;
             if (!mapEvent.IsFieldBattle && !mapEvent.IsSiegeOutside) return;
 
             float multiplier = Math.Max(0f, Settings.BattleCasualtyDrainMultiplier);
@@ -1047,6 +1225,61 @@ namespace Byzantium1071.Campaign.Behaviors
             // War exhaustion from battle casualties.
             AccumulateBattleExhaustion(mapEvent.AttackerSide);
             AccumulateBattleExhaustion(mapEvent.DefenderSide);
+        }
+
+        private static bool IsVillageRaidRelatedMapEvent(MapEvent mapEvent)
+        {
+            if (IsRaidLikeMapEvent(mapEvent))
+                return true;
+
+            if (HasVillageRelatedParty(mapEvent.AttackerSide) || HasVillageRelatedParty(mapEvent.DefenderSide))
+                return true;
+
+            return false;
+        }
+
+        private static bool IsRaidLikeMapEvent(MapEvent mapEvent)
+        {
+            var mapEventType = mapEvent.GetType();
+
+            var isRaidProp = mapEventType.GetProperty("IsRaid");
+            if (isRaidProp?.PropertyType == typeof(bool) && isRaidProp.GetValue(mapEvent) is bool isRaid && isRaid)
+                return true;
+
+            var settlementProp = mapEventType.GetProperty("MapEventSettlement");
+            if (settlementProp?.GetValue(mapEvent) is Settlement settlement && settlement.IsVillage)
+                return true;
+
+            var eventTypeProp = mapEventType.GetProperty("EventType");
+            string? eventTypeText = eventTypeProp?.GetValue(mapEvent)?.ToString();
+            if (!string.IsNullOrEmpty(eventTypeText) && eventTypeText.IndexOf("Raid", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return false;
+        }
+
+        private static bool HasVillageRelatedParty(MapEventSide side)
+        {
+            if (side?.Parties == null)
+                return false;
+
+            foreach (MapEventParty mep in side.Parties)
+            {
+                MobileParty? mobileParty = mep?.Party?.MobileParty;
+                if (mobileParty == null)
+                    continue;
+
+                if (mobileParty.IsVillager)
+                    return true;
+
+                if (mobileParty.HomeSettlement?.IsVillage == true)
+                    return true;
+
+                if (mobileParty.CurrentSettlement?.IsVillage == true)
+                    return true;
+            }
+
+            return false;
         }
 
         private void AccumulateBattleExhaustion(MapEventSide side)
