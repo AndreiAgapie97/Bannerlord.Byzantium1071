@@ -191,8 +191,12 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableWarEffects { get; set; } = true;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Raid drain %", 0, 50, "0", Order = 1, HintText = "% of max pool drained when a bound village is raided.")]
+        [SettingPropertyInteger("Raid drain %", 0, 50, "0", Order = 1, HintText = "% of current pool drained when a bound village raid is fully completed.")]
         public int RaidManpowerDrainPercent { get; set; } = 15;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Raid daily cap %", 0, 100, "0", Order = 2, HintText = "Max total manpower drained by completed village raids from the same pool in one day (% of max pool).")]
+        public int RaidDailyPoolDrainCapPercent { get; set; } = 20;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
         [SettingPropertyInteger("Siege devastate retain %", 0, 100, "0", Order = 2, HintText = "% of max pool retained after choosing Devastate.")]

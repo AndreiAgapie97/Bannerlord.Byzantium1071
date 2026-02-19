@@ -45,6 +45,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, float> _truceExpiryByPair = new();
         // Raid drain dedupe (key = village StringId, value = campaign day) to avoid duplicate callbacks draining twice.
         private readonly Dictionary<string, int> _lastRaidDrainDayByVillageId = new();
+        // Raid drain spent this day per pool (key = "poolId|day", value = spent manpower).
+        private readonly Dictionary<string, int> _raidDrainSpentByPoolDay = new();
         private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
@@ -298,6 +300,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             // Notify the overlay to rebuild its cached settlement data.
             UI.B1071_OverlayController.MarkCacheStale();
+
+            // Daily raid bookkeeping.
+            _lastRaidDrainDayByVillageId.Clear();
+            _raidDrainSpentByPoolDay.Clear();
 
             CleanupExpiredTruces();
 
@@ -1130,6 +1136,14 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? village = raidComponent?.MapEventSettlement;
             if (village == null || !village.IsVillage) return;
 
+            bool raidCompletionConfirmed = IsVillageRaidCompletionConfirmed(village);
+            if (!raidCompletionConfirmed)
+            {
+                if (Settings.ShowPlayerDebugMessages)
+                    InformationManager.DisplayMessage(new InformationMessage($"[B1071] Raid not completed at {village.Name}: no manpower drain."));
+                return;
+            }
+
             string villageId = village.StringId;
             if (string.IsNullOrEmpty(villageId)) return;
 
@@ -1148,13 +1162,30 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int max = GetMaxManpowerCached(pool);
             float drainPct = Math.Max(0f, Settings.RaidManpowerDrainPercent) / 100f;
-            int drain = (int)(max * drainPct);
-
-            if (drain <= 0) return;
-
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            int drainRequested = (int)(cur * drainPct);
+            if (drainRequested <= 0 && drainPct > 0f && cur > 0)
+                drainRequested = 1;
+
+            if (drainRequested <= 0) return;
+
+            int capPercent = Math.Max(0, Settings.RaidDailyPoolDrainCapPercent);
+            int capAbsolute = (int)(max * (capPercent / 100f));
+            string poolDayKey = $"{poolId}|{today}";
+            int spentToday = _raidDrainSpentByPoolDay.TryGetValue(poolDayKey, out int spent) ? spent : 0;
+            int remainingBudget = capAbsolute > 0 ? Math.Max(0, capAbsolute - spentToday) : drainRequested;
+            int drain = capAbsolute > 0 ? Math.Min(drainRequested, remainingBudget) : drainRequested;
+
+            if (drain <= 0)
+            {
+                if (Settings.ShowPlayerDebugMessages)
+                    InformationManager.DisplayMessage(new InformationMessage($"[B1071] Raid at {village.Name}: daily raid cap reached, no manpower drain."));
+                return;
+            }
+
             int newVal = Math.Max(0, cur - drain);
             _manpowerByPoolId[poolId] = newVal;
+            _raidDrainSpentByPoolDay[poolDayKey] = spentToday + drain;
 
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -1162,6 +1193,80 @@ namespace Byzantium1071.Campaign.Behaviors
                     Colors.Red));
             // War exhaustion: raid costs the defending kingdom.
             AddWarExhaustion(pool.OwnerClan?.Kingdom?.StringId, Settings.RaidExhaustionGain);        }
+
+        private static bool IsVillageRaidCompletionConfirmed(Settlement village)
+        {
+            if (village == null || !village.IsVillage)
+                return false;
+
+            if (TryReadBoolProperty(village, "IsBeingRaided", out bool settlementBeingRaided) && settlementBeingRaided)
+                return false;
+
+            if (TryReadBoolProperty(village, "IsRaided", out bool settlementIsRaided))
+                return settlementIsRaided;
+
+            object? villageData = village.GetType().GetProperty("Village")?.GetValue(village);
+            if (villageData == null)
+                return false;
+
+            if (TryReadBoolProperty(villageData, "IsBeingRaided", out bool villageBeingRaided) && villageBeingRaided)
+                return false;
+
+            if (TryReadBoolProperty(villageData, "IsRaided", out bool villageIsRaided))
+                return villageIsRaided;
+
+            if (TryReadStringProperty(villageData, "VillageState", out string? stateText))
+            {
+                if (string.IsNullOrEmpty(stateText))
+                    return false;
+
+                if (stateText.IndexOf("BeingRaided", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return false;
+
+                if (stateText.IndexOf("Raided", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    stateText.IndexOf("Looted", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryReadBoolProperty(object source, string propertyName, out bool value)
+        {
+            value = false;
+            if (source == null)
+                return false;
+
+            var prop = source.GetType().GetProperty(propertyName);
+            if (prop?.PropertyType != typeof(bool))
+                return false;
+
+            if (prop.GetValue(source) is bool boolValue)
+            {
+                value = boolValue;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryReadStringProperty(object source, string propertyName, out string? value)
+        {
+            value = null;
+            if (source == null)
+                return false;
+
+            var prop = source.GetType().GetProperty(propertyName);
+            if (prop == null)
+                return false;
+
+            object? propertyValue = prop.GetValue(source);
+            if (propertyValue == null)
+                return false;
+
+            value = propertyValue.ToString();
+            return true;
+        }
 
         private void OnSiegeAftermath(
             MobileParty attackerParty,
