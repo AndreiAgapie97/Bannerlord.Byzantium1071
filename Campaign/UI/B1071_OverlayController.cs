@@ -161,8 +161,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "Hearth", "Fact", "Bound", "Name" },
-            new[] { "Prosp", "MP", "Exhaust", "Name" },
-            new[] { "Power", "Troops", "Parties", "Name" }
+            new[] { "Prosp", "MP", "Money", "Name" },
+            new[] { "Power", "Troops", "Exhaust", "Name" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -173,8 +173,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 1, 2 },  // Castles:     H1→Name(3), H2→MP(0), H3→Prosp(1), H4→Regen(2)
             new[] { 3, 0, 1, 2 },  // Towns:       same as Castles
             new[] { 3, 0, 1, 2 },  // Villages:    H1→Name(3), H2→Hearth(0), H3→Fact(1), H4→Bound(2)
-            new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Exhaust(2)
-            new[] { 3, 0, 1, 2 }   // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Parties(2)
+            new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Money(2)
+            new[] { 3, 0, 1, 2 }   // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
         };
 
         internal static string SortText => _sortTextCached;
@@ -597,6 +597,24 @@ namespace Byzantium1071.Campaign.UI
         {
             List<LedgerRow> rows = BuildSettlementRows(behavior, includeVillages: false);
             var byFaction = new Dictionary<string, FactionLedgerRow>();
+            var kingdomGoldById = new Dictionary<string, int>();
+
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom == null || string.IsNullOrEmpty(kingdom.StringId))
+                    continue;
+
+                int kingdomClanGold = 0;
+                foreach (Clan clan in kingdom.Clans)
+                {
+                    if (clan == null)
+                        continue;
+
+                    kingdomClanGold += clan.Gold;
+                }
+
+                kingdomGoldById[kingdom.StringId] = kingdomClanGold;
+            }
 
             foreach (LedgerRow row in rows)
             {
@@ -618,11 +636,17 @@ namespace Byzantium1071.Campaign.UI
                     factionRow.KingdomId = row.KingdomId;
             }
 
-            // Populate exhaustion from behavior.
+            // Populate exhaustion and money.
             foreach (FactionLedgerRow fr in byFaction.Values)
             {
                 if (!string.IsNullOrEmpty(fr.KingdomId) && behavior != null)
                     fr.Exhaustion = behavior.GetWarExhaustion(fr.KingdomId);
+
+                if (!string.IsNullOrEmpty(fr.KingdomId) && kingdomGoldById.TryGetValue(fr.KingdomId, out int kingdomGold))
+                {
+                    fr.HasMoney = true;
+                    fr.Money = kingdomGold;
+                }
             }
 
             var factionRows = new List<FactionLedgerRow>(byFaction.Values);
@@ -631,7 +655,7 @@ namespace Byzantium1071.Campaign.UI
                 int compare = _sortColumn switch
                 {
                     1 => a.Current.CompareTo(b.Current),
-                    2 => a.Exhaustion.CompareTo(b.Exhaustion),
+                    2 => a.Money.CompareTo(b.Money),
                     3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
                     _ => a.TotalProsperity.CompareTo(b.TotalProsperity)
                 };
@@ -659,7 +683,7 @@ namespace Byzantium1071.Campaign.UI
             _header1 = "Faction";
             _header2 = "Manpower";
             _header3 = "Prosperity";
-            _header4 = "Exhaustion";
+            _header4 = "Money";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
             _ledgerRows.Clear();
@@ -676,14 +700,17 @@ namespace Byzantium1071.Campaign.UI
                     prefix + rank + ". " + TruncateForColumn(row.Name, 24),
                     FormatMp(row.Current, row.Maximum),
                     row.TotalProsperity.ToString("N0"),
-                    GetExhaustionLabel(row.Exhaustion),
+                    row.HasMoney ? row.Money.ToString("N0") : "N/A",
                     highlight, even));
             }
 
             int totalProsperity = 0;
+            int totalMoney = 0;
             foreach (FactionLedgerRow r in factionRows) totalProsperity += r.TotalProsperity;
+            foreach (FactionLedgerRow r in factionRows) if (r.HasMoney) totalMoney += r.Money;
             SetTotals(totalCurrent, totalMaximum);
             _totals3 = totalProsperity.ToString("N0");
+            _totals4 = totalMoney.ToString("N0");
             return _titleText;
         }
 
@@ -1048,14 +1075,18 @@ namespace Byzantium1071.Campaign.UI
             public int TotalProsperity;
             public int TotalDailyRegen;
             public float Exhaustion;
+            public int Money;
+            public bool HasMoney;
         }
 
         private sealed class ArmiesLedgerRow
         {
             public string Name = string.Empty;
+            public string KingdomId = string.Empty;
             public int TotalTroops;
             public int MilitaryPower;   // Σ(tier² × count)
             public int PartyCount;
+            public float Exhaustion;
         }
 
         // ─── Armies tab ───
@@ -1067,6 +1098,7 @@ namespace Byzantium1071.Campaign.UI
             _cachedArmiesRows.Clear();
 
             var byFaction = new Dictionary<string, ArmiesLedgerRow>();
+            var behavior = TaleWorlds.CampaignSystem.Campaign.Current.GetCampaignBehavior<B1071_ManpowerBehavior>();
 
             foreach (Kingdom kingdom in Kingdom.All)
             {
@@ -1075,7 +1107,14 @@ namespace Byzantium1071.Campaign.UI
                 string factionName = kingdom.Name?.ToString() ?? "Unknown";
                 if (!byFaction.TryGetValue(factionName, out ArmiesLedgerRow row))
                 {
-                    row = new ArmiesLedgerRow { Name = factionName };
+                    row = new ArmiesLedgerRow
+                    {
+                        Name = factionName,
+                        KingdomId = kingdom.StringId,
+                        Exhaustion = !string.IsNullOrEmpty(kingdom.StringId) && behavior != null
+                            ? behavior.GetWarExhaustion(kingdom.StringId)
+                            : 0f
+                    };
                     byFaction[factionName] = row;
                 }
 
@@ -1124,7 +1163,7 @@ namespace Byzantium1071.Campaign.UI
                 int compare = _sortColumn switch
                 {
                     1 => a.TotalTroops.CompareTo(b.TotalTroops),
-                    2 => a.PartyCount.CompareTo(b.PartyCount),
+                    2 => a.Exhaustion.CompareTo(b.Exhaustion),
                     3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
                     _ => a.MilitaryPower.CompareTo(b.MilitaryPower)
                 };
@@ -1145,19 +1184,20 @@ namespace Byzantium1071.Campaign.UI
             }
 
             string playerFaction = GetPlayerFactionName();
-            int totalPower = 0, totalTroops = 0, totalParties = 0;
+            int totalPower = 0, totalTroops = 0;
+            float totalExhaustion = 0f;
             foreach (ArmiesLedgerRow r in rows)
             {
                 totalPower += r.MilitaryPower;
                 totalTroops += r.TotalTroops;
-                totalParties += r.PartyCount;
+                totalExhaustion += r.Exhaustion;
             }
 
             _titleText = "Armies Ledger  (" + rows.Count + " entries)";
             _header1 = "Faction";
             _header2 = "Power";
             _header3 = "Troops";
-            _header4 = "Parties";
+            _header4 = "Exhaustion";
             ApplySortIndicator(new[] { 2, 3, 4, 1 });
 
             _ledgerRows.Clear();
@@ -1174,14 +1214,14 @@ namespace Byzantium1071.Campaign.UI
                     prefix + rank + ". " + TruncateForColumn(row.Name, 24),
                     row.MilitaryPower.ToString("N0"),
                     row.TotalTroops.ToString("N0"),
-                    row.PartyCount.ToString("N0"),
+                    GetExhaustionLabel(row.Exhaustion),
                     highlight, even));
             }
 
             _totals1 = "Total";
             _totals2 = totalPower.ToString("N0");
             _totals3 = totalTroops.ToString("N0");
-            _totals4 = totalParties.ToString("N0");
+            _totals4 = rows.Count > 0 ? GetExhaustionLabel(totalExhaustion / rows.Count) : "Fresh";
             return _titleText;
         }
     }
