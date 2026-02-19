@@ -315,5 +315,27 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 10)]
         [SettingPropertyFloatingInteger("Conquest exhaustion gain", 0f, 20f, "0.0", Order = 8, HintText = "Exhaustion gained by losing kingdom when a settlement changes hands.")]
         public float ConquestExhaustionGain { get; set; } = 4f;
+
+        // ─── Diplomacy (War Exhaustion) ───
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyBool("Enable diplomacy pressure", Order = 0, HintText = "War exhaustion directly affects AI kingdom war/peace decisions.")]
+        public bool EnableExhaustionDiplomacyPressure { get; set; } = true;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("No-new-war threshold", 1f, 200f, "0.0", Order = 1, HintText = "At or above this exhaustion, AI kingdoms are prevented from starting new wars.")]
+        public float DiplomacyNoNewWarThreshold { get; set; } = 55f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("Peace pressure threshold", 1f, 200f, "0.0", Order = 2, HintText = "At or above this exhaustion, AI support strongly favors peace outcomes.")]
+        public float DiplomacyPeacePressureThreshold { get; set; } = 45f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("War support penalty / point", 0f, 100f, "0.0", Order = 3, HintText = "Support penalty applied to declaring-war outcomes per exhaustion point.")]
+        public float DiplomacyWarSupportPenaltyPerPoint { get; set; } = 6f;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyFloatingInteger("Peace support bonus / point", 0f, 100f, "0.0", Order = 4, HintText = "Support bonus applied to make-peace outcomes per exhaustion point.")]
+        public float DiplomacyPeaceSupportBonusPerPoint { get; set; } = 5f;
     }
 }
