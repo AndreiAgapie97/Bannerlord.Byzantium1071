@@ -43,12 +43,15 @@ namespace Byzantium1071.Campaign.Patches
             int remainingAfterCart = currentPool;
 
             var troopsInCart = new List<CharacterObject>();
-            foreach (RecruitVolunteerTroopVM cartTroop in vm.TroopsInCart)
+            if (vm.TroopsInCart != null)
             {
-                if (cartTroop?.Character == null) continue;
-                troopsInCart.Add(cartTroop.Character);
-                int cartCost = behavior.GetRecruitCostForParty(settlement, party, cartTroop.Character);
-                remainingAfterCart -= cartCost;
+                foreach (RecruitVolunteerTroopVM cartTroop in vm.TroopsInCart)
+                {
+                    if (cartTroop?.Character == null) continue;
+                    troopsInCart.Add(cartTroop.Character);
+                    int cartCost = behavior.GetRecruitCostForParty(settlement, party, cartTroop.Character);
+                    remainingAfterCart -= cartCost;
+                }
             }
 
             if (remainingAfterCart < 0)
@@ -58,10 +61,12 @@ namespace Byzantium1071.Campaign.Patches
             int recruitAllSequenceRemaining = currentPool;
             int individualAvailableCount = 0;
 
+            if (vm.VolunteerList != null)
             foreach (RecruitVolunteerVM volunteer in vm.VolunteerList)
             {
                 if (volunteer == null) continue;
 
+                if (volunteer.Troops == null) continue;
                 foreach (RecruitVolunteerTroopVM troop in volunteer.Troops)
                 {
                     if (troop == null || troop.Character == null || troop.IsTroopEmpty)
@@ -104,8 +109,11 @@ namespace Byzantium1071.Campaign.Patches
                 vm.IsDoneEnabled = false;
                 string poolName = pool?.Name?.ToString() ?? "pool";
                 string troopName = blockedTroop?.Name?.ToString() ?? "troop";
-                vm.DoneHint.HintText = new TextObject("{=!}" +
-                    $"Not enough manpower in {poolName} for {troopName}. Need {neededCost}, available {availableBefore}.");
+                if (vm.DoneHint != null)
+                {
+                    vm.DoneHint.HintText = new TextObject("{=!}" +
+                        $"Not enough manpower in {poolName} for {troopName}. Need {neededCost}, available {availableBefore}.");
+                }
             }
         }
     }

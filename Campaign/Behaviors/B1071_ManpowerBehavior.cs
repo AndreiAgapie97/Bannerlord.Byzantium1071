@@ -76,6 +76,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private string _telemetryLastRegenBreakdown = "n/a";
         private string _telemetryLastRegenPoolId = string.Empty;
         private List<string>? _exhaustionKeysScratch;
+        private List<string>? _cleanupKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
         private List<string> _savedForcedPeaceCooldownIds = new();
@@ -394,6 +395,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (settlement == null || settlement.IsHideout) return;
 
             GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
+            if (pool == null) return;
 
             string where = settlement == pool
                 ? $"{settlement.Name}"
@@ -465,9 +467,12 @@ namespace Byzantium1071.Campaign.Behaviors
             EnsureEntry(pool);
 
             string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
             int max = GetMaxManpowerCached(pool);
 
-            int cur = _manpowerByPoolId[poolId];
+            if (!_manpowerByPoolId.TryGetValue(poolId, out int cur))
+                cur = max;
             int regen = GetDailyRegen(pool, max);
 
             int newCur = Math.Min(max, cur + regen);
@@ -603,20 +608,24 @@ namespace Byzantium1071.Campaign.Behaviors
             return value.Substring(0, maxLen - 1) + "…";
         }
 
+        private static readonly Dictionary<string, MemberInfo?> _campaignTimeMemberCache = new();
+
         private static object? TryReadCampaignTimeMember(CampaignTime time, string memberName)
         {
-            Type type = typeof(CampaignTime);
+            if (!_campaignTimeMemberCache.TryGetValue(memberName, out MemberInfo? cached))
+            {
+                Type type = typeof(CampaignTime);
+                cached = (MemberInfo?)type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public)
+                    ?? (MemberInfo?)type.GetMethod(memberName, BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null)
+                    ?? type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public);
+                _campaignTimeMemberCache[memberName] = cached;
+            }
 
-            PropertyInfo? property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public);
-            if (property != null)
-                return property.GetValue(time);
-
-            MethodInfo? method = type.GetMethod(memberName, BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null);
-            if (method != null)
-                return method.Invoke(time, null);
-
-            FieldInfo? field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public);
-            if (field != null)
+            if (cached is PropertyInfo prop)
+                return prop.GetValue(time);
+            if (cached is MethodInfo meth)
+                return meth.Invoke(time, null);
+            if (cached is FieldInfo field)
                 return field.GetValue(time);
 
             return null;
@@ -684,16 +693,18 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
 
             float now = (float)CampaignTime.Now.ToDays;
-            List<string> expired = new();
+            if (_cleanupKeysScratch == null) _cleanupKeysScratch = new List<string>();
+            else _cleanupKeysScratch.Clear();
+
             foreach (var kvp in _recoveryPenaltyExpiryDayByPoolId)
             {
                 if (kvp.Value <= now)
-                    expired.Add(kvp.Key);
+                    _cleanupKeysScratch.Add(kvp.Key);
             }
 
-            for (int i = 0; i < expired.Count; i++)
+            for (int i = 0; i < _cleanupKeysScratch.Count; i++)
             {
-                string poolId = expired[i];
+                string poolId = _cleanupKeysScratch[i];
                 _recoveryPenaltyExpiryDayByPoolId.Remove(poolId);
                 _recoveryPenaltyStartDayByPoolId.Remove(poolId);
                 _recoveryPenaltyBaseByPoolId.Remove(poolId);
@@ -914,17 +925,19 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
 
             float now = (float)CampaignTime.Now.ToDays;
-            List<string> toRemove = new();
+            if (_cleanupKeysScratch == null) _cleanupKeysScratch = new List<string>();
+            else _cleanupKeysScratch.Clear();
+
             foreach (var kvp in _truceExpiryByPair)
             {
                 if (kvp.Value <= now)
-                    toRemove.Add(kvp.Key);
+                    _cleanupKeysScratch.Add(kvp.Key);
             }
 
-            for (int i = 0; i < toRemove.Count; i++)
+            for (int i = 0; i < _cleanupKeysScratch.Count; i++)
             {
-                _truceExpiryByPair.Remove(toRemove[i]);
-                _telemetryLastTruce = "Expired " + toRemove[i] + " at " + FormatCampaignDateTime(now);
+                _truceExpiryByPair.Remove(_cleanupKeysScratch[i]);
+                _telemetryLastTruce = "Expired " + _cleanupKeysScratch[i] + " at " + FormatCampaignDateTime(now);
             }
         }
 
@@ -945,6 +958,9 @@ namespace Byzantium1071.Campaign.Behaviors
             foreach (Kingdom kingdom in Kingdom.All)
             {
                 if (kingdom == null || kingdom.IsEliminated)
+                    continue;
+
+                if (string.IsNullOrEmpty(kingdom.StringId))
                     continue;
 
                 if (Clan.PlayerClan?.Kingdom == kingdom)
@@ -1168,9 +1184,12 @@ namespace Byzantium1071.Campaign.Behaviors
             if (costPer <= 0) return;
 
             string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
             int max = GetMaxManpowerCached(pool);
 
-            int available = _manpowerByPoolId[poolId];
+            if (!_manpowerByPoolId.TryGetValue(poolId, out int available))
+                available = max;
             int before = available;
 
             int allowed = Math.Min(amount, available / costPer);
@@ -1266,6 +1285,9 @@ namespace Byzantium1071.Campaign.Behaviors
         private int GetMaxManpowerCached(Settlement pool)
         {
             string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId))
+                return GetMaxManpower(pool);
+
             if (_maxManpowerCache.TryGetValue(poolId, out int cached))
                 return cached;
 
@@ -1606,7 +1628,7 @@ namespace Byzantium1071.Campaign.Behaviors
             float varianceMul = 1f;
             if (settings.EnableRecruitmentVariance && settings.RecoveryVariancePercent > 0)
             {
-                float spread = settings.RecoveryVariancePercent / 100f;
+                float spread = Math.Min(settings.RecoveryVariancePercent, 100f) / 100f;
                 varianceMul = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
                 pct *= varianceMul;
             }

@@ -31,7 +31,7 @@ namespace Byzantium1071.Campaign.Models
             // WP4: bounded stochastic variance on volunteer production.
             if (Settings.EnableRecruitmentVariance && Settings.VolunteerVariancePercent > 0)
             {
-                float spread = Settings.VolunteerVariancePercent / 100f;
+                float spread = Math.Min(Settings.VolunteerVariancePercent, 100f) / 100f;
                 // MBRandom.RandomFloatRanged gives a uniform value in [min, max).
                 float factor = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
                 result *= factor;

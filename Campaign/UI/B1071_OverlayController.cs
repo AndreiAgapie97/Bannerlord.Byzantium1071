@@ -1307,6 +1307,9 @@ namespace Byzantium1071.Campaign.UI
 
         private static string GetExhaustionCompact(float exhaustion, string? kingdomId = null)
         {
+            if (float.IsNaN(exhaustion) || float.IsInfinity(exhaustion))
+                exhaustion = 0f;
+
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
             // WP5: Band-aware compact label when pressure bands are enabled.
@@ -1333,6 +1336,9 @@ namespace Byzantium1071.Campaign.UI
 
         private static string GetPeacePressureBand(float peacePressure)
         {
+            if (float.IsNaN(peacePressure) || float.IsInfinity(peacePressure))
+                return "Neutral";
+
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
             float abs = Math.Abs(peacePressure);
             string level;
@@ -1493,8 +1499,11 @@ namespace Byzantium1071.Campaign.UI
                 _cachedArmiesRows = new List<ArmiesLedgerRow>();
             _cachedArmiesRows.Clear();
 
+            var campaign = TaleWorlds.CampaignSystem.Campaign.Current;
+            if (campaign == null) return;
+
             var byFaction = new Dictionary<string, ArmiesLedgerRow>();
-            var behavior = TaleWorlds.CampaignSystem.Campaign.Current.GetCampaignBehavior<B1071_ManpowerBehavior>();
+            var behavior = campaign.GetCampaignBehavior<B1071_ManpowerBehavior>();
 
             foreach (Kingdom kingdom in Kingdom.All)
             {

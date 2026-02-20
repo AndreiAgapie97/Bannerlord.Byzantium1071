@@ -58,9 +58,11 @@ namespace Byzantium1071.Campaign.Patches
                 return true;
 
             var requestedTroops = new List<CharacterObject>();
+            if (__instance.VolunteerList != null)
             foreach (RecruitVolunteerVM volunteer in __instance.VolunteerList)
             {
                 if (volunteer == null) continue;
+                if (volunteer.Troops == null) continue;
                 foreach (RecruitVolunteerTroopVM troop in volunteer.Troops)
                 {
                     if (troop == null || troop.Character == null) continue;
@@ -108,6 +110,7 @@ namespace Byzantium1071.Campaign.Patches
                 return true;
 
             var troopsInCart = new List<CharacterObject>();
+            if (__instance.TroopsInCart != null)
             foreach (RecruitVolunteerTroopVM troop in __instance.TroopsInCart)
             {
                 if (troop?.Character != null)
