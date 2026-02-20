@@ -1383,6 +1383,9 @@ namespace Byzantium1071.Campaign.UI
                 if (string.IsNullOrEmpty(idA))
                     continue;
 
+                if (sideA.FactionsAtWarWith == null)
+                    continue;
+
                 for (int i = 0; i < sideA.FactionsAtWarWith.Count; i++)
                 {
                     IFaction enemyFaction = sideA.FactionsAtWarWith[i];
@@ -1527,6 +1530,7 @@ namespace Byzantium1071.Campaign.UI
                 {
                     if (clan == null) continue;
 
+                    if (clan.WarPartyComponents == null) continue;
                     foreach (var component in clan.WarPartyComponents)
                     {
                         MobileParty? party = component?.MobileParty;

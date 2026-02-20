@@ -83,7 +83,9 @@ namespace Byzantium1071.Campaign.Patches
 
                     int costPer = behavior.GetRecruitCostForParty(settlement, party, troop.Character);
                     bool individuallyAffordable = remainingAfterCart >= costPer;
-                    troop.CanBeRecruited = individuallyAffordable;
+                    // AND with vanilla's existing decision so manpower only further restricts,
+                    // never re-enables troops that vanilla disabled (e.g. no gold, full party).
+                    troop.CanBeRecruited = troop.CanBeRecruited && individuallyAffordable;
 
                     if (individuallyAffordable)
                         individualAvailableCount++;

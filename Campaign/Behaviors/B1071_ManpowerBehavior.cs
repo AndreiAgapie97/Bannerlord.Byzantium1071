@@ -178,6 +178,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (!string.IsNullOrEmpty(id))
                         _warExhaustion[id] = _savedExhaustionValues[i];
                 }
+
+                // Re-evaluate pressure bands immediately so they're correct from tick 0,
+                // before any diplomacy decisions are evaluated post-load.
+                _pressureBandByKingdom.Clear();
+                foreach (var kvp in _warExhaustion)
+                {
+                    if (kvp.Value > 0f)
+                        EvaluatePressureBand(kvp.Key, kvp.Value);
+                }
             }
 
             // Forced-peace cooldown save/load.
@@ -1351,8 +1360,9 @@ namespace Byzantium1071.Campaign.Behaviors
             if (s.IsVillage)
             {
                 Settlement? bound = s.Village?.Bound;
-                if (bound != null)
-                    return bound;
+                // If the village has a bound town/castle, use that as the pool.
+                // If not (orphan village from modded maps), return null — no valid pool.
+                return bound;
             }
 
             return s;
@@ -1954,7 +1964,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Siege aftermath ({aftermathType}) at {settlement.Name}: pool set to {newVal} ({retainPct:P0} of max)",
+                    $"[B1071] Siege aftermath ({aftermathType}) at {settlement.Name}: pool set to {appliedVal} ({retainPct:P0} retain, clamped from {newVal})",
                     Colors.Red));
 
             // War exhaustion: siege costs both sides.

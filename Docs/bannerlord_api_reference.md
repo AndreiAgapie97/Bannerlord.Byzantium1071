@@ -25,7 +25,8 @@
 14. [MakePeaceAction](#makepeaceaction)
 15. [MBSubModuleBase Lifecycle](#mbsubmodulebase-lifecycle)
 16. [TroopRoster](#trooproster)
-17. [DiplomacyModel](#diplomacymodel)
+17. [Clan](#clan)
+18. [DiplomacyModel](#diplomacymodel)
 
 ---
 
@@ -380,6 +381,28 @@ catch (Exception ex)
 - Used by `MapEventParty.DiedInBattle` and `MapEventParty.WoundedInBattle` to track battle casualties.
 - The roster instance itself **can theoretically be null** — always null-check before accessing `TotalManCount`.
 - Iterating elements: `foreach (TroopRosterElement el in roster.GetTroopRoster())`.
+
+---
+
+## Clan
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Clan`
+**Inherits:** `MBObjectBase`
+
+### Key Properties
+
+| Name | Type | Notes |
+|------|------|-------|
+| `WarPartyComponents` | `MBReadOnlyList<WarPartyComponent>` | Active war parties. **Can theoretically be null** during dissolution. |
+| `Kingdom` | `Kingdom?` | The kingdom this clan belongs to. Null for clanless. |
+| `StringId` | `string` | Inherited. **CAN be null.** |
+
+**Safe access pattern for war parties:**
+```csharp
+if (clan.WarPartyComponents == null) continue;
+foreach (var component in clan.WarPartyComponents) { ... }
+```
 
 ---
 
