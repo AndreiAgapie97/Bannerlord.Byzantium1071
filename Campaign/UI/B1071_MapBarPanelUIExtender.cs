@@ -16,7 +16,7 @@ namespace Byzantium1071.Campaign.UI
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
             // Toggle button
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleExpanded\">" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\">" +
             "<Children>" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
@@ -153,7 +153,7 @@ namespace Byzantium1071.Campaign.UI
         private bool _panelVisible = true;
         private bool _panelExpanded = true;
         private string _panelText = "Byzantium 1071 Overlay\n[Press M to toggle]";
-        private string _toggleText = "Hide";
+        private string _toggleText = "Press M";
         private string _tabCurrentText = "Current";
         private string _tabNearbyText = "Nearby";
         private string _tabCastlesText = "Castles";
@@ -409,7 +409,7 @@ namespace Byzantium1071.Campaign.UI
         {
             B1071_OverlayController.ToggleExpanded();
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
-            B1071ToggleText = B1071PanelExpanded ? "Hide" : "Byz 1071";
+            B1071ToggleText = "Press M";
 
             OnPropertyChangedWithValue(B1071PanelExpanded, nameof(B1071PanelExpanded));
             OnPropertyChangedWithValue(B1071ToggleText, nameof(B1071ToggleText));
@@ -517,7 +517,7 @@ namespace Byzantium1071.Campaign.UI
             B1071PanelVisible = B1071_OverlayController.IsVisible;
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelText = B1071_OverlayController.CurrentText;
-            B1071ToggleText = B1071PanelExpanded ? "Hide" : "Byz 1071";
+            B1071ToggleText = "Press M";
             B1071TabCurrentText = B1071_OverlayController.TabCurrentText;
             B1071TabNearbyText = B1071_OverlayController.TabNearbyText;
             B1071TabCastlesText = B1071_OverlayController.TabCastlesText;
