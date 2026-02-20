@@ -1224,6 +1224,8 @@ namespace Byzantium1071.Campaign.UI
             public string PairName = string.Empty;
             public string SideAName = string.Empty;
             public string SideBName = string.Empty;
+            public string SideAId = string.Empty;
+            public string SideBId = string.Empty;
             public float ExhaustionA;
             public float ExhaustionB;
             public float MaxExhaustion;
@@ -1236,25 +1238,40 @@ namespace Byzantium1071.Campaign.UI
 
         // ─── Wars tab ───
 
-        private static float GetNativePeacePressureScore(Kingdom sideA, Kingdom sideB)
+        /// <summary>
+        /// Computes a mod-aware peace pressure score for the Wars tab display.
+        /// When WP5 pressure bands are active, uses band-based per-point bias × exhaustion.
+        /// Falls back to vanilla DiplomacyModel.GetScoreOfDeclaringPeace when bands are disabled.
+        /// Positive = peace-leaning, negative = war-leaning.
+        /// </summary>
+        private static float GetModAwarePeaceBias(Kingdom sideA, Kingdom sideB, B1071_ManpowerBehavior behavior)
         {
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+            string idA = sideA.StringId ?? string.Empty;
+            string idB = sideB.StringId ?? string.Empty;
+
+            float exA = behavior.GetWarExhaustion(idA);
+            float exB = behavior.GetWarExhaustion(idB);
+
+            // WP5 band-aware bias: sum of (per-point bias × exhaustion) for both sides.
+            if (settings.EnableDiplomacyPressureBands)
+            {
+                var bandA = behavior.GetPressureBand(idA);
+                var bandB = behavior.GetPressureBand(idB);
+                float biasA = behavior.GetBandPeaceBias(bandA) * exA;
+                float biasB = behavior.GetBandPeaceBias(bandB) * exB;
+                return biasA + biasB;
+            }
+
+            // Legacy: try vanilla DiplomacyModel; fall back to average exhaustion.
             try
             {
                 var model = TaleWorlds.CampaignSystem.Campaign.Current?.Models?.DiplomacyModel;
                 if (model != null)
                     return model.GetScoreOfDeclaringPeace(sideA, sideB);
             }
-            catch
-            {
-            }
+            catch { }
 
-            // Safe fallback if DiplomacyModel call is unavailable in this runtime.
-            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
-            if (behavior == null)
-                return 0f;
-
-            float exA = behavior.GetWarExhaustion(sideA.StringId);
-            float exB = behavior.GetWarExhaustion(sideB.StringId);
             return (exA + exB) * 0.5f;
         }
 
@@ -1290,9 +1307,25 @@ namespace Byzantium1071.Campaign.UI
             };
         }
 
-        private static string GetExhaustionCompact(float exhaustion)
+        private static string GetExhaustionCompact(float exhaustion, string? kingdomId = null)
         {
-            if (exhaustion <= 0f) return "Fr0";
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+            // WP5: Band-aware compact label when pressure bands are enabled.
+            if (settings.EnableDiplomacyPressureBands && B1071_ManpowerBehavior.Instance != null && !string.IsNullOrEmpty(kingdomId))
+            {
+                var band = B1071_ManpowerBehavior.Instance.GetPressureBand(kingdomId);
+                string tag = band switch
+                {
+                    DiplomacyPressureBand.Crisis => "Cr",
+                    DiplomacyPressureBand.Rising => "Ri",
+                    _ => exhaustion < 1f ? "Fr" : "Lo",
+                };
+                return tag + ((int)exhaustion).ToString();
+            }
+
+            // Legacy compact labels.
+            if (exhaustion < 1f) return "Fr0";
             if (exhaustion < 25f) return "St" + ((int)exhaustion).ToString();
             if (exhaustion < 50f) return "Ti" + ((int)exhaustion).ToString();
             if (exhaustion < 75f) return "Ex" + ((int)exhaustion).ToString();
@@ -1301,12 +1334,28 @@ namespace Byzantium1071.Campaign.UI
 
         private static string GetPeacePressureBand(float peacePressure)
         {
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
             float abs = Math.Abs(peacePressure);
-            string level = abs >= 100000f ? "Extreme"
-                : abs >= 25000f ? "High"
-                : abs >= 5000f ? "Medium"
-                : abs >= 1000f ? "Low"
-                : "Light";
+            string level;
+
+            if (settings.EnableDiplomacyPressureBands)
+            {
+                // Band-mode: scores are typically 0-2000 range (bias × exhaustion sum).
+                level = abs >= 800f ? "Extreme"
+                    : abs >= 400f ? "High"
+                    : abs >= 150f ? "Medium"
+                    : abs >= 40f ? "Low"
+                    : "Light";
+            }
+            else
+            {
+                // Legacy mode thresholds (vanilla DiplomacyModel scores).
+                level = abs >= 100000f ? "Extreme"
+                    : abs >= 25000f ? "High"
+                    : abs >= 5000f ? "Medium"
+                    : abs >= 1000f ? "Low"
+                    : "Light";
+            }
 
             if (peacePressure > 0f)
                 return "Peace " + level;
@@ -1349,7 +1398,7 @@ namespace Byzantium1071.Campaign.UI
                     float exA = behavior.GetWarExhaustion(idA);
                     float exB = behavior.GetWarExhaustion(idB);
                     float maxExhaustion = Math.Max(exA, exB);
-                    float peacePressure = GetNativePeacePressureScore(sideA, sideB);
+                    float peacePressure = GetModAwarePeaceBias(sideA, sideB, behavior);
 
                     bool hasTruce = behavior.IsKingdomPairUnderTruce(sideA, sideB, out float truceDays);
                     int riskScore = GetForcedPeaceRiskScore(maxExhaustion);
@@ -1370,6 +1419,8 @@ namespace Byzantium1071.Campaign.UI
                         PairName = sideA.Name + " vs " + sideB.Name,
                         SideAName = sideA.Name?.ToString() ?? "Unknown",
                         SideBName = sideB.Name?.ToString() ?? "Unknown",
+                        SideAId = idA,
+                        SideBId = idB,
                         ExhaustionA = exA,
                         ExhaustionB = exB,
                         MaxExhaustion = maxExhaustion,
@@ -1405,7 +1456,7 @@ namespace Byzantium1071.Campaign.UI
             if (rows.Count == 0)
             {
                 ClearColumns("Wars Ledger - No active kingdom wars.");
-                return "Wars Ledger\nNo active kingdom wars.\nLegend: Exhaustion uses Fr=Fresh, St=Strained, Ti=Tired, Ex=Exhausted, Cr=Crisis (left side is first kingdom, right side is second). Bias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce days remaining and forced-peace risk from exhaustion thresholds.";
+                return "Wars Ledger\nNo active kingdom wars.\nLegend: Exhaustion tags show band (Fr=Fresh, Lo=Low, Ri=Rising, Cr=Crisis) or legacy (St/Ti/Ex) with score.";
             }
 
             string playerFaction = GetPlayerFactionName();
@@ -1417,7 +1468,7 @@ namespace Byzantium1071.Campaign.UI
                 totalPressure += row.PeacePressure;
             }
 
-            _titleText = "Wars Ledger  (" + rows.Count + " entries)\nLegend: Exhaustion uses Fr=Fresh, St=Strained, Ti=Tired, Ex=Exhausted, Cr=Crisis (left side is first kingdom, right side is second).\nBias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce days remaining and forced-peace risk from exhaustion thresholds.";
+            _titleText = "Wars Ledger  (" + rows.Count + " entries)\nLegend: Exhaustion tags show band (Fr=Fresh, Lo=Low, Ri=Rising, Cr=Crisis) or legacy (St/Ti/Ex) with score. Left side is first kingdom.\nBias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce and forced-peace risk.";
             _header1 = "War Pair";
             _header2 = "Exhaustion";
             _header3 = "Peace Bias";
@@ -1436,7 +1487,7 @@ namespace Byzantium1071.Campaign.UI
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     prefix + rank + ". " + TruncateForColumn(row.PairName, 26),
-                    GetExhaustionCompact(row.ExhaustionA) + "/" + GetExhaustionCompact(row.ExhaustionB),
+                    GetExhaustionCompact(row.ExhaustionA, row.SideAId) + "/" + GetExhaustionCompact(row.ExhaustionB, row.SideBId),
                     GetPeacePressureBand(row.PeacePressure),
                     TruncateForColumn(row.StatusText, 24),
                     involvesPlayer,
