@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 API
 Docs/realism_implementation_plan.md
+Docs/scripts/deep_api_extract.ps1
+.gitignore
+Docs/scripts/deep_api_extract_advanced.ps1

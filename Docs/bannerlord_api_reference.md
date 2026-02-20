@@ -29,6 +29,13 @@
 18. [DiplomacyModel](#diplomacymodel)
 19. [InformationMessage](#informationmessage)
 20. [Colors](#colors)
+21. [GameModels (vNext Planning Surfaces)](#gamemodels-vnext-planning-surfaces)
+22. [CampaignEvents (vNext Planning Hooks)](#campaignevents-vnext-planning-hooks)
+23. [Town (vNext State Surfaces)](#town-vnext-state-surfaces)
+24. [Hero (vNext State Surfaces)](#hero-vnext-state-surfaces)
+25. [vNext Work Package API Mapping](#vnext-work-package-api-mapping)
+26. [All-Kingdom Iteration and Normalization](#all-kingdom-iteration-and-normalization)
+27. [Deep DLL Sweep Findings](#deep-dll-sweep-findings)
 
 ---
 
@@ -498,3 +505,265 @@ foreach (var component in clan.WarPartyComponents) { ... }
 14. **Cache reflection results** (`PropertyInfo`, `FieldInfo`) in static fields — reflection per-call is a hot-path perf issue.
 15. **Use `InformationMessage(string, Color)` for player-facing warnings** — colored messages improve visibility. Gate messages use `Colors.Yellow`.
 16. **`RecruitVolunteerTroopVM` has no tooltip property** — per-troop hints require Gauntlet widget XML extensions, which is outside mod scope.
+
+---
+
+## GameModels (vNext Planning Surfaces)
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.GameModels`
+**Access:** `Campaign.Current?.Models`
+
+### Relevant Model Properties (confirmed)
+
+| Property | Type | vNext utility |
+|----------|------|---------------|
+| `SettlementFoodModel` | `SettlementFoodModel` | Food-stock pressure and recovery pacing. |
+| `SettlementProsperityModel` | `SettlementProsperityModel` | Prosperity/hearth degradation and recovery curves. |
+| `SettlementSecurityModel` | `SettlementSecurityModel` | Governance/security stress modeling. |
+| `SettlementLoyaltyModel` | `SettlementLoyaltyModel` | Stability and post-conquest friction effects. |
+| `SettlementMilitiaModel` | `SettlementMilitiaModel` | Local defense resilience/rebuild. |
+| `VillageProductionCalculatorModel` | `VillageProductionCalculatorModel` | Village food-output disruption effects. |
+| `MobilePartyFoodConsumptionModel` | `MobilePartyFoodConsumptionModel` | Campaign endurance and supply pressure. |
+| `PartyMoraleModel` | `PartyMoraleModel` | Starvation/arrears-style cohesion effects. |
+| `RaidModel` | `RaidModel` | Raiding cadence and impact intensity tuning. |
+| `DiplomacyModel` | `DiplomacyModel` | War/peace sustainability scoring. |
+| `MilitaryPowerModel` | `MilitaryPowerModel` | Strategic overextension pressure checks. |
+| `NotablePowerModel` | `NotablePowerModel` | Local elite influence drift under crisis. |
+| `IssueModel` | `IssueModel` | Crisis-linked issue pressure injection. |
+
+### Method Surfaces (confirmed)
+
+| Type | Method | Notes |
+|------|--------|-------|
+| `SettlementFoodModel` | `CalculateTownFoodStocksChange(...)` | Town food delta driver. |
+| `SettlementProsperityModel` | `CalculateProsperityChange(...)` | Prosperity drift under stress/recovery. |
+| `SettlementProsperityModel` | `CalculateHearthChange(...)` | Village hearth change coupling. |
+| `SettlementSecurityModel` | `CalculateSecurityChange(...)` | Security pressure accumulation. |
+| `SettlementLoyaltyModel` | `CalculateLoyaltyChange(...)` | Governance fracture proxy support. |
+| `VillageProductionCalculatorModel` | `CalculateDailyFoodProductionAmount(...)` | Village production penalties. |
+| `PartyMoraleModel` | `GetDailyStarvationMoralePenalty(...)` | Starvation-driven cohesion penalty. |
+| `MobilePartyFoodConsumptionModel` | `CalculateDailyFoodConsumptionf(...)` | Party supply burden baseline. |
+| `DiplomacyModel` | `GetScoreOfDeclaringPeace(...)` / `GetScoreOfDeclaringWar(...)` | Strategic fatigue/continuation pressure. |
+
+**Key facts:**
+- This model set supports interconnected crisis simulation rather than isolated manpower scalars.
+- Preserve null-safe access for the full chain: `Campaign.Current?.Models?.<ModelProperty>`.
+
+---
+
+## CampaignEvents (vNext Planning Hooks)
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.CampaignEvents`
+
+### Relevant Events (confirmed names)
+
+| Category | Events |
+|----------|--------|
+| Daily lifecycle | `DailyTickSettlementEvent`, `DailyTickPartyEvent`, `DailyTickClanEvent` |
+| Raid lifecycle | `RaidCompletedEvent`, `VillageBeingRaided`, `VillageLooted`, `VillageBecomeNormal` |
+| Siege lifecycle | `OnSiegeAftermathAppliedEvent`, `AfterSiegeCompletedEvent`, `SiegeCompletedEvent` |
+| Diplomacy lifecycle | `WarDeclared`, `MakePeace`, `KingdomDecisionAdded`, `KingdomDecisionConcluded` |
+| Ownership/state changes | `OnSettlementOwnerChangedEvent` |
+| Provisioning stress | `OnPartyConsumedFoodEvent`, `OnMainPartyStarvingEvent` |
+| Recruitment signals | `OnTroopRecruitedEvent`, `OnUnitRecruitedEvent` |
+
+**Key facts:**
+- Event-driven updates are preferred for low-risk incremental realism systems.
+- Register listeners in campaign lifecycle-safe locations and guard against stale static state.
+
+---
+
+## Town (vNext State Surfaces)
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Settlements.Town`
+
+### Relevant Properties (confirmed)
+
+| Name | Type | vNext utility |
+|------|------|---------------|
+| `FoodStocks` | `int` | Settlement provisioning pressure baseline. |
+| `FoodChange` | `ExplainedNumber` | Daily food drift diagnostics. |
+| `Prosperity` | `float` | Economic health and recruitment base proxy. |
+| `ProsperityChange` | `ExplainedNumber` | Recovery/degradation pacing. |
+| `Security` | `float` | Governance/control proxy. |
+| `SecurityChange` | `ExplainedNumber` | Instability trend tracking. |
+| `Loyalty` | `float` | Post-conquest/governance friction driver. |
+| `LoyaltyChange` | `ExplainedNumber` | Recovery-speed limiter input. |
+| `Militia` | `float` | Local defense resilience. |
+| `MilitiaChange` | `ExplainedNumber` | Reconstitution pace. |
+
+---
+
+## Hero (vNext State Surfaces)
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Hero`
+
+### Relevant Properties (confirmed)
+
+| Name | Type | vNext utility |
+|------|------|---------------|
+| `Power` | `float` | Political leverage proxy for crisis pressure logic. |
+| `Clan` | `Clan` | Factional alignment anchor. |
+| `Occupation` | `Occupation` | Role-based crisis behavior filtering. |
+| `GovernorOf` | `Town` | Local governance coupling. |
+| `CompanionOf` | `Clan` | Retinue/support network signal. |
+| `IsPrisoner` | `bool` | Disruption marker for command continuity. |
+
+---
+
+## vNext Work Package API Mapping
+
+Planning mapping for realism packages defined in `Docs/documentation.md`.
+
+**Scope note:** apply RV1–RV5 across all major active kingdoms using shared formulas and normalization rules.
+
+### RV1 — Provincial Governance Friction
+
+| Target | API ties |
+|--------|----------|
+| Governance strain index | `SettlementLoyaltyModel`, `SettlementSecurityModel`, `Town.Loyalty`, `Town.Security` |
+| Lifecycle inputs | `DailyTickSettlementEvent`, `OnSettlementOwnerChangedEvent` |
+
+### RV2 — Frontier Devastation Ecology 2.0
+
+| Target | API ties |
+|--------|----------|
+| Cumulative devastation | `VillageProductionCalculatorModel`, `SettlementProsperityModel`, `SettlementFoodModel` |
+| Trigger/recovery cadence | `RaidCompletedEvent`, village raid-state events, `DailyTickSettlementEvent` |
+
+### RV3 — Military Cohesion and Contract Dependence
+
+| Target | API ties |
+|--------|----------|
+| Cohesion pressure | `PartyMoraleModel`, `MobilePartyFoodConsumptionModel` |
+| Stress events | `OnMainPartyStarvingEvent`, `OnPartyConsumedFoodEvent`, `DailyTickPartyEvent` |
+
+### RV4 — Crisis Diplomacy Phase II
+
+| Target | API ties |
+|--------|----------|
+| Crisis-state diplomacy | `DiplomacyModel`, `WarDeclared`, `MakePeace`, `KingdomDecisionConcluded` |
+
+### RV5 — Population Movement and Recruitment Geography
+
+| Target | API ties |
+|--------|----------|
+| Migration pressure | `SettlementProsperityModel`, `Village.Hearth`, `Town.Prosperity` |
+| Temporal progression | `DailyTickSettlementEvent` plus manpower behavior state update loops |
+
+---
+
+## All-Kingdom Iteration and Normalization
+
+**Goal:** keep crisis pressure hard for all major kingdoms while avoiding single-faction over-penalization from map size or one bad war.
+
+### Kingdom Iteration Surface
+
+| Surface | Usage |
+|--------|-------|
+| `Kingdom.All` | Iterate all kingdoms and filter to active major kingdoms (`!IsEliminated`). |
+| `Kingdom.FactionsAtWarWith` | Compute current war-load pressure per kingdom. |
+| `Clan.WarPartyComponents` | Estimate active military burden/availability. |
+| `Town` + `Village` state values | Aggregate settlement stress and recovery capacity. |
+
+### Recommended Normalized Inputs
+
+| Input | Source examples | Normalization intent |
+|------|------------------|----------------------|
+| War-load index | enemy count, war age, concurrent fronts | avoid over-weighting large kingdoms by raw war count alone |
+| Devastation exposure | raid/siege aftermath frequency, village disruption | compare sustained pressure fairly across kingdom sizes |
+| Recovery capacity | food/security/loyalty/prosperity trend aggregates | estimate rebound opportunity instead of static strength |
+| Cohesion stress | starvation/morale pressure events | translate supply strain to bounded kingdom pressure |
+
+### Bounded Output Guidance
+
+- clamp per-kingdom pressure to a stable bounded range before diplomacy effects;
+- use hysteresis and cooldown windows to reduce war/peace flip-flop;
+- include anti-snowball floor so one conflict does not create unrecoverable collapse.
+
+### Fairness Objective
+
+Primary objective is **recovery parity** across all 8 major kingdoms: similar rebound opportunity under similar stress, while preserving distinct campaign outcomes.
+
+---
+
+## Deep DLL Sweep Findings
+
+Extended reflection sweep was completed and stored in:
+
+- `Docs/bannerlord_api_research_deep_2026-02-20.md`
+
+### Coverage summary
+
+- `GameModels` property surface scanned: **123** model properties.
+- `CampaignEvents` high-value event accessors scanned (daily/war/peace/raid/siege/recruitment/starvation clusters).
+- `TaleWorlds.CampaignSystem.Actions` inventory scanned, including diplomacy/war/kingdom transition actions.
+- Core state types scanned (`Kingdom`, `Clan`, `Town`, `Village`, `Hero`, `MobileParty`, `PartyBase`, `Army`, `MapEvent`, `IFaction`).
+
+### Newly confirmed high-impact APIs for all-kingdom pressure systems
+
+#### Faction and stance management
+
+**Type:** `TaleWorlds.CampaignSystem.FactionManager`
+
+- `DeclareWar(IFaction, IFaction)`
+- `IsAtWarAgainstFaction(IFaction, IFaction)`
+- `IsNeutralWithFaction(IFaction, IFaction)`
+- `SetNeutral(IFaction, IFaction)`
+- `GetRelationBetweenClans(Clan, Clan)`
+
+`FactionManagerStancesData` also exposes stance-link add/remove/get surfaces for relation-state tracking.
+
+#### War/peace and kingdom transition actions
+
+**Type:** `TaleWorlds.CampaignSystem.Actions.DeclareWarAction`
+
+- `ApplyByDefault(...)`
+- `ApplyByKingdomDecision(...)`
+- `ApplyByRebellion(...)`
+- `ApplyByPlayerHostility(...)`
+
+**Type:** `TaleWorlds.CampaignSystem.Actions.MakePeaceAction`
+
+- `Apply(IFaction, IFaction)`
+- `ApplyByKingdomDecision(IFaction, IFaction, int tribute, int duration)`
+
+**Type:** `TaleWorlds.CampaignSystem.Actions.ChangeKingdomAction`
+
+- clan join/leave/defection/mercenary transition apply methods.
+
+**Type:** `TaleWorlds.CampaignSystem.Actions.DestroyKingdomAction`
+
+- destruction pathways via `Apply(...)` variants.
+
+#### Kingdom-level balancing surfaces
+
+**Type:** `TaleWorlds.CampaignSystem.Kingdom`
+
+Additional useful properties beyond earlier baseline:
+
+- `AllParties`
+- `Armies`
+- `CurrentTotalStrength`
+- `Aggressiveness`
+- `CallToWarWallet`
+- `DistanceToClosestNonAllyFortification`
+- `AlliedKingdoms`
+
+These are suitable as normalized inputs for kingdom burden/capacity scoring.
+
+#### Additional model families worth considering in phase-2 tuning
+
+- `ClanFinanceModel`
+- `SettlementEconomyModel`
+- `PartyWageModel`
+- `PartyDesertionModel`
+- `DefectionModel`
+- `KingdomDecisionPermissionModel`
+- `TradeAgreementModel`
+
+These are not required for initial implementation, but they provide leverage for deeper military-fiscal and political-fragmentation realism.
