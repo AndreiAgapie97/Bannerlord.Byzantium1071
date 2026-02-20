@@ -79,6 +79,9 @@ namespace Byzantium1071.Campaign.UI
         private static bool _viewDirty = true;
         private static string _sortTextCached = string.Empty;
 
+        // Current-tab context cache: avoids rebuilding every 2s when selection is unchanged.
+        private static string _lastCurrentContextSettlementId = string.Empty;
+
         // Columns dirty — set on daily tick or user action (tab/sort/page).
         // Non-Nearby tabs only rebuild when this is true.
         private static bool _columnsDirty = true;
@@ -129,6 +132,7 @@ namespace Byzantium1071.Campaign.UI
             _viewDirty = true;
             _columnsDirty = true;
             _sortTextCached = string.Empty;
+            _lastCurrentContextSettlementId = string.Empty;
         }
 
         internal static bool IsVisible => _isVisible;
@@ -304,10 +308,23 @@ namespace Byzantium1071.Campaign.UI
 
             _refreshTimer = 2.0f;
 
-            // Non-Nearby tabs: only rebuild when data actually changed (daily tick, sort/page/tab).
             // Nearby tab: always rebuild (distance updates every 2s).
-            if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Current && !_columnsDirty)
+            // Current tab: rebuild only when settlement context changes, or when forced dirty.
+            // Other tabs: rebuild only when data is dirty.
+            if (_activeTab == B1071LedgerTab.Current)
+            {
+                Settlement? contextSettlement = ResolveCurrentContextSettlement();
+                string currentContextId = contextSettlement?.StringId ?? string.Empty;
+
+                if (!_columnsDirty && string.Equals(currentContextId, _lastCurrentContextSettlementId, StringComparison.Ordinal))
+                    return;
+
+                _lastCurrentContextSettlementId = currentContextId;
+            }
+            else if (_activeTab != B1071LedgerTab.NearbyPools && !_columnsDirty)
+            {
                 return;
+            }
 
             _columnsDirty = false;
             string text = BuildOverlayText();
@@ -415,10 +432,18 @@ namespace Byzantium1071.Campaign.UI
                 _header2 = "Manpower";
                 _header3 = "Regen/Day";
                 _header4 = "Pool";
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "Left-click a settlement to view its details.",
+                    "",
+                    "",
+                    "",
+                    false,
+                    true));
                 _totals1 = "Selected";
                 _totals2 = "-";
                 _totals3 = "-";
                 _totals4 = "-";
+                _pageLabel = "Page 1/1";
                 return _titleText;
             }
 
