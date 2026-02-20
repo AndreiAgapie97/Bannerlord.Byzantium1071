@@ -38,7 +38,8 @@ namespace Byzantium1071.Campaign.Patches
 
             string poolName = pool?.Name?.ToString() ?? "pool";
             InformationManager.DisplayMessage(new InformationMessage(
-                $"Not enough manpower in {poolName}. Need {costPer}, available {available}."));
+                $"Manpower: cannot recruit {troop.Character.Name} — {poolName} needs {costPer}, only {available} left.",
+                Colors.Yellow));
             return false;
         }
     }
@@ -90,7 +91,8 @@ namespace Byzantium1071.Campaign.Patches
             string poolName = pool?.Name?.ToString() ?? "pool";
             string troopName = blockedTroop?.Name?.ToString() ?? "troop";
             InformationManager.DisplayMessage(new InformationMessage(
-                $"Recruit All blocked: not enough manpower in {poolName} for {troopName}. Need {neededCost}, available {availableBefore}."));
+                $"Manpower: Recruit All blocked — {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.",
+                Colors.Yellow));
             return false;
         }
     }
@@ -135,7 +137,8 @@ namespace Byzantium1071.Campaign.Patches
             string poolName = pool?.Name?.ToString() ?? "pool";
             string troopName = blockedTroop?.Name?.ToString() ?? "troop";
             InformationManager.DisplayMessage(new InformationMessage(
-                $"Cannot complete recruitment: not enough manpower in {poolName} for {troopName}. Need {neededCost}, available {availableBefore}."));
+                $"Manpower: cannot confirm — {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.",
+                Colors.Yellow));
             return false;
         }
     }

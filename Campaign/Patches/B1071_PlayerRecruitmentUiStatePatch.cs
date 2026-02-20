@@ -114,7 +114,7 @@ namespace Byzantium1071.Campaign.Patches
                 if (vm.DoneHint != null)
                 {
                     vm.DoneHint.HintText = new TextObject("{=!}" +
-                        $"Not enough manpower in {poolName} for {troopName}. Need {neededCost}, available {availableBefore}.");
+                        $"Manpower: {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.");
                 }
             }
         }

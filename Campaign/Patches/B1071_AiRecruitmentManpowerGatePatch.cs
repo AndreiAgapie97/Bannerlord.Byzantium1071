@@ -55,7 +55,8 @@ namespace Byzantium1071.Campaign.Patches
             if (isPlayer)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"Cannot recruit {troopName}: not enough manpower in {poolName}. Need {required}, available {available}."));
+                    $"Manpower: cannot recruit {troopName} — {poolName} needs {required}, only {available} left.",
+                    Colors.Yellow));
             }
             else
             {

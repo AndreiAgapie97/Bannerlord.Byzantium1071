@@ -27,6 +27,8 @@
 16. [TroopRoster](#trooproster)
 17. [Clan](#clan)
 18. [DiplomacyModel](#diplomacymodel)
+19. [InformationMessage](#informationmessage)
+20. [Colors](#colors)
 
 ---
 
@@ -288,6 +290,57 @@ int wounded = mep?.WoundedInBattle?.TotalManCount ?? 0;
 | `IsInCart` | `bool` | Safe. |
 | `PlayerHasEnoughRelation` | `bool` | Safe. |
 | `CanBeRecruited` | `bool` | Safe (settable). |
+| `Cost` | `int` | Safe — recruitment gold cost. |
+| `Level` | `string` | **Yes** — tier display string. |
+| `NameText` | `string` | **Yes** — display name. |
+| `TierIconData` | `string` | **Yes** — tier icon. |
+| `TypeIconData` | `string` | **Yes** — type icon (infantry/cavalry). |
+
+**Methods:**
+- `ExecuteRecruit()` — Triggers recruitment action.
+- `ExecuteBeginHint()` / `ExecuteEndHint()` — Tooltip hover lifecycle.
+- `RefreshValues()` — Re-reads source data.
+
+> **Limitation:** No `Hint` or `Tooltip` property exists on this VM. Per-troop manpower tooltips cannot be added without custom Gauntlet XML widget extensions.
+
+---
+
+## InformationMessage
+
+**Assembly:** `TaleWorlds.Library.dll`
+**Type:** `TaleWorlds.Library.InformationMessage`
+
+**Constructors:**
+
+| Signature | Notes |
+|-----------|-------|
+| `InformationMessage()` | Default — empty message. |
+| `InformationMessage(string information)` | White text. |
+| `InformationMessage(string information, Color color)` | Colored text — use `Colors.Yellow`, `Colors.Red`, etc. |
+| `InformationMessage(string information, string soundEventPath)` | With SFX. |
+| `InformationMessage(string information, Color color, string soundEventPath)` | Colored + SFX. |
+
+> **Usage:** `InformationManager.DisplayMessage(new InformationMessage("text", Colors.Yellow));`
+
+---
+
+## Colors
+
+**Assembly:** `TaleWorlds.Library.dll`
+**Type:** `TaleWorlds.Library.Colors`
+
+Static readonly `Color` properties commonly used:
+
+| Property | Notes |
+|----------|-------|
+| `Colors.Red` | Error / block messages. |
+| `Colors.Yellow` | Warning / manpower gate messages. |
+| `Colors.Green` | Success / confirmation. |
+| `Colors.White` | Default text. |
+| `Colors.Cyan` | Information highlight. |
+| `Colors.Magenta` | Diagnostic/debug. |
+
+> Returns `TaleWorlds.Library.Color` struct with RGBA float fields.
 
 ---
 
@@ -443,3 +496,5 @@ foreach (var component in clan.WarPartyComponents) { ... }
 12. **Null-check `MapEventParty` roster properties** (`DiedInBattle`, `WoundedInBattle`) — use `?.TotalManCount ?? 0`.
 13. **Clean up statics in `OnGameEnd`**, not just `OnSubModuleUnloaded` — module persists between campaigns.
 14. **Cache reflection results** (`PropertyInfo`, `FieldInfo`) in static fields — reflection per-call is a hot-path perf issue.
+15. **Use `InformationMessage(string, Color)` for player-facing warnings** — colored messages improve visibility. Gate messages use `Colors.Yellow`.
+16. **`RecruitVolunteerTroopVM` has no tooltip property** — per-troop hints require Gauntlet widget XML extensions, which is outside mod scope.

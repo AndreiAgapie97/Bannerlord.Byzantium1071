@@ -474,6 +474,36 @@ namespace Byzantium1071.Campaign.UI
                 true,
                 true));
 
+            // WP7 — Recovery & pressure-band diagnostic row
+            {
+                string poolId = pool?.StringId ?? string.Empty;
+                float recPenalty = !string.IsNullOrEmpty(poolId) ? behavior.GetRecoveryPenaltyFraction(poolId) : 0f;
+                float recDays = !string.IsNullOrEmpty(poolId) ? behavior.GetRecoveryDaysRemaining(poolId) : 0f;
+                string kingdomId = settlement.OwnerClan?.Kingdom?.StringId ?? string.Empty;
+                DiplomacyPressureBand band = !string.IsNullOrEmpty(kingdomId)
+                    ? behavior.GetPressureBand(kingdomId)
+                    : DiplomacyPressureBand.Low;
+
+                string diagRegen = string.Empty;
+                string diagPool = string.Empty;
+
+                if (recPenalty > 0f && recDays > 0f)
+                    diagRegen = "Rec: -" + ((int)(recPenalty * 100)) + "% (" + ((int)recDays) + "d)";
+                if (band != DiplomacyPressureBand.Low)
+                    diagPool = "Band: " + band;
+
+                if (!string.IsNullOrEmpty(diagRegen) || !string.IsNullOrEmpty(diagPool))
+                {
+                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                        "Diagnostics",
+                        string.Empty,
+                        diagRegen,
+                        diagPool,
+                        false,
+                        false));
+                }
+            }
+
             if (behavior.ShouldShowTelemetryInOverlay)
             {
                 _ledgerRows.Add(new B1071_LedgerRowVM(
@@ -1053,6 +1083,7 @@ namespace Byzantium1071.Campaign.UI
                     continue;
 
                 behavior.GetManpowerPool(settlement, out int current, out int maximum, out Settlement pool);
+                if (pool == null) continue;
 
                 Town? town = settlement.Town;
                 float prosperity = town != null ? town.Prosperity : 0f;
@@ -1487,8 +1518,35 @@ namespace Byzantium1071.Campaign.UI
                     even));
             }
 
+            // WP7 — Append active truces after the wars list
+            var activeTruces = behavior.GetActiveTruces();
+            if (activeTruces.Count > 0)
+            {
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "── Truces ──",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    false,
+                    false));
+
+                foreach (var (kingdomA, kingdomB, daysLeft) in activeTruces)
+                {
+                    string trucePair = kingdomA + " / " + kingdomB;
+                    bool involvesPlayerTruce = string.Equals(kingdomA, Hero.MainHero?.Clan?.Kingdom?.StringId, StringComparison.Ordinal) ||
+                                               string.Equals(kingdomB, Hero.MainHero?.Clan?.Kingdom?.StringId, StringComparison.Ordinal);
+                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                        (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
+                        ((int)daysLeft) + "d left",
+                        "Truce",
+                        "-",
+                        involvesPlayerTruce,
+                        false));
+                }
+            }
+
             _totals1 = "Total";
-            _totals2 = rows.Count.ToString("N0");
+            _totals2 = rows.Count.ToString("N0") + (activeTruces.Count > 0 ? " +" + activeTruces.Count + "T" : "");
             _totals3 = rows.Count > 0 ? GetPeacePressureBand(totalPressure / rows.Count) : "Neutral";
             _totals4 = "";
             return _titleText;

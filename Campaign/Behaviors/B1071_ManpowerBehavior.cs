@@ -722,7 +722,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
-        private float GetRecoveryPenaltyFraction(string poolId)
+        internal float GetRecoveryPenaltyFraction(string poolId)
         {
             if (string.IsNullOrEmpty(poolId))
                 return 0f;
@@ -747,6 +747,37 @@ namespace Byzantium1071.Campaign.Behaviors
             float remaining = Math.Max(0f, expiryDay - now);
             float ratio = Clamp01(remaining / duration);
             return Math.Max(0f, basePenalty * ratio);
+        }
+
+        /// <summary>
+        /// Returns the number of in-game days remaining on the recovery penalty for the given pool.
+        /// Returns 0 if no penalty is active.
+        /// </summary>
+        internal float GetRecoveryDaysRemaining(string poolId)
+        {
+            if (string.IsNullOrEmpty(poolId)) return 0f;
+            if (!_recoveryPenaltyExpiryDayByPoolId.TryGetValue(poolId, out float expiryDay))
+                return 0f;
+            float now = (float)CampaignTime.Now.ToDays;
+            return Math.Max(0f, expiryDay - now);
+        }
+
+        /// <summary>
+        /// Returns all active truce pairs as (pairKey, daysRemaining) for overlay display.
+        /// </summary>
+        internal List<(string kingdomA, string kingdomB, float daysRemaining)> GetActiveTruces()
+        {
+            var result = new List<(string, string, float)>();
+            float now = (float)CampaignTime.Now.ToDays;
+            foreach (var kvp in _truceExpiryByPair)
+            {
+                float remaining = kvp.Value - now;
+                if (remaining <= 0f) continue;
+                string[] parts = kvp.Key.Split('|');
+                if (parts.Length == 2)
+                    result.Add((parts[0], parts[1], remaining));
+            }
+            return result;
         }
 
         private void ApplyDelayedRecoveryPenalty(Settlement pool, int basePenaltyPercent, int durationDays, string reason)
@@ -1024,6 +1055,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 IFaction? bestFactionToPeace = null;
                 float bestPeaceScore = float.MinValue;
                 int activeWarCount = 0;
+
+                if (kingdom.FactionsAtWarWith == null)
+                    continue;
 
                 for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
                 {
