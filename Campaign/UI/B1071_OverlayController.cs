@@ -14,12 +14,13 @@ namespace Byzantium1071.Campaign.UI
 {
     internal enum B1071LedgerTab
     {
-        NearbyPools = 0,
-        Castles = 1,
-        Towns = 2,
-        Villages = 3,
-        Factions = 4,
-        Armies = 5
+        Current = 0,
+        NearbyPools = 1,
+        Castles = 2,
+        Towns = 3,
+        Villages = 4,
+        Factions = 5,
+        Armies = 6
     }
 
     internal static class B1071_OverlayController
@@ -46,7 +47,7 @@ namespace Byzantium1071.Campaign.UI
         // Row-based data for the UI — replaces the old 4x StringBuilder text-blob approach.
         private static readonly MBBindingList<B1071_LedgerRowVM> _ledgerRows = new MBBindingList<B1071_LedgerRowVM>();
 
-        private static B1071LedgerTab _activeTab = B1071LedgerTab.NearbyPools;
+        private static B1071LedgerTab _activeTab = B1071LedgerTab.Current;
         private static int _pageIndex;
         private static int _sortColumn;
         private static bool _sortAscending;
@@ -108,7 +109,7 @@ namespace Byzantium1071.Campaign.UI
             _header2 = string.Empty;
             _header3 = string.Empty;
             _header4 = string.Empty;
-            _activeTab = B1071LedgerTab.NearbyPools;
+            _activeTab = B1071LedgerTab.Current;
             _pageIndex = 0;
             _sortColumn = 0;
             _sortAscending = false;
@@ -143,12 +144,14 @@ namespace Byzantium1071.Campaign.UI
         internal static string Header2 => _header2;
         internal static string Header3 => _header3;
         internal static string Header4 => _header4;
+        internal static string TabCurrentText => FormatTabText("Current", _activeTab == B1071LedgerTab.Current);
         internal static string TabNearbyText => FormatTabText("Nearby", _activeTab == B1071LedgerTab.NearbyPools);
         internal static string TabCastlesText => FormatTabText("Castles", _activeTab == B1071LedgerTab.Castles);
         internal static string TabTownsText => FormatTabText("Towns", _activeTab == B1071LedgerTab.Towns);
         internal static string TabVillagesText => FormatTabText("Villages", _activeTab == B1071LedgerTab.Villages);
         internal static string TabFactionsText => FormatTabText("Factions", _activeTab == B1071LedgerTab.Factions);
         internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
+        internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
         internal static bool IsTabTownsActive => _activeTab == B1071LedgerTab.Towns;
@@ -157,6 +160,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabArmiesActive => _activeTab == B1071LedgerTab.Armies;
         private static readonly string[][] _sortKeys = new[]
         {
+            new[] { "MP", "Regen", "Pool", "Name" },
             new[] { "Dist", "MP", "%", "Name" },
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "MP", "Prosp", "Regen", "Name" },
@@ -169,6 +173,7 @@ namespace Byzantium1071.Campaign.UI
         // Maps header position (0-based: H1=0, H2=1, H3=2, H4=3) → _sortColumn index.
         private static readonly int[][] _headerToSort = new[]
         {
+            new[] { 3, 0, 1, 2 },  // Current:     H1→Name(3), H2→MP(0), H3→Regen(1), H4→Pool(2)
             new[] { 3, 1, 2, 0 },  // NearbyPools: H1→Name(3), H2→MP(1), H3→%(2), H4→Dist(0)
             new[] { 3, 0, 1, 2 },  // Castles:     H1→Name(3), H2→MP(0), H3→Prosp(1), H4→Regen(2)
             new[] { 3, 0, 1, 2 },  // Towns:       same as Castles
@@ -301,7 +306,7 @@ namespace Byzantium1071.Campaign.UI
 
             // Non-Nearby tabs: only rebuild when data actually changed (daily tick, sort/page/tab).
             // Nearby tab: always rebuild (distance updates every 2s).
-            if (_activeTab != B1071LedgerTab.NearbyPools && !_columnsDirty)
+            if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Current && !_columnsDirty)
                 return;
 
             _columnsDirty = false;
@@ -388,14 +393,73 @@ namespace Byzantium1071.Campaign.UI
 
             switch (_activeTab)
             {
+                case B1071LedgerTab.Current: return BuildCurrentColumns(behavior);
                 case B1071LedgerTab.NearbyPools: return BuildNearbyPoolsColumns(behavior);
                 case B1071LedgerTab.Castles: return BuildCastlesColumns(behavior);
                 case B1071LedgerTab.Towns: return BuildTownsColumns(behavior);
                 case B1071LedgerTab.Factions: return BuildFactionsColumns(behavior);
                 case B1071LedgerTab.Villages: return BuildVillagesColumns(behavior);
                 case B1071LedgerTab.Armies: return BuildArmiesColumns();
-                default: return BuildNearbyPoolsColumns(behavior);
+                default: return BuildCurrentColumns(behavior);
             }
+        }
+
+        private static string BuildCurrentColumns(B1071_ManpowerBehavior behavior)
+        {
+            Settlement? settlement = ResolveCurrentContextSettlement();
+            if (settlement == null || settlement.IsHideout)
+            {
+                ClearColumns("Current - No settlement selected.");
+                _titleText = "Current Settlement";
+                _header1 = "Settlement";
+                _header2 = "Manpower";
+                _header3 = "Regen/Day";
+                _header4 = "Pool";
+                _totals1 = "Selected";
+                _totals2 = "-";
+                _totals3 = "-";
+                _totals4 = "-";
+                return _titleText;
+            }
+
+            behavior.GetManpowerPool(settlement, out int current, out int maximum, out Settlement pool);
+            int ratio = maximum <= 0 ? 0 : (int)((100f * current) / maximum);
+            int dailyRegen = pool != null ? B1071_ManpowerBehavior.GetDailyRegen(pool, maximum) : 0;
+            string type = settlement.IsTown ? "Town" : (settlement.IsCastle ? "Castle" : (settlement.IsVillage ? "Village" : "Settlement"));
+
+            _titleText = "Current Settlement";
+            _header1 = "Settlement";
+            _header2 = "Manpower";
+            _header3 = "Regen/Day";
+            _header4 = "Pool";
+            ApplySortIndicator(new[] { 2, 3, 4, 1 });
+
+            _ledgerRows.Clear();
+            _ledgerRows.Add(new B1071_LedgerRowVM(
+                TruncateForColumn(settlement.Name.ToString() + " (" + type + ")", 32),
+                FormatMp(current, maximum) + " (" + ratio + "%)",
+                "+" + dailyRegen.ToString("N0") + "/d",
+                pool?.Name?.ToString() ?? "-",
+                true,
+                true));
+
+            _totals1 = "Selected";
+            _totals2 = FormatMp(current, maximum);
+            _totals3 = "+" + dailyRegen.ToString("N0") + "/d";
+            _totals4 = pool?.Name?.ToString() ?? "-";
+            _pageLabel = "Page 1/1";
+            return _titleText;
+        }
+
+        private static Settlement? ResolveCurrentContextSettlement()
+        {
+            Settlement? settlement = Settlement.CurrentSettlement
+                                     ?? Hero.MainHero?.CurrentSettlement
+                                     ?? MobileParty.MainParty?.CurrentSettlement;
+            if (settlement != null)
+                return settlement;
+
+            return MobileParty.MainParty?.TargetSettlement;
         }
 
         private static void ClearColumns(string fallback)
@@ -1007,7 +1071,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 5) tabValue = 5;
+            if (tabValue > 6) tabValue = 6;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;

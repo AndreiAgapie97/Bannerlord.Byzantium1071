@@ -92,6 +92,7 @@ namespace Byzantium1071.Campaign.UI
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\"/>" +
             "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" MarginRight=\"4\" MarginTop=\"3\" MarginBottom=\"3\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
             "<Children>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCurrentSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCurrent\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCurrentText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabNearbySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabNearby\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabNearbyText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCastlesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCastles\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCastlesText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabTownsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabTowns\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabTownsText\"/></Children></ButtonWidget>" +
@@ -153,12 +154,14 @@ namespace Byzantium1071.Campaign.UI
         private bool _panelExpanded = true;
         private string _panelText = "Byzantium 1071 Overlay\n[Press M to toggle]";
         private string _toggleText = "Hide";
+        private string _tabCurrentText = "Current";
         private string _tabNearbyText = "Nearby";
         private string _tabCastlesText = "Castles";
         private string _tabTownsText = "Towns";
         private string _tabFactionsText = "Factions";
         private string _tabVillagesText = "Villages";
         private string _tabArmiesText = "Armies";
+        private bool _tabCurrentSelected;
         private bool _tabNearbySelected;
         private bool _tabCastlesSelected;
         private bool _tabTownsSelected;
@@ -224,6 +227,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string B1071TabCurrentText
+        {
+            get => _tabCurrentText;
+            set => SetField(ref _tabCurrentText, value, nameof(B1071TabCurrentText));
+        }
+
+        [DataSourceProperty]
         public string B1071TabNearbyText
         {
             get => _tabNearbyText;
@@ -256,6 +266,13 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _tabVillagesText;
             set => SetField(ref _tabVillagesText, value, nameof(B1071TabVillagesText));
+        }
+
+        [DataSourceProperty]
+        public bool B1071TabCurrentSelected
+        {
+            get => _tabCurrentSelected;
+            set => SetField(ref _tabCurrentSelected, value, nameof(B1071TabCurrentSelected));
         }
 
         [DataSourceProperty]
@@ -399,6 +416,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceMethod]
+        public void ExecuteB1071TabCurrent()
+        {
+            B1071_OverlayController.SetLedgerTab(B1071LedgerTab.Current);
+            RefreshLedgerBindings();
+        }
+
+        [DataSourceMethod]
         public void ExecuteB1071TabNearby()
         {
             B1071_OverlayController.SetLedgerTab(B1071LedgerTab.NearbyPools);
@@ -494,12 +518,14 @@ namespace Byzantium1071.Campaign.UI
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelText = B1071_OverlayController.CurrentText;
             B1071ToggleText = B1071PanelExpanded ? "Hide" : "Byz 1071";
+            B1071TabCurrentText = B1071_OverlayController.TabCurrentText;
             B1071TabNearbyText = B1071_OverlayController.TabNearbyText;
             B1071TabCastlesText = B1071_OverlayController.TabCastlesText;
             B1071TabTownsText = B1071_OverlayController.TabTownsText;
             B1071TabFactionsText = B1071_OverlayController.TabFactionsText;
             B1071TabVillagesText = B1071_OverlayController.TabVillagesText;
             B1071TabArmiesText = B1071_OverlayController.TabArmiesText;
+            B1071TabCurrentSelected = B1071_OverlayController.IsTabCurrentActive;
             B1071TabNearbySelected = B1071_OverlayController.IsTabNearbyActive;
             B1071TabCastlesSelected = B1071_OverlayController.IsTabCastlesActive;
             B1071TabTownsSelected = B1071_OverlayController.IsTabTownsActive;
@@ -522,12 +548,14 @@ namespace Byzantium1071.Campaign.UI
             if (!notifyAll) return;
 
             OnPropertyChangedWithValue(B1071PanelText, nameof(B1071PanelText));
+            OnPropertyChangedWithValue(B1071TabCurrentText, nameof(B1071TabCurrentText));
             OnPropertyChangedWithValue(B1071TabNearbyText, nameof(B1071TabNearbyText));
             OnPropertyChangedWithValue(B1071TabCastlesText, nameof(B1071TabCastlesText));
             OnPropertyChangedWithValue(B1071TabTownsText, nameof(B1071TabTownsText));
             OnPropertyChangedWithValue(B1071TabFactionsText, nameof(B1071TabFactionsText));
             OnPropertyChangedWithValue(B1071TabVillagesText, nameof(B1071TabVillagesText));
             OnPropertyChangedWithValue(B1071TabArmiesText, nameof(B1071TabArmiesText));
+            OnPropertyChangedWithValue(B1071TabCurrentSelected, nameof(B1071TabCurrentSelected));
             OnPropertyChangedWithValue(B1071TabNearbySelected, nameof(B1071TabNearbySelected));
             OnPropertyChangedWithValue(B1071TabCastlesSelected, nameof(B1071TabCastlesSelected));
             OnPropertyChangedWithValue(B1071TabTownsSelected, nameof(B1071TabTownsSelected));
