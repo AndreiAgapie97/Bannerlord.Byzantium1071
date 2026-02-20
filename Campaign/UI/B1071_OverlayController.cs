@@ -896,8 +896,24 @@ namespace Byzantium1071.Campaign.UI
 
             return text.Substring(0, maxLength - 1) + "…";
         }
-        private static string GetExhaustionLabel(float exhaustion)
+        private static string GetExhaustionLabel(float exhaustion, string? kingdomId = null)
         {
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+            // WP5: Band-aware label with hysteresis state reflected.
+            if (settings.EnableDiplomacyPressureBands && B1071_ManpowerBehavior.Instance != null && !string.IsNullOrEmpty(kingdomId))
+            {
+                var band = B1071_ManpowerBehavior.Instance.GetPressureBand(kingdomId);
+                string bandTag = band switch
+                {
+                    DiplomacyPressureBand.Crisis => "Crisis",
+                    DiplomacyPressureBand.Rising => "Rising",
+                    _ => "Low",
+                };
+                return $"{bandTag} ({(int)exhaustion})";
+            }
+
+            // Legacy labels
             if (exhaustion <= 0f) return "Fresh";
             if (exhaustion < 25f) return "Strained (" + (int)exhaustion + ")";
             if (exhaustion < 50f) return "Tired (" + (int)exhaustion + ")";
@@ -1559,7 +1575,7 @@ namespace Byzantium1071.Campaign.UI
                     prefix + rank + ". " + TruncateForColumn(row.Name, 24),
                     row.MilitaryPower.ToString("N0"),
                     row.TotalTroops.ToString("N0"),
-                    GetExhaustionLabel(row.Exhaustion),
+                    GetExhaustionLabel(row.Exhaustion, row.KingdomId),
                     highlight, even));
             }
 

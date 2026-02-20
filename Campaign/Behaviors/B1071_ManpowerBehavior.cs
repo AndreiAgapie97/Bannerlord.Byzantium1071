@@ -13,6 +13,16 @@ using TaleWorlds.Library;
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
+    /// WP5: Graded diplomacy pressure levels that replace hard exhaustion threshold cliffs.
+    /// </summary>
+    public enum DiplomacyPressureBand
+    {
+        Low,     // Normal operations
+        Rising,  // Elevated peace bias, softer war penalties
+        Crisis   // War declarations blocked, strong peace pressure, forced peace eligible
+    }
+
+    /// <summary>
     /// Regional manpower pool:
     /// - Villages do NOT have their own pool; they draw from their bound Town/Castle pool.
     /// - Seeded to Max on campaign start
@@ -48,12 +58,12 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, int> _lastRaidDrainDayByVillageId = new();
         // Raid drain spent this day per pool (key = "poolId|day", value = spent manpower).
         private readonly Dictionary<string, int> _raidDrainSpentByPoolDay = new();
-        // Dedupe ownership-change callbacks for identical transitions within the same day.
-        private readonly Dictionary<string, bool> _ownerChangeProcessedToday = new();
         // Delayed recovery (WP3): linear-decaying regen penalty per pool.
         private readonly Dictionary<string, float> _recoveryPenaltyBaseByPoolId = new();
         private readonly Dictionary<string, float> _recoveryPenaltyStartDayByPoolId = new();
         private readonly Dictionary<string, float> _recoveryPenaltyExpiryDayByPoolId = new();
+        // WP5: per-kingdom pressure band with hysteresis (runtime-only, recalculated from exhaustion).
+        private readonly Dictionary<string, DiplomacyPressureBand> _pressureBandByKingdom = new();
         // WP1 telemetry (runtime-only, non-persistent)
         private int _telemetryRaidDrainToday;
         private int _telemetrySiegeDrainToday;
@@ -497,7 +507,6 @@ namespace Byzantium1071.Campaign.Behaviors
             // Daily raid bookkeeping.
             _lastRaidDrainDayByVillageId.Clear();
             _raidDrainSpentByPoolDay.Clear();
-            _ownerChangeProcessedToday.Clear();
 
             CleanupExpiredDelayedRecovery();
 
@@ -523,6 +532,19 @@ namespace Byzantium1071.Campaign.Behaviors
                             _warExhaustion[key] = val;
 
                         _telemetryExhaustionDecayToday += Math.Min(decay, before);
+                    }
+                }
+
+                // WP5: Evaluate pressure bands (with hysteresis) for all kingdoms with exhaustion.
+                if (Settings.EnableDiplomacyPressureBands)
+                {
+                    foreach (Kingdom kingdom in Kingdom.All)
+                    {
+                        if (kingdom == null || kingdom.IsEliminated) continue;
+                        string kid = kingdom.StringId;
+                        if (string.IsNullOrEmpty(kid)) continue;
+                        float exh = GetWarExhaustion(kid);
+                        EvaluatePressureBand(kid, exh);
                     }
                 }
 
@@ -746,6 +768,93 @@ namespace Byzantium1071.Campaign.Behaviors
             return _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
         }
 
+        // ─── WP5: Pressure band evaluation with hysteresis ───
+
+        /// <summary>
+        /// Returns the current diplomacy pressure band for a kingdom.
+        /// If pressure bands are disabled, maps exhaustion to legacy thresholds.
+        /// </summary>
+        public DiplomacyPressureBand GetPressureBand(string? kingdomId)
+        {
+            if (string.IsNullOrEmpty(kingdomId)) return DiplomacyPressureBand.Low;
+            if (!Settings.EnableDiplomacyPressureBands)
+                return MapExhaustionToLegacyBand(GetWarExhaustion(kingdomId));
+
+            return _pressureBandByKingdom.TryGetValue(kingdomId!, out var band) ? band : DiplomacyPressureBand.Low;
+        }
+
+        /// <summary>
+        /// Evaluates and updates pressure band for a kingdom, applying hysteresis on downward transitions.
+        /// Called once per daily tick per kingdom with active exhaustion.
+        /// </summary>
+        private DiplomacyPressureBand EvaluatePressureBand(string kingdomId, float exhaustion)
+        {
+            float risingStart = Math.Max(1f, Settings.PressureBandRisingStart);
+            float crisisStart = Math.Max(risingStart + 1f, Settings.PressureBandCrisisStart);
+            float hysteresis = Math.Max(0f, Settings.PressureBandHysteresis);
+
+            DiplomacyPressureBand current = _pressureBandByKingdom.TryGetValue(kingdomId, out var prev)
+                ? prev : DiplomacyPressureBand.Low;
+
+            DiplomacyPressureBand newBand;
+
+            // Upward transitions: use raw thresholds
+            if (exhaustion >= crisisStart)
+                newBand = DiplomacyPressureBand.Crisis;
+            else if (exhaustion >= risingStart)
+                newBand = DiplomacyPressureBand.Rising;
+            else
+                newBand = DiplomacyPressureBand.Low;
+
+            // Hysteresis: resist downward transitions
+            if (newBand < current)
+            {
+                switch (current)
+                {
+                    case DiplomacyPressureBand.Crisis:
+                        // Stay in Crisis until exhaustion drops below crisisStart - hysteresis
+                        if (exhaustion >= crisisStart - hysteresis)
+                            newBand = DiplomacyPressureBand.Crisis;
+                        break;
+                    case DiplomacyPressureBand.Rising:
+                        // Stay in Rising until exhaustion drops below risingStart - hysteresis
+                        if (exhaustion >= risingStart - hysteresis)
+                            newBand = DiplomacyPressureBand.Rising;
+                        break;
+                }
+            }
+
+            _pressureBandByKingdom[kingdomId] = newBand;
+            return newBand;
+        }
+
+        /// <summary>
+        /// Maps exhaustion to a legacy-compatible band (no hysteresis) for when pressure bands are disabled.
+        /// Uses the old hard thresholds: NoWarThreshold → Crisis, PeaceThreshold → Rising, else → Low.
+        /// </summary>
+        private static DiplomacyPressureBand MapExhaustionToLegacyBand(float exhaustion)
+        {
+            float noWarThreshold = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyNoNewWarThreshold;
+            float peaceThreshold = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeacePressureThreshold;
+            if (exhaustion >= noWarThreshold) return DiplomacyPressureBand.Crisis;
+            if (exhaustion >= peaceThreshold) return DiplomacyPressureBand.Rising;
+            return DiplomacyPressureBand.Low;
+        }
+
+        /// <summary>
+        /// Returns per-point peace bias for the given band.
+        /// </summary>
+        internal float GetBandPeaceBias(DiplomacyPressureBand band)
+        {
+            return band switch
+            {
+                DiplomacyPressureBand.Low => Settings.PeaceBiasBandLow,
+                DiplomacyPressureBand.Rising => Settings.PeaceBiasBandHigh,
+                DiplomacyPressureBand.Crisis => Settings.PeaceBiasBandHigh * 1.5f, // Crisis escalates further
+                _ => Settings.PeaceBiasBandLow,
+            };
+        }
+
         public void RegisterKingdomPairTruce(IFaction? faction1, IFaction? faction2)
         {
             if (faction1 is not Kingdom kingdom1 || faction2 is not Kingdom kingdom2)
@@ -850,10 +959,25 @@ namespace Byzantium1071.Campaign.Behaviors
                 float threshold = Math.Max(1f, baseThreshold - (extraWarCount * thresholdReductionPerWar));
 
                 float exhaustion = GetWarExhaustion(kingdom.StringId);
-                if (exhaustion < threshold)
+
+                // WP5: If bands are enabled, require Crisis band for forced peace.
+                // Otherwise, fall back to the legacy raw threshold comparison.
+                bool shouldForce;
+                if (Settings.EnableDiplomacyPressureBands)
                 {
-                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: exhaustion {exhaustion:0.0} below threshold {threshold:0.0}.");
-                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: {exhaustion:0.0}<{threshold:0.0}";
+                    DiplomacyPressureBand band = GetPressureBand(kingdom.StringId);
+                    shouldForce = band == DiplomacyPressureBand.Crisis && exhaustion >= threshold;
+                }
+                else
+                {
+                    shouldForce = exhaustion >= threshold;
+                }
+
+                if (!shouldForce)
+                {
+                    DiplomacyPressureBand dbgBand = GetPressureBand(kingdom.StringId);
+                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: exhaustion {exhaustion:0.0}, threshold {threshold:0.0}, band {dbgBand}.");
+                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: {exhaustion:0.0}<{threshold:0.0} ({dbgBand})";
                     continue;
                 }
 
@@ -1478,6 +1602,15 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
+            // WP4: bounded stochastic variance on daily regen output.
+            float varianceMul = 1f;
+            if (settings.EnableRecruitmentVariance && settings.RecoveryVariancePercent > 0)
+            {
+                float spread = settings.RecoveryVariancePercent / 100f;
+                varianceMul = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
+                pct *= varianceMul;
+            }
+
             int regen = (int)(max * pct);
 
             // Hard cap: never exceed RegenCapPercent of pool per day.
@@ -1493,7 +1626,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 Instance._telemetryLastRegenPoolId = pool.StringId ?? string.Empty;
                 Instance._telemetryLastRegenBreakdown =
-                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} => +{result}";
+                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} Var:{varianceMul:0.##} => +{result}";
             }
 
             return result;
@@ -1920,19 +2053,27 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableWarEffects) return;
             if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
 
-            string settlementId = settlement.StringId ?? string.Empty;
-            int today = (int)CampaignTime.Now.ToDays;
-            string oldOwnerId = oldOwner?.StringId ?? string.Empty;
-            string newOwnerId = newOwner?.StringId ?? string.Empty;
-            string ownerChangeKey = $"{settlementId}|{today}|{oldOwnerId}|{newOwnerId}|{detail}|{openToClaim}";
-            if (_ownerChangeProcessedToday.ContainsKey(ownerChangeKey))
+            // Only apply conquest effects when the settlement truly changes kingdoms.
+            // Internal fief grants (ByKingDecision, ByGift, etc.) within the same
+            // kingdom should NOT drain manpower or apply recovery penalties.
+            Kingdom? oldKingdom = oldOwner?.Clan?.Kingdom;
+            Kingdom? newKingdom = newOwner?.Clan?.Kingdom;
+
+            bool isCrossKingdomConquest = oldKingdom != null && newKingdom != null && oldKingdom != newKingdom;
+
+            if (!isCrossKingdomConquest)
             {
                 if (Settings.ShowPlayerDebugMessages)
+                {
+                    string oldName = oldOwner?.Name?.ToString() ?? "None";
+                    string newName = newOwner?.Name?.ToString() ?? "None";
+                    string oldKName = oldKingdom?.Name?.ToString() ?? "None";
+                    string newKName = newKingdom?.Name?.ToString() ?? "None";
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"[B1071] Ownership change duplicate ignored at {settlement.Name} ({detail}, claim:{openToClaim})."));
+                        $"[B1071] Internal ownership change at {settlement.Name} ({detail}): {oldName}→{newName} (kingdom: {oldKName}→{newKName}). No conquest effects."));
+                }
                 return;
             }
-            _ownerChangeProcessedToday[ownerChangeKey] = true;
 
             Settlement? pool = GetPoolSettlement(settlement);
             if (pool == null) return;
@@ -1957,11 +2098,15 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 string oldOwnerName = oldOwner?.Name?.ToString() ?? "None";
                 string newOwnerName = newOwner?.Name?.ToString() ?? "None";
+                string oldKingdomName = oldKingdom?.Name?.ToString() ?? "?";
+                string newKingdomName = newKingdom?.Name?.ToString() ?? "?";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Ownership changed ({detail}, claim:{openToClaim}) at {settlement.Name}: {oldOwnerName}→{newOwnerName}, pool {cur}→{newVal} ({retainPct:P0} retained)",
+                    $"[B1071] Conquest at {settlement.Name} ({detail}): {oldOwnerName} ({oldKingdomName})→{newOwnerName} ({newKingdomName}), pool {cur}→{newVal} ({retainPct:P0} retained)",
                     Colors.Yellow));
             }
+
             // War exhaustion: losing a settlement costs the old owner.
-            AddWarExhaustion(oldOwner?.Clan?.Kingdom?.StringId, Settings.ConquestExhaustionGain);        }
+            AddWarExhaustion(oldOwner?.Clan?.Kingdom?.StringId, Settings.ConquestExhaustionGain);
+        }
     }
 }

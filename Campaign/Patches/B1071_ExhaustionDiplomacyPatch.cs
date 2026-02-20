@@ -40,18 +40,44 @@ namespace Byzantium1071.Campaign.Patches
         }
 
         internal static bool EnableDebugLogs => Settings.DiplomacyDebugLogs;
+        internal static bool UsePressureBands => Settings.EnableDiplomacyPressureBands;
 
+        // Legacy thresholds (used when bands disabled)
         internal static float NoWarThreshold =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyNoNewWarThreshold;
 
         internal static float PeaceThreshold =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeacePressureThreshold;
 
+        // Per-point rates (legacy path)
         internal static float WarPenaltyPerPoint =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyWarSupportPenaltyPerPoint;
 
         internal static float PeaceBonusPerPoint =>
             (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeaceSupportBonusPerPoint;
+
+        // WP5 caps
+        internal static float WarSupportPenaltyCap => Settings.WarSupportPenaltyCap;  // negative value
+        internal static float PeaceSupportBonusCap => Settings.PeaceSupportBonusCap;  // positive value
+
+        /// <summary>
+        /// Gets the current pressure band for a kingdom. Requires behavior instance.
+        /// </summary>
+        internal static DiplomacyPressureBand GetBand(Kingdom kingdom)
+        {
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            return behavior?.GetPressureBand(kingdom.StringId) ?? DiplomacyPressureBand.Low;
+        }
+
+        /// <summary>
+        /// Gets band-specific per-point peace bias. Requires behavior instance.
+        /// </summary>
+        internal static float GetBandPeaceBias(Kingdom kingdom)
+        {
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            DiplomacyPressureBand band = behavior?.GetPressureBand(kingdom.StringId) ?? DiplomacyPressureBand.Low;
+            return behavior?.GetBandPeaceBias(band) ?? PeaceBonusPerPoint;
+        }
 
         internal static float GetMajorWarPressureBias(Kingdom kingdom)
         {
@@ -109,6 +135,7 @@ namespace Byzantium1071.Campaign.Patches
             if (possibleOutcome is not DeclareWarDecision.DeclareWarDecisionOutcome outcome)
                 return;
 
+            // Truce enforcement: always hard-block (truce is an absolute constraint).
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior != null && behavior.IsKingdomPairUnderTruce(__instance.Kingdom, __instance.FactionToDeclareWarOn, out _))
             {
@@ -122,6 +149,39 @@ namespace Byzantium1071.Campaign.Patches
                 return;
             }
 
+            // ─── WP5 Pressure Band path ───
+            if (B1071_ExhaustionDiplomacyHelpers.UsePressureBands)
+            {
+                DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(__instance.Kingdom);
+                float warBias = B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+                float penaltyCap = Math.Abs(B1071_ExhaustionDiplomacyHelpers.WarSupportPenaltyCap);
+
+                float penalty;
+                switch (band)
+                {
+                    case DiplomacyPressureBand.Crisis:
+                        // Strong capped penalty — not infinite, but very heavy.
+                        penalty = Math.Min(penaltyCap, exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint + warBias);
+                        break;
+                    case DiplomacyPressureBand.Rising:
+                        // Moderate scaling penalty.
+                        penalty = Math.Min(penaltyCap * 0.6f, exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint * 0.7f + warBias);
+                        break;
+                    default: // Low
+                        penalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint * 0.3f + warBias;
+                        break;
+                }
+
+                if (outcome.ShouldWarBeDeclared)
+                    __result -= penalty;
+                else
+                    __result += penalty;
+
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar band({band}) penalty {penalty:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
+                return;
+            }
+
+            // ─── Legacy threshold path (bands disabled) ───
             float threshold = B1071_ExhaustionDiplomacyHelpers.NoWarThreshold;
             if (exhaustion >= threshold)
             {
@@ -133,14 +193,14 @@ namespace Byzantium1071.Campaign.Patches
                 return;
             }
 
-            float penalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint;
-            penalty += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+            float legacyPenalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint;
+            legacyPenalty += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
             if (outcome.ShouldWarBeDeclared)
-                __result -= penalty;
+                __result -= legacyPenalty;
             else
-                __result += penalty;
+                __result += legacyPenalty;
 
-            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar support adjusted by {penalty:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
+            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar support adjusted by {legacyPenalty:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
         }
     }
 
@@ -164,6 +224,26 @@ namespace Byzantium1071.Campaign.Patches
             if (possibleOutcome is not MakePeaceKingdomDecision.MakePeaceDecisionOutcome outcome)
                 return;
 
+            // ─── WP5 Pressure Band path ───
+            if (B1071_ExhaustionDiplomacyHelpers.UsePressureBands)
+            {
+                DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(__instance.Kingdom);
+                float perPointBias = B1071_ExhaustionDiplomacyHelpers.GetBandPeaceBias(__instance.Kingdom);
+                float warBias = B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+                float bonusCap = Math.Max(0f, B1071_ExhaustionDiplomacyHelpers.PeaceSupportBonusCap);
+
+                float bonus = Math.Min(bonusCap, exhaustion * perPointBias + warBias);
+
+                if (outcome.ShouldPeaceBeDeclared)
+                    __result += bonus;
+                else
+                    __result -= bonus;
+
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"MakePeace band({band}) bonus {bonus:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
+                return;
+            }
+
+            // ─── Legacy threshold path ───
             float threshold = B1071_ExhaustionDiplomacyHelpers.PeaceThreshold;
             if (exhaustion >= threshold)
             {
@@ -172,14 +252,14 @@ namespace Byzantium1071.Campaign.Patches
                 return;
             }
 
-            float bonus = exhaustion * B1071_ExhaustionDiplomacyHelpers.PeaceBonusPerPoint;
-            bonus += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+            float legacyBonus = exhaustion * B1071_ExhaustionDiplomacyHelpers.PeaceBonusPerPoint;
+            legacyBonus += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
             if (outcome.ShouldPeaceBeDeclared)
-                __result += bonus;
+                __result += legacyBonus;
             else
-                __result -= bonus;
+                __result -= legacyBonus;
 
-            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"MakePeace support adjusted by {bonus:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
+            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"MakePeace support adjusted by {legacyBonus:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
         }
     }
 
@@ -213,6 +293,20 @@ namespace Byzantium1071.Campaign.Patches
             if (!B1071_ExhaustionDiplomacyHelpers.TryGetExhaustion(kingdom, out float exhaustion))
                 return true;
 
+            // WP5: Use band-based blocking (Crisis only) when bands enabled.
+            if (B1071_ExhaustionDiplomacyHelpers.UsePressureBands)
+            {
+                DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(kingdom);
+                if (band != DiplomacyPressureBand.Crisis)
+                    return true; // Allow war decisions in Low/Rising bands
+
+                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
+                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: Crisis band at exhaustion {exhaustion:0.0}.");
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: Crisis band at {exhaustion:0.0} for {kingdom.Name}.");
+                return false;
+            }
+
+            // Legacy threshold path
             float threshold = B1071_ExhaustionDiplomacyHelpers.NoWarThreshold;
             if (exhaustion < threshold)
                 return true;
