@@ -1230,8 +1230,6 @@ namespace Byzantium1071.Campaign.UI
             public float ExhaustionB;
             public float MaxExhaustion;
             public float PeacePressure;
-            public bool HasTruce;
-            public float TruceDays;
             public string StatusText = string.Empty;
             public int StatusScore;
         }
@@ -1321,11 +1319,12 @@ namespace Byzantium1071.Campaign.UI
                     DiplomacyPressureBand.Rising => "Ri",
                     _ => exhaustion < 1f ? "Fr" : "Lo",
                 };
-                return tag + ((int)exhaustion).ToString();
+                int rounded = (int)exhaustion;
+                return rounded > 0 ? tag + rounded.ToString() : tag;
             }
 
             // Legacy compact labels.
-            if (exhaustion < 1f) return "Fr0";
+            if (exhaustion < 1f) return "Fr";
             if (exhaustion < 25f) return "St" + ((int)exhaustion).ToString();
             if (exhaustion < 50f) return "Ti" + ((int)exhaustion).ToString();
             if (exhaustion < 75f) return "Ex" + ((int)exhaustion).ToString();
@@ -1340,11 +1339,11 @@ namespace Byzantium1071.Campaign.UI
 
             if (settings.EnableDiplomacyPressureBands)
             {
-                // Band-mode: scores are typically 0-2000 range (bias × exhaustion sum).
-                level = abs >= 800f ? "Extreme"
-                    : abs >= 400f ? "High"
-                    : abs >= 150f ? "Medium"
-                    : abs >= 40f ? "Low"
+                // Band-mode: scores are typically 0-2000+ range (bias × exhaustion sum).
+                level = abs >= 1600f ? "Extreme"
+                    : abs >= 800f ? "High"
+                    : abs >= 300f ? "Medium"
+                    : abs >= 80f ? "Low"
                     : "Light";
             }
             else
@@ -1400,19 +1399,8 @@ namespace Byzantium1071.Campaign.UI
                     float maxExhaustion = Math.Max(exA, exB);
                     float peacePressure = GetModAwarePeaceBias(sideA, sideB, behavior);
 
-                    bool hasTruce = behavior.IsKingdomPairUnderTruce(sideA, sideB, out float truceDays);
                     int riskScore = GetForcedPeaceRiskScore(maxExhaustion);
                     string riskLabel = GetForcedPeaceRiskLabel(riskScore);
-                    string status;
-                    if (hasTruce)
-                    {
-                        string truceUntil = behavior.FormatDaysFromNow(truceDays);
-                        status = "Truce " + truceDays.ToString("0.0") + "d (" + truceUntil + ") | " + riskLabel;
-                    }
-                    else
-                    {
-                        status = "No Truce | " + riskLabel;
-                    }
 
                     rows.Add(new WarsLedgerRow
                     {
@@ -1425,9 +1413,7 @@ namespace Byzantium1071.Campaign.UI
                         ExhaustionB = exB,
                         MaxExhaustion = maxExhaustion,
                         PeacePressure = peacePressure,
-                        HasTruce = hasTruce,
-                        TruceDays = truceDays,
-                        StatusText = status,
+                        StatusText = riskLabel,
                         StatusScore = riskScore
                     });
                 }
@@ -1455,24 +1441,22 @@ namespace Byzantium1071.Campaign.UI
 
             if (rows.Count == 0)
             {
-                ClearColumns("Wars Ledger - No active kingdom wars.");
-                return "Wars Ledger\nNo active kingdom wars.\nLegend: Exhaustion tags show band (Fr=Fresh, Lo=Low, Ri=Rising, Cr=Crisis) or legacy (St/Ti/Ex) with score.";
+                ClearColumns("Wars Ledger - No entries found.");
+                return "Wars Ledger\nNo entries found.";
             }
 
             string playerFaction = GetPlayerFactionName();
-            int truceCount = 0;
             float totalPressure = 0f;
             foreach (WarsLedgerRow row in rows)
             {
-                if (row.HasTruce) truceCount++;
                 totalPressure += row.PeacePressure;
             }
 
-            _titleText = "Wars Ledger  (" + rows.Count + " entries)\nLegend: Exhaustion tags show band (Fr=Fresh, Lo=Low, Ri=Rising, Cr=Crisis) or legacy (St/Ti/Ex) with score. Left side is first kingdom.\nBias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce and forced-peace risk.";
+            _titleText = "Wars Ledger  (" + rows.Count + " entries)";
             _header1 = "War Pair";
             _header2 = "Exhaustion";
             _header3 = "Peace Bias";
-            _header4 = "Truce / Risk";
+            _header4 = "Risk";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
             _ledgerRows.Clear();
@@ -1489,15 +1473,15 @@ namespace Byzantium1071.Campaign.UI
                     prefix + rank + ". " + TruncateForColumn(row.PairName, 26),
                     GetExhaustionCompact(row.ExhaustionA, row.SideAId) + "/" + GetExhaustionCompact(row.ExhaustionB, row.SideBId),
                     GetPeacePressureBand(row.PeacePressure),
-                    TruncateForColumn(row.StatusText, 24),
+                    row.StatusText,
                     involvesPlayer,
                     even));
             }
 
-            _totals1 = "Total Wars";
+            _totals1 = "Total";
             _totals2 = rows.Count.ToString("N0");
             _totals3 = rows.Count > 0 ? GetPeacePressureBand(totalPressure / rows.Count) : "Neutral";
-            _totals4 = truceCount.ToString("N0") + " truces";
+            _totals4 = "";
             return _titleText;
         }
 
