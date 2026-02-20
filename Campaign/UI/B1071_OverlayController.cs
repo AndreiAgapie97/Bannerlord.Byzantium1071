@@ -467,7 +467,7 @@ namespace Byzantium1071.Campaign.UI
 
             _ledgerRows.Clear();
             _ledgerRows.Add(new B1071_LedgerRowVM(
-                TruncateForColumn(settlement.Name.ToString() + " (" + type + ")", 32),
+                TruncateForColumn((settlement.Name?.ToString() ?? "?") + " (" + type + ")", 32),
                 FormatMp(current, maximum) + " (" + ratio + "%)",
                 "+" + dailyRegen.ToString("N0") + "/d",
                 pool?.Name?.ToString() ?? "-",
@@ -1077,11 +1077,11 @@ namespace Byzantium1071.Campaign.UI
 
                 var row = new LedgerRow
                 {
-                    SettlementName = settlement.Name.ToString(),
+                    SettlementName = settlement.Name?.ToString() ?? "?",
                     Type = settlement.IsTown ? "Town" : (settlement.IsCastle ? "Castle" : "Village"),
                     FactionName = settlement.MapFaction?.Name?.ToString() ?? "Independent",
                     OwnerName = settlement.OwnerClan?.Name?.ToString() ?? "-",
-                    PoolName = pool.Name.ToString(),
+                    PoolName = pool.Name?.ToString() ?? "?",
                     Current = current,
                     Maximum = maximum,
                     RatioPercent = ratio,
@@ -1561,7 +1561,7 @@ namespace Byzantium1071.Campaign.UI
                 _armiesCacheStale = false;
             }
 
-            var rows = _cachedArmiesRows!;
+            var rows = new List<ArmiesLedgerRow>(_cachedArmiesRows!);
 
             rows.Sort((a, b) =>
             {

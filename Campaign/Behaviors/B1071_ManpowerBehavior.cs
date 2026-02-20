@@ -603,6 +603,8 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (string.IsNullOrEmpty(value) || value.Length <= maxLen)
                 return value;
+            if (maxLen <= 0)
+                return string.Empty;
             if (maxLen <= 1)
                 return value.Substring(0, maxLen);
             return value.Substring(0, maxLen - 1) + "…";
@@ -1050,7 +1052,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
                     activeWarCount++;
 
-                    float score = TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel.GetScoreOfDeclaringPeace(kingdom, enemy);
+                    var diplomacyModel = TaleWorlds.CampaignSystem.Campaign.Current?.Models?.DiplomacyModel;
+                    if (diplomacyModel == null) continue;
+                    float score = diplomacyModel.GetScoreOfDeclaringPeace(kingdom, enemy);
                     if (score > bestPeaceScore)
                     {
                         bestPeaceScore = score;
@@ -1065,7 +1069,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     continue;
                 }
 
-                MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
+                try
+                {
+                    MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
+                }
+                catch (Exception ex)
+                {
+                    Debug.Print($"[Byzantium1071][Diplomacy] Forced peace failed for {kingdom.Name}: {ex.Message}");
+                    continue;
+                }
                 _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
                 _telemetryLastForcedPeace = $"Peace {kingdom.Name}-{bestFactionToPeace.Name} at {FormatCampaignDateTime(nowDays)} (ex {exhaustion:0.0})";
 
@@ -1083,6 +1095,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static int CountActiveMajorWars(Kingdom kingdom)
         {
+            if (kingdom.FactionsAtWarWith == null) return 0;
             int count = 0;
             for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
             {
@@ -1126,7 +1139,15 @@ namespace Byzantium1071.Campaign.Behaviors
             bool isPlayer = recruiterHero == Hero.MainHero;
 
             // Player recruitment is enforced via OnUnitRecruitedEvent (more granular per click).
-            if (isPlayer) return;
+            if (isPlayer)
+            {
+                // Clear AI dedupe flags to prevent false positive in OnUnitRecruitedFallback.
+                _lastRecruitWasAI = false;
+                _lastAIRecruitTroop = null;
+                _lastAIRecruitAmount = 0;
+                _lastAIRecruitSettlementId = null;
+                return;
+            }
 
             //1. Normal AI party recruitment: recruiterHero is party leader, recruitmentSettlement is where they recruit from.
             MobileParty? party = recruiterHero.PartyBelongedTo;
@@ -1530,11 +1551,6 @@ namespace Byzantium1071.Campaign.Behaviors
                 pct *= siegeMul;
             }
 
-            // Stress floor: avoid permanent stall under stacked penalties.
-            float stressFloor = Math.Max(0f, settings.RegenStressFloorPercent) / 100f;
-            if (pct < stressFloor)
-                pct = stressFloor;
-
             // Stage 4: seasonal effect.
             // Seasonal modifier: spring/summer = bonus, winter = penalty.
             if (settings.EnableSeasonalRegen)
@@ -1632,6 +1648,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 varianceMul = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
                 pct *= varianceMul;
             }
+
+            // Stress floor: final safety net — avoid permanent stall under stacked penalties.
+            // Applied after ALL multipliers so nothing can push pct below this threshold.
+            float stressFloor = Math.Max(0f, settings.RegenStressFloorPercent) / 100f;
+            if (pct < stressFloor)
+                pct = stressFloor;
 
             int regen = (int)(max * pct);
 
@@ -1969,20 +1991,30 @@ namespace Byzantium1071.Campaign.Behaviors
             return false;
         }
 
+        private static PropertyInfo? _mapEventIsRaidProp;
+        private static PropertyInfo? _mapEventSettlementProp;
+        private static PropertyInfo? _mapEventEventTypeProp;
+        private static bool _mapEventReflectionCached;
+
         private static bool IsRaidLikeMapEvent(MapEvent mapEvent)
         {
             var mapEventType = mapEvent.GetType();
 
-            var isRaidProp = mapEventType.GetProperty("IsRaid");
-            if (isRaidProp?.PropertyType == typeof(bool) && isRaidProp.GetValue(mapEvent) is bool isRaid && isRaid)
+            if (!_mapEventReflectionCached)
+            {
+                _mapEventIsRaidProp = mapEventType.GetProperty("IsRaid");
+                _mapEventSettlementProp = mapEventType.GetProperty("MapEventSettlement");
+                _mapEventEventTypeProp = mapEventType.GetProperty("EventType");
+                _mapEventReflectionCached = true;
+            }
+
+            if (_mapEventIsRaidProp?.PropertyType == typeof(bool) && _mapEventIsRaidProp.GetValue(mapEvent) is bool isRaid && isRaid)
                 return true;
 
-            var settlementProp = mapEventType.GetProperty("MapEventSettlement");
-            if (settlementProp?.GetValue(mapEvent) is Settlement settlement && settlement.IsVillage)
+            if (_mapEventSettlementProp?.GetValue(mapEvent) is Settlement settlement && settlement.IsVillage)
                 return true;
 
-            var eventTypeProp = mapEventType.GetProperty("EventType");
-            string? eventTypeText = eventTypeProp?.GetValue(mapEvent)?.ToString();
+            string? eventTypeText = _mapEventEventTypeProp?.GetValue(mapEvent)?.ToString();
             if (!string.IsNullOrEmpty(eventTypeText) && eventTypeText.IndexOf("Raid", StringComparison.OrdinalIgnoreCase) >= 0)
                 return true;
 
@@ -2022,10 +2054,13 @@ namespace Byzantium1071.Campaign.Behaviors
 
             foreach (MapEventParty mep in side.Parties)
             {
+                if (mep == null) continue;
                 MobileParty? mp = mep.Party?.MobileParty;
                 if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
 
-                int casualties = mep.DiedInBattle.TotalManCount + mep.WoundedInBattle.TotalManCount;
+                int died = mep.DiedInBattle?.TotalManCount ?? 0;
+                int wounded = mep.WoundedInBattle?.TotalManCount ?? 0;
+                int casualties = died + wounded;
                 if (casualties <= 0) continue;
 
                 string? kingdomId = mp.LeaderHero?.Clan?.Kingdom?.StringId;
@@ -2039,10 +2074,13 @@ namespace Byzantium1071.Campaign.Behaviors
 
             foreach (MapEventParty mep in side.Parties)
             {
+                if (mep == null) continue;
                 MobileParty? mp = mep.Party?.MobileParty;
                 if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
 
-                int casualties = mep.DiedInBattle.TotalManCount + mep.WoundedInBattle.TotalManCount;
+                int died = mep.DiedInBattle?.TotalManCount ?? 0;
+                int wounded = mep.WoundedInBattle?.TotalManCount ?? 0;
+                int casualties = died + wounded;
                 if (casualties <= 0) continue;
 
                 Settlement? home = mp.HomeSettlement;

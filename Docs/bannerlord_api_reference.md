@@ -10,17 +10,22 @@
 ## Table of Contents
 
 1. [Campaign.Current](#campaigncurrent)
-2. [GetCampaignBehavior\<T\>()](#getcampaignbehaviort)
-3. [Settlement](#settlement)
-4. [Settlement.Village (Field)](#settlementvillage-field)
-5. [Village](#village)
-6. [Kingdom](#kingdom)
-7. [MBObjectBase.StringId](#mbobjectbasestringid)
-8. [MBRandom](#mbrandom)
-9. [MapEventParty](#mapeventparty)
-10. [MBBindingList\<T\>](#mbbindinglistt)
-11. [RecruitmentVM Collections](#recruitmentvm-collections)
-12. [CampaignTime](#campaigntime)
+2. [Campaign.Models](#campaignmodels)
+3. [GetCampaignBehavior\<T\>()](#getcampaignbehaviort)
+4. [Settlement](#settlement)
+5. [Settlement.Village (Field)](#settlementvillage-field)
+6. [Village](#village)
+7. [Kingdom](#kingdom)
+8. [MBObjectBase.StringId](#mbobjectbasestringid)
+9. [MBRandom](#mbrandom)
+10. [MapEventParty](#mapeventparty)
+11. [MBBindingList\<T\>](#mbbindinglistt)
+12. [RecruitmentVM Collections](#recruitmentvm-collections)
+13. [CampaignTime](#campaigntime)
+14. [MakePeaceAction](#makepeaceaction)
+15. [MBSubModuleBase Lifecycle](#mbsubmodulebase-lifecycle)
+16. [TroopRoster](#trooproster)
+17. [DiplomacyModel](#diplomacymodel)
 
 ---
 
@@ -38,6 +43,25 @@ public static Campaign? Current { get; }
 - Returns `null` before campaign is fully initialized (e.g. main menu, loading screen).
 - Returns `null` after campaign teardown.
 - **Always null-check before use.**
+
+---
+
+## Campaign.Models
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Campaign`
+
+```csharp
+public GameModels Models { get; }
+```
+
+**Return type:** `TaleWorlds.CampaignSystem.GameModels`
+
+**Key facts:**
+- Returns the `GameModels` container holding all registered game models (e.g. `DiplomacyModel`, `VolunteerModel`, etc.).
+- Can be `null` if `Campaign.Current` is null or campaign is not fully initialized.
+- **Always access via null-safe chain:** `Campaign.Current?.Models?.DiplomacyModel`.
+- The `GameModels` type provides typed properties for each model category.
 
 ---
 
@@ -134,7 +158,7 @@ IsPrivate: False
 | `Name` | `TextObject` | Kingdom display name. |
 | `IsEliminated` | `bool` | True if kingdom has been destroyed. |
 | `Clans` | `MBReadOnlyList<Clan>` | Member clans. |
-| `FactionsAtWarWith` | `IReadOnlyList<IFaction>` | Current enemies. |
+| `FactionsAtWarWith` | `MBReadOnlyList<IFaction>` | Current enemies. **Can be null** for eliminated kingdoms. |
 
 ### Key Static Members
 
@@ -210,6 +234,14 @@ public static int RandomInt(int maxValue); // [0, maxValue)
 | Name | Type | Notes |
 |------|------|-------|
 | `Party` | `PartyBase` | The party involved. Can be null for disbanded parties. |
+| `DiedInBattle` | `TroopRoster` | Roster of troops killed. **Can theoretically be null.** |
+| `WoundedInBattle` | `TroopRoster` | Roster of troops wounded. **Can theoretically be null.** |
+
+**Safe access pattern:**
+```csharp
+int dead = mep?.DiedInBattle?.TotalManCount ?? 0;
+int wounded = mep?.WoundedInBattle?.TotalManCount ?? 0;
+```
 
 ---
 
@@ -273,6 +305,105 @@ public static int RandomInt(int maxValue); // [0, maxValue)
 
 ---
 
+## MakePeaceAction
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Actions.MakePeaceAction`
+
+### ApplyByKingdomDecision
+
+```csharp
+public static void ApplyByKingdomDecision(
+    IFaction faction1,
+    IFaction faction2,
+    int dailyTributeFrom1To2,
+    int dailyTributeDuration)
+```
+
+**Key facts:**
+- **Can throw** if factions are already at peace, eliminated, or in an invalid state mid-tick.
+- Parameters 3–4 control tribute terms; pass `0, 0` for unconditional peace.
+- **Always wrap in try-catch** when called in a loop (e.g., daily diplomacy tick) so one failure doesn't abort remaining iterations.
+
+**Safe pattern:**
+```csharp
+try
+{
+    MakePeaceAction.ApplyByKingdomDecision(faction1, faction2, 0, 0);
+}
+catch (Exception ex)
+{
+    // Log and continue
+}
+```
+
+---
+
+## MBSubModuleBase Lifecycle
+
+**Assembly:** `TaleWorlds.MountAndBlade.dll`
+**Type:** `TaleWorlds.MountAndBlade.MBSubModuleBase`
+
+### Key Virtual Methods (Override Order)
+
+| Method | When Called | Notes |
+|--------|-----------|-------|
+| `OnSubModuleLoad()` | Module DLL loads | `protected override`. Init Harmony, UIExtender here. |
+| `OnBeforeInitialModuleScreenSetAsRoot()` | Before main menu appears | `protected override`. One-time UI setup. |
+| `OnGameStart(Game, IGameStarter)` | Campaign/game session begins | `protected override`. Register behaviors/models here. |
+| `OnGameEnd(Game)` | Campaign ends (return to menu) | `public override`. **Module stays loaded.** Clean up stale singletons here. |
+| `OnSubModuleUnloaded()` | Module DLL unloads (game exit) | `protected override`. Final cleanup, unpatch Harmony. |
+| `OnApplicationTick(float dt)` | Every frame | `protected override`. Use for overlay ticks. |
+
+**Key facts:**
+- `OnGameEnd(Game game)` is `public virtual` (not protected). Fires when player exits campaign to main menu.
+- The module instance persists between campaigns — **stale static references** from a previous campaign will cause crashes if not nulled in `OnGameEnd`.
+- `OnSubModuleUnloaded` only fires on full game exit, not between campaigns.
+
+---
+
+## TroopRoster
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.Roster.TroopRoster`
+
+### Key Properties
+
+| Name | Type | Notes |
+|------|------|-------|
+| `TotalManCount` | `int` | Total number of troops in the roster. |
+| `TotalRegulars` | `int` | Non-hero troop count. |
+| `TotalHeroes` | `int` | Hero count. |
+| `Count` | `int` | Number of distinct troop types (roster element count). |
+
+**Key facts:**
+- Used by `MapEventParty.DiedInBattle` and `MapEventParty.WoundedInBattle` to track battle casualties.
+- The roster instance itself **can theoretically be null** — always null-check before accessing `TotalManCount`.
+- Iterating elements: `foreach (TroopRosterElement el in roster.GetTroopRoster())`.
+
+---
+
+## DiplomacyModel
+
+**Assembly:** `TaleWorlds.CampaignSystem.dll`
+**Type:** `TaleWorlds.CampaignSystem.GameComponents.DiplomacyModel`
+**Access:** `Campaign.Current.Models.DiplomacyModel`
+
+### Key Methods
+
+| Name | Signature | Notes |
+|------|-----------|-------|
+| `GetScoreOfDeclaringWar` | `(IFaction, IFaction, IFaction, out TextObject) → float` | AI war scoring. |
+| `GetScoreOfDeclaringPeace` | `(IFaction, IFaction, IFaction, out TextObject) → float` | AI peace scoring. |
+
+**Key facts:**
+- Accessed via `Campaign.Current.Models.DiplomacyModel`.
+- The entire chain can be null: `Campaign.Current` → `Models` → `DiplomacyModel`.
+- **Always use null-safe chain:** `Campaign.Current?.Models?.DiplomacyModel`.
+- Calling methods on a null model will throw `NullReferenceException`.
+
+---
+
 ## General Safety Rules (Derived from Audit)
 
 1. **Always null-check `Campaign.Current`** before accessing any campaign subsystem.
@@ -283,3 +414,9 @@ public static int RandomInt(int maxValue); // [0, maxValue)
 6. **Guard NaN/Infinity** on any float that passes through division or ratio computation before display.
 7. **Null-check VM collections** (`VolunteerList`, `TroopsInCart`, `Troops`, `DoneHint`) before iterating or accessing members.
 8. **`Settlement.Village` is a field**, not a property — use `GetField()` in reflection, not `GetProperty()`.
+9. **Null-safe chain for `Campaign.Current?.Models?.DiplomacyModel`** — all three can independently be null.
+10. **Wrap `MakePeaceAction` in try-catch** when called in loops — one failure must not abort remaining iterations.
+11. **Null-check `FactionsAtWarWith`** before `.Count` — can be null for eliminated kingdoms.
+12. **Null-check `MapEventParty` roster properties** (`DiedInBattle`, `WoundedInBattle`) — use `?.TotalManCount ?? 0`.
+13. **Clean up statics in `OnGameEnd`**, not just `OnSubModuleUnloaded` — module persists between campaigns.
+14. **Cache reflection results** (`PropertyInfo`, `FieldInfo`) in static fields — reflection per-call is a hot-path perf issue.

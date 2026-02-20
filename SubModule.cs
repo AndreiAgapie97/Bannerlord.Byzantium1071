@@ -76,6 +76,18 @@ namespace Byzantium1071
 
         }
 
+        /// <summary>
+        /// Called when a campaign ends (player returns to main menu).
+        /// Null stale singletons so a fresh campaign starts clean.
+        /// </summary>
+        public override void OnGameEnd(Game game)
+        {
+            base.OnGameEnd(game);
+            B1071_ManpowerBehavior.Instance = null;
+            B1071_OverlayController.Reset();
+            _exceptionCounts.Clear();
+        }
+
         protected override void OnBeforeInitialModuleScreenSetAsRoot()
         {
             base.OnBeforeInitialModuleScreenSetAsRoot();
@@ -105,6 +117,9 @@ namespace Byzantium1071
             catch (System.Exception ex)
             {
                 string exType = ex.GetType().FullName ?? ex.GetType().Name;
+                // Cap dictionary size to prevent unbounded memory growth from exotic exception types
+                if (_exceptionCounts.Count > 256 && !_exceptionCounts.ContainsKey(exType))
+                    _exceptionCounts.Clear();
                 if (!_exceptionCounts.TryGetValue(exType, out int count))
                     count = 0;
                 count++;

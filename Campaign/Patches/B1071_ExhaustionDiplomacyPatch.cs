@@ -85,6 +85,7 @@ namespace Byzantium1071.Campaign.Patches
             float biasPerWar = Math.Max(0f, Settings.DiplomacyExtraPeaceBiasPerMajorWar);
 
             int majorWars = 0;
+            if (kingdom.FactionsAtWarWith == null) return 0f;
             for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
             {
                 IFaction enemy = kingdom.FactionsAtWarWith[i];
