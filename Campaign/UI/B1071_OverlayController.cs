@@ -20,7 +20,8 @@ namespace Byzantium1071.Campaign.UI
         Towns = 3,
         Villages = 4,
         Factions = 5,
-        Armies = 6
+        Armies = 6,
+        Wars = 7
     }
 
     internal static class B1071_OverlayController
@@ -155,6 +156,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabVillagesText => FormatTabText("Villages", _activeTab == B1071LedgerTab.Villages);
         internal static string TabFactionsText => FormatTabText("Factions", _activeTab == B1071LedgerTab.Factions);
         internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
+        internal static string TabWarsText => FormatTabText("Wars", _activeTab == B1071LedgerTab.Wars);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -162,6 +164,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabVillagesActive => _activeTab == B1071LedgerTab.Villages;
         internal static bool IsTabFactionsActive => _activeTab == B1071LedgerTab.Factions;
         internal static bool IsTabArmiesActive => _activeTab == B1071LedgerTab.Armies;
+        internal static bool IsTabWarsActive => _activeTab == B1071LedgerTab.Wars;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -170,7 +173,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "MP", "Prosp", "Regen", "Name" },
             new[] { "Hearth", "Fact", "Bound", "Name" },
             new[] { "Prosp", "MP", "Money", "Name" },
-            new[] { "Power", "Troops", "Exhaust", "Name" }
+            new[] { "Power", "Troops", "Exhaust", "Name" },
+            new[] { "Peace", "Exhaust", "Status", "Pair" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -183,7 +187,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 1, 2 },  // Towns:       same as Castles
             new[] { 3, 0, 1, 2 },  // Villages:    H1→Name(3), H2→Hearth(0), H3→Fact(1), H4→Bound(2)
             new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Money(2)
-            new[] { 3, 0, 1, 2 }   // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
+            new[] { 3, 0, 1, 2 },  // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
+            new[] { 3, 1, 0, 2 }   // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
         };
 
         internal static string SortText => _sortTextCached;
@@ -321,7 +326,7 @@ namespace Byzantium1071.Campaign.UI
 
                 _lastCurrentContextSettlementId = currentContextId;
             }
-            else if (_activeTab != B1071LedgerTab.NearbyPools && !_columnsDirty)
+            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && !_columnsDirty)
             {
                 return;
             }
@@ -417,6 +422,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Factions: return BuildFactionsColumns(behavior);
                 case B1071LedgerTab.Villages: return BuildVillagesColumns(behavior);
                 case B1071LedgerTab.Armies: return BuildArmiesColumns();
+                case B1071LedgerTab.Wars: return BuildWarsColumns(behavior);
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -1096,7 +1102,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 6) tabValue = 6;
+            if (tabValue > 7) tabValue = 7;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
@@ -1176,6 +1182,228 @@ namespace Byzantium1071.Campaign.UI
             public int MilitaryPower;   // Σ(tier² × count)
             public int PartyCount;
             public float Exhaustion;
+        }
+
+        private sealed class WarsLedgerRow
+        {
+            public string PairName = string.Empty;
+            public string SideAName = string.Empty;
+            public string SideBName = string.Empty;
+            public float ExhaustionA;
+            public float ExhaustionB;
+            public float MaxExhaustion;
+            public float PeacePressure;
+            public bool HasTruce;
+            public float TruceDays;
+            public string StatusText = string.Empty;
+            public int StatusScore;
+        }
+
+        // ─── Wars tab ───
+
+        private static float GetNativePeacePressureScore(Kingdom sideA, Kingdom sideB)
+        {
+            try
+            {
+                var model = TaleWorlds.CampaignSystem.Campaign.Current?.Models?.DiplomacyModel;
+                if (model != null)
+                    return model.GetScoreOfDeclaringPeace(sideA, sideB);
+            }
+            catch
+            {
+            }
+
+            // Safe fallback if DiplomacyModel call is unavailable in this runtime.
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            if (behavior == null)
+                return 0f;
+
+            float exA = behavior.GetWarExhaustion(sideA.StringId);
+            float exB = behavior.GetWarExhaustion(sideB.StringId);
+            return (exA + exB) * 0.5f;
+        }
+
+        private static int GetForcedPeaceRiskScore(float maxExhaustion)
+        {
+            if (!Settings.EnableExhaustionDiplomacyPressure)
+                return 0;
+
+            if (!Settings.EnableForcedPeaceAtCrisis)
+                return 1;
+
+            if (maxExhaustion >= Settings.DiplomacyForcedPeaceThreshold)
+                return 4;
+
+            if (maxExhaustion >= Settings.DiplomacyPeacePressureThreshold)
+                return 3;
+
+            if (maxExhaustion >= Settings.DiplomacyNoNewWarThreshold)
+                return 2;
+
+            return 1;
+        }
+
+        private static string GetForcedPeaceRiskLabel(int riskScore)
+        {
+            return riskScore switch
+            {
+                0 => "Off",
+                1 => "Low",
+                2 => "Gated",
+                3 => "High",
+                _ => "Crisis"
+            };
+        }
+
+        private static string GetExhaustionCompact(float exhaustion)
+        {
+            if (exhaustion <= 0f) return "Fr0";
+            if (exhaustion < 25f) return "St" + ((int)exhaustion).ToString();
+            if (exhaustion < 50f) return "Ti" + ((int)exhaustion).ToString();
+            if (exhaustion < 75f) return "Ex" + ((int)exhaustion).ToString();
+            return "Cr" + ((int)exhaustion).ToString();
+        }
+
+        private static string GetPeacePressureBand(float peacePressure)
+        {
+            float abs = Math.Abs(peacePressure);
+            string level = abs >= 100000f ? "Extreme"
+                : abs >= 25000f ? "High"
+                : abs >= 5000f ? "Medium"
+                : abs >= 1000f ? "Low"
+                : "Light";
+
+            if (peacePressure > 0f)
+                return "Peace " + level;
+            if (peacePressure < 0f)
+                return "War " + level;
+            return "Neutral";
+        }
+
+        private static string BuildWarsColumns(B1071_ManpowerBehavior behavior)
+        {
+            var rows = new List<WarsLedgerRow>();
+            var seenPairs = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (Kingdom sideA in Kingdom.All)
+            {
+                if (sideA == null || sideA.IsEliminated)
+                    continue;
+
+                string idA = sideA.StringId ?? string.Empty;
+                if (string.IsNullOrEmpty(idA))
+                    continue;
+
+                for (int i = 0; i < sideA.FactionsAtWarWith.Count; i++)
+                {
+                    IFaction enemyFaction = sideA.FactionsAtWarWith[i];
+                    if (enemyFaction is not Kingdom sideB || sideB.IsEliminated)
+                        continue;
+
+                    if (!sideA.IsAtWarWith(sideB))
+                        continue;
+
+                    string idB = sideB.StringId ?? string.Empty;
+                    if (string.IsNullOrEmpty(idB))
+                        continue;
+
+                    string pairKey = string.CompareOrdinal(idA, idB) <= 0 ? idA + "|" + idB : idB + "|" + idA;
+                    if (!seenPairs.Add(pairKey))
+                        continue;
+
+                    float exA = behavior.GetWarExhaustion(idA);
+                    float exB = behavior.GetWarExhaustion(idB);
+                    float maxExhaustion = Math.Max(exA, exB);
+                    float peacePressure = GetNativePeacePressureScore(sideA, sideB);
+
+                    bool hasTruce = behavior.IsKingdomPairUnderTruce(sideA, sideB, out float truceDays);
+                    int riskScore = GetForcedPeaceRiskScore(maxExhaustion);
+                    string riskLabel = GetForcedPeaceRiskLabel(riskScore);
+                    string status = hasTruce ? "Truce " + truceDays.ToString("0.0") + "d | " + riskLabel : "No Truce | " + riskLabel;
+
+                    rows.Add(new WarsLedgerRow
+                    {
+                        PairName = sideA.Name + " vs " + sideB.Name,
+                        SideAName = sideA.Name?.ToString() ?? "Unknown",
+                        SideBName = sideB.Name?.ToString() ?? "Unknown",
+                        ExhaustionA = exA,
+                        ExhaustionB = exB,
+                        MaxExhaustion = maxExhaustion,
+                        PeacePressure = peacePressure,
+                        HasTruce = hasTruce,
+                        TruceDays = truceDays,
+                        StatusText = status,
+                        StatusScore = riskScore
+                    });
+                }
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => a.MaxExhaustion.CompareTo(b.MaxExhaustion),
+                    2 => a.StatusScore.CompareTo(b.StatusScore),
+                    3 => string.Compare(a.PairName, b.PairName, StringComparison.Ordinal),
+                    _ => a.PeacePressure.CompareTo(b.PeacePressure)
+                };
+
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
+                return string.Compare(a.PairName, b.PairName, StringComparison.Ordinal);
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Wars Ledger - No active kingdom wars.");
+                return "Wars Ledger\nNo active kingdom wars.\nLegend: Exhaustion uses Fr=Fresh, St=Strained, Ti=Tired, Ex=Exhausted, Cr=Crisis (left side is first kingdom, right side is second). Bias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce days remaining and forced-peace risk from exhaustion thresholds.";
+            }
+
+            string playerFaction = GetPlayerFactionName();
+            int truceCount = 0;
+            float totalPressure = 0f;
+            foreach (WarsLedgerRow row in rows)
+            {
+                if (row.HasTruce) truceCount++;
+                totalPressure += row.PeacePressure;
+            }
+
+            _titleText = "Wars Ledger  (" + rows.Count + " entries)\nLegend: Exhaustion uses Fr=Fresh, St=Strained, Ti=Tired, Ex=Exhausted, Cr=Crisis (left side is first kingdom, right side is second).\nBias shows Peace or War tendency with strength (Light/Low/Medium/High/Extreme). Status shows Truce days remaining and forced-peace risk from exhaustion thresholds.";
+            _header1 = "War Pair";
+            _header2 = "Exhaustion";
+            _header3 = "Peace Bias";
+            _header4 = "Truce / Risk";
+            ApplySortIndicator(new[] { 3, 2, 4, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                WarsLedgerRow row = rows[i];
+                int rank = i + 1;
+                bool involvesPlayer = string.Equals(row.SideAName, playerFaction, StringComparison.Ordinal) ||
+                                      string.Equals(row.SideBName, playerFaction, StringComparison.Ordinal);
+                string prefix = involvesPlayer ? "> " : "";
+                bool even = (i - startIndex) % 2 == 0;
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    prefix + rank + ". " + TruncateForColumn(row.PairName, 26),
+                    GetExhaustionCompact(row.ExhaustionA) + "/" + GetExhaustionCompact(row.ExhaustionB),
+                    GetPeacePressureBand(row.PeacePressure),
+                    TruncateForColumn(row.StatusText, 24),
+                    involvesPlayer,
+                    even));
+            }
+
+            _totals1 = "Total Wars";
+            _totals2 = rows.Count.ToString("N0");
+            _totals3 = rows.Count > 0 ? GetPeacePressureBand(totalPressure / rows.Count) : "Neutral";
+            _totals4 = truceCount.ToString("N0") + " truces";
+            return _titleText;
         }
 
         // ─── Armies tab ───
