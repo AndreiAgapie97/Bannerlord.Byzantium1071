@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -47,6 +48,12 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, int> _lastRaidDrainDayByVillageId = new();
         // Raid drain spent this day per pool (key = "poolId|day", value = spent manpower).
         private readonly Dictionary<string, int> _raidDrainSpentByPoolDay = new();
+        // Dedupe ownership-change callbacks for identical transitions within the same day.
+        private readonly Dictionary<string, bool> _ownerChangeProcessedToday = new();
+        // Delayed recovery (WP3): linear-decaying regen penalty per pool.
+        private readonly Dictionary<string, float> _recoveryPenaltyBaseByPoolId = new();
+        private readonly Dictionary<string, float> _recoveryPenaltyStartDayByPoolId = new();
+        private readonly Dictionary<string, float> _recoveryPenaltyExpiryDayByPoolId = new();
         // WP1 telemetry (runtime-only, non-persistent)
         private int _telemetryRaidDrainToday;
         private int _telemetrySiegeDrainToday;
@@ -69,6 +76,10 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<int> _savedRaidDrainDays = new();
         private List<string> _savedRaidPoolDayKeys = new();
         private List<int> _savedRaidPoolDaySpent = new();
+        private List<string> _savedRecoveryPenaltyPoolIds = new();
+        private List<float> _savedRecoveryPenaltyBaseValues = new();
+        private List<float> _savedRecoveryPenaltyStartDays = new();
+        private List<float> _savedRecoveryPenaltyExpiryDays = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -289,6 +300,63 @@ namespace Byzantium1071.Campaign.Behaviors
                         _raidDrainSpentByPoolDay[poolDayKey] = _savedRaidPoolDaySpent[i];
                 }
             }
+
+            // Delayed recovery save/load.
+            _savedRecoveryPenaltyPoolIds ??= new List<string>();
+            _savedRecoveryPenaltyBaseValues ??= new List<float>();
+            _savedRecoveryPenaltyStartDays ??= new List<float>();
+            _savedRecoveryPenaltyExpiryDays ??= new List<float>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedRecoveryPenaltyPoolIds.Clear();
+                _savedRecoveryPenaltyBaseValues.Clear();
+                _savedRecoveryPenaltyStartDays.Clear();
+                _savedRecoveryPenaltyExpiryDays.Clear();
+                foreach (var kvp in _recoveryPenaltyBaseByPoolId)
+                {
+                    string poolId = kvp.Key;
+                    if (string.IsNullOrEmpty(poolId))
+                        continue;
+
+                    _savedRecoveryPenaltyPoolIds.Add(poolId);
+                    _savedRecoveryPenaltyBaseValues.Add(kvp.Value);
+                    _savedRecoveryPenaltyStartDays.Add(_recoveryPenaltyStartDayByPoolId.TryGetValue(poolId, out float startDay) ? startDay : (float)CampaignTime.Now.ToDays);
+                    _savedRecoveryPenaltyExpiryDays.Add(_recoveryPenaltyExpiryDayByPoolId.TryGetValue(poolId, out float expiryDay) ? expiryDay : (float)CampaignTime.Now.ToDays);
+                }
+            }
+
+            dataStore.SyncData("B1071_RecoveryPenalty_PoolIds", ref _savedRecoveryPenaltyPoolIds);
+            dataStore.SyncData("B1071_RecoveryPenalty_Base", ref _savedRecoveryPenaltyBaseValues);
+            dataStore.SyncData("B1071_RecoveryPenalty_StartDays", ref _savedRecoveryPenaltyStartDays);
+            dataStore.SyncData("B1071_RecoveryPenalty_ExpiryDays", ref _savedRecoveryPenaltyExpiryDays);
+
+            _savedRecoveryPenaltyPoolIds ??= new List<string>();
+            _savedRecoveryPenaltyBaseValues ??= new List<float>();
+            _savedRecoveryPenaltyStartDays ??= new List<float>();
+            _savedRecoveryPenaltyExpiryDays ??= new List<float>();
+
+            if (dataStore.IsLoading)
+            {
+                _recoveryPenaltyBaseByPoolId.Clear();
+                _recoveryPenaltyStartDayByPoolId.Clear();
+                _recoveryPenaltyExpiryDayByPoolId.Clear();
+
+                int nr = Math.Min(
+                    Math.Min(_savedRecoveryPenaltyPoolIds.Count, _savedRecoveryPenaltyBaseValues.Count),
+                    Math.Min(_savedRecoveryPenaltyStartDays.Count, _savedRecoveryPenaltyExpiryDays.Count));
+
+                for (int i = 0; i < nr; i++)
+                {
+                    string poolId = _savedRecoveryPenaltyPoolIds[i];
+                    if (string.IsNullOrEmpty(poolId))
+                        continue;
+
+                    _recoveryPenaltyBaseByPoolId[poolId] = Math.Max(0f, _savedRecoveryPenaltyBaseValues[i]);
+                    _recoveryPenaltyStartDayByPoolId[poolId] = _savedRecoveryPenaltyStartDays[i];
+                    _recoveryPenaltyExpiryDayByPoolId[poolId] = _savedRecoveryPenaltyExpiryDays[i];
+                }
+            }
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
@@ -429,6 +497,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // Daily raid bookkeeping.
             _lastRaidDrainDayByVillageId.Clear();
             _raidDrainSpentByPoolDay.Clear();
+            _ownerChangeProcessedToday.Clear();
+
+            CleanupExpiredDelayedRecovery();
 
             CleanupExpiredTruces();
 
@@ -510,6 +581,162 @@ namespace Byzantium1071.Campaign.Behaviors
             return value.Substring(0, maxLen - 1) + "…";
         }
 
+        private static object? TryReadCampaignTimeMember(CampaignTime time, string memberName)
+        {
+            Type type = typeof(CampaignTime);
+
+            PropertyInfo? property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public);
+            if (property != null)
+                return property.GetValue(time);
+
+            MethodInfo? method = type.GetMethod(memberName, BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null);
+            if (method != null)
+                return method.Invoke(time, null);
+
+            FieldInfo? field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public);
+            if (field != null)
+                return field.GetValue(time);
+
+            return null;
+        }
+
+        private static int TryReadCampaignTimeInt(CampaignTime time, string memberName)
+        {
+            object? value = TryReadCampaignTimeMember(time, memberName);
+            if (value == null)
+                return -1;
+
+            try
+            {
+                return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private static string FormatCampaignDateTime(float absoluteDay)
+        {
+            CampaignTime when = CampaignTime.Days(absoluteDay);
+
+            string season = TryReadCampaignTimeMember(when, "GetSeasonOfYear")?.ToString() ?? string.Empty;
+            int dayOfSeason = TryReadCampaignTimeInt(when, "GetDayOfSeason");
+            int year = TryReadCampaignTimeInt(when, "GetYear");
+            int hourOfDay = TryReadCampaignTimeInt(when, "GetHourOfDay");
+
+            if (!string.IsNullOrEmpty(season) && dayOfSeason > 0 && year >= 0)
+            {
+                if (hourOfDay >= 0)
+                    return $"{season} {dayOfSeason}, {year} {hourOfDay:00}:00";
+
+                return $"{season} {dayOfSeason}, {year}";
+            }
+
+            int dayOfYear = TryReadCampaignTimeInt(when, "GetDayOfYear");
+            if (year >= 0 && dayOfYear >= 0)
+            {
+                if (hourOfDay >= 0)
+                    return $"Year {year}, day {dayOfYear}, {hourOfDay:00}:00";
+
+                return $"Year {year}, day {dayOfYear}";
+            }
+
+            return $"day {absoluteDay:0.0}";
+        }
+
+        internal string FormatAbsoluteDay(float absoluteDay)
+        {
+            return FormatCampaignDateTime(absoluteDay);
+        }
+
+        internal string FormatDaysFromNow(float daysFromNow)
+        {
+            float absoluteDay = (float)CampaignTime.Now.ToDays + Math.Max(0f, daysFromNow);
+            return FormatCampaignDateTime(absoluteDay);
+        }
+
+        private void CleanupExpiredDelayedRecovery()
+        {
+            if (_recoveryPenaltyExpiryDayByPoolId.Count == 0)
+                return;
+
+            float now = (float)CampaignTime.Now.ToDays;
+            List<string> expired = new();
+            foreach (var kvp in _recoveryPenaltyExpiryDayByPoolId)
+            {
+                if (kvp.Value <= now)
+                    expired.Add(kvp.Key);
+            }
+
+            for (int i = 0; i < expired.Count; i++)
+            {
+                string poolId = expired[i];
+                _recoveryPenaltyExpiryDayByPoolId.Remove(poolId);
+                _recoveryPenaltyStartDayByPoolId.Remove(poolId);
+                _recoveryPenaltyBaseByPoolId.Remove(poolId);
+            }
+        }
+
+        private float GetRecoveryPenaltyFraction(string poolId)
+        {
+            if (string.IsNullOrEmpty(poolId))
+                return 0f;
+
+            if (!_recoveryPenaltyBaseByPoolId.TryGetValue(poolId, out float basePenalty) || basePenalty <= 0f)
+                return 0f;
+
+            if (!_recoveryPenaltyStartDayByPoolId.TryGetValue(poolId, out float startDay) ||
+                !_recoveryPenaltyExpiryDayByPoolId.TryGetValue(poolId, out float expiryDay))
+                return 0f;
+
+            float now = (float)CampaignTime.Now.ToDays;
+            if (now >= expiryDay)
+            {
+                _recoveryPenaltyBaseByPoolId.Remove(poolId);
+                _recoveryPenaltyStartDayByPoolId.Remove(poolId);
+                _recoveryPenaltyExpiryDayByPoolId.Remove(poolId);
+                return 0f;
+            }
+
+            float duration = Math.Max(1f, expiryDay - startDay);
+            float remaining = Math.Max(0f, expiryDay - now);
+            float ratio = Clamp01(remaining / duration);
+            return Math.Max(0f, basePenalty * ratio);
+        }
+
+        private void ApplyDelayedRecoveryPenalty(Settlement pool, int basePenaltyPercent, int durationDays, string reason)
+        {
+            if (!Settings.EnableDelayedRecovery) return;
+            if (pool == null || string.IsNullOrEmpty(pool.StringId)) return;
+            if (basePenaltyPercent <= 0 || durationDays <= 0) return;
+
+            string poolId = pool.StringId;
+            float now = (float)CampaignTime.Now.ToDays;
+            float maxPenalty = Math.Max(0f, Settings.RecoveryPenaltyMaxPercent) / 100f;
+            if (maxPenalty <= 0f) return;
+
+            float currentPenalty = GetRecoveryPenaltyFraction(poolId);
+            float addPenalty = Math.Max(0f, basePenaltyPercent) / 100f;
+            float combined = Math.Min(maxPenalty, currentPenalty + addPenalty);
+            float newExpiry = now + Math.Max(1, durationDays);
+
+            if (_recoveryPenaltyExpiryDayByPoolId.TryGetValue(poolId, out float oldExpiry) && oldExpiry > newExpiry)
+                newExpiry = oldExpiry;
+
+            _recoveryPenaltyBaseByPoolId[poolId] = combined;
+            _recoveryPenaltyStartDayByPoolId[poolId] = now;
+            _recoveryPenaltyExpiryDayByPoolId[poolId] = newExpiry;
+
+            if (Settings.ShowPlayerDebugMessages)
+            {
+                float remainingDays = Math.Max(0f, newExpiry - now);
+                string expiryText = FormatCampaignDateTime(newExpiry);
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"[B1071] Recovery penalty at {pool.Name}: {(combined * 100f):0}% until {expiryText} (~{remainingDays:0.0} days, {reason})."));
+            }
+        }
+
         /// <summary>
         /// Returns the war exhaustion score for a kingdom (0 = fresh, max = crisis).
         /// </summary>
@@ -534,7 +761,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float expiryDay = (float)CampaignTime.Now.ToDays + truceDays;
             _truceExpiryByPair[key] = expiryDay;
-            _telemetryLastTruce = $"Truce {kingdom1.Name}-{kingdom2.Name} {truceDays}d";
+            _telemetryLastTruce = $"Truce {kingdom1.Name}-{kingdom2.Name} until {FormatCampaignDateTime(expiryDay)}";
         }
 
         public bool IsKingdomPairUnderTruce(Kingdom? kingdom, IFaction? otherFaction, out float daysRemaining)
@@ -588,7 +815,7 @@ namespace Byzantium1071.Campaign.Behaviors
             for (int i = 0; i < toRemove.Count; i++)
             {
                 _truceExpiryByPair.Remove(toRemove[i]);
-                _telemetryLastTruce = "Expired " + toRemove[i];
+                _telemetryLastTruce = "Expired " + toRemove[i] + " at " + FormatCampaignDateTime(now);
             }
         }
 
@@ -634,8 +861,11 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     if (nowDays - lastDay < cooldownDays)
                     {
-                        DebugDiplomacy($"Skip forced peace for {kingdom.Name}: cooldown active ({(cooldownDays - (nowDays - lastDay)):0.0} days left).");
-                        _telemetryLastForcedPeace = $"Skip {kingdom.Name}: cooldown";
+                        float remain = cooldownDays - (nowDays - lastDay);
+                        float resumeDay = nowDays + Math.Max(0f, remain);
+                        string resumeText = FormatCampaignDateTime(resumeDay);
+                        DebugDiplomacy($"Skip forced peace for {kingdom.Name}: cooldown active ({remain:0.0} days left, until {resumeText}).");
+                        _telemetryLastForcedPeace = $"Skip {kingdom.Name}: cooldown until {resumeText}";
                         continue;
                     }
                 }
@@ -697,7 +927,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
                 _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
-                _telemetryLastForcedPeace = $"Peace {kingdom.Name}-{bestFactionToPeace.Name} (ex {exhaustion:0.0})";
+                _telemetryLastForcedPeace = $"Peace {kingdom.Name}-{bestFactionToPeace.Name} at {FormatCampaignDateTime(nowDays)} (ex {exhaustion:0.0})";
 
                 Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
             }
@@ -1056,9 +1286,8 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             var settings = Settings;
 
-            // Both towns and castles use prosperity for base regen rate.
-            // Prosperity represents population/economy → how fast new recruits appear.
-            float pct;
+            // Stage 1: base rate from settlement type + prosperity.
+            float basePct;
             float prosperityNorm = Math.Max(1f, settings.ProsperityNormalizer);
 
             if (pool.IsTown)
@@ -1067,7 +1296,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 float pN = Clamp01(prosperity / prosperityNorm);
                 float minPct = Math.Max(0f, settings.TownRegenMinPercent) / 100f;
                 float maxPct = Math.Max(minPct, settings.TownRegenMaxPercent / 100f);
-                pct = minPct + ((maxPct - minPct) * pN);
+                basePct = minPct + ((maxPct - minPct) * pN);
             }
             else if (pool.IsCastle)
             {
@@ -1075,13 +1304,16 @@ namespace Byzantium1071.Campaign.Behaviors
                 float pN = Clamp01(prosperity / prosperityNorm);
                 float minPct = Math.Max(0f, settings.CastleRegenMinPercent) / 100f;
                 float maxPct = Math.Max(minPct, settings.CastleRegenMaxPercent / 100f);
-                pct = minPct + ((maxPct - minPct) * pN);
+                basePct = minPct + ((maxPct - minPct) * pN);
             }
             else
             {
-                pct = Math.Max(0f, settings.OtherRegenPercent) / 100f;
+                basePct = Math.Max(0f, settings.OtherRegenPercent) / 100f;
             }
 
+            float pct = basePct;
+
+            // Stage 2: structural modifiers.
             // Hearth contribution (bound villages)
             float hearthSum = 0f;
             if (pool.Town != null && pool.Town.Villages != null)
@@ -1106,6 +1338,8 @@ namespace Byzantium1071.Campaign.Behaviors
             float peaceMul = 1f;
             float governorAdd = 0f;
             float exhaustionMul = 1f;
+            float recoveryMul = 1f;
+            float softCapMul = 1f;
 
             // Security modifier on regen (both towns and castles).
             // Safe settlements attract more volunteers.
@@ -1119,6 +1353,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 pct *= securityMul;
             }
 
+            // Stage 3: stress modifiers.
             // Food modifier on regen: starving settlements regen much slower.
             if (pool.Town != null)
             {
@@ -1149,6 +1384,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 pct *= siegeMul;
             }
 
+            // Stress floor: avoid permanent stall under stacked penalties.
+            float stressFloor = Math.Max(0f, settings.RegenStressFloorPercent) / 100f;
+            if (pct < stressFloor)
+                pct = stressFloor;
+
+            // Stage 4: seasonal effect.
             // Seasonal modifier: spring/summer = bonus, winter = penalty.
             if (settings.EnableSeasonalRegen)
             {
@@ -1203,6 +1444,40 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
+            // Delayed recovery penalty: post-war shock decays over time.
+            if (settings.EnableDelayedRecovery)
+            {
+                float penalty = Instance?.GetRecoveryPenaltyFraction(pool.StringId) ?? 0f;
+                if (penalty > 0f)
+                {
+                    recoveryMul = Math.Max(0.1f, 1f - penalty);
+                    pct *= recoveryMul;
+                }
+            }
+
+            // Stage 5: soft-cap near full pool.
+            if (settings.EnableRegenSoftCap && max > 0)
+            {
+                float startRatio = Clamp01(settings.RegenSoftCapStartRatio);
+                float strength = Math.Max(0f, settings.RegenSoftCapStrength);
+
+                if (startRatio < 0.999f && strength > 0f)
+                {
+                    int current = max;
+                    if (Instance != null && !string.IsNullOrEmpty(pool.StringId) && Instance._manpowerByPoolId.TryGetValue(pool.StringId, out int cur))
+                        current = cur;
+
+                    float fillRatio = Clamp01((float)current / max);
+                    if (fillRatio > startRatio)
+                    {
+                        float t = Clamp01((fillRatio - startRatio) / Math.Max(0.001f, 1f - startRatio));
+                        float slowdown = 1f - (strength * t * t);
+                        softCapMul = Math.Max(0.1f, slowdown);
+                        pct *= softCapMul;
+                    }
+                }
+            }
+
             int regen = (int)(max * pct);
 
             // Hard cap: never exceed RegenCapPercent of pool per day.
@@ -1218,7 +1493,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 Instance._telemetryLastRegenPoolId = pool.StringId ?? string.Empty;
                 Instance._telemetryLastRegenBreakdown =
-                    $"Base:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} => +{result}";
+                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} => +{result}";
             }
 
             return result;
@@ -1427,6 +1702,12 @@ namespace Byzantium1071.Campaign.Behaviors
             _raidDrainSpentByPoolDay[poolDayKey] = spentToday + drain;
             _telemetryRaidDrainToday += drain;
 
+            ApplyDelayedRecoveryPenalty(
+                pool,
+                Settings.RecoveryPenaltyRaidPercent,
+                Settings.RaidRecoveryDays,
+                "raid");
+
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"[B1071] Raid on {village.Name}: {pool.Name} pool -{drain} ({cur}→{newVal})",
@@ -1487,6 +1768,12 @@ namespace Byzantium1071.Campaign.Behaviors
             int appliedVal = Math.Min(cur, newVal);
             _manpowerByPoolId[poolId] = appliedVal; // only reduce, never increase
             _telemetrySiegeDrainToday += Math.Max(0, cur - appliedVal);
+
+            ApplyDelayedRecoveryPenalty(
+                pool,
+                Settings.RecoveryPenaltySiegePercent,
+                Settings.SiegeRecoveryDays,
+                "siege");
 
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -1633,6 +1920,20 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableWarEffects) return;
             if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
 
+            string settlementId = settlement.StringId ?? string.Empty;
+            int today = (int)CampaignTime.Now.ToDays;
+            string oldOwnerId = oldOwner?.StringId ?? string.Empty;
+            string newOwnerId = newOwner?.StringId ?? string.Empty;
+            string ownerChangeKey = $"{settlementId}|{today}|{oldOwnerId}|{newOwnerId}|{detail}|{openToClaim}";
+            if (_ownerChangeProcessedToday.ContainsKey(ownerChangeKey))
+            {
+                if (Settings.ShowPlayerDebugMessages)
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"[B1071] Ownership change duplicate ignored at {settlement.Name} ({detail}, claim:{openToClaim})."));
+                return;
+            }
+            _ownerChangeProcessedToday[ownerChangeKey] = true;
+
             Settlement? pool = GetPoolSettlement(settlement);
             if (pool == null) return;
             EnsureEntry(pool);
@@ -1646,10 +1947,20 @@ namespace Byzantium1071.Campaign.Behaviors
             int newVal = Math.Max(0, (int)(cur * retainPct));
             _manpowerByPoolId[poolId] = newVal;
 
+            ApplyDelayedRecoveryPenalty(
+                pool,
+                Settings.RecoveryPenaltyConquestPercent,
+                Settings.ConquestRecoveryDays,
+                "conquest");
+
             if (Settings.ShowPlayerDebugMessages)
+            {
+                string oldOwnerName = oldOwner?.Name?.ToString() ?? "None";
+                string newOwnerName = newOwner?.Name?.ToString() ?? "None";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Ownership changed at {settlement.Name}: pool {cur}→{newVal} ({retainPct:P0} retained)",
+                    $"[B1071] Ownership changed ({detail}, claim:{openToClaim}) at {settlement.Name}: {oldOwnerName}→{newOwnerName}, pool {cur}→{newVal} ({retainPct:P0} retained)",
                     Colors.Yellow));
+            }
             // War exhaustion: losing a settlement costs the old owner.
             AddWarExhaustion(oldOwner?.Clan?.Kingdom?.StringId, Settings.ConquestExhaustionGain);        }
     }

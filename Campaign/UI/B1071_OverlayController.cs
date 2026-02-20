@@ -1338,7 +1338,16 @@ namespace Byzantium1071.Campaign.UI
                     bool hasTruce = behavior.IsKingdomPairUnderTruce(sideA, sideB, out float truceDays);
                     int riskScore = GetForcedPeaceRiskScore(maxExhaustion);
                     string riskLabel = GetForcedPeaceRiskLabel(riskScore);
-                    string status = hasTruce ? "Truce " + truceDays.ToString("0.0") + "d | " + riskLabel : "No Truce | " + riskLabel;
+                    string status;
+                    if (hasTruce)
+                    {
+                        string truceUntil = behavior.FormatDaysFromNow(truceDays);
+                        status = "Truce " + truceDays.ToString("0.0") + "d (" + truceUntil + ") | " + riskLabel;
+                    }
+                    else
+                    {
+                        status = "No Truce | " + riskLabel;
+                    }
 
                     rows.Add(new WarsLedgerRow
                     {
