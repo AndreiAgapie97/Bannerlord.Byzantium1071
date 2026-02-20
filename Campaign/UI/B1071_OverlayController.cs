@@ -488,14 +488,14 @@ namespace Byzantium1071.Campaign.UI
                 string diagPool = string.Empty;
 
                 if (recPenalty > 0f && recDays > 0f)
-                    diagRegen = "Rec: -" + ((int)(recPenalty * 100)) + "% (" + ((int)recDays) + "d)";
+                    diagRegen = "Regen -" + ((int)(recPenalty * 100)) + "% (" + ((int)recDays) + " days)";
                 if (band != DiplomacyPressureBand.Low)
-                    diagPool = "Band: " + band;
+                    diagPool = "War Pressure: " + (band == DiplomacyPressureBand.Crisis ? "Crisis" : "Rising");
 
                 if (!string.IsNullOrEmpty(diagRegen) || !string.IsNullOrEmpty(diagPool))
                 {
                     _ledgerRows.Add(new B1071_LedgerRowVM(
-                        "Diagnostics",
+                        "Status",
                         string.Empty,
                         diagRegen,
                         diagPool,
@@ -658,7 +658,8 @@ namespace Byzantium1071.Campaign.UI
 
             string playerFaction = GetPlayerFactionName();
             int totalCurrent = 0, totalMaximum = 0;
-            foreach (LedgerRow r in rows) { totalCurrent += r.Current; totalMaximum += r.Maximum; }
+            long totalProsperity = 0;
+            foreach (LedgerRow r in rows) { totalCurrent += r.Current; totalMaximum += r.Maximum; totalProsperity += r.Prosperity; }
 
             _titleText = title + "  (" + rows.Count + " entries)";
             _header1 = typeFilter;
@@ -678,6 +679,7 @@ namespace Byzantium1071.Campaign.UI
             });
 
             SetTotals(totalCurrent, totalMaximum);
+            _totals3 = totalProsperity.ToString("N0");
             return _titleText;
         }
 
@@ -1499,7 +1501,39 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Risk";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
+            // WP7 — Add active truces first (rendered at bottom due to Gauntlet's bottom-to-top layout)
+            var activeTruces = behavior.GetActiveTruces();
+            string playerKingdomName = Hero.MainHero?.Clan?.Kingdom?.Name?.ToString() ?? string.Empty;
+
             _ledgerRows.Clear();
+
+            if (activeTruces.Count > 0)
+            {
+                // Add truce rows in reverse so they display in ascending order at the bottom
+                for (int t = activeTruces.Count - 1; t >= 0; t--)
+                {
+                    var (nameA, nameB, daysLeft) = activeTruces[t];
+                    string trucePair = nameA + " / " + nameB;
+                    bool involvesPlayerTruce = string.Equals(nameA, playerKingdomName, StringComparison.Ordinal) ||
+                                               string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
+                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                        (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
+                        ((int)daysLeft) + "d left",
+                        "Truce",
+                        "-",
+                        involvesPlayerTruce,
+                        false));
+                }
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "── Truces ──",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    false,
+                    false));
+            }
+
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 WarsLedgerRow row = rows[i];
@@ -1516,33 +1550,6 @@ namespace Byzantium1071.Campaign.UI
                     row.StatusText,
                     involvesPlayer,
                     even));
-            }
-
-            // WP7 — Append active truces after the wars list
-            var activeTruces = behavior.GetActiveTruces();
-            if (activeTruces.Count > 0)
-            {
-                _ledgerRows.Add(new B1071_LedgerRowVM(
-                    "── Truces ──",
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    false,
-                    false));
-
-                foreach (var (kingdomA, kingdomB, daysLeft) in activeTruces)
-                {
-                    string trucePair = kingdomA + " / " + kingdomB;
-                    bool involvesPlayerTruce = string.Equals(kingdomA, Hero.MainHero?.Clan?.Kingdom?.StringId, StringComparison.Ordinal) ||
-                                               string.Equals(kingdomB, Hero.MainHero?.Clan?.Kingdom?.StringId, StringComparison.Ordinal);
-                    _ledgerRows.Add(new B1071_LedgerRowVM(
-                        (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
-                        ((int)daysLeft) + "d left",
-                        "Truce",
-                        "-",
-                        involvesPlayerTruce,
-                        false));
-                }
             }
 
             _totals1 = "Total";

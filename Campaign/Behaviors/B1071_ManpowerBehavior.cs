@@ -763,9 +763,9 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
-        /// Returns all active truce pairs as (pairKey, daysRemaining) for overlay display.
+        /// Returns all active truce pairs as (displayNameA, displayNameB, daysRemaining) for overlay display.
         /// </summary>
-        internal List<(string kingdomA, string kingdomB, float daysRemaining)> GetActiveTruces()
+        internal List<(string kingdomAName, string kingdomBName, float daysRemaining)> GetActiveTruces()
         {
             var result = new List<(string, string, float)>();
             float now = (float)CampaignTime.Now.ToDays;
@@ -775,9 +775,24 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (remaining <= 0f) continue;
                 string[] parts = kvp.Key.Split('|');
                 if (parts.Length == 2)
-                    result.Add((parts[0], parts[1], remaining));
+                {
+                    string nameA = ResolveKingdomDisplayName(parts[0]);
+                    string nameB = ResolveKingdomDisplayName(parts[1]);
+                    result.Add((nameA, nameB, remaining));
+                }
             }
             return result;
+        }
+
+        private static string ResolveKingdomDisplayName(string stringId)
+        {
+            if (string.IsNullOrEmpty(stringId)) return stringId;
+            foreach (Kingdom k in Kingdom.All)
+            {
+                if (k != null && string.Equals(k.StringId, stringId, StringComparison.Ordinal))
+                    return k.Name?.ToString() ?? stringId;
+            }
+            return stringId;
         }
 
         private void ApplyDelayedRecoveryPenalty(Settlement pool, int basePenaltyPercent, int durationDays, string reason)
