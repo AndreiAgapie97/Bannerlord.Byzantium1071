@@ -474,6 +474,25 @@ namespace Byzantium1071.Campaign.UI
                 true,
                 true));
 
+            if (behavior.ShouldShowTelemetryInOverlay)
+            {
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    behavior.GetTelemetryCurrentRowLabel(),
+                    behavior.GetTelemetryCurrentRowC2(),
+                    behavior.GetTelemetryCurrentRowC3(),
+                    behavior.GetTelemetryCurrentRowC4(),
+                    false,
+                    false));
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "RegenDbg",
+                    TruncateForColumn(behavior.GetTelemetryRegenBreakdown(), 20),
+                    string.Empty,
+                    string.Empty,
+                    false,
+                    true));
+            }
+
             _totals1 = "Selected";
             _totals2 = FormatMp(current, maximum);
             _totals3 = "+" + dailyRegen.ToString("N0") + "/d";

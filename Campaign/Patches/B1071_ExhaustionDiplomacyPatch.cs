@@ -79,6 +79,14 @@ namespace Byzantium1071.Campaign.Patches
         {
             return decision?.Kingdom != null && decision.FactionToMakePeaceWith is Kingdom;
         }
+
+        internal static void RecordTelemetry(string reason)
+        {
+            if (string.IsNullOrEmpty(reason))
+                return;
+
+            B1071_ManpowerBehavior.Instance?.RecordDiplomacyTelemetry(reason);
+        }
     }
 
     [HarmonyPatch(typeof(DeclareWarDecision), nameof(DeclareWarDecision.DetermineSupport))]
@@ -110,6 +118,7 @@ namespace Byzantium1071.Campaign.Patches
                     __result = -10000f;
                 else
                     __result = 10000f;
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar support override: truce active for {__instance.Kingdom.Name} vs {__instance.FactionToDeclareWarOn.Name}.");
                 return;
             }
 
@@ -120,6 +129,7 @@ namespace Byzantium1071.Campaign.Patches
                     __result = -10000f;
                 else
                     __result = 10000f;
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar support override: exhaustion {exhaustion:0.0} >= {threshold:0.0} for {__instance.Kingdom.Name}.");
                 return;
             }
 
@@ -129,6 +139,8 @@ namespace Byzantium1071.Campaign.Patches
                 __result -= penalty;
             else
                 __result += penalty;
+
+            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"DeclareWar support adjusted by {penalty:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
         }
     }
 
@@ -156,6 +168,7 @@ namespace Byzantium1071.Campaign.Patches
             if (exhaustion >= threshold)
             {
                 __result = outcome.ShouldPeaceBeDeclared ? 200f : 0f;
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"MakePeace support override: exhaustion {exhaustion:0.0} >= {threshold:0.0} for {__instance.Kingdom.Name}.");
                 return;
             }
 
@@ -165,6 +178,8 @@ namespace Byzantium1071.Campaign.Patches
                 __result += bonus;
             else
                 __result -= bonus;
+
+            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"MakePeace support adjusted by {bonus:0.0} at exhaustion {exhaustion:0.0} for {__instance.Kingdom.Name}.");
         }
     }
 
@@ -191,6 +206,7 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
                     Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: truce {truceDaysLeft:0.0}d for {kingdom.Name}.");
                 return false;
             }
 
@@ -203,6 +219,7 @@ namespace Byzantium1071.Campaign.Patches
 
             if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
                 Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
+            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: exhaustion {exhaustion:0.0} >= {threshold:0.0} for {kingdom.Name}.");
             return false;
         }
     }

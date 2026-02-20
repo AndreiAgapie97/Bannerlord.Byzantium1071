@@ -47,6 +47,17 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, int> _lastRaidDrainDayByVillageId = new();
         // Raid drain spent this day per pool (key = "poolId|day", value = spent manpower).
         private readonly Dictionary<string, int> _raidDrainSpentByPoolDay = new();
+        // WP1 telemetry (runtime-only, non-persistent)
+        private int _telemetryRaidDrainToday;
+        private int _telemetrySiegeDrainToday;
+        private int _telemetryBattleDrainToday;
+        private float _telemetryExhaustionGainToday;
+        private float _telemetryExhaustionDecayToday;
+        private string _telemetryLastForcedPeace = "None";
+        private string _telemetryLastTruce = "None";
+        private string _telemetryLastDiplomacyDecision = "None";
+        private string _telemetryLastRegenBreakdown = "n/a";
+        private string _telemetryLastRegenPoolId = string.Empty;
         private List<string>? _exhaustionKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
@@ -285,6 +296,13 @@ namespace Byzantium1071.Campaign.Behaviors
             Instance = this;
             UI.B1071_OverlayController.Reset();
 
+            ResetDailyTelemetry();
+            _telemetryLastForcedPeace = "None";
+            _telemetryLastTruce = "None";
+            _telemetryLastDiplomacyDecision = "None";
+            _telemetryLastRegenBreakdown = "n/a";
+            _telemetryLastRegenPoolId = string.Empty;
+
             SeedAllPoolsIfNeeded();
 
             if (Hero.MainHero != null)
@@ -400,6 +418,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnDailyTick()
         {
+            ResetDailyTelemetry();
+
             // Clear per-day caches so GetMaxManpower is recomputed with fresh data.
             _maxManpowerCache.Clear();
 
@@ -424,11 +444,14 @@ namespace Byzantium1071.Campaign.Behaviors
                     _exhaustionKeysScratch.AddRange(_warExhaustion.Keys);
                     foreach (string key in _exhaustionKeysScratch)
                     {
-                        float val = _warExhaustion[key] - decay;
+                        float before = _warExhaustion[key];
+                        float val = before - decay;
                         if (val <= 0f)
                             _warExhaustion.Remove(key);
                         else
                             _warExhaustion[key] = val;
+
+                        _telemetryExhaustionDecayToday += Math.Min(decay, before);
                     }
                 }
 
@@ -447,6 +470,44 @@ namespace Byzantium1071.Campaign.Behaviors
             float maxScore = Math.Max(1f, Settings.ExhaustionMaxScore);
             float cur = _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
             _warExhaustion[kingdomId!] = Math.Min(maxScore, cur + amount);
+            _telemetryExhaustionGainToday += amount;
+        }
+
+        internal bool ShouldShowTelemetryInOverlay => Settings.ShowTelemetryInOverlay;
+        internal string GetTelemetryCurrentRowLabel() => "Dbg";
+        internal string GetTelemetryCurrentRowC2() =>
+            $"R/S/B:{_telemetryRaidDrainToday}/{_telemetrySiegeDrainToday}/{_telemetryBattleDrainToday} ({_telemetryLastRegenPoolId})";
+        internal string GetTelemetryCurrentRowC3() =>
+            $"Exh +{_telemetryExhaustionGainToday:0.0} -{_telemetryExhaustionDecayToday:0.0}";
+        internal string GetTelemetryCurrentRowC4() =>
+            TruncateTelemetry(_telemetryLastForcedPeace == "None" ? _telemetryLastTruce : _telemetryLastForcedPeace, 28);
+        internal string GetTelemetryRegenBreakdown() => _telemetryLastRegenBreakdown;
+
+        internal void RecordDiplomacyTelemetry(string reason)
+        {
+            _telemetryLastDiplomacyDecision = string.IsNullOrEmpty(reason) ? "None" : reason;
+            if (Settings.TelemetryDebugLogs)
+                Debug.Print("[Byzantium1071][Telemetry][Diplomacy] " + _telemetryLastDiplomacyDecision);
+        }
+
+        private void ResetDailyTelemetry()
+        {
+            _telemetryRaidDrainToday = 0;
+            _telemetrySiegeDrainToday = 0;
+            _telemetryBattleDrainToday = 0;
+            _telemetryExhaustionGainToday = 0f;
+            _telemetryExhaustionDecayToday = 0f;
+            _telemetryLastForcedPeace = "None";
+            _telemetryLastDiplomacyDecision = "None";
+        }
+
+        private static string TruncateTelemetry(string value, int maxLen)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLen)
+                return value;
+            if (maxLen <= 1)
+                return value.Substring(0, maxLen);
+            return value.Substring(0, maxLen - 1) + "…";
         }
 
         /// <summary>
@@ -473,6 +534,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float expiryDay = (float)CampaignTime.Now.ToDays + truceDays;
             _truceExpiryByPair[key] = expiryDay;
+            _telemetryLastTruce = $"Truce {kingdom1.Name}-{kingdom2.Name} {truceDays}d";
         }
 
         public bool IsKingdomPairUnderTruce(Kingdom? kingdom, IFaction? otherFaction, out float daysRemaining)
@@ -524,7 +586,10 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             for (int i = 0; i < toRemove.Count; i++)
+            {
                 _truceExpiryByPair.Remove(toRemove[i]);
+                _telemetryLastTruce = "Expired " + toRemove[i];
+            }
         }
 
         private void TryApplyForcedPeaceAtCrisis()
@@ -549,6 +614,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (Clan.PlayerClan?.Kingdom == kingdom)
                 {
                     DebugDiplomacy($"Skip forced peace for {kingdom.Name}: player kingdom context.");
+                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: player kingdom";
                     continue;
                 }
 
@@ -560,6 +626,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (exhaustion < threshold)
                 {
                     DebugDiplomacy($"Skip forced peace for {kingdom.Name}: exhaustion {exhaustion:0.0} below threshold {threshold:0.0}.");
+                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: {exhaustion:0.0}<{threshold:0.0}";
                     continue;
                 }
 
@@ -568,6 +635,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (nowDays - lastDay < cooldownDays)
                     {
                         DebugDiplomacy($"Skip forced peace for {kingdom.Name}: cooldown active ({(cooldownDays - (nowDays - lastDay)):0.0} days left).");
+                        _telemetryLastForcedPeace = $"Skip {kingdom.Name}: cooldown";
                         continue;
                     }
                 }
@@ -623,11 +691,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (activeWarCount <= maxActiveWars || bestFactionToPeace == null)
                 {
                     DebugDiplomacy($"Skip forced peace for {kingdom.Name}: eligible wars {activeWarCount} <= configured minimum {maxActiveWars}.");
+                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: wars {activeWarCount}";
                     continue;
                 }
 
                 MakePeaceAction.ApplyByKingdomDecision(kingdom, bestFactionToPeace, 0, 0);
                 _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
+                _telemetryLastForcedPeace = $"Peace {kingdom.Name}-{bestFactionToPeace.Name} (ex {exhaustion:0.0})";
 
                 Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
             }
@@ -1028,6 +1098,15 @@ namespace Byzantium1071.Campaign.Behaviors
             float hearthBonus = Math.Max(0f, settings.HearthBonusMaxPercent) / 100f;
             pct += hearthBonus * hN;
 
+            float securityMul = 1f;
+            float foodMul = 1f;
+            float loyaltyMul = 1f;
+            float siegeMul = 1f;
+            float seasonalMul = 1f;
+            float peaceMul = 1f;
+            float governorAdd = 0f;
+            float exhaustionMul = 1f;
+
             // Security modifier on regen (both towns and castles).
             // Safe settlements attract more volunteers.
             if (pool.Town != null)
@@ -1036,7 +1115,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 float sN = Clamp01(security / 100f);
                 float secMin = Math.Max(0f, settings.SecurityRegenMinScale) / 100f;
                 float secMax = Math.Max(secMin, settings.SecurityRegenMaxScale / 100f);
-                pct *= secMin + ((secMax - secMin) * sN);
+                securityMul = secMin + ((secMax - secMin) * sN);
+                pct *= securityMul;
             }
 
             // Food modifier on regen: starving settlements regen much slower.
@@ -1047,7 +1127,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 float fN = Clamp01(foodStocks / foodNorm);
                 float foodMin = Math.Max(0f, settings.FoodRegenMinScale) / 100f;
                 float foodMax = Math.Max(foodMin, settings.FoodRegenMaxScale / 100f);
-                pct *= foodMin + ((foodMax - foodMin) * fN);
+                foodMul = foodMin + ((foodMax - foodMin) * fN);
+                pct *= foodMul;
             }
 
             // Loyalty modifier on regen: disloyal populations won't volunteer.
@@ -1057,21 +1138,31 @@ namespace Byzantium1071.Campaign.Behaviors
                 float lN = Clamp01(loyalty / 100f);
                 float loyMin = Math.Max(0f, settings.LoyaltyRegenMinScale) / 100f;
                 float loyMax = Math.Max(loyMin, settings.LoyaltyRegenMaxScale / 100f);
-                pct *= loyMin + ((loyMax - loyMin) * lN);
+                loyaltyMul = loyMin + ((loyMax - loyMin) * lN);
+                pct *= loyaltyMul;
             }
 
             // Siege penalty.
             if (pool.IsUnderSiege)
-                pct *= Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
+            {
+                siegeMul = Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
+                pct *= siegeMul;
+            }
 
             // Seasonal modifier: spring/summer = bonus, winter = penalty.
             if (settings.EnableSeasonalRegen)
             {
                 var season = CampaignTime.Now.GetSeasonOfYear;
                 if (season == CampaignTime.Seasons.Spring || season == CampaignTime.Seasons.Summer)
-                    pct *= Math.Max(0f, settings.SpringSummerRegenMultiplier) / 100f;
+                {
+                    seasonalMul = Math.Max(0f, settings.SpringSummerRegenMultiplier) / 100f;
+                    pct *= seasonalMul;
+                }
                 else if (season == CampaignTime.Seasons.Winter)
-                    pct *= Math.Max(0f, settings.WinterRegenMultiplier) / 100f;
+                {
+                    seasonalMul = Math.Max(0f, settings.WinterRegenMultiplier) / 100f;
+                    pct *= seasonalMul;
+                }
                 // Autumn = 1.0× (no change)
             }
 
@@ -1079,7 +1170,10 @@ namespace Byzantium1071.Campaign.Behaviors
             if (settings.EnablePeaceDividend && pool.OwnerClan?.Kingdom is Kingdom kingdom)
             {
                 if (kingdom.FactionsAtWarWith?.Count == 0)
-                    pct *= Math.Max(1f, settings.PeaceDividendMultiplier) / 100f;
+                {
+                    peaceMul = Math.Max(1f, settings.PeaceDividendMultiplier) / 100f;
+                    pct *= peaceMul;
+                }
             }
 
             // Governor bonus: Steward skill boosts regen.
@@ -1087,7 +1181,8 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int steward = governor.GetSkillValue(DefaultSkills.Steward);
                 float govDivisor = Math.Max(1f, settings.GovernorStewardRegenDivisor);
-                pct += steward / govDivisor;
+                governorAdd = steward / govDivisor;
+                pct += governorAdd;
             }
 
             // War exhaustion penalty: strained kingdoms regen slower.
@@ -1102,7 +1197,8 @@ namespace Byzantium1071.Campaign.Behaviors
                         float divisor = Math.Max(1f, settings.ExhaustionRegenDivisor);
                         float penalty = 1f - (exhaustion / divisor);
                         if (penalty < 0.1f) penalty = 0.1f; // never reduce below 10%
-                        pct *= penalty;
+                        exhaustionMul = penalty;
+                        pct *= exhaustionMul;
                     }
                 }
             }
@@ -1116,7 +1212,16 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int minDailyRegen = Math.Max(0, settings.MinimumDailyRegen);
             // Cap always wins: ensure minimum never exceeds the hard cap.
-            return Math.Min(cap, Math.Max(minDailyRegen, regen));
+            int result = Math.Min(cap, Math.Max(minDailyRegen, regen));
+
+            if (Instance != null)
+            {
+                Instance._telemetryLastRegenPoolId = pool.StringId ?? string.Empty;
+                Instance._telemetryLastRegenBreakdown =
+                    $"Base:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} => +{result}";
+            }
+
+            return result;
         }
 
         private static int GetManpowerCostPerTroop(CharacterObject troop)
@@ -1320,6 +1425,7 @@ namespace Byzantium1071.Campaign.Behaviors
             int newVal = Math.Max(0, cur - drain);
             _manpowerByPoolId[poolId] = newVal;
             _raidDrainSpentByPoolDay[poolDayKey] = spentToday + drain;
+            _telemetryRaidDrainToday += drain;
 
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -1378,7 +1484,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int newVal = Math.Max(0, (int)(max * retainPct));
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
-            _manpowerByPoolId[poolId] = Math.Min(cur, newVal); // only reduce, never increase
+            int appliedVal = Math.Min(cur, newVal);
+            _manpowerByPoolId[poolId] = appliedVal; // only reduce, never increase
+            _telemetrySiegeDrainToday += Math.Max(0, cur - appliedVal);
 
             if (Settings.ShowPlayerDebugMessages)
                 InformationManager.DisplayMessage(new InformationMessage(
@@ -1510,6 +1618,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
                 int newVal = Math.Max(0, cur - drain);
                 _manpowerByPoolId[poolId] = newVal;
+                _telemetryBattleDrainToday += Math.Max(0, cur - newVal);
             }
         }
 

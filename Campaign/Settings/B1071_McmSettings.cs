@@ -144,17 +144,25 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Cost multiplier %", 1, 1000, "0", Order = 2, HintText = "Final manpower cost multiplier applied to tier-based cost.")]
         public int CostMultiplierPercent { get; set; } = 100;
 
-        [SettingPropertyGroup("Diagnostics", GroupOrder = 5)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows manpower messages in the game UI for player actions.")]
         public bool ShowPlayerDebugMessages { get; set; } = true;
 
-        [SettingPropertyGroup("Diagnostics", GroupOrder = 5)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
         [SettingPropertyBool("Use OnUnitRecruited fallback for player", Order = 1, HintText = "Consumes manpower for player recruits on per-click event.")]
         public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = true;
 
-        [SettingPropertyGroup("Diagnostics", GroupOrder = 5)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
         [SettingPropertyBool("Log AI manpower consumption", Order = 2, HintText = "Logs AI manpower consumption bands to the Bannerlord logs.")]
         public bool LogAiManpowerConsumption { get; set; } = true;
+
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
+        [SettingPropertyBool("Enable telemetry debug logs", Order = 3, HintText = "Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates).")]
+        public bool TelemetryDebugLogs { get; set; } = false;
+
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
+        [SettingPropertyBool("Show telemetry in Current tab", Order = 4, HintText = "Adds compact instrumentation rows to the Current ledger tab for balancing/debugging.")]
+        public bool ShowTelemetryInOverlay { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyBool("Enable in-game overlay", Order = 0, HintText = "Enables the standalone Byzantium 1071 overlay on campaign map.")]
@@ -386,19 +394,19 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyBool("Enforce player parity", Order = 15, HintText = "If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
         public bool DiplomacyEnforcePlayerParity { get; set; } = false;
 
-        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 11)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 12)]
         [SettingPropertyBool("Enable diplomacy debug logs", Order = 16, HintText = "Logs detailed reasons for forced-peace and war-gate decisions.")]
         public bool DiplomacyDebugLogs { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyGroup("Tooltips", GroupOrder = 13)]
         [SettingPropertyBool("Enable settlement manpower tooltips", Order = 0, HintText = "Appends manpower info to settlement property tooltips in campaign UI.")]
         public bool EnableSettlementManpowerTooltips { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyGroup("Tooltips", GroupOrder = 13)]
         [SettingPropertyBool("Enable experimental map-hover fallback", Order = 1, HintText = "Reserved for an optional world-map hover fallback path. Keep disabled unless explicitly testing.")]
         public bool EnableExperimentalHoverFallback { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 12)]
+        [SettingPropertyGroup("Tooltips", GroupOrder = 13)]
         [SettingPropertyInteger("Tooltip refresh (ms)", 100, 2000, "0", Order = 2, HintText = "Throttle interval for any tooltip refresh logic that may run repeatedly.")]
         public int TooltipRefreshMs { get; set; } = 300;
     }
