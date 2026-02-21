@@ -206,7 +206,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 6, HintText = "How many ledger rows are shown per page.")]
-        public int OverlayLedgerRowsPerPage { get; set; } = 7;
+        public int OverlayLedgerRowsPerPage { get; set; } = 10;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Overlay top offset (px)", 40, 320, "0", Order = 7, HintText = "Vertical offset from the top of the screen for the overlay root panel. Increase this if game menus overlap the tab row.")]

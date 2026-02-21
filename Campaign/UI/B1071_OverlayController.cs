@@ -363,7 +363,13 @@ namespace Byzantium1071.Campaign.UI
 
             if (Settings.EnableOverlayHotkey && Input.IsKeyPressed(GetConfiguredHotkey()))
             {
-                ToggleVisibility();
+                // Block character-key hotkeys (M/N/K = choices 0/1/2) while the Search
+                // tab is active.  The game Tick() runs before Gauntlet processes the text
+                // binding update, so a timer-based approach cannot work — the keypress is
+                // seen here before SetSearchQuery() is ever called.  F-key hotkeys
+                // (choices 3-6) are unambiguous and always fire regardless of active tab.
+                if (!IsCharacterHotkey(Settings.OverlayHotkeyChoice) || _activeTab != B1071LedgerTab.Search)
+                    ToggleVisibility();
             }
 
             if (!_isVisible || !_isExpanded)
@@ -417,6 +423,12 @@ namespace Byzantium1071.Campaign.UI
         }
 
         /// <summary>
+        /// Returns true if the configured hotkey choice is a letter key (M=0, N=1, K=2)
+        /// that could appear in search text.  F-key choices (3–6) return false.
+        /// </summary>
+        private static bool IsCharacterHotkey(int choice) => choice == 0 || choice == 1 || choice == 2;
+
+        /// <summary>
         /// Returns true once when view data has changed, then false until next update.
         /// Called by the UI mixin to avoid redundant property syncs every frame.
         /// </summary>
@@ -455,9 +467,31 @@ namespace Byzantium1071.Campaign.UI
                 if (!_panelModeActive)
                     MBInformationManager.ShowHint("Byzantium 1071 Overlay\n" + _currentText);
             }
-            else if (!_panelModeActive)
+            else
             {
-                MBInformationManager.HideInformations();
+                // When hiding from the Search tab, SWITCH THE ACTIVE TAB away from Search.
+                // Simply clearing _searchQuery is not sufficient: as long as _activeTab
+                // remains Search, IsSearchControlsVisible stays true, so the search controls
+                // ListPanel (and its EditableTextWidget) keep IsVisible=true.  Gauntlet
+                // continues delivering input — including ESC — to any logically-visible
+                // widget even when its root-panel ancestor is hidden.  Switching the tab
+                // makes IsSearchControlsVisible false → the widget gets IsVisible=false →
+                // it releases its OS-level text-input focus → ESC reaches the game again.
+                if (_activeTab == B1071LedgerTab.Search)
+                {
+                    _activeTab = B1071LedgerTab.NearbyPools;
+                    _searchQuery = string.Empty;
+                    _columnsDirty = true;
+                    _pageIndex = 0;
+                }
+
+                _refreshTimer = 0f;
+                _lastText = string.Empty;
+
+                if (!_panelModeActive)
+                    MBInformationManager.HideInformations();
+
+                _viewDirty = true;
             }
         }
 
@@ -2182,7 +2216,10 @@ namespace Byzantium1071.Campaign.UI
         {
             int rows = Settings.OverlayLedgerRowsPerPage;
             if (rows < 3) rows = 3;
-            if (rows > 15) rows = 15;
+            if (rows > 22) rows = 22;   // raised from 15 to fit the larger 273px panel
+            // Search tab has a search bar + spacer that eat more vertical space
+            if (_activeTab == B1071LedgerTab.Search)
+                rows = Math.Max(1, rows - 3);
             return rows;
         }
 

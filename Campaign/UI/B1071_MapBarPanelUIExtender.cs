@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.UI
             "</Children>" +
             "</ButtonWidget>" +
             // Main panel (1180 x 290)
-            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1180\" SuggestedHeight=\"290\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1180\" SuggestedHeight=\"344\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
             "<BrushWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.Frame\" DoNotAcceptEvents=\"true\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"5\" MarginRight=\"5\" MarginTop=\"5\" MarginBottom=\"5\" Sprite=\"Encyclopedia\\canvas\" DoNotAcceptEvents=\"true\"/>" +
@@ -40,8 +40,8 @@ namespace Byzantium1071.Campaign.UI
             "</ListPanel>" +
             // === DIVIDER ===
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"6\" MarginBottom=\"6\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
-            // === CONTENT AREA (fixed height) ===
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"160\" MarginTop=\"6\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
+            // === CONTENT AREA (fixed height; clips overflow) ===
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginTop=\"6\" ClipContents=\"true\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
             // Totals row (bottom visually — 4-column, gold)
             "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071TotalsVisible\">" +
@@ -84,6 +84,19 @@ namespace Byzantium1071.Campaign.UI
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071TitleText\" />" +
             "</Children>" +
             "</ListPanel>" +
+            // === SEARCH CONTROLS ===
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"28\" MarginTop=\"4\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071SearchControlsVisible\">" +
+            "<Children>" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginRight=\"6\">" +
+            "<Children>" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.85\"/>" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.5\" Color=\"#000000FF\"/>" +
+            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" DefaultSearchText=\"Type to search…\"/>" +
+            "</Children>" +
+            "</Widget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"Search\"/></Children></ButtonWidget>" +
+            "</Children>" +
+            "</ListPanel>" +
             // === DIVIDER ===
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"4\" MarginBottom=\"4\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
             // === TAB ROW (renders at TOP) — with navbar background ===
@@ -109,13 +122,6 @@ namespace Byzantium1071.Campaign.UI
             "</ListPanel>" +
             "</Children>" +
             "</Widget>" +
-            // Search controls (only visible on Search tab)
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"30\" MarginTop=\"4\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071SearchControlsVisible\">" +
-            "<Children>" +
-            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Text=\"@B1071SearchQuery\"/>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" MarginLeft=\"6\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"Search\"/></Children></ButtonWidget>" +
-            "</Children>" +
-            "</ListPanel>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
