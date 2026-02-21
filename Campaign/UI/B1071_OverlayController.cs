@@ -22,7 +22,8 @@ namespace Byzantium1071.Campaign.UI
         Factions = 5,
         Armies = 6,
         Wars = 7,
-        Rebellion = 8
+        Rebellion = 8,
+        Prisoners = 9
     }
 
     internal static class B1071_OverlayController
@@ -159,6 +160,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
         internal static string TabWarsText => FormatTabText("Wars", _activeTab == B1071LedgerTab.Wars);
         internal static string TabRebellionText => FormatTabText("Rebellion", _activeTab == B1071LedgerTab.Rebellion);
+        internal static string TabPrisonersText => FormatTabText("Prisoners", _activeTab == B1071LedgerTab.Prisoners);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -168,6 +170,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabArmiesActive => _activeTab == B1071LedgerTab.Armies;
         internal static bool IsTabWarsActive => _activeTab == B1071LedgerTab.Wars;
         internal static bool IsTabRebellionActive => _activeTab == B1071LedgerTab.Rebellion;
+        internal static bool IsTabPrisonersActive => _activeTab == B1071LedgerTab.Prisoners;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -178,7 +181,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Prosp", "MP", "Money", "Name" },
             new[] { "Power", "Troops", "Exhaust", "Name" },
             new[] { "Peace", "Exhaust", "Status", "Pair" },
-            new[] { "Risk", "TTR", "Loyalty", "Name" }
+            new[] { "Risk", "TTR", "Loyalty", "Name" },
+            new[] { "Captor", "Where", "By", "Noble" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -193,7 +197,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Money(2)
             new[] { 3, 0, 1, 2 },  // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
             new[] { 3, 1, 0, 2 },  // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
-            new[] { 3, 0, 2, 1 }   // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
+            new[] { 3, 0, 2, 1 },  // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
+            new[] { 3, 0, 2, 1 }   // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
         };
 
         internal static string SortText => _sortTextCached;
@@ -429,6 +434,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Armies: return BuildArmiesColumns();
                 case B1071LedgerTab.Wars: return BuildWarsColumns(behavior);
                 case B1071LedgerTab.Rebellion: return BuildRebellionRiskColumns();
+                case B1071LedgerTab.Prisoners: return BuildPrisonersColumns();
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -534,6 +540,187 @@ namespace Byzantium1071.Campaign.UI
             _totals3 = "+" + dailyRegen.ToString("N0") + "/d";
             _totals4 = pool?.Name?.ToString() ?? "-";
             _pageLabel = "Page 1/1";
+            return _titleText;
+        }
+
+        private sealed class PrisonerLedgerRow
+        {
+            public string NobleName = string.Empty;
+            public string SubjectFaction = string.Empty;
+            public string CaptorFaction = string.Empty;
+            public string HolderName = string.Empty;
+            public string LocationName = string.Empty;
+            public bool IsYourNobleCaptured;
+            public bool IsEnemyNobleHeldByYou;
+            public bool IsImportant;
+            public bool IsRuler;
+            public bool IsClanLeader;
+            public int ImportanceScore;
+            public int FactionBucketCount;
+        }
+
+        private static string GetFactionName(IFaction? faction)
+        {
+            return faction?.Name?.ToString() ?? "Unknown";
+        }
+
+        private static string GetHeroFactionName(Hero? hero)
+        {
+            return GetFactionName(hero?.MapFaction);
+        }
+
+        private static bool TryGetCaptivityInfo(Hero hero, out IFaction? captorFaction, out string holderName, out string locationName)
+        {
+            captorFaction = null;
+            holderName = "Unknown";
+            locationName = "Unknown";
+
+            PartyBase? party = hero.PartyBelongedToAsPrisoner;
+            if (party == null)
+                return false;
+
+            captorFaction = party.MapFaction;
+
+            if (party.IsSettlement && party.Settlement != null)
+            {
+                Settlement settlement = party.Settlement;
+                locationName = settlement.Name?.ToString() ?? "Settlement";
+                holderName = settlement.OwnerClan?.Name?.ToString()
+                    ?? settlement.MapFaction?.Name?.ToString()
+                    ?? "Dungeon";
+                return true;
+            }
+
+            MobileParty? mobileParty = party.MobileParty;
+            if (mobileParty != null)
+            {
+                holderName = mobileParty.LeaderHero?.Name?.ToString()
+                    ?? mobileParty.Name?.ToString()
+                    ?? "Party";
+
+                locationName = mobileParty.CurrentSettlement?.Name?.ToString()
+                    ?? mobileParty.TargetSettlement?.Name?.ToString()
+                    ?? mobileParty.Name?.ToString()
+                    ?? "On Map";
+
+                return true;
+            }
+
+            holderName = party.Owner?.Name?.ToString()
+                ?? party.Name?.ToString()
+                ?? "Party";
+            locationName = party.Settlement?.Name?.ToString() ?? "On Map";
+            return true;
+        }
+
+        private static string BuildPrisonersColumns()
+        {
+            var rows = new List<PrisonerLedgerRow>();
+            var captorFactionCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+
+            foreach (Hero hero in Hero.AllAliveHeroes)
+            {
+                if (hero == null || !hero.IsPrisoner)
+                    continue;
+
+                IFaction? subjectFaction = hero.MapFaction;
+                if (subjectFaction == null)
+                    continue;
+
+                if (!TryGetCaptivityInfo(hero, out IFaction? captorFaction, out string holderName, out string locationName))
+                    continue;
+
+                if (captorFaction == null)
+                    continue;
+
+                string subjectFactionName = GetHeroFactionName(hero);
+                string captorFactionName = GetFactionName(captorFaction);
+
+                if (!captorFactionCounts.TryGetValue(captorFactionName, out int count)) count = 0;
+                captorFactionCounts[captorFactionName] = count + 1;
+
+                rows.Add(new PrisonerLedgerRow
+                {
+                    NobleName = hero.Name?.ToString() ?? "Unknown",
+                    SubjectFaction = subjectFactionName,
+                    CaptorFaction = captorFactionName,
+                    HolderName = holderName,
+                    LocationName = locationName,
+                    IsYourNobleCaptured = false,
+                    IsEnemyNobleHeldByYou = false,
+                    IsImportant = false,
+                    IsRuler = false,
+                    IsClanLeader = false,
+                    ImportanceScore = 0
+                });
+            }
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                PrisonerLedgerRow row = rows[i];
+                row.FactionBucketCount = captorFactionCounts.TryGetValue(row.CaptorFaction, out int v) ? v : 0;
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => string.Compare(a.LocationName, b.LocationName, StringComparison.Ordinal),
+                    2 => string.Compare(a.HolderName, b.HolderName, StringComparison.Ordinal),
+                    3 => string.Compare(a.NobleName, b.NobleName, StringComparison.Ordinal),
+                    _ => string.Compare(a.CaptorFaction, b.CaptorFaction, StringComparison.Ordinal)
+                };
+
+                if (!_sortAscending) compare = -compare;
+                if (compare != 0) return compare;
+
+                compare = string.Compare(a.NobleName, b.NobleName, StringComparison.Ordinal);
+                if (!_sortAscending) compare = -compare;
+                return compare;
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Prisoners Ledger - No imprisoned nobles found.");
+                return "Prisoners Ledger\nNo imprisoned nobles found.";
+            }
+
+            int captorFactionTotal = captorFactionCounts.Count;
+
+            _titleText = "World Prisoners Ledger  (" + rows.Count + " nobles)";
+            _header1 = "Noble";
+            _header2 = "Captor";
+            _header3 = "By";
+            _header4 = "Where";
+            ApplySortIndicator(new[] { 2, 4, 3, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                PrisonerLedgerRow row = rows[i];
+                int rank = i + 1;
+
+                string noble = TruncateForColumn(row.NobleName, 22);
+                bool highlight = false;
+                bool even = (i - startIndex) % 2 == 0;
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    rank + ". " + noble,
+                    TruncateForColumn(row.CaptorFaction, 14),
+                    TruncateForColumn(row.HolderName, 12),
+                    TruncateForColumn(row.LocationName, 20),
+                    highlight,
+                    even));
+            }
+
+            _totals1 = "Total Nobles";
+            _totals2 = rows.Count.ToString("N0");
+            _totals3 = "Captor Factions: " + captorFactionTotal.ToString("N0");
+            _totals4 = string.Empty;
             return _titleText;
         }
 
@@ -1176,7 +1363,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 8) tabValue = 8;
+            if (tabValue > 9) tabValue = 9;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
