@@ -21,7 +21,8 @@ namespace Byzantium1071.Campaign.UI
         Villages = 4,
         Factions = 5,
         Armies = 6,
-        Wars = 7
+        Wars = 7,
+        Rebellion = 8
     }
 
     internal static class B1071_OverlayController
@@ -157,6 +158,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabFactionsText => FormatTabText("Factions", _activeTab == B1071LedgerTab.Factions);
         internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
         internal static string TabWarsText => FormatTabText("Wars", _activeTab == B1071LedgerTab.Wars);
+        internal static string TabRebellionText => FormatTabText("Rebellion", _activeTab == B1071LedgerTab.Rebellion);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -165,6 +167,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabFactionsActive => _activeTab == B1071LedgerTab.Factions;
         internal static bool IsTabArmiesActive => _activeTab == B1071LedgerTab.Armies;
         internal static bool IsTabWarsActive => _activeTab == B1071LedgerTab.Wars;
+        internal static bool IsTabRebellionActive => _activeTab == B1071LedgerTab.Rebellion;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -174,7 +177,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Hearth", "Fact", "Bound", "Name" },
             new[] { "Prosp", "MP", "Money", "Name" },
             new[] { "Power", "Troops", "Exhaust", "Name" },
-            new[] { "Peace", "Exhaust", "Status", "Pair" }
+            new[] { "Peace", "Exhaust", "Status", "Pair" },
+            new[] { "Risk", "TTR", "Loyalty", "Name" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -188,7 +192,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 1, 2 },  // Villages:    H1→Name(3), H2→Hearth(0), H3→Fact(1), H4→Bound(2)
             new[] { 3, 1, 0, 2 },  // Factions:    H1→Name(3), H2→MP(1), H3→Prosp(0), H4→Money(2)
             new[] { 3, 0, 1, 2 },  // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
-            new[] { 3, 1, 0, 2 }   // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
+            new[] { 3, 1, 0, 2 },  // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
+            new[] { 3, 0, 2, 1 }   // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
         };
 
         internal static string SortText => _sortTextCached;
@@ -423,6 +428,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Villages: return BuildVillagesColumns(behavior);
                 case B1071LedgerTab.Armies: return BuildArmiesColumns();
                 case B1071LedgerTab.Wars: return BuildWarsColumns(behavior);
+                case B1071LedgerTab.Rebellion: return BuildRebellionRiskColumns();
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -1170,7 +1176,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 7) tabValue = 7;
+            if (tabValue > 8) tabValue = 8;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
@@ -1265,6 +1271,209 @@ namespace Byzantium1071.Campaign.UI
             public float PeacePressure;
             public string StatusText = string.Empty;
             public int StatusScore;
+        }
+
+        private sealed class RebellionLedgerRow
+        {
+            public string TownName = string.Empty;
+            public string OwnerFaction = string.Empty;
+            public float Loyalty;
+            public float Security;
+            public float FoodChange;
+            public bool CultureMismatch;
+            public bool IsRebelliousNow;
+            public int RiskScore;
+            public int TimeToRebelDays;
+            public int TimeToRebelSort;
+            public int LoyaltyRiskScore;
+        }
+
+        private static float Clamp01(float value)
+        {
+            if (value < 0f) return 0f;
+            if (value > 1f) return 1f;
+            return value;
+        }
+
+        private static int EstimateTimeToRebelDays(float loyalty, float loyaltyChange, bool inRebelliousState)
+        {
+            if (inRebelliousState)
+                return 0;
+
+            const float rebellionThreshold = 25f;
+            if (loyalty <= rebellionThreshold)
+                return 1;
+
+            if (float.IsNaN(loyaltyChange) || float.IsInfinity(loyaltyChange) || loyaltyChange >= -0.01f)
+                return int.MaxValue;
+
+            double rawDays = (loyalty - rebellionThreshold) / (-loyaltyChange);
+            if (double.IsNaN(rawDays) || double.IsInfinity(rawDays) || rawDays <= 0d)
+                return int.MaxValue;
+
+            int days = (int)Math.Ceiling(rawDays);
+            if (days < 1) days = 1;
+            if (days > 999) days = 999;
+            return days;
+        }
+
+        private static int ComputeRebellionRiskScore(float loyalty, float security, float foodChange, bool cultureMismatch, bool inRebelliousState)
+        {
+            float loyaltyRisk = Clamp01((50f - loyalty) / 50f);
+            float securityRisk = Clamp01((45f - security) / 45f);
+            float foodRisk = foodChange < 0f ? Clamp01((-foodChange) / 8f) : 0f;
+            float mismatchRisk = cultureMismatch ? 1f : 0f;
+            float rebellionStateRisk = inRebelliousState ? 1f : 0f;
+
+            float weighted =
+                (0.50f * loyaltyRisk) +
+                (0.20f * securityRisk) +
+                (0.15f * foodRisk) +
+                (0.10f * mismatchRisk) +
+                (0.05f * rebellionStateRisk);
+
+            int score = (int)Math.Round(100f * Clamp01(weighted), MidpointRounding.AwayFromZero);
+            if (score < 0) score = 0;
+            if (score > 100) score = 100;
+            return score;
+        }
+
+        private static string FormatFoodTrend(float foodChange)
+        {
+            if (float.IsNaN(foodChange) || float.IsInfinity(foodChange))
+                return "F?";
+            if (foodChange > 0.10f)
+                return "F↑" + foodChange.ToString("0.0");
+            if (foodChange < -0.10f)
+                return "F↓" + Math.Abs(foodChange).ToString("0.0");
+            return "F=" + foodChange.ToString("0.0");
+        }
+
+        private static string FormatTimeToRebelLabel(int days)
+        {
+            if (days <= 0) return "Now";
+            if (days == int.MaxValue) return "Stable";
+            if (days >= 999) return "999+d";
+            return days + "d";
+        }
+
+        private static string BuildRebellionRiskColumns()
+        {
+            var rows = new List<RebellionLedgerRow>();
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || !settlement.IsTown || settlement.Town == null)
+                    continue;
+
+                Town town = settlement.Town;
+
+                float loyalty = town.Loyalty;
+                float security = town.Security;
+                float foodChange = town.FoodChange;
+                float loyaltyChange = town.LoyaltyChange;
+
+                bool inRebelliousState = settlement.InRebelliousState;
+
+                var townCulture = settlement.Culture;
+                var ownerCulture = settlement.OwnerClan?.Culture;
+                bool cultureMismatch = townCulture != null && ownerCulture != null && townCulture != ownerCulture;
+
+                int riskScore = ComputeRebellionRiskScore(loyalty, security, foodChange, cultureMismatch, inRebelliousState);
+                int ttrDays = EstimateTimeToRebelDays(loyalty, loyaltyChange, inRebelliousState);
+                int ttrSort = ttrDays == int.MaxValue ? 0 : (1000 - Math.Min(999, ttrDays));
+
+                rows.Add(new RebellionLedgerRow
+                {
+                    TownName = settlement.Name?.ToString() ?? "?",
+                    OwnerFaction = settlement.MapFaction?.Name?.ToString() ?? "Independent",
+                    Loyalty = loyalty,
+                    Security = security,
+                    FoodChange = foodChange,
+                    CultureMismatch = cultureMismatch,
+                    IsRebelliousNow = inRebelliousState,
+                    RiskScore = riskScore,
+                    TimeToRebelDays = ttrDays,
+                    TimeToRebelSort = ttrSort,
+                    LoyaltyRiskScore = (int)Math.Round(100f - Clamp01(loyalty / 100f) * 100f, MidpointRounding.AwayFromZero)
+                });
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => a.TimeToRebelSort.CompareTo(b.TimeToRebelSort),
+                    2 => a.LoyaltyRiskScore.CompareTo(b.LoyaltyRiskScore),
+                    3 => string.Compare(a.TownName, b.TownName, StringComparison.Ordinal),
+                    _ => a.RiskScore.CompareTo(b.RiskScore)
+                };
+
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
+                return string.Compare(a.TownName, b.TownName, StringComparison.Ordinal);
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Rebellion Risk - No towns found.");
+                return "Rebellion Risk\nNo towns found.";
+            }
+
+            string playerFaction = GetPlayerFactionName();
+            int totalRisk = 0;
+            int urgentCount = 0;
+            int mismatchCount = 0;
+
+            foreach (RebellionLedgerRow row in rows)
+            {
+                totalRisk += row.RiskScore;
+                if (row.TimeToRebelDays <= 30 || row.IsRebelliousNow)
+                    urgentCount++;
+                if (row.CultureMismatch)
+                    mismatchCount++;
+            }
+
+            _titleText = "Rebellion Risk  (" + rows.Count + " towns)";
+            _header1 = "Town";
+            _header2 = "Owner / CM";
+            _header3 = "Loyalty/Sec/Food";
+            _header4 = "Risk / TTR";
+            ApplySortIndicator(new[] { 2, 4, 3, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                RebellionLedgerRow row = rows[i];
+                int rank = i + 1;
+                bool highlight = string.Equals(row.OwnerFaction, playerFaction, StringComparison.Ordinal);
+                string prefix = highlight ? "> " : string.Empty;
+                bool even = (i - startIndex) % 2 == 0;
+
+                string mismatchTag = row.CultureMismatch ? "CM*" : "CM-";
+                string lsf = "L" + row.Loyalty.ToString("0") + " S" + row.Security.ToString("0") + " " + FormatFoodTrend(row.FoodChange);
+                string right = "R" + row.RiskScore.ToString("0") + " " + FormatTimeToRebelLabel(row.TimeToRebelDays);
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    prefix + rank + ". " + TruncateForColumn(row.TownName, 24),
+                    TruncateForColumn(row.OwnerFaction, 14) + " " + mismatchTag,
+                    lsf,
+                    right,
+                    highlight,
+                    even));
+            }
+
+            int avgRisk = rows.Count > 0 ? (int)Math.Round(totalRisk / (double)rows.Count, MidpointRounding.AwayFromZero) : 0;
+            _totals1 = "Avg Risk";
+            _totals2 = avgRisk.ToString("0");
+            _totals3 = "<=30d: " + urgentCount.ToString("N0");
+            _totals4 = "CM*: " + mismatchCount.ToString("N0");
+            return _titleText;
         }
 
         // ─── Wars tab ───
