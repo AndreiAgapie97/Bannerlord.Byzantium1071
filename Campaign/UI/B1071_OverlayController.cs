@@ -158,6 +158,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string Totals3 => _totals3;
         internal static string Totals4 => _totals4;
         internal static bool TotalsVisible => _totalsVisible;
+        internal static int PanelLeftOffset => Math.Max(0, Math.Min(300, Settings.OverlayPanelLeftOffset));
         internal static int PanelTopOffset => Math.Max(40, Math.Min(320, Settings.OverlayPanelTopOffset));
         internal static string Header1 => _header1;
         internal static string Header2 => _header2;

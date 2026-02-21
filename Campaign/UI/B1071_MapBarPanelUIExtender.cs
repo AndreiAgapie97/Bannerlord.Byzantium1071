@@ -11,7 +11,7 @@ namespace Byzantium1071.Campaign.UI
     {
         internal const string Text =
             // Root widget: positioned at top-left of screen
-            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"22\" MarginTop=\"@B1071PanelTopOffset\" MarginRight=\"22\" MarginBottom=\"22\" IsVisible=\"@B1071PanelVisible\">" +
+            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"@B1071PanelLeftOffset\" MarginTop=\"@B1071PanelTopOffset\" MarginRight=\"22\" MarginBottom=\"22\" IsVisible=\"@B1071PanelVisible\">" +
             "<Children>" +
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
@@ -157,6 +157,7 @@ namespace Byzantium1071.Campaign.UI
     {
         private bool _panelVisible = true;
         private bool _panelExpanded = true;
+        private int _panelLeftOffset = 22;
         private int _panelTopOffset = 152;
         private string _panelText = "Byzantium 1071 Overlay\n[Press M to toggle]";
         private string _toggleText = "Press M";
@@ -227,6 +228,13 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _panelExpanded;
             set => SetField(ref _panelExpanded, value, nameof(B1071PanelExpanded));
+        }
+
+        [DataSourceProperty]
+        public int B1071PanelLeftOffset
+        {
+            get => _panelLeftOffset;
+            set => SetField(ref _panelLeftOffset, value, nameof(B1071PanelLeftOffset));
         }
 
         [DataSourceProperty]
@@ -652,6 +660,7 @@ namespace Byzantium1071.Campaign.UI
         {
             B1071PanelVisible = B1071_OverlayController.IsVisible;
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
+            B1071PanelLeftOffset = B1071_OverlayController.PanelLeftOffset;
             B1071PanelTopOffset = B1071_OverlayController.PanelTopOffset;
             B1071PanelText = B1071_OverlayController.CurrentText;
             B1071ToggleText = "Press M";
@@ -696,6 +705,7 @@ namespace Byzantium1071.Campaign.UI
             if (!notifyAll) return;
 
             OnPropertyChangedWithValue(B1071PanelText, nameof(B1071PanelText));
+            OnPropertyChangedWithValue(B1071PanelLeftOffset, nameof(B1071PanelLeftOffset));
             OnPropertyChangedWithValue(B1071PanelTopOffset, nameof(B1071PanelTopOffset));
             OnPropertyChangedWithValue(B1071TabCurrentText, nameof(B1071TabCurrentText));
             OnPropertyChangedWithValue(B1071TabNearbyText, nameof(B1071TabNearbyText));

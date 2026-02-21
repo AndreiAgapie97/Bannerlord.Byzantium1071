@@ -162,7 +162,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows manpower messages in the game UI for player actions.")]
-        public bool ShowPlayerDebugMessages { get; set; } = false;
+        public bool ShowPlayerDebugMessages { get; set; } = true;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Use OnUnitRecruited fallback for player", Order = 1, HintText = "Consumes manpower for player recruits on per-click event.")]
@@ -192,12 +192,12 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Hotkey (0-6)", 0, 6, "0", Order = 2, HintText = "0=M, 1=N, 2=K, 3=F9, 4=F10, 5=F11, 6=F12. Default: 0 (M).")]
         public int OverlayHotkeyChoice { get; set; } = 0;
 
-        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Show settlement name", Order = 3, HintText = "Adds current settlement name to overlay text when available.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 16)]
+        [SettingPropertyBool("Show settlement name (legacy)", Order = 0, HintText = "Legacy setting kept for save/config compatibility. Not used by current overlay UI.")]
         public bool OverlayShowSettlementName { get; set; } = true;
 
-        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Show pool identifier", Order = 4, HintText = "Shows the pool settlement used for manpower calculations.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 16)]
+        [SettingPropertyBool("Show pool identifier (legacy)", Order = 1, HintText = "Legacy setting kept for save/config compatibility. Not used by current overlay UI.")]
         public bool OverlayShowPoolName { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
@@ -211,6 +211,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Overlay top offset (px)", 40, 320, "0", Order = 7, HintText = "Vertical offset from the top of the screen for the overlay root panel. Increase this if game menus overlap the tab row.")]
         public int OverlayPanelTopOffset { get; set; } = 152;
+
+        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
+        [SettingPropertyInteger("Overlay left offset (px)", 0, 300, "0", Order = 8, HintText = "Horizontal offset from the left edge for the overlay root panel.")]
+        public int OverlayPanelLeftOffset { get; set; } = 22;
 
         // ─── War Effects ───
 
@@ -504,12 +508,12 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyBool("Enable settlement manpower tooltips", Order = 0, HintText = "Appends manpower info to settlement property tooltips in campaign UI.")]
         public bool EnableSettlementManpowerTooltips { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 15)]
-        [SettingPropertyBool("Enable experimental map-hover fallback", Order = 1, HintText = "Reserved for an optional world-map hover fallback path. Keep disabled unless explicitly testing.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 16)]
+        [SettingPropertyBool("Enable experimental map-hover fallback (legacy)", Order = 2, HintText = "Legacy reserved setting. Currently not used by active tooltip path.")]
         public bool EnableExperimentalHoverFallback { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 15)]
-        [SettingPropertyInteger("Tooltip refresh (ms)", 100, 2000, "0", Order = 2, HintText = "Throttle interval for any tooltip refresh logic that may run repeatedly.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 16)]
+        [SettingPropertyInteger("Tooltip refresh (ms) (legacy)", 100, 2000, "0", Order = 3, HintText = "Legacy reserved setting. Currently not used by active tooltip path.")]
         public int TooltipRefreshMs { get; set; } = 300;
     }
 }
