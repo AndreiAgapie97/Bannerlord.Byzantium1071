@@ -399,6 +399,13 @@ namespace Byzantium1071.Campaign.UI
 
             if (_isVisible)
             {
+                _activeTab = B1071LedgerTab.NearbyPools;
+                _pageIndex = 0;
+                _sortColumn = 0;
+                _sortAscending = true;
+                _columnsDirty = true;
+                UpdateSortTextCache();
+
                 _lastText = string.Empty;
                 _currentText = BuildOverlayText();
                 if (!_panelModeActive)
@@ -2055,6 +2062,7 @@ namespace Byzantium1071.Campaign.UI
         {
             var rows = new List<WarsLedgerRow>();
             var seenPairs = new HashSet<string>(StringComparer.Ordinal);
+            var activeTruces = behavior.GetActiveTruces();
 
             foreach (Kingdom sideA in Kingdom.All)
             {
@@ -2126,15 +2134,13 @@ namespace Byzantium1071.Campaign.UI
                 return string.Compare(a.PairName, b.PairName, StringComparison.Ordinal);
             });
 
-            int pageSize = GetRowsPerPage();
-            int startIndex = GetPageStart(rows.Count, pageSize);
-            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
-
-            if (rows.Count == 0)
+            if (rows.Count == 0 && activeTruces.Count == 0)
             {
                 ClearColumns("Wars Ledger - No entries found.");
                 return "Wars Ledger\nNo entries found.";
             }
+
+            int pageSize = GetRowsPerPage();
 
             string playerFaction = GetPlayerFactionName();
             float totalPressure = 0f;
@@ -2150,16 +2156,83 @@ namespace Byzantium1071.Campaign.UI
             _header4 = "Risk";
             ApplySortIndicator(new[] { 3, 2, 4, 1 });
 
-            // WP7 — Add active truces first (rendered at bottom due to Gauntlet's bottom-to-top layout)
-            var activeTruces = behavior.GetActiveTruces();
+            // Option C pagination (revised):
+            // - Wars keep their normal pagination and are never displaced by truce rows.
+            // - Truce rows use leftover space on wars page 1 (if any), then overflow to dedicated truce pages.
             string playerKingdomName = Hero.MainHero?.Clan?.Kingdom?.Name?.ToString() ?? string.Empty;
+
+            int warPages = Math.Max(1, (int)Math.Ceiling(rows.Count / (double)pageSize));
+            int firstWarPageCount = Math.Min(rows.Count, pageSize);
+
+            int firstPageTruceCount = 0;
+            bool showTruceHeaderOnFirstPage = false;
+            if (activeTruces.Count > 0)
+            {
+                int spareOnFirstPage = Math.Max(0, pageSize - firstWarPageCount);
+                if (spareOnFirstPage >= 2)
+                {
+                    firstPageTruceCount = Math.Min(activeTruces.Count, spareOnFirstPage - 1);
+                    showTruceHeaderOnFirstPage = firstPageTruceCount > 0;
+                }
+            }
+
+            int remainingTruceCount = Math.Max(0, activeTruces.Count - firstPageTruceCount);
+            int trucePages = remainingTruceCount > 0 ? (int)Math.Ceiling(remainingTruceCount / (double)pageSize) : 0;
+            int totalPages = warPages + trucePages;
+            if (_pageIndex < 0) _pageIndex = 0;
+            if (_pageIndex > totalPages - 1) _pageIndex = totalPages - 1;
+            _pageLabel = "Page " + (_pageIndex + 1) + "/" + totalPages;
+
+            bool isWarPage = _pageIndex < warPages;
+
+            int warStart = 0;
+            int warEnd = 0;
+            if (isWarPage)
+            {
+                warStart = _pageIndex * pageSize;
+                warEnd = Math.Min(rows.Count, warStart + pageSize);
+            }
+
+            int truceOverflowStart = 0;
+            int truceOverflowEnd = 0;
+            if (!isWarPage)
+            {
+                int trucePageIndex = _pageIndex - warPages;
+                truceOverflowStart = firstPageTruceCount + (trucePageIndex * pageSize);
+                truceOverflowEnd = Math.Min(activeTruces.Count, truceOverflowStart + pageSize);
+            }
 
             _ledgerRows.Clear();
 
-            if (activeTruces.Count > 0)
+            if (_pageIndex == 0 && showTruceHeaderOnFirstPage)
             {
-                // Add truce rows in reverse so they display in ascending order at the bottom
-                for (int t = activeTruces.Count - 1; t >= 0; t--)
+                // Add first-page truce rows in reverse so they display in ascending order at the bottom.
+                for (int t = firstPageTruceCount - 1; t >= 0; t--)
+                {
+                    var (nameA, nameB, daysLeft) = activeTruces[t];
+                    string trucePair = nameA + " / " + nameB;
+                    bool involvesPlayerTruce = string.Equals(nameA, playerKingdomName, StringComparison.Ordinal) ||
+                                               string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
+                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                        (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
+                        ((int)daysLeft) + "d left",
+                        "Truce",
+                        "-",
+                        involvesPlayerTruce,
+                        false));
+                }
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "── Truces ──",
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    false,
+                    false));
+            }
+            else if (!isWarPage && truceOverflowEnd > truceOverflowStart)
+            {
+                for (int t = truceOverflowEnd - 1; t >= truceOverflowStart; t--)
                 {
                     var (nameA, nameB, daysLeft) = activeTruces[t];
                     string trucePair = nameA + " / " + nameB;
@@ -2183,14 +2256,14 @@ namespace Byzantium1071.Campaign.UI
                     false));
             }
 
-            for (int i = endIndex - 1; i >= startIndex; i--)
+            for (int i = warEnd - 1; i >= warStart; i--)
             {
                 WarsLedgerRow row = rows[i];
                 int rank = i + 1;
                 bool involvesPlayer = string.Equals(row.SideAName, playerFaction, StringComparison.Ordinal) ||
                                       string.Equals(row.SideBName, playerFaction, StringComparison.Ordinal);
                 string prefix = involvesPlayer ? "> " : "";
-                bool even = (i - startIndex) % 2 == 0;
+                bool even = (i - warStart) % 2 == 0;
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     prefix + rank + ". " + TruncateForColumn(row.PairName, 26),
