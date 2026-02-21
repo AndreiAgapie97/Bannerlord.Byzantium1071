@@ -11,7 +11,7 @@ namespace Byzantium1071.Campaign.UI
     {
         internal const string Text =
             // Root widget: positioned at top-left of screen
-            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"22\" MarginTop=\"132\" MarginRight=\"22\" MarginBottom=\"22\" IsVisible=\"@B1071PanelVisible\">" +
+            "<Widget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Left\" VerticalAlignment=\"Top\" MarginLeft=\"22\" MarginTop=\"152\" MarginRight=\"22\" MarginBottom=\"22\" IsVisible=\"@B1071PanelVisible\">" +
             "<Children>" +
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
@@ -21,8 +21,8 @@ namespace Byzantium1071.Campaign.UI
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
             "</ButtonWidget>" +
-            // Main panel (1020 x 290)
-            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1020\" SuggestedHeight=\"290\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
+            // Main panel (1180 x 290)
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1180\" SuggestedHeight=\"290\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
             "<BrushWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.Frame\" DoNotAcceptEvents=\"true\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"5\" MarginRight=\"5\" MarginTop=\"5\" MarginBottom=\"5\" Sprite=\"Encyclopedia\\canvas\" DoNotAcceptEvents=\"true\"/>" +
@@ -103,6 +103,7 @@ namespace Byzantium1071.Campaign.UI
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabRebellionSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabRebellion\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabRebellionText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabPrisonersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabPrisoners\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabInstabilitySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabInstability\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCharactersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCharacters\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCharactersText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -169,6 +170,7 @@ namespace Byzantium1071.Campaign.UI
         private string _tabRebellionText = "Rebellion";
         private string _tabPrisonersText = "Prisoners";
         private string _tabInstabilityText = "Clans";
+        private string _tabCharactersText = "Characters";
         private bool _tabCurrentSelected;
         private bool _tabNearbySelected;
         private bool _tabCastlesSelected;
@@ -180,6 +182,7 @@ namespace Byzantium1071.Campaign.UI
         private bool _tabRebellionSelected;
         private bool _tabPrisonersSelected;
         private bool _tabInstabilitySelected;
+        private bool _tabCharactersSelected;
         private string _sortText = "Sort ↓";
         private string _pageText = "Page 1/1";
         private string _titleText = "Loading...";
@@ -394,6 +397,20 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string B1071TabCharactersText
+        {
+            get => _tabCharactersText;
+            set => SetField(ref _tabCharactersText, value, nameof(B1071TabCharactersText));
+        }
+
+        [DataSourceProperty]
+        public bool B1071TabCharactersSelected
+        {
+            get => _tabCharactersSelected;
+            set => SetField(ref _tabCharactersSelected, value, nameof(B1071TabCharactersSelected));
+        }
+
+        [DataSourceProperty]
         public string B1071SortText
         {
             get => _sortText;
@@ -569,6 +586,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceMethod]
+        public void ExecuteB1071TabCharacters()
+        {
+            B1071_OverlayController.SetLedgerTab(B1071LedgerTab.Characters);
+            RefreshLedgerBindings();
+        }
+
+        [DataSourceMethod]
         public void ExecuteB1071PrevPage()
         {
             B1071_OverlayController.PreviousPage();
@@ -633,6 +657,7 @@ namespace Byzantium1071.Campaign.UI
             B1071TabRebellionText = B1071_OverlayController.TabRebellionText;
             B1071TabPrisonersText = B1071_OverlayController.TabPrisonersText;
             B1071TabInstabilityText = B1071_OverlayController.TabClanInstabilityText;
+            B1071TabCharactersText = B1071_OverlayController.TabCharactersText;
             B1071TabCurrentSelected = B1071_OverlayController.IsTabCurrentActive;
             B1071TabNearbySelected = B1071_OverlayController.IsTabNearbyActive;
             B1071TabCastlesSelected = B1071_OverlayController.IsTabCastlesActive;
@@ -644,6 +669,7 @@ namespace Byzantium1071.Campaign.UI
             B1071TabRebellionSelected = B1071_OverlayController.IsTabRebellionActive;
             B1071TabPrisonersSelected = B1071_OverlayController.IsTabPrisonersActive;
             B1071TabInstabilitySelected = B1071_OverlayController.IsTabClanInstabilityActive;
+            B1071TabCharactersSelected = B1071_OverlayController.IsTabCharactersActive;
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
@@ -672,6 +698,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabRebellionText, nameof(B1071TabRebellionText));
             OnPropertyChangedWithValue(B1071TabPrisonersText, nameof(B1071TabPrisonersText));
             OnPropertyChangedWithValue(B1071TabInstabilityText, nameof(B1071TabInstabilityText));
+            OnPropertyChangedWithValue(B1071TabCharactersText, nameof(B1071TabCharactersText));
             OnPropertyChangedWithValue(B1071TabCurrentSelected, nameof(B1071TabCurrentSelected));
             OnPropertyChangedWithValue(B1071TabNearbySelected, nameof(B1071TabNearbySelected));
             OnPropertyChangedWithValue(B1071TabCastlesSelected, nameof(B1071TabCastlesSelected));
@@ -683,6 +710,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabRebellionSelected, nameof(B1071TabRebellionSelected));
             OnPropertyChangedWithValue(B1071TabPrisonersSelected, nameof(B1071TabPrisonersSelected));
             OnPropertyChangedWithValue(B1071TabInstabilitySelected, nameof(B1071TabInstabilitySelected));
+            OnPropertyChangedWithValue(B1071TabCharactersSelected, nameof(B1071TabCharactersSelected));
             OnPropertyChangedWithValue(B1071SortText, nameof(B1071SortText));
             OnPropertyChangedWithValue(B1071PageText, nameof(B1071PageText));
             OnPropertyChangedWithValue(B1071TitleText, nameof(B1071TitleText));

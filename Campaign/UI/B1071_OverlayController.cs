@@ -24,7 +24,8 @@ namespace Byzantium1071.Campaign.UI
         Wars = 7,
         Rebellion = 8,
         Prisoners = 9,
-        ClanInstability = 10
+        ClanInstability = 10,
+        Characters = 11
     }
 
     internal static class B1071_OverlayController
@@ -69,6 +70,9 @@ namespace Byzantium1071.Campaign.UI
         private static List<LedgerRow>? _scratchRows;
         private static List<LedgerRow>? _scratchVillageRows;
         private static List<LedgerRow>? _scratchCombined;
+        private static List<CharacterLedgerRow>? _cachedCharacterRows;
+        private static List<CharacterLedgerRow>? _scratchCharacterRows;
+        private static bool _characterDistancesDirty = true;
 
         // Party position tracking for dirty-flag distance recalculation.
         private static Vec2 _lastPartyPos;
@@ -131,6 +135,9 @@ namespace Byzantium1071.Campaign.UI
             _scratchRows = null;
             _scratchVillageRows = null;
             _scratchCombined = null;
+            _cachedCharacterRows = null;
+            _scratchCharacterRows = null;
+            _characterDistancesDirty = true;
             _lastPartyPos = default;
             _distancesDirty = true;
             _partialDistanceCount = 0;
@@ -166,6 +173,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabRebellionText => FormatTabText("Rebellion", _activeTab == B1071LedgerTab.Rebellion);
         internal static string TabPrisonersText => FormatTabText("Prisoners", _activeTab == B1071LedgerTab.Prisoners);
         internal static string TabClanInstabilityText => FormatTabText("Clans", _activeTab == B1071LedgerTab.ClanInstability);
+        internal static string TabCharactersText => FormatTabText("Characters", _activeTab == B1071LedgerTab.Characters);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -177,6 +185,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabRebellionActive => _activeTab == B1071LedgerTab.Rebellion;
         internal static bool IsTabPrisonersActive => _activeTab == B1071LedgerTab.Prisoners;
         internal static bool IsTabClanInstabilityActive => _activeTab == B1071LedgerTab.ClanInstability;
+        internal static bool IsTabCharactersActive => _activeTab == B1071LedgerTab.Characters;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -189,7 +198,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Peace", "Exhaust", "Status", "Pair" },
             new[] { "Risk", "TTR", "Loyalty", "Name" },
             new[] { "Captor", "Where", "By", "Noble" },
-            new[] { "Risk", "Kingdom", "Status", "Clan" }
+            new[] { "Risk", "Kingdom", "Status", "Clan" },
+            new[] { "Dist", "Clan", "Where", "Name" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -206,7 +216,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 1, 0, 2 },  // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
             new[] { 3, 0, 2, 1 },  // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
             new[] { 3, 0, 2, 1 },  // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
-            new[] { 3, 1, 2, 0 }   // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0)
+            new[] { 3, 1, 2, 0 },  // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0)
+            new[] { 3, 1, 2, 0 }   // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0)
         };
 
         internal static string SortText => _sortTextCached;
@@ -344,7 +355,7 @@ namespace Byzantium1071.Campaign.UI
 
                 _lastCurrentContextSettlementId = currentContextId;
             }
-            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && !_columnsDirty)
+            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && _activeTab != B1071LedgerTab.Characters && !_columnsDirty)
             {
                 return;
             }
@@ -453,6 +464,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Rebellion: return BuildRebellionRiskColumns();
                 case B1071LedgerTab.Prisoners: return BuildPrisonersColumns();
                 case B1071LedgerTab.ClanInstability: return BuildClanInstabilityColumns();
+                case B1071LedgerTab.Characters: return BuildCharactersColumns();
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -590,6 +602,17 @@ namespace Byzantium1071.Campaign.UI
             public int RelationToPlayer;
             public int Score;
             public string StatusCode = string.Empty;
+        }
+
+        private sealed class CharacterLedgerRow
+        {
+            public string HeroName = string.Empty;
+            public string ClanName = string.Empty;
+            public string NearestSettlementName = "Unknown";
+            public Vec2 Position;
+            public bool HasPosition;
+            public float DistanceSq;
+            public bool IsPlayerRelated;
         }
 
         private static string GetFactionName(IFaction? faction)
@@ -961,6 +984,239 @@ namespace Byzantium1071.Campaign.UI
                     _totals2 = string.Empty;
                     _totals3 = string.Empty;
                     _totals4 = string.Empty;
+            return _titleText;
+        }
+
+        private static bool IsTrackedCharacter(Hero hero)
+        {
+            if (hero == null)
+                return false;
+
+            if (hero.IsGangLeader)
+                return false;
+
+            bool isNoble = hero.Clan != null;
+            bool isWanderer = hero.IsWanderer || hero.CompanionOf != null;
+            return isNoble || isWanderer;
+        }
+
+        private static Settlement? FindNearestSettlement(Vec2 position)
+        {
+            Settlement? nearest = null;
+            float bestSq = float.MaxValue;
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || settlement.IsHideout)
+                    continue;
+
+                if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage)
+                    continue;
+
+                float sq = (settlement.GetPosition2D - position).LengthSquared;
+                if (sq < bestSq)
+                {
+                    bestSq = sq;
+                    nearest = settlement;
+                }
+            }
+
+            return nearest;
+        }
+
+        private static bool TryGetCharacterPosition(Hero hero, out Vec2 position)
+        {
+            position = default;
+
+            MobileParty? party = hero.PartyBelongedTo;
+            if (party != null)
+            {
+                position = party.GetPosition2D;
+                return true;
+            }
+
+            Settlement? settlement = hero.CurrentSettlement ?? hero.StayingInSettlement ?? hero.LastKnownClosestSettlement;
+            if (settlement != null)
+            {
+                position = settlement.GetPosition2D;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static List<CharacterLedgerRow> BuildCharacterRows()
+        {
+            if (_cacheStale || _cachedCharacterRows == null)
+            {
+                var rows = new List<CharacterLedgerRow>(256);
+
+                foreach (Hero hero in Hero.AllAliveHeroes)
+                {
+                    if (hero == null)
+                        continue;
+
+                    if (!IsTrackedCharacter(hero))
+                        continue;
+
+                    bool hasPosition = TryGetCharacterPosition(hero, out Vec2 position);
+                    Settlement? nearest = hasPosition ? FindNearestSettlement(position) : null;
+
+                    rows.Add(new CharacterLedgerRow
+                    {
+                        HeroName = hero.Name?.ToString() ?? "Unknown",
+                        ClanName = hero.Clan?.Name?.ToString() ?? (hero.CompanionOf?.Name?.ToString() ?? "Wanderer"),
+                        NearestSettlementName = nearest?.Name?.ToString() ?? "Unknown",
+                        Position = position,
+                        HasPosition = hasPosition,
+                        DistanceSq = 0f,
+                        IsPlayerRelated = hero.Clan == Clan.PlayerClan || hero.CompanionOf == Clan.PlayerClan
+                    });
+                }
+
+                _cachedCharacterRows = rows;
+                _characterDistancesDirty = true;
+            }
+
+            if (_scratchCharacterRows == null) _scratchCharacterRows = new List<CharacterLedgerRow>(_cachedCharacterRows!.Count);
+            _scratchCharacterRows.Clear();
+            _scratchCharacterRows.AddRange(_cachedCharacterRows!);
+            return _scratchCharacterRows;
+        }
+
+        private static void RecalculateAllCharacterDistances(List<CharacterLedgerRow> rows)
+        {
+            MobileParty? mainParty = MobileParty.MainParty;
+            if (mainParty == null)
+            {
+                foreach (CharacterLedgerRow row in rows)
+                    row.DistanceSq = float.MaxValue;
+                return;
+            }
+
+            Vec2 partyPos = mainParty.GetPosition2D;
+            foreach (CharacterLedgerRow row in rows)
+            {
+                row.DistanceSq = row.HasPosition ? (row.Position - partyPos).LengthSquared : float.MaxValue;
+            }
+        }
+
+        private static void RecalculateCharacterDistancesRange(List<CharacterLedgerRow> rows, int startIndex, int endIndex)
+        {
+            MobileParty? mainParty = MobileParty.MainParty;
+            if (mainParty == null)
+            {
+                for (int i = startIndex; i < endIndex; i++)
+                    rows[i].DistanceSq = float.MaxValue;
+                return;
+            }
+
+            Vec2 partyPos = mainParty.GetPosition2D;
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                CharacterLedgerRow row = rows[i];
+                row.DistanceSq = row.HasPosition ? (row.Position - partyPos).LengthSquared : float.MaxValue;
+            }
+        }
+
+        private static string BuildCharactersColumns()
+        {
+            List<CharacterLedgerRow> rows = BuildCharacterRows();
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Characters Ledger - No tracked characters.");
+                return "Characters Ledger\nNo tracked characters.";
+            }
+
+            int pageSize = GetRowsPerPage();
+            if (_characterDistancesDirty)
+            {
+                RecalculateAllCharacterDistances(rows);
+                _characterDistancesDirty = false;
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => string.Compare(a.ClanName, b.ClanName, StringComparison.Ordinal),
+                    2 => string.Compare(a.NearestSettlementName, b.NearestSettlementName, StringComparison.Ordinal),
+                    3 => string.Compare(a.HeroName, b.HeroName, StringComparison.Ordinal),
+                    _ => a.DistanceSq.CompareTo(b.DistanceSq)
+                };
+
+                if (_sortColumn != 0)
+                {
+                    if (!_sortAscending) compare = -compare;
+                }
+                else
+                {
+                    if (_sortAscending) compare = -compare;
+                }
+
+                if (compare != 0) return compare;
+                return string.Compare(a.HeroName, b.HeroName, StringComparison.Ordinal);
+            });
+
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            RecalculateCharacterDistancesRange(rows, startIndex, endIndex);
+
+            if (_sortColumn == 0)
+            {
+                rows.Sort((a, b) =>
+                {
+                    int compare = a.DistanceSq.CompareTo(b.DistanceSq);
+                    if (_sortAscending) compare = -compare;
+                    if (compare != 0) return compare;
+                    return string.Compare(a.HeroName, b.HeroName, StringComparison.Ordinal);
+                });
+
+                startIndex = GetPageStart(rows.Count, pageSize);
+                endIndex = Math.Min(rows.Count, startIndex + pageSize);
+            }
+
+            _titleText = "Characters Ledger  (" + rows.Count + " entries)";
+            _header1 = "Name";
+            _header2 = "Clan";
+            _header3 = "Location";
+            _header4 = "Distance";
+            ApplySortIndicator(new[] { 4, 2, 3, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                CharacterLedgerRow row = rows[i];
+                int rank = i + 1;
+
+                string distance = row.DistanceSq == float.MaxValue
+                    ? "-"
+                    : Math.Sqrt(row.DistanceSq).ToString("F1") + " km";
+
+                bool even = (i - startIndex) % 2 == 0;
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    (row.IsPlayerRelated ? "> " : "") + rank + ". " + TruncateForColumn(row.HeroName, 24),
+                    TruncateForColumn(row.ClanName, 18),
+                    TruncateForColumn(row.NearestSettlementName, 18),
+                    distance,
+                    row.IsPlayerRelated,
+                    even));
+            }
+
+            int knownLocationCount = 0;
+            foreach (CharacterLedgerRow row in rows)
+            {
+                if (row.HasPosition) knownLocationCount++;
+            }
+
+            _totals1 = "Total";
+            _totals2 = rows.Count.ToString("N0");
+            _totals3 = "Known location";
+            _totals4 = knownLocationCount.ToString("N0");
+
             return _titleText;
         }
 
@@ -1605,7 +1861,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 10) tabValue = 10;
+            if (tabValue > 11) tabValue = 11;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
