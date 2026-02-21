@@ -164,9 +164,9 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows manpower messages in the game UI for player actions.")]
         public bool ShowPlayerDebugMessages { get; set; } = true;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
-        [SettingPropertyBool("Use OnUnitRecruited fallback for player", Order = 1, HintText = "Consumes manpower for player recruits on per-click event.")]
-        public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = false;
+        [SettingPropertyGroup("Recruitment Cost", GroupOrder = 4)]
+        [SettingPropertyBool("Enable player recruit manpower hook", Order = 3, HintText = "Required for consistent player recruitment manpower consumption in current event flow. Keep enabled unless explicitly troubleshooting compatibility.")]
+        public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = true;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Log AI manpower consumption", Order = 2, HintText = "Logs AI manpower consumption bands to the Bannerlord logs.")]

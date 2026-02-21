@@ -1244,11 +1244,14 @@ namespace Byzantium1071.Campaign.Behaviors
             _lastAIRecruitAmount = amount;
             _lastAIRecruitSettlementId = recruitmentSettlement?.StringId;
 
-            ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: (party == recruitmentSettlement.Town?.GarrisonParty) ? "TroopRecruited(Garrison)" : "TroopRecruited(AI)");
+            string recruitContext = (recruitmentSettlement != null && party == recruitmentSettlement.Town?.GarrisonParty)
+                ? "TroopRecruited(Garrison)"
+                : "TroopRecruited(AI)";
+            ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: false, context: recruitContext);
         }
 
         // Centralized manpower consumption logic.
-        private void ConsumeManpower(Settlement recruitmentSettlement, MobileParty party, CharacterObject troop, int amount, bool isPlayer, string context)
+        private void ConsumeManpower(Settlement? recruitmentSettlement, MobileParty party, CharacterObject troop, int amount, bool isPlayer, string context)
         {
             if (recruitmentSettlement == null || party == null || troop == null) return;
             if (amount <= 0) return;
@@ -2067,27 +2070,32 @@ namespace Byzantium1071.Campaign.Behaviors
                 _mapEventReflectionCached = true;
             }
 
-            if (_mapEventIsRaidProp?.PropertyType == typeof(bool) && _mapEventIsRaidProp.GetValue(mapEvent) is bool isRaid && isRaid)
+            var isRaidProp = _mapEventIsRaidProp;
+            if (isRaidProp != null && isRaidProp.PropertyType == typeof(bool) && isRaidProp.GetValue(mapEvent) is bool isRaid && isRaid)
                 return true;
 
             if (_mapEventSettlementProp?.GetValue(mapEvent) is Settlement settlement && settlement.IsVillage)
                 return true;
 
             string? eventTypeText = _mapEventEventTypeProp?.GetValue(mapEvent)?.ToString();
-            if (!string.IsNullOrEmpty(eventTypeText) && eventTypeText.IndexOf("Raid", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (eventTypeText is string eventType && eventType.IndexOf("Raid", StringComparison.OrdinalIgnoreCase) >= 0)
                 return true;
 
             return false;
         }
 
-        private static bool HasVillageRelatedParty(MapEventSide side)
+        private static bool HasVillageRelatedParty(MapEventSide? side)
         {
-            if (side?.Parties == null)
+            var parties = side?.Parties;
+            if (parties == null)
                 return false;
 
-            foreach (MapEventParty mep in side.Parties)
+            foreach (MapEventParty mep in parties)
             {
-                MobileParty? mobileParty = mep?.Party?.MobileParty;
+                if (mep == null)
+                    continue;
+
+                MobileParty? mobileParty = mep.Party?.MobileParty;
                 if (mobileParty == null)
                     continue;
 
