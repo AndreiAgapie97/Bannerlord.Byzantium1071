@@ -205,8 +205,8 @@ namespace Byzantium1071.Campaign.Settings
         public int OverlayLedgerDefaultTab { get; set; } = 0;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 6, HintText = "How many ledger rows are shown per page.")]
-        public int OverlayLedgerRowsPerPage { get; set; } = 10;
+        [SettingPropertyInteger("Ledger rows per page", 3, 22, "0", Order = 6, HintText = "How many ledger rows are shown per page.")]
+        public int OverlayLedgerRowsPerPage { get; set; } = 9;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Overlay top offset (px)", 40, 320, "0", Order = 7, HintText = "Vertical offset from the top of the screen for the overlay root panel. Increase this if game menus overlap the tab row.")]
@@ -214,7 +214,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
         [SettingPropertyInteger("Overlay left offset (px)", 0, 300, "0", Order = 8, HintText = "Horizontal offset from the left edge for the overlay root panel.")]
-        public int OverlayPanelLeftOffset { get; set; } = 22;
+        public int OverlayPanelLeftOffset { get; set; } = 78;
 
         // ─── War Effects ───
 

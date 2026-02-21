@@ -500,6 +500,18 @@ namespace Byzantium1071.Campaign.UI
             if (!_isVisible)
                 return;
 
+            // Mirror the search-tab reset from ToggleVisibility() hide path.
+            // This path fires when the campaign map becomes unavailable (e.g., entering a
+            // battle, loading screen). Without this reset, the EditableTextWidget would
+            // keep IsVisible=true even after the overlay is hidden, consuming ESC.
+            if (_activeTab == B1071LedgerTab.Search)
+            {
+                _activeTab = B1071LedgerTab.NearbyPools;
+                _searchQuery = string.Empty;
+                _columnsDirty = true;
+                _pageIndex = 0;
+            }
+
             _isVisible = false;
             _refreshTimer = 0f;
             _lastText = string.Empty;
