@@ -23,7 +23,8 @@ namespace Byzantium1071.Campaign.UI
         Armies = 6,
         Wars = 7,
         Rebellion = 8,
-        Prisoners = 9
+        Prisoners = 9,
+        ClanInstability = 10
     }
 
     internal static class B1071_OverlayController
@@ -42,6 +43,7 @@ namespace Byzantium1071.Campaign.UI
         private static string _totals2 = string.Empty;
         private static string _totals3 = string.Empty;
         private static string _totals4 = string.Empty;
+        private static bool _totalsVisible = true;
         private static string _header1 = string.Empty;
         private static string _header2 = string.Empty;
         private static string _header3 = string.Empty;
@@ -111,6 +113,7 @@ namespace Byzantium1071.Campaign.UI
             _totals2 = string.Empty;
             _totals3 = string.Empty;
             _totals4 = string.Empty;
+            _totalsVisible = true;
             _header1 = string.Empty;
             _header2 = string.Empty;
             _header3 = string.Empty;
@@ -147,6 +150,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string Totals2 => _totals2;
         internal static string Totals3 => _totals3;
         internal static string Totals4 => _totals4;
+        internal static bool TotalsVisible => _totalsVisible;
         internal static string Header1 => _header1;
         internal static string Header2 => _header2;
         internal static string Header3 => _header3;
@@ -161,6 +165,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabWarsText => FormatTabText("Wars", _activeTab == B1071LedgerTab.Wars);
         internal static string TabRebellionText => FormatTabText("Rebellion", _activeTab == B1071LedgerTab.Rebellion);
         internal static string TabPrisonersText => FormatTabText("Prisoners", _activeTab == B1071LedgerTab.Prisoners);
+        internal static string TabClanInstabilityText => FormatTabText("Clans", _activeTab == B1071LedgerTab.ClanInstability);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -171,6 +176,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabWarsActive => _activeTab == B1071LedgerTab.Wars;
         internal static bool IsTabRebellionActive => _activeTab == B1071LedgerTab.Rebellion;
         internal static bool IsTabPrisonersActive => _activeTab == B1071LedgerTab.Prisoners;
+        internal static bool IsTabClanInstabilityActive => _activeTab == B1071LedgerTab.ClanInstability;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -182,7 +188,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Power", "Troops", "Exhaust", "Name" },
             new[] { "Peace", "Exhaust", "Status", "Pair" },
             new[] { "Risk", "TTR", "Loyalty", "Name" },
-            new[] { "Captor", "Where", "By", "Noble" }
+            new[] { "Captor", "Where", "By", "Noble" },
+            new[] { "Risk", "Kingdom", "Status", "Clan" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -198,7 +205,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 1, 2 },  // Armies:      H1→Name(3), H2→Power(0), H3→Troops(1), H4→Exhaust(2)
             new[] { 3, 1, 0, 2 },  // Wars:        H1→Pair(3), H2→Exhaust(1), H3→Peace(0), H4→Status(2)
             new[] { 3, 0, 2, 1 },  // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
-            new[] { 3, 0, 2, 1 }   // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
+            new[] { 3, 0, 2, 1 },  // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
+            new[] { 3, 1, 2, 0 }   // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0)
         };
 
         internal static string SortText => _sortTextCached;
@@ -423,6 +431,8 @@ namespace Byzantium1071.Campaign.UI
                 return "Manpower behavior unavailable.";
             }
 
+            _totalsVisible = true;
+
             switch (_activeTab)
             {
                 case B1071LedgerTab.Current: return BuildCurrentColumns(behavior);
@@ -435,6 +445,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Wars: return BuildWarsColumns(behavior);
                 case B1071LedgerTab.Rebellion: return BuildRebellionRiskColumns();
                 case B1071LedgerTab.Prisoners: return BuildPrisonersColumns();
+                case B1071LedgerTab.ClanInstability: return BuildClanInstabilityColumns();
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -557,6 +568,21 @@ namespace Byzantium1071.Campaign.UI
             public bool IsClanLeader;
             public int ImportanceScore;
             public int FactionBucketCount;
+        }
+
+        private sealed class ClanInstabilityRow
+        {
+            public string ClanName = string.Empty;
+            public string KingdomName = string.Empty;
+            public string ModeLabel = string.Empty;
+            public bool IsDefectionRisk;
+            public bool IsRecruitOpportunity;
+            public int FiefCount;
+            public int Gold;
+            public int Influence;
+            public int RelationToPlayer;
+            public int Score;
+            public string StatusCode = string.Empty;
         }
 
         private static string GetFactionName(IFaction? faction)
@@ -724,6 +750,213 @@ namespace Byzantium1071.Campaign.UI
             return _titleText;
         }
 
+        private static float Clamp01Float(float value)
+        {
+            if (value < 0f) return 0f;
+            if (value > 1f) return 1f;
+            return value;
+        }
+
+        private static int GetClanRelationToFactionLeader(Clan clan, Clan? factionLeaderClan)
+        {
+            try
+            {
+                if (factionLeaderClan == null || clan == null)
+                    return 0;
+
+                return (int)FactionManager.GetRelationBetweenClans(factionLeaderClan, clan);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static int ComputeInstabilityScore(bool isDefectionRisk, int fiefCount, int gold, int influence, int relationToPlayer)
+        {
+            float fiefless = fiefCount <= 0 ? 1f : 0f;
+            float poor = Clamp01Float((40000f - gold) / 40000f);
+            float lowInfluence = Clamp01Float((150f - influence) / 150f);
+
+            float relationFactor = isDefectionRisk
+                ? Clamp01Float((20f - relationToPlayer) / 60f)
+                : Clamp01Float((relationToPlayer + 20f) / 80f);
+
+            float weighted =
+                (0.35f * fiefless) +
+                (0.25f * poor) +
+                (0.20f * relationFactor) +
+                (0.20f * lowInfluence);
+
+            int score = (int)Math.Round(100f * Clamp01Float(weighted), MidpointRounding.AwayFromZero);
+            if (score < 0) score = 0;
+            if (score > 100) score = 100;
+            return score;
+        }
+
+        private static string BuildClanStatusCode(bool isNeutral, int fiefCount, int gold)
+        {
+            string allegiance = isNeutral ? "Neutral" : "Vassal";
+            string wealth = gold >= 40000 ? "Rich" : "Poor";
+            return allegiance + "/" + wealth + "/Fiefs " + fiefCount;
+        }
+
+        private static string BuildClanInstabilityColumns()
+        {
+            _totalsVisible = false;
+
+            Clan? playerClan = Clan.PlayerClan;
+            Kingdom? playerKingdom = playerClan?.Kingdom;
+            Clan? factionLeaderClan = playerKingdom?.RulingClan;
+            if (playerClan == null || playerKingdom == null)
+            {
+                ClearColumns("Clans Ledger - Join a kingdom to view.");
+                _totalsVisible = false;
+                return "Clans Ledger\nJoin a kingdom to view.";
+            }
+
+            var rows = new List<ClanInstabilityRow>();
+
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated || kingdom.Clans == null)
+                    continue;
+
+                bool isPlayerKingdom = kingdom == playerKingdom;
+
+                foreach (Clan clan in kingdom.Clans)
+                {
+                    if (clan == null || clan.IsEliminated)
+                        continue;
+
+                    if (clan.IsMinorFaction || clan.IsClanTypeMercenary || clan.IsBanditFaction)
+                        continue;
+
+                    bool isDefectionRisk = isPlayerKingdom;
+                    bool isRecruitOpportunity = !isPlayerKingdom;
+
+                    int fiefCount = clan.Settlements?.Count ?? 0;
+                    int gold = clan.Gold;
+                    int influence = (int)Math.Round(clan.Influence, MidpointRounding.AwayFromZero);
+                    int relation = GetClanRelationToFactionLeader(clan, factionLeaderClan);
+
+                    int score = ComputeInstabilityScore(isDefectionRisk, fiefCount, gold, influence, relation);
+                    rows.Add(new ClanInstabilityRow
+                    {
+                        ClanName = clan.Name?.ToString() ?? "Unknown",
+                        KingdomName = kingdom.Name?.ToString() ?? "Unknown",
+                        ModeLabel = isDefectionRisk ? "Defect" : "Recruit",
+                        IsDefectionRisk = isDefectionRisk,
+                        IsRecruitOpportunity = isRecruitOpportunity,
+                        FiefCount = fiefCount,
+                        Gold = gold,
+                        Influence = influence,
+                        RelationToPlayer = relation,
+                        Score = score,
+                        StatusCode = BuildClanStatusCode(isNeutral: false, fiefCount, gold)
+                    });
+                }
+            }
+
+            // Neutral clans: no kingdom affiliation (often post-collapse remnants).
+            foreach (Clan clan in Clan.All)
+            {
+                if (clan == null || clan.IsEliminated)
+                    continue;
+
+                if (clan.Kingdom != null)
+                    continue;
+
+                if (clan.IsMinorFaction || clan.IsClanTypeMercenary || clan.IsRebelClan || clan.IsBanditFaction)
+                    continue;
+
+                int fiefCount = clan.Settlements?.Count ?? 0;
+                int gold = clan.Gold;
+                int influence = (int)Math.Round(clan.Influence, MidpointRounding.AwayFromZero);
+                int relation = GetClanRelationToFactionLeader(clan, factionLeaderClan);
+
+                int score = ComputeInstabilityScore(isDefectionRisk: false, fiefCount, gold, influence, relation);
+                rows.Add(new ClanInstabilityRow
+                {
+                    ClanName = clan.Name?.ToString() ?? "Unknown",
+                    KingdomName = "Neutral",
+                    ModeLabel = "Recruit",
+                    IsDefectionRisk = false,
+                    IsRecruitOpportunity = true,
+                    FiefCount = fiefCount,
+                    Gold = gold,
+                    Influence = influence,
+                    RelationToPlayer = relation,
+                    Score = score,
+                    StatusCode = BuildClanStatusCode(isNeutral: true, fiefCount, gold)
+                });
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => string.Compare(a.KingdomName, b.KingdomName, StringComparison.Ordinal),
+                    2 => string.Compare(a.StatusCode, b.StatusCode, StringComparison.Ordinal),
+                    3 => string.Compare(a.ClanName, b.ClanName, StringComparison.Ordinal),
+                    _ => a.Score.CompareTo(b.Score)
+                };
+
+                if (!_sortAscending) compare = -compare;
+                if (compare != 0) return compare;
+
+                compare = string.Compare(a.ClanName, b.ClanName, StringComparison.Ordinal);
+                if (!_sortAscending) compare = -compare;
+                return compare;
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            if (rows.Count == 0)
+            {
+                ClearColumns("Clans Ledger - No clans found.");
+                _totalsVisible = false;
+                return "Clans Ledger\nNo clans found.";
+            }
+
+            _titleText = "Clans Ledger  (" + rows.Count + " clans)";
+            _header1 = "Clan";
+            _header2 = "Kingdom";
+            _header3 = "Vassal/Wealth/Fiefs";
+            _header4 = "Risk";
+            ApplySortIndicator(new[] { 4, 2, 3, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                ClanInstabilityRow row = rows[i];
+                int rank = i + 1;
+
+                string clanCell = TruncateForColumn(row.ClanName, 24);
+                string statusCell = TruncateForColumn(row.StatusCode, 28);
+                string riskCell = "R" + row.Score;
+
+                bool highlight = false;
+                bool even = (i - startIndex) % 2 == 0;
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    rank + ". " + clanCell,
+                    TruncateForColumn(row.KingdomName, 16),
+                    statusCell,
+                    riskCell,
+                    highlight,
+                    even));
+            }
+
+                    _totals1 = string.Empty;
+                    _totals2 = string.Empty;
+                    _totals3 = string.Empty;
+                    _totals4 = string.Empty;
+            return _titleText;
+        }
+
         private static Settlement? ResolveCurrentContextSettlement()
         {
             Settlement? settlement = Settlement.CurrentSettlement
@@ -743,6 +976,7 @@ namespace Byzantium1071.Campaign.UI
             _totals2 = string.Empty;
             _totals3 = string.Empty;
             _totals4 = string.Empty;
+            _totalsVisible = true;
             _header1 = string.Empty;
             _header2 = string.Empty;
             _header3 = string.Empty;
@@ -1060,6 +1294,7 @@ namespace Byzantium1071.Campaign.UI
             _totals2 = FormatMp(totalCurrent, totalMaximum);
             _totals3 = totalRatio + "%";
             _totals4 = col4Value;
+            _totalsVisible = true;
         }
 
         private static void ApplySortIndicator(int[] sortToHeader)
@@ -1363,7 +1598,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 9) tabValue = 9;
+            if (tabValue > 10) tabValue = 10;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;

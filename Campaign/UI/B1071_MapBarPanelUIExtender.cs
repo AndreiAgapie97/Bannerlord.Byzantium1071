@@ -21,8 +21,8 @@ namespace Byzantium1071.Campaign.UI
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
             "</ButtonWidget>" +
-            // Main panel (780 x 290)
-            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"780\" SuggestedHeight=\"290\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
+            // Main panel (1020 x 290)
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1020\" SuggestedHeight=\"290\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
             "<BrushWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.Frame\" DoNotAcceptEvents=\"true\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"5\" MarginRight=\"5\" MarginTop=\"5\" MarginBottom=\"5\" Sprite=\"Encyclopedia\\canvas\" DoNotAcceptEvents=\"true\"/>" +
@@ -44,24 +44,24 @@ namespace Byzantium1071.Campaign.UI
             "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"160\" MarginTop=\"6\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
             // Totals row (bottom visually — 4-column, gold)
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071TotalsVisible\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"268\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals1\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"120\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals2\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"100\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals3\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"320\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals1\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals2\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"200\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals3\" />" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals4\" />" +
             "</Children>" +
             "</ListPanel>" +
             // Data-total divider (appears above Total row visually)
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.75\"/>" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.75\" IsVisible=\"@B1071TotalsVisible\"/>" +
             // Data rows — collection-bound row template
             "<ListPanel DataSource=\"{B1071LedgerRows}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginTop=\"2\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<ItemTemplate>" +
             "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"268\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell1\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"120\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell2\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"100\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@Cell3\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"320\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell1\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@Cell2\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"200\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@Cell3\" />" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@Cell4\" />" +
             "</Children>" +
             "</ListPanel>" +
@@ -72,9 +72,9 @@ namespace Byzantium1071.Campaign.UI
             // Column headers (muted, small)
             "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
             "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"268\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol1\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header1\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"120\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol2\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header2\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"100\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol3\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header3\" /></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"320\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol1\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header1\" /></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol2\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header2\" /></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"200\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol3\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header3\" /></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol4\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header4\" /></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
@@ -102,6 +102,7 @@ namespace Byzantium1071.Campaign.UI
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabWarsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabWars\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabWarsText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabRebellionSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabRebellion\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabRebellionText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabPrisonersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabPrisoners\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabInstabilitySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabInstability\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -167,6 +168,7 @@ namespace Byzantium1071.Campaign.UI
         private string _tabWarsText = "Wars";
         private string _tabRebellionText = "Rebellion";
         private string _tabPrisonersText = "Prisoners";
+        private string _tabInstabilityText = "Clans";
         private bool _tabCurrentSelected;
         private bool _tabNearbySelected;
         private bool _tabCastlesSelected;
@@ -177,6 +179,7 @@ namespace Byzantium1071.Campaign.UI
         private bool _tabWarsSelected;
         private bool _tabRebellionSelected;
         private bool _tabPrisonersSelected;
+        private bool _tabInstabilitySelected;
         private string _sortText = "Sort ↓";
         private string _pageText = "Page 1/1";
         private string _titleText = "Loading...";
@@ -184,6 +187,7 @@ namespace Byzantium1071.Campaign.UI
         private string _totals2 = string.Empty;
         private string _totals3 = string.Empty;
         private string _totals4 = string.Empty;
+        private bool _totalsVisible = true;
         private string _header1 = string.Empty;
         private string _header2 = string.Empty;
         private string _header3 = string.Empty;
@@ -376,6 +380,20 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string B1071TabInstabilityText
+        {
+            get => _tabInstabilityText;
+            set => SetField(ref _tabInstabilityText, value, nameof(B1071TabInstabilityText));
+        }
+
+        [DataSourceProperty]
+        public bool B1071TabInstabilitySelected
+        {
+            get => _tabInstabilitySelected;
+            set => SetField(ref _tabInstabilitySelected, value, nameof(B1071TabInstabilitySelected));
+        }
+
+        [DataSourceProperty]
         public string B1071SortText
         {
             get => _sortText;
@@ -425,6 +443,13 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _totals4;
             set => SetField(ref _totals4, value, nameof(B1071Totals4));
+        }
+
+        [DataSourceProperty]
+        public bool B1071TotalsVisible
+        {
+            get => _totalsVisible;
+            set => SetField(ref _totalsVisible, value, nameof(B1071TotalsVisible));
         }
 
         [DataSourceProperty]
@@ -537,6 +562,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceMethod]
+        public void ExecuteB1071TabInstability()
+        {
+            B1071_OverlayController.SetLedgerTab(B1071LedgerTab.ClanInstability);
+            RefreshLedgerBindings();
+        }
+
+        [DataSourceMethod]
         public void ExecuteB1071PrevPage()
         {
             B1071_OverlayController.PreviousPage();
@@ -600,6 +632,7 @@ namespace Byzantium1071.Campaign.UI
             B1071TabWarsText = B1071_OverlayController.TabWarsText;
             B1071TabRebellionText = B1071_OverlayController.TabRebellionText;
             B1071TabPrisonersText = B1071_OverlayController.TabPrisonersText;
+            B1071TabInstabilityText = B1071_OverlayController.TabClanInstabilityText;
             B1071TabCurrentSelected = B1071_OverlayController.IsTabCurrentActive;
             B1071TabNearbySelected = B1071_OverlayController.IsTabNearbyActive;
             B1071TabCastlesSelected = B1071_OverlayController.IsTabCastlesActive;
@@ -610,6 +643,7 @@ namespace Byzantium1071.Campaign.UI
             B1071TabWarsSelected = B1071_OverlayController.IsTabWarsActive;
             B1071TabRebellionSelected = B1071_OverlayController.IsTabRebellionActive;
             B1071TabPrisonersSelected = B1071_OverlayController.IsTabPrisonersActive;
+            B1071TabInstabilitySelected = B1071_OverlayController.IsTabClanInstabilityActive;
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
@@ -618,6 +652,7 @@ namespace Byzantium1071.Campaign.UI
             B1071Totals2 = B1071_OverlayController.Totals2;
             B1071Totals3 = B1071_OverlayController.Totals3;
             B1071Totals4 = B1071_OverlayController.Totals4;
+            B1071TotalsVisible = B1071_OverlayController.TotalsVisible;
             B1071Header1 = B1071_OverlayController.Header1;
             B1071Header2 = B1071_OverlayController.Header2;
             B1071Header3 = B1071_OverlayController.Header3;
@@ -636,6 +671,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabWarsText, nameof(B1071TabWarsText));
             OnPropertyChangedWithValue(B1071TabRebellionText, nameof(B1071TabRebellionText));
             OnPropertyChangedWithValue(B1071TabPrisonersText, nameof(B1071TabPrisonersText));
+            OnPropertyChangedWithValue(B1071TabInstabilityText, nameof(B1071TabInstabilityText));
             OnPropertyChangedWithValue(B1071TabCurrentSelected, nameof(B1071TabCurrentSelected));
             OnPropertyChangedWithValue(B1071TabNearbySelected, nameof(B1071TabNearbySelected));
             OnPropertyChangedWithValue(B1071TabCastlesSelected, nameof(B1071TabCastlesSelected));
@@ -646,6 +682,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabWarsSelected, nameof(B1071TabWarsSelected));
             OnPropertyChangedWithValue(B1071TabRebellionSelected, nameof(B1071TabRebellionSelected));
             OnPropertyChangedWithValue(B1071TabPrisonersSelected, nameof(B1071TabPrisonersSelected));
+            OnPropertyChangedWithValue(B1071TabInstabilitySelected, nameof(B1071TabInstabilitySelected));
             OnPropertyChangedWithValue(B1071SortText, nameof(B1071SortText));
             OnPropertyChangedWithValue(B1071PageText, nameof(B1071PageText));
             OnPropertyChangedWithValue(B1071TitleText, nameof(B1071TitleText));
@@ -653,6 +690,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071Totals2, nameof(B1071Totals2));
             OnPropertyChangedWithValue(B1071Totals3, nameof(B1071Totals3));
             OnPropertyChangedWithValue(B1071Totals4, nameof(B1071Totals4));
+            OnPropertyChangedWithValue(B1071TotalsVisible, nameof(B1071TotalsVisible));
             OnPropertyChangedWithValue(B1071Header1, nameof(B1071Header1));
             OnPropertyChangedWithValue(B1071Header2, nameof(B1071Header2));
             OnPropertyChangedWithValue(B1071Header3, nameof(B1071Header3));
