@@ -41,6 +41,7 @@ namespace Byzantium1071.Campaign.Patches
 
         internal static bool EnableDebugLogs => Settings.DiplomacyDebugLogs;
         internal static bool UsePressureBands => Settings.EnableDiplomacyPressureBands;
+        internal static bool IsTruceEnforcementEnabled => Settings.EnableTruceEnforcement;
 
         // Legacy thresholds (used when bands disabled)
         internal static float NoWarThreshold =>
@@ -138,7 +139,8 @@ namespace Byzantium1071.Campaign.Patches
 
             // Truce enforcement: always hard-block (truce is an absolute constraint).
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
-            if (behavior != null && behavior.IsKingdomPairUnderTruce(__instance.Kingdom, __instance.FactionToDeclareWarOn, out _))
+            if (behavior != null && B1071_ExhaustionDiplomacyHelpers.IsTruceEnforcementEnabled
+                && behavior.IsKingdomPairUnderTruce(__instance.Kingdom, __instance.FactionToDeclareWarOn, out _))
             {
                 if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
                     Debug.Print($"[Byzantium1071][Diplomacy][Debug] DeclareWar support forced against war due to active truce: {__instance.Kingdom.Name} vs {__instance.FactionToDeclareWarOn.Name}.");
@@ -285,6 +287,9 @@ namespace Byzantium1071.Campaign.Patches
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior != null && behavior.IsKingdomPairUnderTruce(kingdom, declareWarDecision.FactionToDeclareWarOn, out float truceDaysLeft))
             {
+                if (!B1071_ExhaustionDiplomacyHelpers.IsTruceEnforcementEnabled)
+                    return true;
+
                 if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
                     Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
                 B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: truce {truceDaysLeft:0.0}d for {kingdom.Name}.");
@@ -324,6 +329,7 @@ namespace Byzantium1071.Campaign.Patches
     {
         static void Postfix(IFaction faction1, IFaction faction2)
         {
+            if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EnableTruceEnforcement) return;
             B1071_ManpowerBehavior.Instance?.RegisterKingdomPairTruce(faction1, faction2);
         }
     }
@@ -333,6 +339,7 @@ namespace Byzantium1071.Campaign.Patches
     {
         static void Postfix(IFaction faction1, IFaction faction2, int dailyTributeFrom1To2, int dailyTributeDuration)
         {
+            if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EnableTruceEnforcement) return;
             B1071_ManpowerBehavior.Instance?.RegisterKingdomPairTruce(faction1, faction2);
         }
     }

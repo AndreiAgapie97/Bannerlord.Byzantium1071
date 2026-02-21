@@ -2249,6 +2249,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private void OnMakePeaceEvent(IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail)
         {
+            if (!(Settings.EnableTruceEnforcement)) return;
             RegisterKingdomPairTruce(faction1, faction2);
         }
     }

@@ -403,7 +403,7 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Diplomacy (War Exhaustion) ───
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyBool("Enable diplomacy pressure", Order = 0, HintText = "War exhaustion directly affects AI kingdom war/peace decisions.")]
+        [SettingPropertyBool("Enable diplomacy pressure", Order = 0, HintText = "War exhaustion directly affects AI kingdom war/peace decisions (DetermineSupport patches). Disable if using a dedicated AI diplomacy mod such as AI Influence to avoid double war-fatigue stacking.")]
         public bool EnableExhaustionDiplomacyPressure { get; set; } = true;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
@@ -423,7 +423,7 @@ namespace Byzantium1071.Campaign.Settings
         public float DiplomacyPeaceSupportBonusPerPoint { get; set; } = 5f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyBool("Enable forced peace at crisis", Order = 5, HintText = "If exhaustion is critically high, AI kingdoms will automatically end one war per cooldown period.")]
+        [SettingPropertyBool("Enable forced peace at crisis", Order = 5, HintText = "If exhaustion is critically high, AI kingdoms will automatically end one war per cooldown period. Disable if using AI Influence or another mod that manages its own peace-forcing logic.")]
         public bool EnableForcedPeaceAtCrisis { get; set; } = true;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
@@ -447,7 +447,11 @@ namespace Byzantium1071.Campaign.Settings
         public bool IgnoreForcedPeaceIfEnemyBesiegingCoreSettlement { get; set; } = true;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyInteger("Forced peace truce days", 0, 365, "0", Order = 11, HintText = "After any peace between two kingdoms, block re-declaration for this many days.")]
+        [SettingPropertyBool("Enable truce enforcement", Order = 10, HintText = "After peace is made, block both kingdoms from declaring war again for the truce duration below. Disable if using AI Influence or another mod that controls its own war-declaration timing.")]
+        public bool EnableTruceEnforcement { get; set; } = true;
+
+        [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyInteger("Forced peace truce days", 0, 365, "0", Order = 11, HintText = "After any peace between two kingdoms, block re-declaration for this many days. Only active when truce enforcement is enabled.")]
         public int ForcedPeaceTruceDays { get; set; } = 30;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
