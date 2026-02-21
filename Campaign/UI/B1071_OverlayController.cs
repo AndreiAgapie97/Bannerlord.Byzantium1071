@@ -220,7 +220,7 @@ namespace Byzantium1071.Campaign.UI
             _activeTab = tab;
             _pageIndex = 0;
             _sortColumn = 0;
-            _sortAscending = false;
+            _sortAscending = tab == B1071LedgerTab.NearbyPools;
             UpdateSortTextCache();
             ForceRefresh();
         }
@@ -1349,6 +1349,20 @@ namespace Byzantium1071.Campaign.UI
             return "F=" + foodChange.ToString("0.0");
         }
 
+        private static string FormatFoodTrendCompact(float foodChange)
+        {
+            if (float.IsNaN(foodChange) || float.IsInfinity(foodChange))
+                return "?";
+
+            int rounded = (int)Math.Round(foodChange, MidpointRounding.AwayFromZero);
+            if (rounded == 0)
+                return "0";
+
+            if (rounded > 999) return "+999";
+            if (rounded < -999) return "-999";
+            return rounded > 0 ? "+" + rounded : rounded.ToString();
+        }
+
         private static string FormatTimeToRebelLabel(int days)
         {
             if (days <= 0) return "Now";
@@ -1409,9 +1423,13 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.RiskScore.CompareTo(b.RiskScore)
                 };
 
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
+
+                compare = string.Compare(a.TownName, b.TownName, StringComparison.Ordinal);
+                if (!_sortAscending) compare = -compare;
+                if (compare != 0) return compare;
+
                 return string.Compare(a.TownName, b.TownName, StringComparison.Ordinal);
             });
 
@@ -1440,10 +1458,10 @@ namespace Byzantium1071.Campaign.UI
             }
 
             _titleText = "Rebellion Risk  (" + rows.Count + " towns)";
-            _header1 = "Town";
-            _header2 = "Owner / CM";
-            _header3 = "Loyalty/Sec/Food";
-            _header4 = "Risk / TTR";
+            _header1 = "Town / Owner";
+            _header2 = "Risk";
+            _header3 = "L/S/F";
+            _header4 = "TTR";
             ApplySortIndicator(new[] { 2, 4, 3, 1 });
 
             _ledgerRows.Clear();
@@ -1455,15 +1473,15 @@ namespace Byzantium1071.Campaign.UI
                 string prefix = highlight ? "> " : string.Empty;
                 bool even = (i - startIndex) % 2 == 0;
 
-                string mismatchTag = row.CultureMismatch ? "CM*" : "CM-";
-                string lsf = "L" + row.Loyalty.ToString("0") + " S" + row.Security.ToString("0") + " " + FormatFoodTrend(row.FoodChange);
-                string right = "R" + row.RiskScore.ToString("0") + " " + FormatTimeToRebelLabel(row.TimeToRebelDays);
+                string lsf = row.Loyalty.ToString("0") + "/" + row.Security.ToString("0") + "/" + FormatFoodTrendCompact(row.FoodChange);
+                lsf = TruncateForColumn(lsf, 12);
+                string townOwner = TruncateForColumn(row.TownName + " (" + row.OwnerFaction + ")", 27);
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
-                    prefix + rank + ". " + TruncateForColumn(row.TownName, 24),
-                    TruncateForColumn(row.OwnerFaction, 14) + " " + mismatchTag,
+                    prefix + rank + ". " + townOwner,
+                    "R" + row.RiskScore.ToString("0"),
                     lsf,
-                    right,
+                    FormatTimeToRebelLabel(row.TimeToRebelDays),
                     highlight,
                     even));
             }
@@ -1472,7 +1490,7 @@ namespace Byzantium1071.Campaign.UI
             _totals1 = "Avg Risk";
             _totals2 = avgRisk.ToString("0");
             _totals3 = "<=30d: " + urgentCount.ToString("N0");
-            _totals4 = "CM*: " + mismatchCount.ToString("N0");
+            _totals4 = "Mismatch: " + mismatchCount.ToString("N0");
             return _titleText;
         }
 
