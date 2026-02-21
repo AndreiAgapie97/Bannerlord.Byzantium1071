@@ -107,6 +107,11 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnSiegeAftermathAppliedEvent.AddNonSerializedListener(this, OnSiegeAftermath);
             CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
+
+            // Truce registration via game event — belt-and-suspenders alongside the Harmony Postfix patches.
+            // This ensures truces are registered even if a third-party mod (e.g. AIInfluence) adds a
+            // Prefix to MakePeaceAction and the Postfix hooks are skipped in a rare scenario.
+            CampaignEvents.MakePeace.AddNonSerializedListener(this, OnMakePeaceEvent);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -2234,6 +2239,17 @@ namespace Byzantium1071.Campaign.Behaviors
 
             // War exhaustion: losing a settlement costs the old owner.
             AddWarExhaustion(oldOwner?.Clan?.Kingdom?.StringId, Settings.ConquestExhaustionGain);
+        }
+
+        /// <summary>
+        /// Belt-and-suspenders truce registration via the native CampaignEvent.
+        /// Fires after any peace deal is committed, independently of the Harmony chain.
+        /// This ensures truces are recorded even if a third-party mod's Prefix on
+        /// MakePeaceAction causes our Harmony Postfix hooks to be skipped.
+        /// </summary>
+        private void OnMakePeaceEvent(IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail)
+        {
+            RegisterKingdomPairTruce(faction1, faction2);
         }
     }
 }
