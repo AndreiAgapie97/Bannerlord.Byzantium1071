@@ -1219,14 +1219,15 @@ namespace Byzantium1071.Campaign.UI
             _totalsVisible = false;
 
             Clan? playerClan = Clan.PlayerClan;
-            Kingdom? playerKingdom = playerClan?.Kingdom;
-            Clan? factionLeaderClan = playerKingdom?.RulingClan;
-            if (playerClan == null || playerKingdom == null)
+            if (playerClan == null)
             {
-                ClearColumns("Clans Ledger - Join a kingdom to view.");
+                ClearColumns("Clans Ledger - No player clan.");
                 _totalsVisible = false;
-                return "Clans Ledger\nJoin a kingdom to view.";
+                return "Clans Ledger\nNo player clan.";
             }
+
+            Kingdom? playerKingdom = playerClan.Kingdom;   // null when landless — handled gracefully below
+            Clan? factionLeaderClan = playerKingdom?.RulingClan;
 
             var rows = new List<ClanInstabilityRow>();
 
