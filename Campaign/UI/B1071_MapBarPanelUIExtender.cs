@@ -104,10 +104,18 @@ namespace Byzantium1071.Campaign.UI
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabPrisonersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabPrisoners\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabInstabilitySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabInstability\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCharactersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCharacters\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCharactersText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabSearchSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabSearch\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabSearchText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
             "</Widget>" +
+            // Search controls (only visible on Search tab)
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"30\" MarginTop=\"4\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071SearchControlsVisible\">" +
+            "<Children>" +
+            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Text=\"@B1071SearchQuery\"/>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" MarginLeft=\"6\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"Search\"/></Children></ButtonWidget>" +
+            "</Children>" +
+            "</ListPanel>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -173,6 +181,7 @@ namespace Byzantium1071.Campaign.UI
         private string _tabPrisonersText = "Prisoners";
         private string _tabInstabilityText = "Clans";
         private string _tabCharactersText = "Characters";
+        private string _tabSearchText = "Search";
         private bool _tabCurrentSelected;
         private bool _tabNearbySelected;
         private bool _tabCastlesSelected;
@@ -185,6 +194,10 @@ namespace Byzantium1071.Campaign.UI
         private bool _tabPrisonersSelected;
         private bool _tabInstabilitySelected;
         private bool _tabCharactersSelected;
+        private bool _tabSearchSelected;
+        private string _searchQuery = string.Empty;
+        private bool _searchControlsVisible;
+        private bool _isSyncingFromController;
         private string _sortText = "Sort ↓";
         private string _pageText = "Page 1/1";
         private string _titleText = "Loading...";
@@ -427,6 +440,47 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string B1071TabSearchText
+        {
+            get => _tabSearchText;
+            set => SetField(ref _tabSearchText, value, nameof(B1071TabSearchText));
+        }
+
+        [DataSourceProperty]
+        public bool B1071TabSearchSelected
+        {
+            get => _tabSearchSelected;
+            set => SetField(ref _tabSearchSelected, value, nameof(B1071TabSearchSelected));
+        }
+
+        [DataSourceProperty]
+        public bool B1071SearchControlsVisible
+        {
+            get => _searchControlsVisible;
+            set => SetField(ref _searchControlsVisible, value, nameof(B1071SearchControlsVisible));
+        }
+
+        [DataSourceProperty]
+        public string B1071SearchQuery
+        {
+            get => _searchQuery;
+            set
+            {
+                if (string.Equals(_searchQuery, value, System.StringComparison.Ordinal))
+                    return;
+
+                SetField(ref _searchQuery, value, nameof(B1071SearchQuery));
+
+                if (_isSyncingFromController)
+                    return;
+
+                B1071_OverlayController.SetSearchQuery(value);
+                if (B1071_OverlayController.IsTabSearchActive)
+                    RefreshLedgerBindings();
+            }
+        }
+
+        [DataSourceProperty]
         public string B1071SortText
         {
             get => _sortText;
@@ -609,6 +663,20 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceMethod]
+        public void ExecuteB1071TabSearch()
+        {
+            B1071_OverlayController.SetLedgerTab(B1071LedgerTab.Search);
+            RefreshLedgerBindings();
+        }
+
+        [DataSourceMethod]
+        public void ExecuteB1071Search()
+        {
+            B1071_OverlayController.ExecuteSearch();
+            RefreshLedgerBindings();
+        }
+
+        [DataSourceMethod]
         public void ExecuteB1071PrevPage()
         {
             B1071_OverlayController.PreviousPage();
@@ -658,6 +726,7 @@ namespace Byzantium1071.Campaign.UI
 
         private void SyncFromController(bool notifyAll)
         {
+            _isSyncingFromController = true;
             B1071PanelVisible = B1071_OverlayController.IsVisible;
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelLeftOffset = B1071_OverlayController.PanelLeftOffset;
@@ -676,6 +745,7 @@ namespace Byzantium1071.Campaign.UI
             B1071TabPrisonersText = B1071_OverlayController.TabPrisonersText;
             B1071TabInstabilityText = B1071_OverlayController.TabClanInstabilityText;
             B1071TabCharactersText = B1071_OverlayController.TabCharactersText;
+            B1071TabSearchText = B1071_OverlayController.TabSearchText;
             B1071TabCurrentSelected = B1071_OverlayController.IsTabCurrentActive;
             B1071TabNearbySelected = B1071_OverlayController.IsTabNearbyActive;
             B1071TabCastlesSelected = B1071_OverlayController.IsTabCastlesActive;
@@ -688,6 +758,9 @@ namespace Byzantium1071.Campaign.UI
             B1071TabPrisonersSelected = B1071_OverlayController.IsTabPrisonersActive;
             B1071TabInstabilitySelected = B1071_OverlayController.IsTabClanInstabilityActive;
             B1071TabCharactersSelected = B1071_OverlayController.IsTabCharactersActive;
+            B1071TabSearchSelected = B1071_OverlayController.IsTabSearchActive;
+            B1071SearchControlsVisible = B1071_OverlayController.IsSearchControlsVisible;
+            B1071SearchQuery = B1071_OverlayController.SearchQuery;
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
@@ -701,6 +774,7 @@ namespace Byzantium1071.Campaign.UI
             B1071Header2 = B1071_OverlayController.Header2;
             B1071Header3 = B1071_OverlayController.Header3;
             B1071Header4 = B1071_OverlayController.Header4;
+            _isSyncingFromController = false;
 
             if (!notifyAll) return;
 
@@ -719,6 +793,7 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabPrisonersText, nameof(B1071TabPrisonersText));
             OnPropertyChangedWithValue(B1071TabInstabilityText, nameof(B1071TabInstabilityText));
             OnPropertyChangedWithValue(B1071TabCharactersText, nameof(B1071TabCharactersText));
+            OnPropertyChangedWithValue(B1071TabSearchText, nameof(B1071TabSearchText));
             OnPropertyChangedWithValue(B1071TabCurrentSelected, nameof(B1071TabCurrentSelected));
             OnPropertyChangedWithValue(B1071TabNearbySelected, nameof(B1071TabNearbySelected));
             OnPropertyChangedWithValue(B1071TabCastlesSelected, nameof(B1071TabCastlesSelected));
@@ -731,6 +806,9 @@ namespace Byzantium1071.Campaign.UI
             OnPropertyChangedWithValue(B1071TabPrisonersSelected, nameof(B1071TabPrisonersSelected));
             OnPropertyChangedWithValue(B1071TabInstabilitySelected, nameof(B1071TabInstabilitySelected));
             OnPropertyChangedWithValue(B1071TabCharactersSelected, nameof(B1071TabCharactersSelected));
+            OnPropertyChangedWithValue(B1071TabSearchSelected, nameof(B1071TabSearchSelected));
+            OnPropertyChangedWithValue(B1071SearchControlsVisible, nameof(B1071SearchControlsVisible));
+            OnPropertyChangedWithValue(B1071SearchQuery, nameof(B1071SearchQuery));
             OnPropertyChangedWithValue(B1071SortText, nameof(B1071SortText));
             OnPropertyChangedWithValue(B1071PageText, nameof(B1071PageText));
             OnPropertyChangedWithValue(B1071TitleText, nameof(B1071TitleText));

@@ -25,7 +25,8 @@ namespace Byzantium1071.Campaign.UI
         Rebellion = 8,
         Prisoners = 9,
         ClanInstability = 10,
-        Characters = 11
+        Characters = 11,
+        Search = 12
     }
 
     internal static class B1071_OverlayController
@@ -94,6 +95,7 @@ namespace Byzantium1071.Campaign.UI
         // Columns dirty — set on daily tick or user action (tab/sort/page).
         // Non-Nearby tabs only rebuild when this is true.
         private static bool _columnsDirty = true;
+        private static string _searchQuery = string.Empty;
 
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
@@ -146,6 +148,7 @@ namespace Byzantium1071.Campaign.UI
             _columnsDirty = true;
             _sortTextCached = string.Empty;
             _lastCurrentContextSettlementId = string.Empty;
+            _searchQuery = string.Empty;
         }
 
         internal static bool IsVisible => _isVisible;
@@ -176,6 +179,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabPrisonersText => FormatTabText("Prisoners", _activeTab == B1071LedgerTab.Prisoners);
         internal static string TabClanInstabilityText => FormatTabText("Clans", _activeTab == B1071LedgerTab.ClanInstability);
         internal static string TabCharactersText => FormatTabText("Characters", _activeTab == B1071LedgerTab.Characters);
+        internal static string TabSearchText => FormatTabText("Search", _activeTab == B1071LedgerTab.Search);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -188,6 +192,9 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabPrisonersActive => _activeTab == B1071LedgerTab.Prisoners;
         internal static bool IsTabClanInstabilityActive => _activeTab == B1071LedgerTab.ClanInstability;
         internal static bool IsTabCharactersActive => _activeTab == B1071LedgerTab.Characters;
+        internal static bool IsTabSearchActive => _activeTab == B1071LedgerTab.Search;
+        internal static bool IsSearchControlsVisible => _activeTab == B1071LedgerTab.Search;
+        internal static string SearchQuery => _searchQuery;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name" },
@@ -201,7 +208,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Risk", "TTR", "Loyalty", "Name" },
             new[] { "Captor", "Where", "By", "Noble" },
             new[] { "Risk", "Kingdom", "Status", "Clan" },
-            new[] { "Dist", "Clan", "Where", "Name" }
+            new[] { "Dist", "Clan", "Where", "Name" },
+            new[] { "Match", "Affil", "Detail", "Name" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -219,7 +227,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 2, 1 },  // Rebellion:   H1→Name(3), H2→Risk(0), H3→Loyalty(2), H4→TTR(1)
             new[] { 3, 0, 2, 1 },  // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
             new[] { 3, 1, 2, 0 },  // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0)
-            new[] { 3, 1, 2, 0 }   // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0)
+            new[] { 3, 1, 2, 0 },  // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0)
+            new[] { 3, 1, 2, 0 }   // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Match(0)
         };
 
         internal static string SortText => _sortTextCached;
@@ -249,6 +258,28 @@ namespace Byzantium1071.Campaign.UI
             _sortAscending = tab == B1071LedgerTab.NearbyPools;
             UpdateSortTextCache();
             ForceRefresh();
+        }
+
+        internal static void SetSearchQuery(string? query)
+        {
+            string normalized = (query ?? string.Empty).Trim();
+            if (string.Equals(_searchQuery, normalized, StringComparison.Ordinal))
+                return;
+
+            _searchQuery = normalized;
+            _pageIndex = 0;
+            _columnsDirty = true;
+
+            if (_activeTab == B1071LedgerTab.Search)
+                ForceRefresh();
+        }
+
+        internal static void ExecuteSearch()
+        {
+            _pageIndex = 0;
+            _columnsDirty = true;
+            if (_activeTab == B1071LedgerTab.Search)
+                ForceRefresh();
         }
 
         /// <summary>
@@ -357,7 +388,7 @@ namespace Byzantium1071.Campaign.UI
 
                 _lastCurrentContextSettlementId = currentContextId;
             }
-            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && _activeTab != B1071LedgerTab.Characters && !_columnsDirty)
+            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && _activeTab != B1071LedgerTab.Characters && _activeTab != B1071LedgerTab.Search && !_columnsDirty)
             {
                 return;
             }
@@ -467,6 +498,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.Prisoners: return BuildPrisonersColumns();
                 case B1071LedgerTab.ClanInstability: return BuildClanInstabilityColumns();
                 case B1071LedgerTab.Characters: return BuildCharactersColumns();
+                case B1071LedgerTab.Search: return BuildSearchColumns(behavior);
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -615,6 +647,309 @@ namespace Byzantium1071.Campaign.UI
             public bool HasPosition;
             public float DistanceSq;
             public bool IsPlayerRelated;
+        }
+
+        private sealed class SearchResultRow
+        {
+            public string Name = string.Empty;
+            public string TypeTag = string.Empty;
+            public string Affiliation = string.Empty;
+            public string Detail = string.Empty;
+            public float DistanceSq = float.MaxValue;
+            public bool HasPosition;
+            public int MatchScore;
+        }
+
+        private static int ComputeQueryScore(string query, params string[] fields)
+        {
+            if (string.IsNullOrEmpty(query) || fields == null || fields.Length == 0)
+                return 0;
+
+            string q = query.Trim();
+            if (q.Length == 0)
+                return 0;
+
+            string qLower = q.ToLowerInvariant();
+            int best = 0;
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                string source = fields[i] ?? string.Empty;
+                if (source.Length == 0)
+                    continue;
+
+                string sourceLower = source.ToLowerInvariant();
+
+                if (sourceLower == qLower)
+                    best = Math.Max(best, 1000);
+                else if (sourceLower.StartsWith(qLower, StringComparison.Ordinal))
+                    best = Math.Max(best, 850);
+                else if (sourceLower.Contains(qLower))
+                    best = Math.Max(best, 650);
+
+                string[] queryTokens = qLower.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (queryTokens.Length > 1)
+                {
+                    int tokenHits = 0;
+                    for (int t = 0; t < queryTokens.Length; t++)
+                    {
+                        if (sourceLower.Contains(queryTokens[t]))
+                            tokenHits++;
+                    }
+
+                    if (tokenHits > 0)
+                        best = Math.Max(best, 400 + (tokenHits * 60));
+                }
+            }
+
+            return best;
+        }
+
+        private static string BuildSearchColumns(B1071_ManpowerBehavior behavior)
+        {
+            _totalsVisible = true;
+
+            string query = _searchQuery;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                ClearColumns("Search Intel");
+                _titleText = "Search Intel";
+                _header1 = "Entity";
+                _header2 = "Affiliation";
+                _header3 = "Details";
+                _header4 = "Distance";
+                _pageLabel = "Page 1/1";
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "Enter a query (e.g., Andronikos)",
+                    string.Empty,
+                    "Heroes, settlements, clans, kingdoms",
+                    string.Empty,
+                    false,
+                    true));
+
+                _totals1 = "Results";
+                _totals2 = "0";
+                _totals3 = "Query";
+                _totals4 = "-";
+                return _titleText;
+            }
+
+            var results = new List<SearchResultRow>(256);
+            MobileParty? mainParty = MobileParty.MainParty;
+            Vec2 mainPos = mainParty != null ? mainParty.GetPosition2D : default;
+
+            foreach (Hero hero in Hero.AllAliveHeroes)
+            {
+                if (hero == null || !IsTrackedCharacter(hero))
+                    continue;
+
+                string heroName = hero.Name?.ToString() ?? "Unknown";
+                string clanName = hero.Clan?.Name?.ToString() ?? (hero.CompanionOf?.Name?.ToString() ?? "Wanderer");
+
+                bool hasPosition = TryGetCharacterPosition(hero, out Vec2 heroPos);
+                Settlement? nearest = hasPosition ? FindNearestSettlement(heroPos) : null;
+                string nearestName = nearest?.Name?.ToString() ?? "Unknown";
+
+                int score = ComputeQueryScore(query, heroName, clanName, nearestName);
+                if (score <= 0)
+                    continue;
+
+                results.Add(new SearchResultRow
+                {
+                    Name = heroName,
+                    TypeTag = "Hero",
+                    Affiliation = clanName,
+                    Detail = hasPosition ? ("Near " + nearestName) : "Location unknown",
+                    HasPosition = hasPosition,
+                    DistanceSq = hasPosition && mainParty != null ? (heroPos - mainPos).LengthSquared : float.MaxValue,
+                    MatchScore = score
+                });
+            }
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || settlement.IsHideout)
+                    continue;
+
+                if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage)
+                    continue;
+
+                string settlementName = settlement.Name?.ToString() ?? "Unknown";
+                string owner = settlement.OwnerClan?.Name?.ToString() ?? "Independent";
+                string kingdomName = settlement.OwnerClan?.Kingdom?.Name?.ToString() ?? "Neutral";
+
+                int score = ComputeQueryScore(query, settlementName, owner, kingdomName);
+                if (score <= 0)
+                    continue;
+
+                behavior.GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
+                int ratio = max > 0 ? (int)((100f * cur) / max) : 0;
+                string type = settlement.IsTown ? "Town" : (settlement.IsCastle ? "Castle" : "Village");
+
+                results.Add(new SearchResultRow
+                {
+                    Name = settlementName,
+                    TypeTag = type,
+                    Affiliation = owner,
+                    Detail = "MP " + FormatMp(cur, max) + " (" + ratio + "%)",
+                    HasPosition = true,
+                    DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
+                    MatchScore = score
+                });
+            }
+
+            Clan? playerClan = Clan.PlayerClan;
+            Clan? playerRuler = playerClan?.Kingdom?.RulingClan;
+            foreach (Clan clan in Clan.All)
+            {
+                if (clan == null || clan.IsEliminated)
+                    continue;
+
+                if (clan.IsMinorFaction || clan.IsBanditFaction || clan.IsClanTypeMercenary || clan.IsRebelClan)
+                    continue;
+
+                string clanName = clan.Name?.ToString() ?? "Unknown";
+                string kingdomName = clan.Kingdom?.Name?.ToString() ?? "Neutral";
+                int fiefs = clan.Settlements?.Count ?? 0;
+                int relation = GetClanRelationToFactionLeader(clan, playerRuler);
+
+                int score = ComputeQueryScore(query, clanName, kingdomName);
+                if (score <= 0)
+                    continue;
+
+                results.Add(new SearchResultRow
+                {
+                    Name = clanName,
+                    TypeTag = "Clan",
+                    Affiliation = kingdomName,
+                    Detail = "Fiefs " + fiefs + " • Gold " + clan.Gold.ToString("N0") + " • Rel " + relation,
+                    HasPosition = false,
+                    DistanceSq = float.MaxValue,
+                    MatchScore = score
+                });
+            }
+
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated)
+                    continue;
+
+                string kingdomName = kingdom.Name?.ToString() ?? "Unknown";
+                string rulerClan = kingdom.RulingClan?.Name?.ToString() ?? "Unknown";
+                int wars = kingdom.FactionsAtWarWith?.Count ?? 0;
+                float exhaustion = string.IsNullOrEmpty(kingdom.StringId) ? 0f : behavior.GetWarExhaustion(kingdom.StringId);
+
+                int score = ComputeQueryScore(query, kingdomName, rulerClan);
+                if (score <= 0)
+                    continue;
+
+                results.Add(new SearchResultRow
+                {
+                    Name = kingdomName,
+                    TypeTag = "Kingdom",
+                    Affiliation = "Ruler: " + rulerClan,
+                    Detail = "Wars " + wars + " • Exhaust " + GetExhaustionCompact(exhaustion, kingdom.StringId),
+                    HasPosition = false,
+                    DistanceSq = float.MaxValue,
+                    MatchScore = score
+                });
+            }
+
+            if (results.Count == 0)
+            {
+                ClearColumns("Search Intel");
+                _header1 = "Entity";
+                _header2 = "Affiliation";
+                _header3 = "Details";
+                _header4 = "Distance";
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    "No matches",
+                    string.Empty,
+                    "Try broader text",
+                    string.Empty,
+                    false,
+                    true));
+                _totals1 = "Results";
+                _totals2 = "0";
+                _totals3 = "Query";
+                _totals4 = TruncateForColumn(query, 18);
+                _pageLabel = "Page 1/1";
+                return _titleText;
+            }
+
+            results.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => string.Compare(a.Affiliation, b.Affiliation, StringComparison.Ordinal),
+                    2 => string.Compare(a.Detail, b.Detail, StringComparison.Ordinal),
+                    3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
+                    _ => a.MatchScore.CompareTo(b.MatchScore)
+                };
+
+                if (_sortColumn == 0)
+                {
+                    if (!_sortAscending) compare = -compare;
+                }
+                else
+                {
+                    if (_sortAscending) compare = -compare;
+                }
+
+                if (compare != 0) return compare;
+
+                if (a.HasPosition && b.HasPosition)
+                {
+                    compare = a.DistanceSq.CompareTo(b.DistanceSq);
+                    if (compare != 0) return compare;
+                }
+
+                return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
+            });
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(results.Count, pageSize);
+            int endIndex = Math.Min(results.Count, startIndex + pageSize);
+
+            _titleText = "Search Intel  (" + results.Count + " matches)";
+            _header1 = "Entity";
+            _header2 = "Affiliation";
+            _header3 = "Details";
+            _header4 = "Distance";
+            ApplySortIndicator(new[] { 4, 2, 3, 1 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                SearchResultRow row = results[i];
+                int rank = i + 1;
+                bool even = (i - startIndex) % 2 == 0;
+                string distance = row.HasPosition && row.DistanceSq < float.MaxValue
+                    ? Math.Sqrt(row.DistanceSq).ToString("F1") + " km"
+                    : "-";
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    rank + ". [" + row.TypeTag + "] " + TruncateForColumn(row.Name, 22),
+                    TruncateForColumn(row.Affiliation, 18),
+                    TruncateForColumn(row.Detail, 22),
+                    distance,
+                    false,
+                    even));
+            }
+
+            int spatial = 0;
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (results[i].HasPosition)
+                    spatial++;
+            }
+
+            _totals1 = "Results";
+            _totals2 = results.Count.ToString("N0");
+            _totals3 = "Spatial";
+            _totals4 = spatial.ToString("N0");
+            return _titleText;
         }
 
         private static string GetFactionName(IFaction? faction)
@@ -1863,7 +2198,7 @@ namespace Byzantium1071.Campaign.UI
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 11) tabValue = 11;
+            if (tabValue > 12) tabValue = 12;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
