@@ -162,15 +162,15 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows manpower messages in the game UI for player actions.")]
-        public bool ShowPlayerDebugMessages { get; set; } = true;
+        public bool ShowPlayerDebugMessages { get; set; } = false;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Use OnUnitRecruited fallback for player", Order = 1, HintText = "Consumes manpower for player recruits on per-click event.")]
-        public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = true;
+        public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = false;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Log AI manpower consumption", Order = 2, HintText = "Logs AI manpower consumption bands to the Bannerlord logs.")]
-        public bool LogAiManpowerConsumption { get; set; } = true;
+        public bool LogAiManpowerConsumption { get; set; } = false;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 14)]
         [SettingPropertyBool("Enable telemetry debug logs", Order = 3, HintText = "Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates).")]
@@ -208,6 +208,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Ledger rows per page", 3, 15, "0", Order = 6, HintText = "How many ledger rows are shown per page.")]
         public int OverlayLedgerRowsPerPage { get; set; } = 7;
 
+        [SettingPropertyGroup("Overlay", GroupOrder = 6)]
+        [SettingPropertyInteger("Overlay top offset (px)", 40, 320, "0", Order = 7, HintText = "Vertical offset from the top of the screen for the overlay root panel. Increase this if game menus overlap the tab row.")]
+        public int OverlayPanelTopOffset { get; set; } = 152;
+
         // ─── War Effects ───
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
@@ -223,23 +227,23 @@ namespace Byzantium1071.Campaign.Settings
         public int RaidDailyPoolDrainCapPercent { get; set; } = 20;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Siege devastate retain %", 0, 100, "0", Order = 2, HintText = "% of max pool retained after choosing Devastate.")]
+        [SettingPropertyInteger("Siege devastate retain %", 0, 100, "0", Order = 3, HintText = "% of max pool retained after choosing Devastate.")]
         public int SiegeDevastateRetainPercent { get; set; } = 10;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Siege pillage retain %", 0, 100, "0", Order = 3, HintText = "% of max pool retained after choosing Pillage.")]
+        [SettingPropertyInteger("Siege pillage retain %", 0, 100, "0", Order = 4, HintText = "% of max pool retained after choosing Pillage.")]
         public int SiegePillageRetainPercent { get; set; } = 40;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Siege mercy retain %", 0, 100, "0", Order = 4, HintText = "% of max pool retained after choosing Show Mercy.")]
+        [SettingPropertyInteger("Siege mercy retain %", 0, 100, "0", Order = 5, HintText = "% of max pool retained after choosing Show Mercy.")]
         public int SiegeMercyRetainPercent { get; set; } = 70;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyFloatingInteger("Battle casualty drain multiplier", 0f, 2f, "0.00", Order = 5, HintText = "Each battle casualty drains this × 1 manpower from the party's home pool.")]
+        [SettingPropertyFloatingInteger("Battle casualty drain multiplier", 0f, 2f, "0.00", Order = 6, HintText = "Each battle casualty drains this × 1 manpower from the party's home pool.")]
         public float BattleCasualtyDrainMultiplier { get; set; } = 0.5f;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 6, HintText = "% of current pool retained when settlement changes hands.")]
+        [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 7, HintText = "% of current pool retained when settlement changes hands.")]
         public int ConquestPoolRetainPercent { get; set; } = 50;
 
         // ─── Delayed Recovery (WP3) ───
