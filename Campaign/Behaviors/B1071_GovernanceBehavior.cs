@@ -108,55 +108,83 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnDailyTickSettlement(Settlement settlement)
         {
-            if (!Settings.EnableGovernanceStrain) return;
-            if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
+            try
+            {
+                if (!Settings.EnableGovernanceStrain) return;
+                if (settlement == null || (!settlement.IsTown && !settlement.IsCastle)) return;
 
-            string key = settlement.StringId;
-            if (!_strainBySettlement.TryGetValue(key, out float strain) || strain <= 0f) return;
+                string key = settlement.StringId;
+                if (!_strainBySettlement.TryGetValue(key, out float strain) || strain <= 0f) return;
 
-            float decay = Settings.GovernanceStrainDecayPerDay;
-            strain = Math.Max(0f, strain - decay);
+                float decay = Settings.GovernanceStrainDecayPerDay;
+                strain = Math.Max(0f, strain - decay);
 
-            if (strain <= 0f)
-                _strainBySettlement.Remove(key);
-            else
-                _strainBySettlement[key] = strain;
+                if (strain <= 0f)
+                    _strainBySettlement.Remove(key);
+                else
+                    _strainBySettlement[key] = strain;
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] DailyTick error: {ex.Message}");
+            }
         }
 
         // ── Event: Village looted → +10 to bound settlement ──────────────
 
         private void OnVillageLooted(Village village)
         {
-            if (!Settings.EnableGovernanceStrain) return;
-            if (village?.Bound == null) return;
+            try
+            {
+                if (!Settings.EnableGovernanceStrain) return;
+                if (village?.Bound == null) return;
 
-            AddStrain(village.Bound, 10f);
+                AddStrain(village.Bound, 10f);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] VillageLooted error: {ex.Message}");
+            }
         }
 
         // ── Event: War declared → +5 to all settlements of defending kingdom
 
         private void OnWarDeclared(IFaction faction1, IFaction faction2, DeclareWarAction.DeclareWarDetail detail)
         {
-            if (!Settings.EnableGovernanceStrain) return;
+            try
+            {
+                if (!Settings.EnableGovernanceStrain) return;
 
-            // Apply strain to both kingdoms' settlements (war affects both sides)
-            ApplyStrainToKingdomSettlements(faction1 as Kingdom, 5f);
-            ApplyStrainToKingdomSettlements(faction2 as Kingdom, 5f);
+                // Apply strain to both factions' settlements (war affects both sides)
+                ApplyStrainToFactionSettlements(faction1, 5f);
+                ApplyStrainToFactionSettlements(faction2, 5f);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] WarDeclared error: {ex.Message}");
+            }
         }
 
         // ── Event: Siege/battle ended → +15 to besieged settlement ───────
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            if (!Settings.EnableGovernanceStrain) return;
-            if (mapEvent == null) return;
-
-            // Siege completed — apply strain to the besieged settlement
-            if (mapEvent.IsSiegeAssault || mapEvent.IsSiegeOutside || mapEvent.IsSallyOut)
+            try
             {
-                Settlement? besieged = mapEvent.MapEventSettlement;
-                if (besieged != null)
-                    AddStrain(besieged, 15f);
+                if (!Settings.EnableGovernanceStrain) return;
+                if (mapEvent == null) return;
+
+                // Siege completed — apply strain to the besieged settlement
+                if (mapEvent.IsSiegeAssault || mapEvent.IsSiegeOutside || mapEvent.IsSallyOut)
+                {
+                    Settlement? besieged = mapEvent.MapEventSettlement;
+                    if (besieged != null)
+                        AddStrain(besieged, 15f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] MapEventEnded error: {ex.Message}");
             }
         }
 
@@ -164,13 +192,20 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnHeroPrisonerTaken(PartyBase captor, Hero prisoner)
         {
-            if (!Settings.EnableGovernanceStrain) return;
-            if (prisoner == null || !prisoner.IsLord) return;
+            try
+            {
+                if (!Settings.EnableGovernanceStrain) return;
+                if (prisoner == null || !prisoner.IsLord) return;
 
-            // Find the captured noble's clan home settlement
-            Settlement? home = prisoner.Clan?.HomeSettlement;
-            if (home != null)
-                AddStrain(home, 8f);
+                // Find the captured noble's clan home settlement
+                Settlement? home = prisoner.Clan?.HomeSettlement;
+                if (home != null)
+                    AddStrain(home, 8f);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] HeroPrisonerTaken error: {ex.Message}");
+            }
         }
 
         // ── Event: Settlement conquered → +20 to conquered settlement ────
@@ -179,15 +214,22 @@ namespace Byzantium1071.Campaign.Behaviors
             Hero newOwner, Hero oldOwner, Hero capturerHero,
             ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
         {
-            if (!Settings.EnableGovernanceStrain) return;
-            if (settlement == null) return;
-
-            // Only conquest/barter — not internal fief grants
-            if (detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.BySiege
-                || detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.ByBarter
-                || detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.ByRebellion)
+            try
             {
-                AddStrain(settlement, 20f);
+                if (!Settings.EnableGovernanceStrain) return;
+                if (settlement == null) return;
+
+                // Only conquest/barter — not internal fief grants
+                if (detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.BySiege
+                    || detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.ByBarter
+                    || detail == ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.ByRebellion)
+                {
+                    AddStrain(settlement, 20f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Governance] SettlementOwnerChanged error: {ex.Message}");
             }
         }
 
@@ -195,7 +237,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void AddStrain(Settlement settlement, float amount)
         {
+            // Only track strain for towns/castles — villages would create orphan
+            // entries that never decay (daily decay filters to IsTown || IsCastle).
             if (settlement == null || amount <= 0f) return;
+            if (!settlement.IsTown && !settlement.IsCastle) return;
 
             string key = settlement.StringId;
             float current = _strainBySettlement.TryGetValue(key, out float val) ? val : 0f;
@@ -203,14 +248,20 @@ namespace Byzantium1071.Campaign.Behaviors
             _strainBySettlement[key] = Math.Min(cap, current + amount);
         }
 
-        private void ApplyStrainToKingdomSettlements(Kingdom? kingdom, float amount)
+        private void ApplyStrainToFactionSettlements(IFaction? faction, float amount)
         {
-            if (kingdom == null || amount <= 0f) return;
+            if (faction == null || amount <= 0f) return;
 
-            foreach (Settlement settlement in kingdom.Settlements)
+            // Handle both Kingdom (many settlements) and Clan (minor faction) cases
+            if (faction is Kingdom kingdom)
             {
-                if (settlement.IsTown || settlement.IsCastle)
-                    AddStrain(settlement, amount);
+                foreach (Settlement s in kingdom.Settlements)
+                    AddStrain(s, amount);
+            }
+            else if (faction is Clan clan)
+            {
+                foreach (Settlement s in clan.Settlements)
+                    AddStrain(s, amount);
             }
         }
     }

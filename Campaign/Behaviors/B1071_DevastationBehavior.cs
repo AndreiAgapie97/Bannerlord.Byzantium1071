@@ -117,39 +117,56 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnVillageLooted(Village village)
         {
-            if (!Settings.EnableFrontierDevastation) return;
-            if (village?.Settlement == null) return;
+            try
+            {
+                if (!Settings.EnableFrontierDevastation) return;
+                if (village?.Settlement == null) return;
 
-            string key = village.Settlement.StringId;
-            float current = _devastationByVillage.TryGetValue(key, out float val) ? val : 0f;
-            float added = Settings.DevastationPerRaid;
-            _devastationByVillage[key] = Math.Min(100f, current + added);
+                string key = village.Settlement.StringId;
+                float current = _devastationByVillage.TryGetValue(key, out float val) ? val : 0f;
+                float added = Settings.DevastationPerRaid;
+                _devastationByVillage[key] = Math.Min(100f, current + added);
 
-            Debug.Print(
-                $"[Byzantium1071][Devastation] {village.Settlement.Name} looted: " +
-                $"devastation {current:F1} → {_devastationByVillage[key]:F1}");
+                if (Settings.TelemetryDebugLogs)
+                {
+                    Debug.Print(
+                        $"[Byzantium1071][Devastation] {village.Settlement.Name} looted: " +
+                        $"devastation {current:F1} \u2192 {_devastationByVillage[key]:F1}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Devastation] VillageLooted error: {ex.Message}");
+            }
         }
 
         // ── Daily decay (villages in Normal state only) ──────────────────
 
         private void OnDailyTickSettlement(Settlement settlement)
         {
-            if (!Settings.EnableFrontierDevastation) return;
-            if (settlement?.Village == null) return;  // only process villages
+            try
+            {
+                if (!Settings.EnableFrontierDevastation) return;
+                if (settlement?.Village == null) return;  // only process villages
 
-            // Only decay when village is in Normal state — frozen during Looted/BeingRaided
-            if (settlement.Village.VillageState != Village.VillageStates.Normal) return;
+                // Only decay when village is in Normal state — frozen during Looted/BeingRaided
+                if (settlement.Village.VillageState != Village.VillageStates.Normal) return;
 
-            string key = settlement.StringId;
-            if (!_devastationByVillage.TryGetValue(key, out float dev) || dev <= 0f) return;
+                string key = settlement.StringId;
+                if (!_devastationByVillage.TryGetValue(key, out float dev) || dev <= 0f) return;
 
-            float decay = Settings.DevastationDecayPerDay;
-            dev = Math.Max(0f, dev - decay);
+                float decay = Settings.DevastationDecayPerDay;
+                dev = Math.Max(0f, dev - decay);
 
-            if (dev <= 0f)
-                _devastationByVillage.Remove(key);
-            else
-                _devastationByVillage[key] = dev;
+                if (dev <= 0f)
+                    _devastationByVillage.Remove(key);
+                else
+                    _devastationByVillage[key] = dev;
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][Devastation] DailyTick error: {ex.Message}");
+            }
         }
     }
 }

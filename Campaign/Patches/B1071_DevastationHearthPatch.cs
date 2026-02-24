@@ -29,6 +29,8 @@ namespace Byzantium1071.Campaign.Patches
     {
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
+        private static readonly TextObject _label = new TextObject("{=b1071_dev_frontier}Frontier Devastation");
+
         [HarmonyPostfix]
         public static void Postfix(Village village, ref ExplainedNumber __result)
         {
@@ -45,7 +47,7 @@ namespace Byzantium1071.Campaign.Patches
                 float ratio = dev / 100f;
                 float penalty = -(ratio * Settings.DevastationMaxHearthPenalty);
 
-                __result.Add(penalty, new TaleWorlds.Localization.TextObject("Frontier Devastation"));
+                __result.Add(penalty, _label);
             }
             catch (Exception ex)
             {

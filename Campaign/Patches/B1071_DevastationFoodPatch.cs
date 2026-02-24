@@ -34,6 +34,8 @@ namespace Byzantium1071.Campaign.Patches
     {
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
+        private static readonly TextObject _label = new TextObject("{=b1071_dev_villages}Devastated Villages");
+
         [HarmonyPostfix]
         public static void Postfix(Town town, ref ExplainedNumber __result)
         {
@@ -54,16 +56,12 @@ namespace Byzantium1071.Campaign.Patches
                     if (dev <= 0f) continue;
 
                     float ratio = dev / 100f;
-                    // Estimate per-village food contribution from hearths:
-                    // Vanilla formula: each village contributes roughly Hearth * factor to town food.
-                    // Rather than recalculate the exact vanilla value, we apply a flat per-village
-                    // penalty that scales with devastation — simpler and more predictable.
                     totalPenalty += ratio * Settings.DevastationMaxFoodPenaltyPerVillage;
                 }
 
                 if (totalPenalty <= 0f) return;
 
-                __result.Add(-totalPenalty, new TaleWorlds.Localization.TextObject("Devastated Villages"));
+                __result.Add(-totalPenalty, _label);
             }
             catch (Exception ex)
             {

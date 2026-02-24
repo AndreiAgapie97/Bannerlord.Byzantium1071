@@ -31,6 +31,8 @@ namespace Byzantium1071.Campaign.Patches
     {
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
+        private static readonly TextObject _label = new TextObject("{=b1071_dev_hinterlands}Devastated Hinterlands");
+
         [HarmonyPostfix]
         public static void Postfix(Town fortification, ref ExplainedNumber __result)
         {
@@ -47,7 +49,7 @@ namespace Byzantium1071.Campaign.Patches
                 float ratio = avgDev / 100f;
                 float penalty = -(ratio * Settings.DevastationMaxProsperityPenalty);
 
-                __result.Add(penalty, new TaleWorlds.Localization.TextObject("Devastated Hinterlands"));
+                __result.Add(penalty, _label);
             }
             catch (Exception ex)
             {
