@@ -20,8 +20,10 @@ namespace Byzantium1071.Campaign.Patches
     ///
     /// Compatible with any mod that replaces the VolunteerModel via AddModel,
     /// as long as the replacement inherits from DefaultVolunteerModel and does
-    /// not override GetDailyVolunteerProductionProbability itself (in which
-    /// case the Postfix still fires after the override).
+    /// not override GetDailyVolunteerProductionProbability itself. If a mod
+    /// overrides that method, our Postfix on the base body will NOT fire
+    /// (Harmony patches the specific method implementation, not the vtable)
+    /// unless the override calls base internally.
     ///
     /// Replaces the old B1071_ManpowerVolunteerModel (AddModel approach) which
     /// caused last-loaded-wins conflicts with mods like EconomyOverhaul.
