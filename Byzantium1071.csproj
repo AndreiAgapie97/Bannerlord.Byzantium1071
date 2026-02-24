@@ -10,8 +10,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
-    <!-- Exclude decompiled reference files from compilation -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);temp_decompile_view\**;temp_decompile\**</DefaultItemExcludes>
     <BuildForWindows>false</BuildForWindows>
     <BuildForWindowsStore>false</BuildForWindowsStore>
     <ModuleId>Byzantium1071</ModuleId>
