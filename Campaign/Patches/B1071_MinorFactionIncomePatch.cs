@@ -56,6 +56,7 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (!Settings.EnableMinorFactionIncome) return;
                 if (clan == null || !clan.IsMinorFaction || clan.IsBanditFaction) return;
+                if (clan == Clan.PlayerClan) return; // Player already has settlement income; this is for AI only.
 
                 int tier = Math.Max(1, clan.Tier);
 

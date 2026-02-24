@@ -1,5 +1,6 @@
 using Byzantium1071.Campaign.Settings;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
@@ -66,6 +67,10 @@ namespace Byzantium1071.Campaign.Behaviors
         // Tracks whether starting slave stocks have been seeded into town markets (new game only).
         private bool _initialStockSeeded = false;
 
+        // Fractional decay accumulator per settlement (key = StringId).
+        // Prevents rounding loss when decay rate is <1 slave/day.
+        private Dictionary<string, float> _decayAccumulator = new Dictionary<string, float>();
+
         // ── CampaignBehaviorBase ──────────────────────────────────────────────────
 
         public override void RegisterEvents()
@@ -81,6 +86,8 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             // _initialStockSeeded ensures starting slave stocks are seeded only once on new games.
             dataStore.SyncData("b1071_initialStockSeeded", ref _initialStockSeeded);
+            dataStore.SyncData("b1071_slaveDecayAccum", ref _decayAccumulator);
+            _decayAccumulator ??= new Dictionary<string, float>();
         }
 
         // ── Event handlers ────────────────────────────────────────────────────────
@@ -153,7 +160,30 @@ namespace Byzantium1071.Campaign.Behaviors
             // NOTE: Prosperity and Construction bonuses are applied via Harmony postfixes:
             //   B1071_SlaveProsperityPatch  → DefaultSettlementProsperityModel.CalculateProsperityChange
             //   B1071_SlaveConstructionPatch → DefaultBuildingConstructionModel.CalculateDailyConstructionPower
-            // This makes both bonuses visible in-game tooltips and prevents double-counting.
+            //   B1071_SlaveFoodPatch         → DefaultSettlementFoodModel.CalculateTownFoodStocksChange
+            // This makes all bonuses visible in-game tooltips and prevents double-counting.
+
+            // ── Slave attrition (deaths, escapes, manumission) ────────────────────
+            // Removes a fraction of the slave population each day.
+            // Without decay, slave populations only grow — decay creates natural equilibrium.
+            if (Settings.SlaveDailyDecayPercent > 0f)
+            {
+                float decayFraction = Settings.SlaveDailyDecayPercent / 100f;
+                float rawLoss = slaveCount * decayFraction;
+                // Accumulate fractional loss — when >= 1.0, remove whole slaves.
+                string decayKey = settlement.StringId;
+                if (!_decayAccumulator.TryGetValue(decayKey, out float accum))
+                    accum = 0f;
+                accum += rawLoss;
+                int wholeLoss = Math.Min((int)accum, slaveCount);
+                if (wholeLoss > 0)
+                {
+                    settlement.ItemRoster.AddToCounts(_slaveItem, -wholeLoss);
+                    slaveCount -= wholeLoss;  // update local count for notification
+                    accum -= wholeLoss;
+                }
+                _decayAccumulator[decayKey] = accum;
+            }
 
             // ── Daily notification ────────────────────────────────────────────────
             // Only show for the settlement the player is currently inside — prevent

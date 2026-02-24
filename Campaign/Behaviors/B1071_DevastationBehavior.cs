@@ -123,11 +123,11 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// If a third-party mod (e.g. EconomyOverhaul) replaces the food model with a class
-        /// that does NOT inherit from DefaultSettlementFoodModel, our static Harmony patch on
-        /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange becomes dead code.
+        /// that does NOT inherit from DefaultSettlementFoodModel, our static Harmony patches on
+        /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange become dead code.
         ///
-        /// This method detects that situation at runtime and applies the same Postfix
-        /// directly to the actual food model's CalculateTownFoodStocksChange method.
+        /// This method detects that situation at runtime and applies the same Postfix methods
+        /// (DevastationFoodPatch + SlaveFoodPatch) directly to the actual food model.
         /// </summary>
         private static void ApplyDynamicFoodPatchIfNeeded()
         {
@@ -153,24 +153,33 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (targetMethod == null)
                 {
-                    Debug.Print($"[Byzantium1071] WARNING: Non-default food model {modelType.Name} has no CalculateTownFoodStocksChange — devastation food penalty disabled");
-                    return;
-                }
-
-                MethodInfo? postfix = typeof(B1071_DevastationFoodPatch)
-                    .GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
-
-                if (postfix == null)
-                {
-                    Debug.Print("[Byzantium1071] WARNING: Could not find DevastationFoodPatch.Postfix for dynamic patching");
+                    Debug.Print($"[Byzantium1071] WARNING: Non-default food model {modelType.Name} has no CalculateTownFoodStocksChange — food patches disabled");
                     return;
                 }
 
                 var harmony = new Harmony("com.andrei.byzantium1071");
-                harmony.Patch(targetMethod, postfix: new HarmonyMethod(postfix));
+                int applied = 0;
+
+                // Patch 1: Devastation food penalty
+                MethodInfo? devPostfix = typeof(B1071_DevastationFoodPatch)
+                    .GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
+                if (devPostfix != null)
+                {
+                    harmony.Patch(targetMethod, postfix: new HarmonyMethod(devPostfix));
+                    applied++;
+                }
+
+                // Patch 2: Slave food consumption
+                MethodInfo? slavePostfix = typeof(B1071_SlaveFoodPatch)
+                    .GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
+                if (slavePostfix != null)
+                {
+                    harmony.Patch(targetMethod, postfix: new HarmonyMethod(slavePostfix));
+                    applied++;
+                }
 
                 _dynamicFoodPatchApplied = true;
-                Debug.Print($"[Byzantium1071] Non-default food model detected ({modelType.Name}), applied dynamic compat patch for devastation food penalty");
+                Debug.Print($"[Byzantium1071] Non-default food model detected ({modelType.Name}), applied {applied} dynamic compat food patches");
             }
             catch (Exception ex)
             {

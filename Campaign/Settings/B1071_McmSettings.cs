@@ -611,7 +611,15 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveConstructionBonusCap { get; set; } = 150f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyInteger("Construction bonus duration (days) [legacy]", 1, 180, "0", Order = 7, HintText = "[Not used in v3] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus.")]
+        [SettingPropertyFloatingInteger("Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.02: 50 slaves = -1 food/day, 100 slaves = -2 food/day, 200 slaves = -4 food/day (roughly a village\u2019s output). Set to 0 to disable. Default: 0.02.")]
+        public float SlaveFoodConsumptionPerUnit { get; set; } = 0.02f;
+
+        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
+        [SettingPropertyFloatingInteger("Daily slave decay (%)", 0f, 10f, "0.00", Order = 8, HintText = "Percentage of the slave population lost per day (deaths, escapes, manumission). Without decay, slave populations grow forever. At 1%: 100 slaves lose 1/day. At 2%: 100 slaves lose 2/day. Creates equilibrium where inflow must match decay. Set to 0 to disable. Default: 1.0.")]
+        public float SlaveDailyDecayPercent { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
+        [SettingPropertyInteger("Construction bonus duration (days) [legacy]", 1, 180, "0", Order = 9, HintText = "[Not used in v3] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus.")]
         public int SlaveConstructionBonusDays { get; set; } = 30;
 
         [SettingPropertyGroup("Legacy", GroupOrder = 99)]
