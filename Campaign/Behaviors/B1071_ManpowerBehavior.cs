@@ -1822,18 +1822,13 @@ namespace Byzantium1071.Campaign.Behaviors
             return result;
         }
 
+        /// <summary>
+        /// Returns the flat manpower cost per troop for standard recruitment.
+        /// All tiers now cost the same: BaseManpowerCostPerTroop (default 1).
+        /// </summary>
         private static int GetManpowerCostPerTroop(CharacterObject troop)
         {
-            var settings = Settings;
-
-            int baseCost = Math.Max(1, settings.BaseManpowerCostPerTroop);
-            int tiersPerStep = Math.Max(1, settings.TiersPerExtraCost);
-            int tier = Math.Max(1, troop.Tier);
-            int baseFormula = baseCost + ((tier - 1) / tiersPerStep);
-
-            double scaled = baseFormula * (Math.Max(1, settings.CostMultiplierPercent) / 100.0);
-            int cost = (int)Math.Round(scaled, MidpointRounding.AwayFromZero);
-            return Math.Max(1, cost);
+            return Math.Max(1, Settings.BaseManpowerCostPerTroop);
         }
 
         private static int ApplyCultureDiscountIfAny(int baseCost, Settlement recruitmentSettlement, MobileParty party)
@@ -1966,6 +1961,27 @@ namespace Byzantium1071.Campaign.Behaviors
             int max = GetMaxManpowerCached(pool);
             int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
             int consumed = Math.Min(available, costPer * amount);
+            _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
+        }
+
+        /// <summary>
+        /// Consumes a flat amount of manpower from a settlement's pool, ignoring troop tier.
+        /// Used for elite pool regeneration where the cost is a fixed MCM setting (CastleEliteManpowerCost).
+        /// </summary>
+        internal void ConsumeManpowerFlat(Settlement recruitmentSettlement, int totalCost)
+        {
+            if (recruitmentSettlement == null || totalCost <= 0) return;
+
+            Settlement? pool = GetPoolSettlement(recruitmentSettlement);
+            if (pool == null) return;
+            EnsureEntry(pool);
+
+            string poolId = pool.StringId;
+            if (string.IsNullOrEmpty(poolId)) return;
+
+            int max = GetMaxManpowerCached(pool);
+            int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+            int consumed = Math.Min(available, totalCost);
             _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
         }
 

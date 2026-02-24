@@ -347,12 +347,8 @@ namespace Byzantium1071.Campaign.Behaviors
                     toAdd = Math.Min(toAdd, affordableFromManpower);
                     if (toAdd <= 0) return;
 
-                    // Consume manpower for each generated troop.
-                    for (int i = 0; i < toAdd; i++)
-                    {
-                        var representativeTroop = cultureTroops[i % cultureTroops.Count];
-                        manpowerBehavior.ConsumeManpowerPublic(settlement, representativeTroop, 1);
-                    }
+                    // Consume manpower using the flat elite cost, aligned with affordability check.
+                    manpowerBehavior.ConsumeManpowerFlat(settlement, toAdd * costPer);
                 }
             }
 
@@ -370,6 +366,19 @@ namespace Byzantium1071.Campaign.Behaviors
 
         // ── 4. AI auto-recruitment ────────────────────────────────────────────────
 
+        /// <summary>
+        /// Recruits from the elite pool into AI lord parties currently at this castle.
+        ///
+        /// IMPORTANT: MemberRoster.AddToCounts fires CampaignEventDispatcher.OnPartySizeChanged
+        /// and bumps MobileParty.VersionNo, which invalidates cached AI decisions. On the very
+        /// next tick, CheckExitingSettlementParallel checks ShortTermTargetSettlement ==
+        /// CurrentSettlement — if the version bump caused the AI to re-evaluate and pick a new
+        /// target, the party would exit the castle and immediately turn back (visual "flickering").
+        ///
+        /// Fix: after modifying the roster, re-anchor the party to this settlement via
+        /// SetMoveGoToSettlement + RecalculateShortTermBehavior so that ShortTermTargetSettlement
+        /// remains equal to CurrentSettlement through the next tick.
+        /// </summary>
         private void AiAutoRecruit(Settlement settlement)
         {
             if (!Settings.CastleEliteAiRecruits) return;
@@ -413,7 +422,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     recruited += take;
                 }
 
-                // No per-tick log — AI recruitment happens silently.
+                // Re-anchor the party to this castle so the AI version-bump doesn't
+                // cause CheckExitingSettlementParallel to eject the party next tick.
+                if (recruited > 0 && party.CurrentSettlement == settlement)
+                {
+                    party.SetMoveGoToSettlement(settlement,
+                        party.DesiredAiNavigationType,
+                        party.IsTargetingPort);
+                    party.RecalculateShortTermBehavior();
+                }
             }
         }
 
@@ -586,7 +603,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Recruit one prisoner from the castle. Removes from prison, adds to player party,
-        /// deducts gold, drains manpower if configured.
+        /// deducts gold. Prisoner recruitment costs zero manpower.
         /// </summary>
         public bool TryRecruitPrisoner(Settlement castle, CharacterObject troop)
         {
@@ -603,15 +620,12 @@ namespace Byzantium1071.Campaign.Behaviors
             int goldCost = GetGoldCostForTier(troop.Tier);
             if (Hero.MainHero.Gold < goldCost) return false;
 
-            if (Settings.CastleRecruitDrainsManpower && !CheckManpower(castle, troop)) return false;
+            // Prisoner recruitment costs zero manpower (by design).
 
             // Execute
             Hero.MainHero.ChangeHeroGold(-goldCost);
             prisonRoster.RemoveTroop(troop, 1);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
-
-            if (Settings.CastleRecruitDrainsManpower)
-                B1071_ManpowerBehavior.Instance?.ConsumeManpowerPublic(castle, troop, 1);
 
             if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castle.StringId, out var castleDict))
                 castleDict.Remove(troop.StringId);

@@ -62,35 +62,46 @@
                         SuggestedHeight="2" MarginTop="6" MarginBottom="8"
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.85" />
 
-                <!-- ===== STATS ROW: Gold + Manpower ===== -->
-                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                           MarginBottom="8"
-                           StackLayout.LayoutMethod="HorizontalLeftToRight">
+                <!-- ===== STATS ROW: Gold (left) + Manpower (right-centered) ===== -->
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        MarginBottom="8">
                   <Children>
-                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="16" Brush.FontColor="#D4B870FF"
-                                Brush.TextHorizontalAlignment="Left"
-                                Text="Gold: " />
-                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="16" Brush.FontColor="#FFD700FF"
-                                Brush.TextHorizontalAlignment="Left"
-                                Text="@GoldText" />
-                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                            SuggestedWidth="40" SuggestedHeight="1" />
-                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="16" Brush.FontColor="#D4B870FF"
-                                Brush.TextHorizontalAlignment="Left"
-                                Text="Manpower: " />
-                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="16" Brush.FontColor="#88CC88FF"
-                                Brush.TextHorizontalAlignment="Left"
-                                Text="@ManpowerText" />
+                    <!-- Gold: pinned left -->
+                    <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                               HorizontalAlignment="Left"
+                               StackLayout.LayoutMethod="HorizontalLeftToRight">
+                      <Children>
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                    Brush="Encyclopedia.SubPage.History.Text"
+                                    Brush.FontSize="16" Brush.FontColor="#D4B870FF"
+                                    Brush.TextHorizontalAlignment="Left"
+                                    Text="Gold: " />
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                    Brush="Encyclopedia.SubPage.History.Text"
+                                    Brush.FontSize="16" Brush.FontColor="#FFD700FF"
+                                    Brush.TextHorizontalAlignment="Left"
+                                    Text="@GoldText" />
+                      </Children>
+                    </ListPanel>
+                    <!-- Manpower: centered right half -->
+                    <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                               HorizontalAlignment="Right" MarginRight="120"
+                               StackLayout.LayoutMethod="HorizontalLeftToRight">
+                      <Children>
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                    Brush="Encyclopedia.SubPage.History.Text"
+                                    Brush.FontSize="16" Brush.FontColor="#D4B870FF"
+                                    Brush.TextHorizontalAlignment="Left"
+                                    Text="Manpower: " />
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                    Brush="Encyclopedia.SubPage.History.Text"
+                                    Brush.FontSize="16" Brush.FontColor="#88CC88FF"
+                                    Brush.TextHorizontalAlignment="Left"
+                                    Text="@ManpowerText" />
+                      </Children>
+                    </ListPanel>
                   </Children>
-                </ListPanel>
+                </Widget>
 
                 <!-- Divider -->
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
