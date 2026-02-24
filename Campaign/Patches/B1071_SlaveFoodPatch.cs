@@ -23,10 +23,10 @@ namespace Byzantium1071.Campaign.Patches
     ///
     /// Formula: penalty = slaveCount × SlaveFoodConsumptionPerUnit
     ///
-    /// At default settings (0.02 food/slave/day):
-    ///   50 slaves  → -1.0 food/day  (minor)
-    ///   100 slaves → -2.0 food/day  (noticeable)
-    ///   200 slaves → -4.0 food/day  (significant — roughly a village's output)
+    /// At default settings (0.05 food/slave/day):
+    ///   50 slaves  → -2.5 food/day  (noticeable)
+    ///   100 slaves → -5.0 food/day  (significant — roughly a village's output)
+    ///   200 slaves → -10.0 food/day (severe economic cap)
     ///
     /// This patch also works with non-default food models (e.g. EconomyOverhaul)
     /// via the dynamic patching system in B1071_DevastationBehavior.

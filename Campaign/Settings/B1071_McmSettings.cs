@@ -611,8 +611,8 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveConstructionBonusCap { get; set; } = 150f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.02: 50 slaves = -1 food/day, 100 slaves = -2 food/day, 200 slaves = -4 food/day (roughly a village\u2019s output). Set to 0 to disable. Default: 0.02.")]
-        public float SlaveFoodConsumptionPerUnit { get; set; } = 0.02f;
+        [SettingPropertyFloatingInteger("Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05.")]
+        public float SlaveFoodConsumptionPerUnit { get; set; } = 0.05f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyFloatingInteger("Daily slave decay (%)", 0f, 10f, "0.00", Order = 8, HintText = "Percentage of the slave population lost per day (deaths, escapes, manumission). Without decay, slave populations grow forever. At 1%: 100 slaves lose 1/day. At 2%: 100 slaves lose 2/day. Creates equilibrium where inflow must match decay. Set to 0 to disable. Default: 1.0.")]

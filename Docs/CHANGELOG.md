@@ -2,6 +2,101 @@
 
 ---
 
+## [0.1.6.0] — 2026-02-24
+
+### New Systems
+
+**Minor Faction Economy — Frontier Revenue** (new)
+- Non-bandit minor factions receive a daily "Frontier Revenue" stipend to prevent bankruptcy under tier-exponential wages.
+- Revenue = `clanTier × stipendPerTier` (denars/day). Mercenary clans receive less (default 250/tier) than unaligned factions (default 400/tier) since mercs already get contract pay.
+- **Player clan explicitly excluded** — this revenue is for AI minor factions only. `Clan.IsMinorFaction` returns `true` for an independent player, but frontier revenue is not appropriate for the player who already has settlement income.
+- Applied via Harmony Postfix on `DefaultClanFinanceModel.CalculateClanIncomeInternal`. Visible as "Frontier Revenue" in the clan finance tooltip.
+- MCM: **Minor Faction Economy** group (GroupOrder 19) with master toggle, mercenary stipend per tier, and unaligned stipend per tier.
+
+**Provincial Governance — Governance Strain** (new)
+- Wars, raids, sieges, and conquests accumulate governance strain on settlements. High strain reduces loyalty, security, and prosperity — modelling the administrative cost of prolonged conflict.
+- Strain decays at a configurable rate (default 0.3/day — a +10 raid strain takes ~33 days to fully decay).
+- Penalties scale linearly from 0 at strain 0 to configurable maximums at the strain cap (default 100): loyalty penalty up to -3.0/day, security -2.0/day, prosperity -1.0/day.
+- Applied via three Harmony Postfixes: `B1071_GovernanceLoyaltyPatch`, `B1071_GovernanceProsperityPatch`, `B1071_GovernanceSecurityPatch`. All visible in vanilla tooltips as "Governance Strain".
+- MCM: **Provincial Governance** group (GroupOrder 20) with master toggle, decay rate, penalty caps, and strain cap.
+
+**Frontier Devastation** (new)
+- Village raids accumulate persistent devastation (0–100) that decays slowly. Unlike vanilla's binary Looted/Normal state, this creates persistent regional degradation from repeated frontier raiding.
+- +25 devastation per raid (configurable), -0.5/day decay during Normal state only (frozen while Looted/BeingRaided). A single raid takes 50 days to fully heal; two rapid raids = 50 devastation = severe penalties.
+- Four effect patches: hearth growth penalty (village), prosperity penalty (bound town), security penalty (bound town), food supply penalty (per devastated village). All visible in vanilla tooltips as "Frontier Devastation".
+- MCM: **Frontier Devastation** group (GroupOrder 21) with master toggle, devastation per raid, decay rate, and all penalty caps.
+
+**Slave Economy Enhancements — Food Consumption & Decay** (new)
+- **Slave food consumption** — Each slave in the town market now consumes 0.05 food/day (historically, enslaved labourers received subsistence rations comparable to garrison troops). Visible in the food tooltip as "Slave Upkeep". Creates a natural economic cap on slave hoarding: at some point, the food cost outweighs the prosperity/construction benefits.
+  - 50 slaves → -2.5 food/day (noticeable)
+  - 100 slaves → -5.0 food/day (significant — roughly a village's output)
+  - 200 slaves → -10.0 food/day (severe)
+- **Slave attrition (decay)** — 1% of the slave population is lost per day (deaths, escapes, manumission). Without decay, slave populations grow indefinitely; with it, inflow must match decay for equilibrium. Uses a fractional accumulator to prevent rounding loss (persisted via SyncData).
+- MCM: `SlaveFoodConsumptionPerUnit` (default 0.05, range 0–0.1) and `SlaveDailyDecayPercent` (default 1.0%, range 0–10) in the **Slave Economy** group.
+
+### Compatibility — EconomyOverhaul v1.1.6
+
+**Full compatibility achieved with Bannerlord.EconomyOverhaul** (new)
+- 23/23 Byzantium1071 systems now work correctly alongside EO. Verified via DLL decompilation (reflection + IL analysis).
+
+**Volunteer model** — Converted from `AddModel(B1071_ManpowerVolunteerModel)` to a Harmony Postfix (`B1071_ManpowerVolunteerPatch`) on `DefaultVolunteerModel.GetDailyVolunteerProductionProbability`. This eliminates the "last AddModel wins" conflict — both B1071's manpower gating and EO's troop policy system coexist because EO overrides `GetBasicVolunteer` (a different method) and does not override `GetDailyVolunteerProductionProbability`.
+- Deleted `B1071_ManpowerVolunteerModel.cs`. Removed `AddModel` call from `SubModule.cs`.
+
+**Food model** — EO's `BLM_TownProductionModel` inherits from abstract `SettlementFoodModel` (not `DefaultSettlementFoodModel`), making B1071's static `[HarmonyPatch]` on `DefaultSettlementFoodModel` dead code when EO is loaded. Added runtime model detection in `B1071_DevastationBehavior.ApplyDynamicFoodPatchIfNeeded()`:
+- Queries `Campaign.Current.Models.SettlementFoodModel` at session launch.
+- If the model inherits from `DefaultSettlementFoodModel` → static patches work, nothing to do.
+- If not (e.g. EO's model) → dynamically patches both `B1071_DevastationFoodPatch.Postfix` and `B1071_SlaveFoodPatch.Postfix` onto the actual model's `CalculateTownFoodStocksChange` via reflection-based Harmony patching.
+- Logged at runtime: `"[Byzantium1071] Non-default food model detected (BLM_TownProductionModel), applied 2 dynamic compat food patches"`.
+
+**Other EO systems confirmed compatible without changes:**
+- Prosperity/Loyalty/Security models: EO calls `base` → B1071 Postfixes fire during the base call ✅
+- Clan finance model: EO delegates to base → `CalculateClanIncomeInternal` still called → B1071 Postfix fires ✅
+- Construction model: EO calls `base` → B1071 slave construction Postfix fires ✅
+- Hearth model: EO inherits but doesn't override `CalculateHearthChange` → B1071 Postfix fires normally ✅
+- All 14 non-overlapping patches (recruitment, diplomacy, combat, wages): zero EO interaction ✅
+
+**EO Slave System** — No conflict. EO has village-level slaves (VillageAddonsBehavior: prisoner roster, land production); B1071 has town-level slaves (item-based market goods, construction + prosperity + manpower + food bonuses). Different locations, different storage, different effects. Complementary.
+
+### Bug Fixes
+
+**Player receiving Minor Faction frontier revenue** (fixed)
+- `Clan.IsMinorFaction` returns `true` for an independent player clan (no kingdom). The frontier revenue patch was not excluding the player, granting 1600 denars/day (Tier 4 × 400/tier).
+- Fix: Added `if (clan == Clan.PlayerClan) return;` after the `IsMinorFaction` check.
+
+**Slave decay accumulator could grow unbounded** (fixed)
+- If the player sold slaves between daily ticks, `wholeLoss` could exceed `slaveCount`, causing the removal to be skipped entirely while `accum` kept growing.
+- Fix: `wholeLoss = Math.Min((int)accum, slaveCount)` — clamps to available stock.
+
+### Internal Changes
+
+- Harmony patch count: 27 → 29 (+`B1071_ManpowerVolunteerPatch`, +`B1071_SlaveFoodPatch`)
+- Model count: 2 → 1 (deleted `B1071_ManpowerVolunteerModel`, kept `B1071_ManpowerMilitiaModel`)
+- New files: `B1071_ManpowerVolunteerPatch.cs`, `B1071_SlaveFoodPatch.cs`, `B1071_GovernanceBehavior.cs`, `B1071_GovernanceLoyaltyPatch.cs`, `B1071_GovernanceProsperityPatch.cs`, `B1071_GovernanceSecurityPatch.cs`, `B1071_DevastationBehavior.cs`, `B1071_DevastationFoodPatch.cs`, `B1071_DevastationHearthPatch.cs`, `B1071_DevastationProsperityPatch.cs`, `B1071_DevastationSecurityPatch.cs`, `B1071_MinorFactionIncomePatch.cs`
+- Deleted files: `B1071_ManpowerVolunteerModel.cs`
+- MCM settings: +16 new settings across 3 new groups (Minor Faction Economy, Provincial Governance, Frontier Devastation) + 2 new settings in Slave Economy group
+- Dynamic food patch system (`ApplyDynamicFoodPatchIfNeeded`) uses `_dynamicFoodPatchApplied` static flag — survives across game loads within the same application session
+
+### Save Compatibility
+
+**100% save-compatible with 0.1.5.x saves.** No new campaign required.
+
+- All new `SyncData` fields use graceful null handling: `_decayAccumulator ??= new Dictionary<string, float>()` and `_devastationByVillage ??= new Dictionary<string, float>()`.
+- New behaviors (`GovernanceBehavior`, `DevastationBehavior`) start with empty dictionaries on first load — strain and devastation begin at 0, identical to a fresh game.
+- New MCM settings use `Defaults` fallback — missing JSON config keys resolve to defaults without errors.
+- No `AddModel` changes for existing models (militia model unchanged). Volunteer model was an `AddModel` in 0.1.5.x → now a Harmony Postfix, which is additive (no model slot conflict on load).
+- Slave decay accumulator (`b1071_slaveDecayAccum`) is a new `SyncData` key — absent from old saves, initialised as empty dictionary (no decay backlog).
+- `_initialStockSeeded` persists from old saves — re-seeding is impossible.
+
+### Documentation
+
+- Changelog updated for all 0.1.6.0 changes.
+- `Byzantium1071modexplanation.md` updated with new systems and architecture table.
+- `Compatibility_Report.md` updated to reflect 29 patches, deleted model, and EO compat fixes.
+- `EO_Compatibility_Plan.md` marked as implemented.
+- Nexus mod description updated with new systems section.
+
+---
+
 ## [0.1.5.1] — 2026-02-24
 
 ### Compatibility — Bannerlord 1.3.15
