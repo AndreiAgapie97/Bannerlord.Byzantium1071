@@ -31,8 +31,8 @@ namespace Byzantium1071.Campaign.Behaviors
     ///  DISTRIBUTION
     ///   Slaves are sold through the normal civilian town market (like any other trade good).
     ///   AI lords deposit slave items into the town market on arrival (OnSettlementEntered).
-    ///   On new-game creation, each town is seeded with 0-30 slaves to make the system
-    ///   immediately visible from turn one (OnNewGameCreatedPartialFollowUpEnd, seeded once).
+    ///   On new-game creation, each town is seeded with 0-10 slaves to make the system
+    ///   visible from turn one without saturating markets (OnNewGameCreatedPartialFollowUpEnd, seeded once).
     ///
     ///  BONUSES
     ///   Each campaign day, every town with Slave goods in its market ItemRoster receives
@@ -242,8 +242,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Fires at the end of new-game creation (after all settlements are fully initialised).
-        /// Seeds each town with a random starting stock of 0-30 slaves so the system is
-        /// immediately visible to the player from turn one.
+        /// Seeds each town with a random starting stock of 0-10 slaves so the system is
+        /// visible to the player from turn one without saturating all markets.
+        /// Low initial stock creates supply differentials that attract caravan trade.
         /// Guarded by <see cref="_initialStockSeeded"/> so it never re-runs on save-load.
         /// </summary>
         private void OnNewGameCreatedEnd(CampaignGameStarter starter)
@@ -258,7 +259,7 @@ namespace Byzantium1071.Campaign.Behaviors
             foreach (Settlement settlement in Settlement.All)
             {
                 if (!settlement.IsTown) continue;
-                int count = MBRandom.RandomInt(0, 31); // 0-30 inclusive
+                int count = MBRandom.RandomInt(0, 11); // 0-10 inclusive
                 if (count > 0)
                     settlement.ItemRoster.AddToCounts(_slaveItem, count);
             }

@@ -6,9 +6,10 @@
   Demand values are calibrated against vanilla trade goods (which are code-registered
   via DefaultItemCategories and have no XML counterpart).
 
-  base_demand:    Daily consumption rate by the town market. 0.3 = moderate (comparable
-                  to mid-tier goods like wool or hides). Causes visible but not extreme
-                  stock decay in towns that hold slaves.
+  base_demand:    Daily consumption rate by the town market. 0.8 = high (comparable
+                  to luxury goods like velvet or wine). Creates fast stock decay that
+                  drives price differentials between towns, making caravans actively
+                  route for slave trade.
 
   luxury_demand:  Signals to AI caravan trade routes that this item has luxury-tier value.
                   1.0 = standard luxury good. Caravans optimize for luxury trade, so this
@@ -20,7 +21,7 @@
   <ItemCategory
     id="b1071_slaves"
     name="{=b1071_slaves_cat}Slaves"
-    base_demand="0.3"
+    base_demand="0.8"
     luxury_demand="1.0"
     is_trade_good="true"
     is_animal="false" />

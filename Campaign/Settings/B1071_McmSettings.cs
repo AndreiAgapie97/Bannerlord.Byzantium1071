@@ -699,5 +699,67 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Frontier Devastation", GroupOrder = 21)]
         [SettingPropertyFloatingInteger("Max food penalty per village", 0f, 5f, "0.0", Order = 6, HintText = "Food supply penalty per devastated village at devastation 100. Summed across all bound villages. E.g., 3 villages at dev 50 = 3 × 0.5 × 1.5 = 2.25 food/day lost. Default: 1.5.")]
         public float DevastationMaxFoodPenaltyPerVillage { get; set; } = 1.5f;
+
+        // ─── Castle Recruitment ───
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("Enable castle recruitment", Order = 0, HintText = "Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, T4+ become recruitable after a waiting period) and the castle recruitment menu.")]
+        public bool EnableCastleRecruitment { get; set; } = true;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Auto-enslave tier max", 1, 6, "0", Order = 1, HintText = "Prisoners at or below this tier are automatically enslaved and sent to the nearest town market. Prisoners above this tier are held for recruitment. Default: 3 (T1-T3 enslaved, T4+ recruitable).")]
+        public int CastlePrisonerAutoEnslaveTierMax { get; set; } = 3;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T4 recruitment wait (days)", 1, 60, "0", Order = 2, HintText = "Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 7.")]
+        public int CastleRecruitT4Days { get; set; } = 7;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T5 recruitment wait (days)", 1, 60, "0", Order = 3, HintText = "Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 14.")]
+        public int CastleRecruitT5Days { get; set; } = 14;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T6+ recruitment wait (days)", 1, 60, "0", Order = 4, HintText = "Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 21.")]
+        public int CastleRecruitT6Days { get; set; } = 21;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T4 recruitment gold cost", 100, 10000, "0", Order = 5, HintText = "Gold cost to recruit a Tier 4 prisoner. Follows the tier-exponential philosophy: elite troops are expensive to turn. Default: 1200.")]
+        public int CastleRecruitGoldT4 { get; set; } = 1200;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T5 recruitment gold cost", 100, 20000, "0", Order = 6, HintText = "Gold cost to recruit a Tier 5 prisoner. Default: 2500.")]
+        public int CastleRecruitGoldT5 { get; set; } = 2500;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("T6+ recruitment gold cost", 100, 50000, "0", Order = 7, HintText = "Gold cost to recruit a Tier 6+ prisoner. Default: 5000.")]
+        public int CastleRecruitGoldT6 { get; set; } = 5000;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("Castle recruitment drains manpower", Order = 8, HintText = "When enabled, recruiting a prisoner from a castle also drains the castle's manpower pool (same cost formula as normal recruitment). Creates a double gate: gold + manpower. Default: true.")]
+        public bool CastleRecruitDrainsManpower { get; set; } = true;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Elite pool max per castle", 5, 100, "0", Order = 9, HintText = "Maximum number of culture-based elite troops (T4-T6) a castle can hold at once. The pool regenerates daily from the castle's manpower. Default: 20.")]
+        public int CastleElitePoolMax { get; set; } = 20;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Elite regen min per day", 0, 10, "0", Order = 10, HintText = "Minimum elite troops regenerated per castle per day (at zero prosperity). Default: 1.")]
+        public int CastleEliteRegenMin { get; set; } = 1;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Elite regen max per day", 1, 20, "0", Order = 11, HintText = "Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 3.")]
+        public int CastleEliteRegenMax { get; set; } = 3;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Elite regen manpower cost", 1, 100, "0", Order = 12, HintText = "Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 10.")]
+        public int CastleEliteManpowerCost { get; set; } = 10;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("AI recruits from elite pool", Order = 13, HintText = "When enabled, AI lord parties visiting their own faction's castles auto-recruit from the elite pool. Keeps the AI competitive. Default: true.")]
+        public bool CastleEliteAiRecruits { get; set; } = true;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("AI max recruits per day", 1, 20, "0", Order = 14, HintText = "Maximum elite troops an AI party can recruit from one castle per daily tick. Default: 3.")]
+        public int CastleEliteAiMaxPerDay { get; set; } = 3;
     }
 }

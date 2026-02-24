@@ -1,0 +1,490 @@
+<Prefab>
+  <Window>
+    <!-- Full-screen input-blocking overlay with dark tint -->
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+            DoNotPassEventsToChildren="false">
+      <Children>
+
+        <!-- Dark background tint (matches native #000000AA) -->
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
+
+        <!-- Main panel — centered, 820 x 750 (taller for 3 sections) -->
+        <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                SuggestedWidth="820" SuggestedHeight="750"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+          <Children>
+
+            <!-- Panel frame (encyclopedia-style) -->
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                         Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5"
+                    Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+
+            <!-- Inner content -->
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                       MarginLeft="20" MarginRight="20" MarginTop="16" MarginBottom="16"
+                       StackLayout.LayoutMethod="VerticalBottomToTop">
+              <Children>
+
+                <!-- ===== TITLE BAR ===== -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                           StackLayout.LayoutMethod="HorizontalLeftToRight">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                Brush.FontSize="22" Brush.FontColor="#E8DBBFFF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="@TitleText" />
+                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                  SuggestedWidth="32" SuggestedHeight="32"
+                                  Brush="Encyclopedia.FilterListButton"
+                                  DoNotPassEventsToChildren="true"
+                                  UpdateChildrenStates="true"
+                                  Command.Click="ExecuteClose">
+                      <Children>
+                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                    Brush.FontSize="18" Brush.FontColor="#D0C2A5FF"
+                                    Brush.TextHorizontalAlignment="Center"
+                                    Brush.TextVerticalAlignment="Center"
+                                    Text="X" />
+                      </Children>
+                    </ButtonWidget>
+                  </Children>
+                </ListPanel>
+
+                <!-- Divider -->
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="2" MarginTop="6" MarginBottom="8"
+                        Sprite="Encyclopedia\list_divider" AlphaFactor="0.85" />
+
+                <!-- ===== STATS ROW: Gold + Manpower ===== -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                           MarginBottom="8"
+                           StackLayout.LayoutMethod="HorizontalLeftToRight">
+                  <Children>
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="16" Brush.FontColor="#D4B870FF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="Gold: " />
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="16" Brush.FontColor="#FFD700FF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="@GoldText" />
+                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                            SuggestedWidth="40" SuggestedHeight="1" />
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="16" Brush.FontColor="#D4B870FF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="Manpower: " />
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="16" Brush.FontColor="#88CC88FF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="@ManpowerText" />
+                  </Children>
+                </ListPanel>
+
+                <!-- Divider -->
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="1" MarginBottom="6"
+                        Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
+
+                <!-- ===== ELITE TROOPS SECTION ===== -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginBottom="4"
+                            Brush="Encyclopedia.SubPage.Element.Name.Text"
+                            Brush.FontSize="17" Brush.FontColor="#99BBFFFF"
+                            Brush.TextHorizontalAlignment="Left"
+                            Text="Elite Troops (Culture Pool)"
+                            IsVisible="@HasEliteTroops" />
+
+                <!-- Column headers for Elite section -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                           MarginBottom="2"
+                           StackLayout.LayoutMethod="HorizontalLeftToRight"
+                           IsVisible="@HasEliteTroops">
+                  <Children>
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="280"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="Troop" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="50"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Tier" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="80"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Count" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="100"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Right"
+                                Text="Gold Cost" />
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="" />
+                  </Children>
+                </ListPanel>
+
+                <!-- Elite troop rows -->
+                <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                 SuggestedHeight="160"
+                                 ClipRect="EliteClipRect" InnerPanel="EliteInnerPanel"
+                                 IsVisible="@HasEliteTroops">
+                  <Children>
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            Id="EliteClipRect" ClipContents="true">
+                      <Children>
+                        <ListPanel DataSource="{EliteTroops}"
+                                   Id="EliteInnerPanel"
+                                   WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                   StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <ItemTemplate>
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                       SuggestedHeight="38" MarginBottom="2"
+                                       StackLayout.LayoutMethod="HorizontalLeftToRight">
+                              <Children>
+                                <!-- Name -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="280"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Left"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Name" />
+                                <!-- Tier -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="50"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Tier" />
+                                <!-- Count -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="80"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Count" />
+                                <!-- Gold cost -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="100"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15" Brush.FontColor="#FFD700FF"
+                                            Brush.TextHorizontalAlignment="Right"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@GoldCost" />
+                                <!-- Recruit button -->
+                                <ButtonWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                              SuggestedHeight="30" MarginLeft="12"
+                                              VerticalAlignment="Center"
+                                              Brush="Encyclopedia.FilterListButton"
+                                              DoNotPassEventsToChildren="true"
+                                              UpdateChildrenStates="true"
+                                              IsEnabled="@CanRecruit"
+                                              Command.Click="ExecuteRecruit">
+                                  <Children>
+                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                                Brush.FontSize="14" Brush.FontColor="#99BBFFFF"
+                                                Brush.TextHorizontalAlignment="Center"
+                                                Brush.TextVerticalAlignment="Center"
+                                                Text="Recruit" />
+                                  </Children>
+                                </ButtonWidget>
+                              </Children>
+                            </ListPanel>
+                          </ItemTemplate>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </Children>
+                </ScrollablePanel>
+
+                <!-- Empty-state for Elite -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginTop="6" MarginBottom="6"
+                            Brush="Encyclopedia.SubPage.History.Text"
+                            Brush.FontSize="14" Brush.FontColor="#9F947DFF"
+                            Brush.TextHorizontalAlignment="Center"
+                            Text="No elite troops available. Pool regenerates daily from castle manpower."
+                            IsVisible="@HasNoEliteTroops" />
+
+                <!-- Divider between Elite and Ready sections -->
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="1" MarginTop="6" MarginBottom="6"
+                        Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
+
+                <!-- ===== READY TO RECRUIT SECTION ===== -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginBottom="4"
+                            Brush="Encyclopedia.SubPage.Element.Name.Text"
+                            Brush.FontSize="17" Brush.FontColor="#88DD88FF"
+                            Brush.TextHorizontalAlignment="Left"
+                            Text="Ready to Recruit (Prisoners)"
+                            IsVisible="@HasAvailableTroops" />
+
+                <!-- Column headers for Ready section -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                           MarginBottom="2"
+                           StackLayout.LayoutMethod="HorizontalLeftToRight"
+                           IsVisible="@HasAvailableTroops">
+                  <Children>
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="280"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="Troop" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="50"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Tier" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="80"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Count" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="100"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Right"
+                                Text="Gold Cost" />
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="" />
+                  </Children>
+                </ListPanel>
+
+                <!-- Ready troop rows -->
+                <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                 SuggestedHeight="180"
+                                 ClipRect="ListClipRect" InnerPanel="ListInnerPanel"
+                                 IsVisible="@HasAvailableTroops">
+                  <Children>
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            Id="ListClipRect" ClipContents="true">
+                      <Children>
+                        <ListPanel DataSource="{AvailableTroops}"
+                                   Id="ListInnerPanel"
+                                   WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                   StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <ItemTemplate>
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                       SuggestedHeight="38" MarginBottom="2"
+                                       StackLayout.LayoutMethod="HorizontalLeftToRight">
+                              <Children>
+                                <!-- Name -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="280"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Left"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Name" />
+                                <!-- Tier -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="50"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Tier" />
+                                <!-- Count -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="80"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Count" />
+                                <!-- Gold cost -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="100"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15" Brush.FontColor="#FFD700FF"
+                                            Brush.TextHorizontalAlignment="Right"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@GoldCost" />
+                                <!-- Recruit button -->
+                                <ButtonWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                              SuggestedHeight="30" MarginLeft="12"
+                                              VerticalAlignment="Center"
+                                              Brush="Encyclopedia.FilterListButton"
+                                              DoNotPassEventsToChildren="true"
+                                              UpdateChildrenStates="true"
+                                              IsEnabled="@CanRecruit"
+                                              Command.Click="ExecuteRecruit">
+                                  <Children>
+                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                                Brush.FontSize="14" Brush.FontColor="#88DD88FF"
+                                                Brush.TextHorizontalAlignment="Center"
+                                                Brush.TextVerticalAlignment="Center"
+                                                Text="Recruit" />
+                                  </Children>
+                                </ButtonWidget>
+                              </Children>
+                            </ListPanel>
+                          </ItemTemplate>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </Children>
+                </ScrollablePanel>
+
+                <!-- Empty-state for Ready -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginTop="6" MarginBottom="6"
+                            Brush="Encyclopedia.SubPage.History.Text"
+                            Brush.FontSize="14" Brush.FontColor="#9F947DFF"
+                            Brush.TextHorizontalAlignment="Center"
+                            Text="No prisoners ready for recruitment."
+                            IsVisible="@HasNoAvailableTroops" />
+
+                <!-- Divider between sections -->
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="1" MarginTop="8" MarginBottom="6"
+                        Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
+
+                <!-- ===== PENDING SECTION ===== -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginBottom="4"
+                            Brush="Encyclopedia.SubPage.Element.Name.Text"
+                            Brush.FontSize="17" Brush.FontColor="#DDCC88FF"
+                            Brush.TextHorizontalAlignment="Left"
+                            Text="Pending (Training)"
+                            IsVisible="@HasPendingTroops" />
+
+                <!-- Column headers for Pending section -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                           MarginBottom="2"
+                           StackLayout.LayoutMethod="HorizontalLeftToRight"
+                           IsVisible="@HasPendingTroops">
+                  <Children>
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="280"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="Troop" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="50"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Tier" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
+                                SuggestedWidth="80"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Center"
+                                Text="Count" />
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.History.Text"
+                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.TextHorizontalAlignment="Right"
+                                Text="Status" />
+                  </Children>
+                </ListPanel>
+
+                <!-- Pending troop rows -->
+                <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                 ClipRect="PendingClipRect" InnerPanel="PendingInnerPanel"
+                                 IsVisible="@HasPendingTroops">
+                  <Children>
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            Id="PendingClipRect" ClipContents="true">
+                      <Children>
+                        <ListPanel DataSource="{PendingTroops}"
+                                   Id="PendingInnerPanel"
+                                   WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                   StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <ItemTemplate>
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                       SuggestedHeight="38" MarginBottom="2"
+                                       StackLayout.LayoutMethod="HorizontalLeftToRight">
+                              <Children>
+                                <!-- Name -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="280"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Left"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Name" />
+                                <!-- Tier -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="50"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Tier" />
+                                <!-- Count -->
+                                <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            SuggestedWidth="80"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="15"
+                                            Brush.TextHorizontalAlignment="Center"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@Count" />
+                                <!-- Status text (days remaining) -->
+                                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                            Brush="Encyclopedia.SubPage.History.Text"
+                                            Brush.FontSize="14" Brush.FontColor="#DDCC88FF"
+                                            Brush.TextHorizontalAlignment="Right"
+                                            Brush.TextVerticalAlignment="Center"
+                                            Text="@StatusText" />
+                              </Children>
+                            </ListPanel>
+                          </ItemTemplate>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </Children>
+                </ScrollablePanel>
+
+                <!-- Empty-state for Pending -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginTop="6" MarginBottom="6"
+                            Brush="Encyclopedia.SubPage.History.Text"
+                            Brush.FontSize="14" Brush.FontColor="#9F947DFF"
+                            Brush.TextHorizontalAlignment="Center"
+                            Text="No prisoners pending."
+                            IsVisible="@HasNoPendingTroops" />
+
+              </Children>
+            </ListPanel>
+
+          </Children>
+        </Widget>
+
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>
