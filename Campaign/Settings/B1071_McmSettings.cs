@@ -188,7 +188,7 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Garrison wage % of field", 10, 100, "0", Order = 3, HintText = "Garrison party total wage as a percentage of what the same troops would cost in a field party. 60 = garrison pays 60% (40% discount). 100 = no discount. Default: 60.")]
         public int GarrisonWagePercent { get; set; } = 60;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 16)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows slave economy and manpower messages in the game UI for player actions. Disable for normal play.")]
         public bool ShowPlayerDebugMessages { get; set; } = false;
 
@@ -196,15 +196,15 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyBool("Enable player recruit manpower hook", Order = 3, HintText = "Required for consistent player recruitment manpower consumption in current event flow. Keep enabled unless explicitly troubleshooting compatibility.")]
         public bool UseOnUnitRecruitedFallbackForPlayer { get; set; } = true;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 16)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Log AI manpower consumption", Order = 2, HintText = "Logs AI manpower consumption bands to the Bannerlord logs.")]
         public bool LogAiManpowerConsumption { get; set; } = false;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 16)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Enable telemetry debug logs", Order = 3, HintText = "Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates).")]
         public bool TelemetryDebugLogs { get; set; } = false;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 16)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Show telemetry in Current tab", Order = 4, HintText = "Adds compact instrumentation rows to the Current ledger tab for balancing/debugging.")]
         public bool ShowTelemetryInOverlay { get; set; } = false;
 
@@ -220,11 +220,11 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Hotkey (0-6)", 0, 6, "0", Order = 2, HintText = "0=M, 1=N, 2=K, 3=F9, 4=F10, 5=F11, 6=F12. Default: 0 (M).")]
         public int OverlayHotkeyChoice { get; set; } = 0;
 
-        [SettingPropertyGroup("Legacy", GroupOrder = 18)]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyBool("Show settlement name (legacy)", Order = 0, HintText = "Legacy setting kept for save/config compatibility. Not used by current overlay UI.")]
         public bool OverlayShowSettlementName { get; set; } = true;
 
-        [SettingPropertyGroup("Legacy", GroupOrder = 18)]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyBool("Show pool identifier (legacy)", Order = 1, HintText = "Legacy setting kept for save/config compatibility. Not used by current overlay UI.")]
         public bool OverlayShowPoolName { get; set; } = false;
 
@@ -572,11 +572,11 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyFloatingInteger("Manpower diplomacy pressure strength", 0f, 1000f, "0", Order = 32, HintText = "Maximum peace-support bonus added when average manpower is at 0%. Scales linearly down to 0 as manpower approaches the threshold. Default: 200.")]
         public float ManpowerDiplomacyPressureStrength { get; set; } = 200f;
 
-        [SettingPropertyGroup("Developer Tools", GroupOrder = 16)]
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Enable diplomacy debug logs", Order = 16, HintText = "Logs detailed reasons for forced-peace and war-gate decisions.")]
         public bool DiplomacyDebugLogs { get; set; } = false;
 
-        [SettingPropertyGroup("Tooltips", GroupOrder = 17)]
+        [SettingPropertyGroup("Tooltips", GroupOrder = 97)]
         [SettingPropertyBool("Enable settlement manpower tooltips", Order = 0, HintText = "Appends manpower info to settlement property tooltips in campaign UI.")]
         public bool EnableSettlementManpowerTooltips { get; set; } = false;
 
@@ -614,11 +614,11 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Construction bonus duration (days) [legacy]", 1, 180, "0", Order = 7, HintText = "[Not used in v3] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus.")]
         public int SlaveConstructionBonusDays { get; set; } = 30;
 
-        [SettingPropertyGroup("Legacy", GroupOrder = 18)]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyBool("Enable experimental map-hover fallback (legacy)", Order = 2, HintText = "Legacy reserved setting. Currently not used by active tooltip path.")]
         public bool EnableExperimentalHoverFallback { get; set; } = false;
 
-        [SettingPropertyGroup("Legacy", GroupOrder = 18)]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("Tooltip refresh (ms) (legacy)", 100, 2000, "0", Order = 3, HintText = "Legacy reserved setting. Currently not used by active tooltip path.")]
         public int TooltipRefreshMs { get; set; } = 300;
 
