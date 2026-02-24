@@ -109,7 +109,8 @@ namespace Byzantium1071
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_SlaveEconomyBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_DevastationBehavior());
-                starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerVolunteerModel());
+                // Volunteer model is now a Harmony Postfix (B1071_ManpowerVolunteerPatch)
+                // instead of AddModel, for compatibility with mods that replace VolunteerModel.
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerMilitiaModel());
             }
         }

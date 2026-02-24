@@ -1,7 +1,11 @@
+using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
 
@@ -108,9 +112,70 @@ namespace Byzantium1071.Campaign.Behaviors
 
         // ── Lifecycle ─────────────────────────────────────────────────────
 
+        /// <summary>Once-per-application flag — dynamic Harmony patch survives across game loads.</summary>
+        private static bool _dynamicFoodPatchApplied;
+
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             Instance = this;
+            ApplyDynamicFoodPatchIfNeeded();
+        }
+
+        /// <summary>
+        /// If a third-party mod (e.g. EconomyOverhaul) replaces the food model with a class
+        /// that does NOT inherit from DefaultSettlementFoodModel, our static Harmony patch on
+        /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange becomes dead code.
+        ///
+        /// This method detects that situation at runtime and applies the same Postfix
+        /// directly to the actual food model's CalculateTownFoodStocksChange method.
+        /// </summary>
+        private static void ApplyDynamicFoodPatchIfNeeded()
+        {
+            if (_dynamicFoodPatchApplied) return;
+
+            try
+            {
+                var foodModel = TaleWorlds.CampaignSystem.Campaign.Current?.Models?.SettlementFoodModel;
+                if (foodModel == null) return;
+
+                Type modelType = foodModel.GetType();
+
+                if (typeof(DefaultSettlementFoodModel).IsAssignableFrom(modelType))
+                {
+                    // Model inherits from Default → static [HarmonyPatch] works → nothing to do.
+                    return;
+                }
+
+                // Non-default food model detected (e.g. BLM_TownProductionModel from EconomyOverhaul).
+                MethodInfo? targetMethod = modelType.GetMethod(
+                    "CalculateTownFoodStocksChange",
+                    BindingFlags.Instance | BindingFlags.Public);
+
+                if (targetMethod == null)
+                {
+                    Debug.Print($"[Byzantium1071] WARNING: Non-default food model {modelType.Name} has no CalculateTownFoodStocksChange — devastation food penalty disabled");
+                    return;
+                }
+
+                MethodInfo? postfix = typeof(B1071_DevastationFoodPatch)
+                    .GetMethod("Postfix", BindingFlags.Static | BindingFlags.Public);
+
+                if (postfix == null)
+                {
+                    Debug.Print("[Byzantium1071] WARNING: Could not find DevastationFoodPatch.Postfix for dynamic patching");
+                    return;
+                }
+
+                var harmony = new Harmony("com.andrei.byzantium1071");
+                harmony.Patch(targetMethod, postfix: new HarmonyMethod(postfix));
+
+                _dynamicFoodPatchApplied = true;
+                Debug.Print($"[Byzantium1071] Non-default food model detected ({modelType.Name}), applied dynamic compat patch for devastation food penalty");
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071] Failed to apply dynamic food compat patch: {ex.Message}");
+            }
         }
 
         // ── Event: Village looted → +DevastationPerRaid to that village ──
