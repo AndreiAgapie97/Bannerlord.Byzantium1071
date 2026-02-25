@@ -3,26 +3,35 @@
   Byzantium 1071 — Custom Item Categories
   b1071_slaves: Trade good category for the slave economy system.
 
-  Demand values are calibrated against vanilla trade goods (which are code-registered
-  via DefaultItemCategories and have no XML counterpart).
+  IMPORTANT: XML-loaded ItemCategory demand values are set as raw floats directly
+  on the BaseDemand/LuxuryDemand properties. Code-registered vanilla categories
+  pass integers to InitializeObject() which multiplies by 0.001f internally.
+  This means XML values must already be in the 0.001-scale float range.
 
-  base_demand:    Daily consumption rate by the town market. 0.8 = high (comparable
-                  to luxury goods like velvet or wine). Creates fast stock decay that
-                  drives price differentials between towns, making caravans actively
-                  route for slave trade.
+  Vanilla luxury goods for reference (decompiled from DefaultItemCategories):
+    Wine:    BaseDemand=0.015, LuxuryDemand=0.030
+    Velvet:  BaseDemand=0.015, LuxuryDemand=0.032
+    Jewelry: BaseDemand=0.015, LuxuryDemand=0.032
+    Fur:     BaseDemand=0.010, LuxuryDemand=0.038
+    Silver:  BaseDemand=0.010, LuxuryDemand=0.020
+    Tools:   BaseDemand=0.030, LuxuryDemand=0.030
+    Grain:   BaseDemand=0.140, LuxuryDemand=0.000
 
-  luxury_demand:  Signals to AI caravan trade routes that this item has luxury-tier value.
-                  1.0 = standard luxury good. Caravans optimize for luxury trade, so this
-                  value directly determines whether caravans will seek and move slaves between
-                  towns. Too low (< 0.5) and caravans see no profitable route; 1.0 ensures
-                  caravans treat slaves like velvet, wine, or jewelry.
+  base_demand:    Daily consumption rate by the town market. Controls how fast
+                  stock decays (price recovery speed). 0.015 = luxury tier
+                  (same as wine/velvet). Higher = faster consumption = larger
+                  price differentials between towns.
+
+  luxury_demand:  Signals to AI caravan trade routes that this item has luxury-tier
+                  value. 0.032 = same as jewelry/velvet. Caravans optimize for
+                  luxury goods, so this value directly activates caravan interest.
 -->
 <ItemCategories>
   <ItemCategory
     id="b1071_slaves"
     name="{=b1071_slaves_cat}Slaves"
-    base_demand="0.8"
-    luxury_demand="1.0"
+    base_demand="0.015"
+    luxury_demand="0.032"
     is_trade_good="true"
     is_animal="false" />
 </ItemCategories>

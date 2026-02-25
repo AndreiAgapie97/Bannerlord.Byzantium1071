@@ -18,6 +18,33 @@ Replaced per-prisoner notification spam with one aggregate summary per castle pe
 - `GetPlayerDepositorShare(castle, heroId, income)` — mirrors `DistributeIncome` logic but only returns the player's share without transferring gold. Used for enslavement pre-calculation.
 - `GetPlayerRecruitmentShare(castle, recruiter, heroId, costPerTroop, count)` — mirrors `HandleRecruitmentGold` logic (including family waiver check) but only returns the player's share. Used for AI recruitment pre-calculation.
 
+### Balance — Critical slave economy demand calibration fix
+
+**Root cause:** XML-loaded `ItemCategory` demand values are set as raw floats directly on the `BaseDemand`/`LuxuryDemand` properties. Code-registered vanilla categories pass integers to `InitializeObject()` which internally multiplies by `0.001f`. Our XML values were **not** scaled — `base_demand="0.8"` was interpreted as `BaseDemand=0.8f`, while vanilla Wine uses `BaseDemand=0.015f` (integer 15 × 0.001). Our slave category had **53× higher** demand than vanilla luxury goods.
+
+**Symptoms:**
+- Slave prices spiked to ~350g in zero-supply towns (vs ~200g base value) due to extreme demand signal
+- Selling the first slave crashed the price by ~100g (350→250) — 29% drop from a single unit
+- Rapid convergence to floor (~154g) after just 8-10 units sold
+- Town stock depleted far too fast (consumption rate 53× normal), wiping out slave-based bonuses (construction, prosperity, manpower)
+
+**Fix:** Aligned with decompiled vanilla `DefaultItemCategories.InitializeAll()` values:
+
+| Category | BaseDemand | LuxuryDemand |
+|----------|-----------|-------------|
+| Wine (vanilla) | 0.015 | 0.030 |
+| Velvet (vanilla) | 0.015 | 0.032 |
+| Jewelry (vanilla) | 0.015 | 0.032 |
+| Fur (vanilla) | 0.010 | 0.038 |
+| **Slaves (old)** | **0.800** | **1.000** |
+| **Slaves (new)** | **0.015** | **0.032** |
+
+**Expected behavior after fix:**
+- Slave prices in zero-supply towns: moderate premium over base value (~220-250g), not extreme spike
+- Price drops gradually per unit sold, similar to selling wine or jewelry
+- Town slave stocks persist longer (consumption = vanilla luxury rate), sustaining construction/prosperity/manpower bonuses
+- AI caravans still actively route for slaves (luxury_demand 0.032 = jewelry tier)
+
 ---
 
 ## [0.1.7.2] — 2026-02-25
