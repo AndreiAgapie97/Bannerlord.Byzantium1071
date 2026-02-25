@@ -2,6 +2,24 @@
 
 ---
 
+## [0.1.7.3] — 2026-02-25
+
+### UX — Batched player consignment notifications
+
+Replaced per-prisoner notification spam with one aggregate summary per castle per daily tick for each income path.
+
+**Enslavement path** — `AutoEnslaveLowTierPrisoners` accumulates player depositor income across all enslaved prisoners, emits a single message: "⚔️ Consignment from {castle}: +{gold}g ({count} prisoners enslaved at {town}, your {share}% depositor share)."
+
+**AI recruitment path** — `AiAutoRecruit` accumulates player depositor income across all AI lord recruitments, emits a single message: "⚔️ Consignment from {castle}: +{gold}g ({count} of your prisoners recruited by AI lords, your {share}% depositor share)."
+
+**Garrison absorption path** — `GarrisonAbsorbPrisoners` accumulates player depositor income, emits a single message: "⚔️ Consignment from {castle}: +{gold}g ({count} prisoners absorbed into garrison, your {share}% depositor share)."
+
+**New helpers:**
+- `GetPlayerDepositorShare(castle, heroId, income)` — mirrors `DistributeIncome` logic but only returns the player's share without transferring gold. Used for enslavement pre-calculation.
+- `GetPlayerRecruitmentShare(castle, recruiter, heroId, costPerTroop, count)` — mirrors `HandleRecruitmentGold` logic (including family waiver check) but only returns the player's share. Used for AI recruitment pre-calculation.
+
+---
+
 ## [0.1.7.2] — 2026-02-25
 
 ### Comprehensive Audit — 89-Scenario Financial & Safety Verification

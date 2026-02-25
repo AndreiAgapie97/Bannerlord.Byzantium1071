@@ -350,6 +350,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (slavePrice <= 0) return;
 
             string castleId = settlement.StringId;
+            int playerEnslavementGold = 0;
+            int playerEnslavementCount = 0;
 
             // The nearest town BUYS the slaves from the castle. Process one unit
             // at a time — only enslave what the town can afford. When the town's
@@ -360,7 +362,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     // Affordability gate: town must have gold to buy this slave.
                     int townGold = town.Gold;
-                    if (townGold < slavePrice) return; // Town broke — stop all enslavement.
+                    if (townGold < slavePrice) goto done; // Town broke — stop all enslavement.
 
                     prisonRoster.RemoveTroop(element.Character, 1);
                     nearestTown.ItemRoster.AddToCounts(_slaveItem, 1);
@@ -372,9 +374,26 @@ namespace Byzantium1071.Campaign.Behaviors
                     foreach (var (heroId, consumed) in depositorEntries)
                     {
                         int income = slavePrice * consumed;
+                        // Track player share before DistributeIncome pays it out.
+                        int playerShare = GetPlayerDepositorShare(settlement, heroId, income);
+                        if (playerShare > 0)
+                        {
+                            playerEnslavementGold += playerShare;
+                            playerEnslavementCount += consumed;
+                        }
                         DistributeIncome(settlement, heroId, income, nearestTown);
                     }
                 }
+            }
+            done:
+
+            if (playerEnslavementGold > 0)
+            {
+                int sharePercent = 100 - Settings.CastleHoldingFeePercent;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerEnslavementGold}g " +
+                    $"({playerEnslavementCount} prisoner{(playerEnslavementCount != 1 ? "s" : "")} enslaved at {nearestTown.Name}, your {sharePercent}% depositor share).",
+                    new Color(0.3f, 0.7f, 0.9f)));
             }
         }
 
@@ -508,6 +527,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // Snapshot the party list to avoid collection-modification issues.
             var partiesSnapshot = settlement.Parties.ToList();
 
+            int playerRecruitConsignmentGold = 0;
+            int playerRecruitConsignmentCount = 0;
+
             foreach (MobileParty party in partiesSnapshot)
             {
                 if (party == null || party == MobileParty.MainParty) continue;
@@ -610,7 +632,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
                                 var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, 1);
                                 foreach (var (heroId, consumed) in depositorEntries)
+                                {
+                                    int playerShare = GetPlayerRecruitmentShare(settlement, party.LeaderHero, heroId, prisonerGoldCost, consumed);
+                                    if (playerShare > 0)
+                                    {
+                                        playerRecruitConsignmentGold += playerShare;
+                                        playerRecruitConsignmentCount += consumed;
+                                    }
                                     HandleRecruitmentGold(settlement, party.LeaderHero, heroId, prisonerGoldCost, consumed);
+                                }
 
                                 gold -= effectiveCost;
                                 room--;
@@ -636,6 +666,15 @@ namespace Byzantium1071.Campaign.Behaviors
                         party.IsTargetingPort);
                     party.RecalculateShortTermBehavior();
                 }
+            }
+
+            if (playerRecruitConsignmentGold > 0)
+            {
+                int sharePercent = 100 - Settings.CastleHoldingFeePercent;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerRecruitConsignmentGold}g " +
+                    $"({playerRecruitConsignmentCount} of your prisoner{(playerRecruitConsignmentCount != 1 ? "s" : "")} recruited by AI lords, your {sharePercent}% depositor share).",
+                    new Color(0.3f, 0.7f, 0.9f)));
             }
         }
 
@@ -692,6 +731,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string castleId = settlement.StringId;
             Hero? owner = settlement.Owner;
+            int playerGarrisonConsignmentGold = 0;
+            int playerGarrisonConsignmentCount = 0;
 
             foreach (var (troop, count, _, prisonerGoldCost) in readyPrisoners)
             {
@@ -736,9 +777,10 @@ namespace Byzantium1071.Campaign.Behaviors
                             {
                                 GiveGoldAction.ApplyBetweenCharacters(owner, depositor, depositorShare, disableNotification: true);
                                 if (depositor == Hero.MainHero)
-                                    InformationManager.DisplayMessage(new InformationMessage(
-                                        $"\u2694\ufe0f Consignment: received {depositorShare}g from {settlement.Name} (garrison absorbed your prisoner, {100 - Settings.CastleHoldingFeePercent}% share).",
-                                        new Color(0.3f, 0.7f, 0.9f)));
+                                {
+                                    playerGarrisonConsignmentGold += depositorShare;
+                                    playerGarrisonConsignmentCount += consumed;
+                                }
                             }
                         }
                     }
@@ -749,6 +791,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     .Where(e => e.Character == troop).Select(e => e.Number).FirstOrDefault();
                 if (remaining <= 0 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
                     castleDict.Remove(troop.StringId);
+            }
+
+            if (playerGarrisonConsignmentGold > 0)
+            {
+                int sharePercent = 100 - Settings.CastleHoldingFeePercent;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerGarrisonConsignmentGold}g " +
+                    $"({playerGarrisonConsignmentCount} prisoner{(playerGarrisonConsignmentCount != 1 ? "s" : "")} absorbed into garrison, your {sharePercent}% depositor share).",
+                    new Color(0.3f, 0.7f, 0.9f)));
             }
         }
 
@@ -1416,15 +1467,57 @@ namespace Byzantium1071.Campaign.Behaviors
             int depositorShare = totalIncome - ownerShare;
 
             if (depositorShare > 0)
-            {
                 PayHero(payingTown, depositor, depositorShare);
-                if (depositor == Hero.MainHero)
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"\u2694\ufe0f Consignment: received {depositorShare}g from {castle.Name} (enslavement income, {100 - Settings.CastleHoldingFeePercent}% share).",
-                        new Color(0.3f, 0.7f, 0.9f)));
-            }
             if (ownerShare > 0)
                 PayHero(payingTown, owner, ownerShare);
+        }
+
+        /// <summary>
+        /// Calculates how much gold the player would receive as a cross-clan depositor
+        /// for a given income amount, WITHOUT transferring any gold. Used by callers
+        /// to accumulate player consignment totals for batched notifications.
+        ///
+        /// Mirrors <see cref="DistributeIncome"/> logic:
+        /// - Returns 0 if depositor is null, dead, not MainHero, or same-clan as owner.
+        /// - Returns depositor share (income × (1 − fee%)) for cross-clan MainHero depositor.
+        /// </summary>
+        private int GetPlayerDepositorShare(Settlement castle, string? depositorHeroId, int totalIncome)
+        {
+            if (totalIncome <= 0 || castle == null) return 0;
+            if (string.IsNullOrEmpty(depositorHeroId)) return 0;
+
+            Hero? depositor = FindAliveHero(depositorHeroId);
+            if (depositor == null || depositor != Hero.MainHero) return 0;
+            if (depositor.Clan == castle.OwnerClan) return 0;
+
+            float feePercent = Settings.CastleHoldingFeePercent / 100f;
+            return totalIncome - (int)(totalIncome * feePercent);
+        }
+
+        /// <summary>
+        /// Calculates how much gold the player would receive as a cross-clan depositor
+        /// from a recruitment sale, WITHOUT transferring gold. Used by callers to
+        /// accumulate player consignment totals for batched notifications.
+        ///
+        /// Mirrors <see cref="HandleRecruitmentGold"/> logic — additionally returns 0
+        /// when the recruiter is same-clan as depositor (family waiver).
+        /// </summary>
+        private int GetPlayerRecruitmentShare(Settlement castle, Hero? recruiterHero,
+            string? depositorHeroId, int goldCostPerTroop, int count)
+        {
+            if (goldCostPerTroop <= 0 || count <= 0 || castle == null) return 0;
+            if (string.IsNullOrEmpty(depositorHeroId)) return 0;
+
+            Hero? depositor = FindAliveHero(depositorHeroId);
+            if (depositor == null || depositor != Hero.MainHero) return 0;
+            if (depositor.Clan == castle.OwnerClan) return 0;
+
+            // Family waiver: recruiter same clan as depositor → depositor gets nothing.
+            if (recruiterHero?.Clan != null && recruiterHero.Clan == depositor.Clan) return 0;
+
+            float feePercent = Settings.CastleHoldingFeePercent / 100f;
+            int totalGold = goldCostPerTroop * count;
+            return totalGold - (int)(totalGold * feePercent);
         }
 
         /// <summary>
@@ -1494,13 +1587,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Pay depositor their share (waived if recruiter is family of depositor).
             if (!recruiterIsSameClanAsDepositor && depositorShareAmount > 0
                 && recruiterHero != null)
-            {
                 GiveGoldAction.ApplyBetweenCharacters(recruiterHero, depositor, depositorShareAmount, disableNotification: true);
-                if (depositor == Hero.MainHero)
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"\u2694\ufe0f Consignment: received {depositorShareAmount}g from {castle.Name} (recruitment income, {100 - Settings.CastleHoldingFeePercent}% share).",
-                        new Color(0.3f, 0.7f, 0.9f)));
-            }
 
             // Pay owner their share (waived if recruiter is family of owner).
             if (!recruiterIsSameClanAsOwner && ownerShareAmount > 0
