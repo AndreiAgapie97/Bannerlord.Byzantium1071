@@ -37,6 +37,14 @@ Previously, several faction checks restricted castle deposit and AI recruitment 
 
 ### Gold Transaction Bug Fixes (4 bugs found via financial audit)
 
+**Enslavement Economy Fix: Town Pays for Slaves** (fixed)
+- **Problem:** When castles auto-enslaved T1-T3 prisoners, slave items were added to the nearest town's market **free of charge**, and income sent to depositor/owner was **created from nothing** via `GiveGoldAction(null, recipient, amount)`. This caused double-income: the depositor/owner received gold (created), AND the town got free inventory to sell to caravans. Net result: gold inflation.
+- **Root cause:** `AutoEnslaveLowTierPrisoners` treated the enslavement as a gift → reward, not as a sale. No entity was paying for the slaves.
+- **Fix:** The nearest town now **buys** the slaves from the castle. Income is paid via `GiveGoldAction.ApplyForSettlementToCharacter(nearestTown, recipient, amount)`, which deducts from `Town.Gold` (the town's trade treasury), properly clamped by vanilla's `SettlementComponent.ChangeGold`. The slave items are still added to the town's `ItemRoster` (the town receives the labor).
+- **Affordability gate:** Prisoners are processed one unit at a time. If the town cannot afford the next slave at the current market price, enslavement **stops** — remaining prisoners stay in the castle dungeon until next day (when the town may have earned more gold or the price dropped).
+- **Vanilla API used:** `GiveGoldAction.ApplyForSettlementToCharacter(Settlement, Hero, int, bool)` → internally calls `ApplyInternal` with `giverParty = settlement.Party` → `SettlementComponent.ChangeGold(-clampedAmount)`. Properly fires campaign events.
+- **Economics:** Castle enslavement is now a proper market transaction. Towns with low gold buy fewer slaves. Towns with high gold buy more. Self-correcting — no infinite gold injection.
+
 **BUG 1 (Medium): Garrison absorption stiffing depositors when owner is broke** (fixed)
 - **Problem:** When the castle garrison absorbed a cross-clan deposited prisoner and the castle owner couldn't afford the depositor's share, the prisoner was consumed, the depositor tracking was consumed, but the depositor received **nothing**. The owner got a free garrison troop at the depositor's expense.
 - **Fix:** Garrison now processes prisoners one at a time. Before absorbing each prisoner, we pre-check (`GetGarrisonAbsorptionCost`) whether the owner can afford the depositor's share. If they can't, that prisoner is **skipped** — it stays in the prison roster. The garrison can still absorb untracked or same-clan prisoners (which are free).
@@ -64,6 +72,8 @@ Documented for future reference — these apply to Bannerlord v1.3.15:
 |-----|----------|
 | `GiveGoldAction.ApplyBetweenCharacters(giver, recipient, amount)` | `ApplyInternal` clamps amount to `MathF.Min(giver.Gold, amount)` before deducting. Recipient gets only what was actually deducted. Safe. Fires `OnHeroOrPartyTradedGold`. |
 | `GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount)` | Giver block skipped entirely (no deduction). Recipient gets full amount. **Gold created from nothing.** |
+| `GiveGoldAction.ApplyForSettlementToCharacter(settlement, hero, amount)` | Calls `ApplyInternal` with `giverParty = settlement.Party`. Deducts from `SettlementComponent.Gold` via `ChangeGold(-clamped)`. Recipient hero gets clamped amount. Fires campaign events. **Proper town→hero transfer.** |
+| `Town.ChangeGold(int changeAmount)` | `Gold = Gold + changeAmount`. If result < 0, clamps to 0 (same pattern as `Hero.set_Gold`). |
 | `Hero.ChangeHeroGold(amount)` | Adds `amount` to `_gold`. `set_Gold` calls `Math.Max(0, value)` — gold clamped at 0, never negative. But if deducting more than available, excess is silently discarded. **No campaign events fired.** |
 
 ### Compatibility

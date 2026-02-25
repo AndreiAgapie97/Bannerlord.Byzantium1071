@@ -343,23 +343,36 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? nearestTown = FindNearestTown(settlement);
             if (nearestTown == null) return;
 
-            int slavePrice = nearestTown.Town?.GetItemPrice(_slaveItem) ?? 0;
+            Town? town = nearestTown.Town;
+            if (town == null) return;
+
+            int slavePrice = town.GetItemPrice(_slaveItem);
+            if (slavePrice <= 0) return;
+
             string castleId = settlement.StringId;
 
+            // The nearest town BUYS the slaves from the castle. Process one unit
+            // at a time — only enslave what the town can afford. When the town's
+            // gold runs out, remaining prisoners stay in the castle dungeon.
             foreach (var element in toEnslave)
             {
-                int count = element.Number;
-                prisonRoster.RemoveTroop(element.Character, count);
-                nearestTown.ItemRoster.AddToCounts(_slaveItem, count);
-
-                // Distribute enslavement income per depositor (consignment model).
-                if (slavePrice > 0)
+                for (int unit = 0; unit < element.Number; unit++)
                 {
-                    var depositorEntries = ConsumeDepositorEntries(castleId, element.Character.StringId, count);
+                    // Affordability gate: town must have gold to buy this slave.
+                    int townGold = town.Gold;
+                    if (townGold < slavePrice) return; // Town broke — stop all enslavement.
+
+                    prisonRoster.RemoveTroop(element.Character, 1);
+                    nearestTown.ItemRoster.AddToCounts(_slaveItem, 1);
+
+                    // Town pays for the slave. Income distributed to depositor/owner
+                    // via GiveGoldAction.ApplyForSettlementToCharacter (deducts from
+                    // town gold, properly clamped, fires campaign events).
+                    var depositorEntries = ConsumeDepositorEntries(castleId, element.Character.StringId, 1);
                     foreach (var (heroId, consumed) in depositorEntries)
                     {
                         int income = slavePrice * consumed;
-                        DistributeIncome(settlement, heroId, income);
+                        DistributeIncome(settlement, heroId, income, nearestTown);
                     }
                 }
             }
@@ -1351,15 +1364,20 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
-        /// Distributes income from prisoner processing (enslavement or recruitment)
-        /// between the depositor and the castle owner based on the holding fee.
+        /// Distributes income from prisoner processing (enslavement) between
+        /// the depositor and the castle owner based on the holding fee.
         ///
         /// - If depositor is same-clan as castle owner: owner gets 100% (family).
         /// - If depositor is null (untracked): owner gets 100%.
         /// - If depositor is dead/unavailable: owner gets 100%.
         /// - Otherwise: depositor gets (100% - fee), owner gets fee%.
+        ///
+        /// When <paramref name="payingTown"/> is set, the gold is transferred from
+        /// the town's treasury via <c>GiveGoldAction.ApplyForSettlementToCharacter</c>
+        /// (properly deducts from <c>Town.Gold</c>, clamped, fires campaign events).
         /// </summary>
-        private void DistributeIncome(Settlement castle, string? depositorHeroId, int totalIncome)
+        private void DistributeIncome(Settlement castle, string? depositorHeroId, int totalIncome,
+            Settlement? payingTown = null)
         {
             if (totalIncome <= 0 || castle == null) return;
 
@@ -1369,7 +1387,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Untracked prisoner → all to owner.
             if (string.IsNullOrEmpty(depositorHeroId))
             {
-                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                PayHero(payingTown, owner, totalIncome);
                 return;
             }
 
@@ -1377,14 +1395,14 @@ namespace Byzantium1071.Campaign.Behaviors
             if (depositor == null)
             {
                 // Depositor dead/gone → fallback to owner.
-                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                PayHero(payingTown, owner, totalIncome);
                 return;
             }
 
             // Same-clan → owner gets 100% (family).
             if (depositor.Clan == castle.OwnerClan)
             {
-                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                PayHero(payingTown, owner, totalIncome);
                 return;
             }
 
@@ -1394,9 +1412,27 @@ namespace Byzantium1071.Campaign.Behaviors
             int depositorShare = totalIncome - ownerShare;
 
             if (depositorShare > 0)
-                GiveGoldAction.ApplyBetweenCharacters(null, depositor, depositorShare, disableNotification: true);
+                PayHero(payingTown, depositor, depositorShare);
             if (ownerShare > 0)
-                GiveGoldAction.ApplyBetweenCharacters(null, owner, ownerShare, disableNotification: true);
+                PayHero(payingTown, owner, ownerShare);
+        }
+
+        /// <summary>
+        /// Pays a hero from either a town's treasury or from nothing (gold creation).
+        /// When <paramref name="payingTown"/> is set, uses the vanilla
+        /// <c>GiveGoldAction.ApplyForSettlementToCharacter</c> API which deducts from
+        /// the town's <c>SettlementComponent.Gold</c> with proper clamping and events.
+        /// When null, gold is created (used only as fallback — all current callers
+        /// should provide a payingTown).
+        /// </summary>
+        private static void PayHero(Settlement? payingTown, Hero recipient, int amount)
+        {
+            if (amount <= 0 || recipient == null) return;
+
+            if (payingTown != null)
+                GiveGoldAction.ApplyForSettlementToCharacter(payingTown, recipient, amount, disableNotification: true);
+            else
+                GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount, disableNotification: true);
         }
 
         /// <summary>
