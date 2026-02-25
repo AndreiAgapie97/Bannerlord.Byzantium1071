@@ -2,7 +2,77 @@
 
 ---
 
-## [0.1.7.0] — 2026-02-24
+## [0.1.7.0] — 2026-02-25
+
+### New Systems
+
+**Castle Recruitment System — Three-source troop recruitment at castles** (new)
+
+Castles now offer a dedicated recruitment screen with three independent troop sources, accessible via the "🏰 Recruit troops" option in the castle game menu. This system runs in parallel with the normal village-notable volunteer system.
+
+**Source 1 — Elite Troop Pool (culture-based)**
+- Each castle generates T4/T5/T6 troops matching the settlement's culture, drawn from both the basic (infantry/common) and noble (elite/cavalry) troop trees.
+- The pool regenerates daily from the castle's manpower pool. Regen rate scales with prosperity: `regenMin` at 0 prosperity, `regenMax` at `ProsperityNormalizer` prosperity (defaults: 1–3 troops/day).
+- Each regenerated troop costs `CastleEliteManpowerCost` (default: 10) manpower — elite troops are expensive to raise.
+- The pool is capped per castle at `CastleElitePoolMax` (default: 10). Multiple troop types share this cap.
+- Troops are distributed randomly among the culture's eligible T4–T6 troop types each day.
+
+**Source 2 — Converted Prisoners (ready for recruitment)**
+- T4+ prisoners held at a castle become recruitable after serving a tier-based waiting period:
+  | Tier | Required Days | Gold Cost |
+  |------|--------------|-----------|
+  | T4   | 5 days       | 150g      |
+  | T5   | 7 days       | 300g      |
+  | T6   | 10 days      | 500g      |
+- Day tracking is per troop *type* per castle — when the threshold is met, all prisoners of that type become ready simultaneously.
+- Prisoner recruitment costs **zero manpower**. These are already captured troops, not drawn from the settlement's population.
+
+**Source 3 — Pending Prisoners (not yet ready)**
+- T4+ prisoners still serving their waiting period. Visible in the recruitment screen with a "X/Y days" progress indicator. Not yet recruitable.
+
+**Low-tier prisoner auto-enslavement**
+- T1–T3 prisoners at castles are automatically enslaved daily to the nearest town's slave market (requires Slave Economy enabled). This keeps castle prisons focused on high-value T4+ prisoners and feeds into the town-level slave economy.
+
+**Access rules**
+- Player can recruit from any castle NOT hostile to them (own, allied, or neutral faction).
+- AI lord parties recruit from same-faction castles only — visiting enemy or neutral castles does not trigger AI recruitment.
+- Hostile castles are hidden from the game menu entirely (no greyed-out option, just not shown).
+- The menu shows availability at a glance: "🏰 Recruit troops (5 available, 3 pending)".
+
+**Player recruitment UI**
+- Full Gauntlet screen with three scrollable lists: Elite Pool (culture troops), Ready Prisoners (converted), and Pending Prisoners (still waiting).
+- Each troop entry shows: troop name, tier indicator, count available, gold cost, and a recruit button.
+- Stats bar at top shows current gold (left) and castle manpower (right).
+- Lists auto-refresh after each recruitment. Empty lists show a placeholder message.
+
+**Vanilla prisoner selling — blocked at castles**
+- The vanilla `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` sells ~10% of settlement prisoners daily at AI castles. This is blocked by `B1071_CastlePrisonerRetentionPatch` when castle recruitment is enabled. Without this, T4+ prisoners would vanish before finishing their waiting period.
+- The vanilla `OnSettlementEntered` handler (which transfers a *mobile party's* prisoners into the castle prison) is NOT blocked — this is how prisoners arrive at castles in the first place.
+
+**Persistence**
+- `_prisonerDaysHeld`: per-castle per-troop day counters (prisoner conversion tracking). Survives save/load via `SyncData`.
+- `_elitePool`: per-castle per-troop stock counts (culture elite pool). Survives save/load via `SyncData`.
+- Both dictionaries use a flattened 3-parallel-list serialization scheme. Stale entries are cleaned up when prisoners are fully recruited or removed from the prison roster.
+
+**Daily tick order (5 steps, sequential)**
+1. **AutoEnslave** — T1–T3 prisoners → nearest town slave market
+2. **TrackDays** — Increment day counters for all T4+ prisoners
+3. **RegenerateElitePool** — Add culture troops from manpower (prosperity-scaled, capped)
+4. **AiAutoRecruit** — AI lords take from elite pool + ready prisoners (gold cost, no daily cap)
+5. **GarrisonAbsorbPrisoners** — Garrison absorbs ready prisoners (1/day, zero manpower)
+
+**MCM Settings — Castle Recruitment group**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `EnableCastleRecruitment` | true | Master toggle for the entire castle recruitment system |
+| `CastlePrisonerAutoEnslaveTierMax` | 3 | Maximum tier for auto-enslavement (T1–3 by default) |
+| `CastleRecruitT4Days` / `T5Days` / `T6Days` | 5 / 7 / 10 | Days before prisoners of each tier become recruitable |
+| `CastleRecruitGoldT4` / `T5` / `T6` | 150 / 300 / 500 | Gold cost per recruit by tier |
+| `CastleElitePoolMax` | 10 | Maximum elite troops per castle |
+| `CastleEliteRegenMin` / `RegenMax` | 1 / 3 | Daily regen range (scales with prosperity) |
+| `CastleEliteManpowerCost` | 10 | Manpower cost per elite troop regenerated |
+| `CastleRecruitDrainsManpower` | true | Whether elite recruitment drains manpower |
+| `CastleEliteAiRecruits` | true | Whether AI lords recruit from castles |
 
 ### Castle Recruitment — AI & Garrison Overhaul
 
@@ -45,6 +115,14 @@
 - **Bug:** `RegenerateElitePool` used `CastleEliteManpowerCost=10` for the affordability check (how many troops can we afford?) but then called `ConsumeManpowerPublic` per-troop using `GetManpowerCostPerTroop` (which was tier-based, 1-3). The actual drain was far less than what the affordability check budgeted.
 - **Fix:** Added `ConsumeManpowerFlat(settlement, totalCost)` method to `B1071_ManpowerBehavior` that drains an exact flat amount. Regen now consumes exactly `toAdd × CastleEliteManpowerCost` — matching the affordability check precisely.
 
+**AI elite manpower affordability check off by factor of `BaseManpowerCostPerTroop`** (fixed)
+- **Bug:** `AiAutoRecruit` assumed 1 manpower per troop (`take = Math.Min(take, curMp)`), but `ConsumeManpowerPublic` internally used `GetManpowerCostPerTroop` which reads `Settings.BaseManpowerCostPerTroop`. If the MCM setting was > 1, the check would allow recruiting more troops than the manpower pool could actually cover (consumption is capped to available, so manpower couldn't go negative, but the cost-per-troop contract was violated).
+- **Fix:** Affordability check now uses `Math.Max(1, Settings.BaseManpowerCostPerTroop)` and the consumption switched to `ConsumeManpowerFlat(settlement, take × mpCostPer)` for explicit alignment.
+
+**Garrison prisoner absorption bypassed when manpower was zero** (fixed)
+- **Bug:** `GarrisonAbsorbPrisoners` called `GetMaximumDailyAutoRecruitmentCount(town)` to get the daily absorption rate. This call goes through our `B1071_GarrisonAutoRecruitManpowerPatch` Harmony postfix, which caps the result to current manpower. Since prisoner absorption costs zero manpower, a castle with 0 manpower would get `dailyCap = 0` — the garrison could never absorb prisoners even though absorption is population-free.
+- **Fix:** Hardcoded `dailyCap = 1` (matching the vanilla model's constant return value) instead of calling the patched model. The rate is now independent of manpower state.
+
 ### UI Changes
 
 **Gold / Manpower stats row layout** (changed)
@@ -53,21 +131,23 @@
 
 ### Internal Changes
 
+- New files: `B1071_CastleRecruitmentBehavior.cs` (~960 lines), `B1071_CastleRecruitmentScreen.cs`, `B1071_CastleRecruitmentVM.cs`, `B1071_CastleRecruitTroopVM.cs`, `B1071_CastlePrisonerRetentionPatch.cs`, `B1071_CastleRecruitment.xml` (Gauntlet prefab)
 - `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Complete rewrite — now recruits from both elite pool and converted prisoners, pays gold, no daily cap, includes flickering fix.
-- `B1071_CastleRecruitmentBehavior.GarrisonAbsorbPrisoners()`: New method — daily garrison absorption of ready prisoners at vanilla auto-recruit rate.
+- `B1071_CastleRecruitmentBehavior.GarrisonAbsorbPrisoners()`: New method — daily garrison absorption of ready prisoners; hardcoded rate of 1/day, bypassing manpower-gated model.
 - `B1071_ManpowerBehavior.GetManpowerCostPerTroop()`: Simplified to flat `BaseManpowerCostPerTroop`.
 - `B1071_ManpowerBehavior.ConsumeManpowerFlat()`: New method — consumes exact flat manpower amount, ignoring troop tier.
 - `B1071_CastleRecruitmentBehavior.TryRecruitPrisoner()`: Removed manpower check/consumption.
+- `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Elite manpower check now uses `BaseManpowerCostPerTroop` setting + `ConsumeManpowerFlat` for aligned affordability.
 - `B1071_McmSettings.CastleEliteAiRecruits`: Updated hint text to reflect both pools + no cap.
 - `B1071_McmSettings.CastleEliteAiMaxPerDay`: Marked as legacy (kept for save compatibility).
-- Castle daily tick now has 5 steps: AutoEnslave → TrackDays → RegenerateElitePool → AiAutoRecruit → GarrisonAbsorbPrisoners.
+- Harmony patch count: 29 → 30 (+`B1071_CastlePrisonerRetentionPatch`)
 
 ### Save Compatibility
 
 **100% save-compatible with 0.1.6.x saves.** No new campaign required.
-- No new `SyncData` keys. All changes modify existing method behavior.
+- New `SyncData` keys (`b1071_cr_prisonerCastles`, `b1071_cr_prisonerTroops`, `b1071_cr_prisonerDays`, `b1071_cr_eliteCastles`, `b1071_cr_eliteTroops`, `b1071_cr_eliteCounts`) are absent from old saves — dictionaries initialize empty. Castle recruitment begins immediately on first daily tick (elite pool starts empty and fills over the first few days; prisoners start day-counting from load).
 - `CastleEliteAiMaxPerDay` MCM setting kept in save data but ignored at runtime.
-- New garrison absorption starts immediately on load — any existing ready prisoners will begin transferring to garrison at auto-recruit rate.
+- Garrison absorption starts immediately on load — any existing ready prisoners will begin transferring to garrison at 1/day.
 
 ---
 

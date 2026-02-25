@@ -438,10 +438,11 @@ namespace Byzantium1071.Campaign.Behaviors
                             if (mp != null)
                             {
                                 mp.GetManpowerPool(settlement, out int curMp, out _, out _);
-                                // 1 manpower per troop (flat cost).
-                                take = Math.Min(take, curMp);
+                                int mpCostPer = Math.Max(1, Settings.BaseManpowerCostPerTroop);
+                                int affordableByMp = mpCostPer > 0 ? curMp / mpCostPer : take;
+                                take = Math.Min(take, affordableByMp);
                                 if (take <= 0) continue;
-                                mp.ConsumeManpowerPublic(settlement, troop, take);
+                                mp.ConsumeManpowerFlat(settlement, take * mpCostPer);
                             }
                         }
 
@@ -524,9 +525,13 @@ namespace Byzantium1071.Campaign.Behaviors
             var readyPrisoners = GetRecruitablePrisoners(settlement);
             if (readyPrisoners.Count == 0) return;
 
-            // Use the vanilla model for the daily cap (our manpower postfix still caps this).
-            int dailyCap = TaleWorlds.CampaignSystem.Campaign.Current.Models.SettlementGarrisonModel
-                .GetMaximumDailyAutoRecruitmentCount(town);
+            // Prisoner absorption rate: 1 per day (same as vanilla auto-recruit base rate).
+            // We intentionally bypass the SettlementGarrisonModel call because our
+            // B1071_GarrisonAutoRecruitManpowerPatch postfix caps that result by current
+            // manpower — but prisoner absorption costs zero manpower. The vanilla
+            // DefaultSettlementGarrisonModel.GetMaximumDailyAutoRecruitmentCount always
+            // returns 1 anyway, so hardcoding avoids the manpower gate entirely.
+            int dailyCap = 1;
             if (dailyCap <= 0) return;
 
             // Respect garrison size limit.
