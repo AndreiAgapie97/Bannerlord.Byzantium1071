@@ -767,5 +767,9 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("Castle holding fee %", 5, 50, "0", Order = 14, HintText = "Commission the castle owner receives when another clan's prisoners are processed (enslaved or recruited). The depositing lord gets the remainder. Example: 30% fee on a 1,200g recruitment → owner gets 360g, depositor gets 840g. Default: 30.")]
         public int CastleHoldingFeePercent { get; set; } = 30;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("Open castle access (early game)", Order = 15, HintText = "Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true.")]
+        public bool CastleOpenAccess { get; set; } = true;
     }
 }

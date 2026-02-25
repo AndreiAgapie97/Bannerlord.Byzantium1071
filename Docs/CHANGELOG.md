@@ -6,6 +6,20 @@
 
 ### Audit Fixes — Comprehensive 26-finding code audit
 
+### New — Castle open access patch (`B1071_CastleAccessPatch`)
+
+**Problem:** Vanilla `DefaultSettlementAccessModel` blocks early-game players from interacting with the castle recruitment system. Two restrictions compound:
+
+1. **Castle settlement entry** (`CanMainHeroEnterCastle`): Neutral factions with owner relation < 0 → `NoAccess` — player can't even enter the castle to auto-deposit prisoners.
+2. **Lord's hall / keep** (`CanMainHeroEnterKeepInternal`): Neutral factions with clan tier < 3 → `LimitedAccess` (bribe ~800 denars) — player can't access the recruitment UI overlay.
+
+**Fix:** Two Harmony Postfixes that relax castle-specific restrictions for non-hostile factions:
+
+- `B1071_CastleAccessPatch_Settlement` — Postfix on `CanMainHeroEnterSettlement`. If the castle blocked entry due to `RelationshipWithOwner` (neutral, owner dislikes you), upgrades to `FullAccess`. Crime-based and hostile blocks are preserved.
+- `B1071_CastleAccessPatch_LordsHall` — Postfix on `CanMainHeroEnterLordsHall`. If the lord's hall required a bribe due to `ClanTier` (neutral, tier < 3), upgrades to `FullAccess`, waiving the ~800g bribe. Crime-based bribe and hostile disguise blocks are preserved.
+
+**Scope:** Castles only — town access model is untouched. Hostile castles (at war) remain fully restricted. MCM toggle: `CastleOpenAccess` (default: true).
+
 **Critical (2)**
 - **B-1**: Wartime gold exploit — depositor at war with castle owner now forfeits their share to the castle owner. Applied to `DistributeIncome`, `HandleRecruitmentGold`, `GetPlayerDepositorShare`, `GetPlayerRecruitmentShare`, `GetEffectiveGoldCost`, and `GetGarrisonAbsorptionCost`.
 - **D-4**: `SlaveEconomyBehavior.Instance` now properly nulled in `OnSubModuleUnloaded` (was missing from cleanup).
