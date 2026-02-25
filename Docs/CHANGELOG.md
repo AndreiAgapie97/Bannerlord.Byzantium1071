@@ -2,6 +2,46 @@
 
 ---
 
+## [0.1.7.1] — 2026-02-25
+
+### Neutral Castle Access (Full-Audit Fix)
+
+**All castle recruitment features now work at neutral castles (for both player and AI).**
+
+Previously, several faction checks restricted castle deposit and AI recruitment to same-faction castles only. This was overly restrictive — neutral (non-hostile, non-allied) castles were blocked. The user's design intent is that only hostile castles should be blocked.
+
+**AI deposit patch — neutral castles allowed** (fixed)
+- `B1071_CastlePrisonerDepositPatch`: Changed faction check from `mobileParty.MapFaction != settlement.MapFaction` (same-faction only) to `FactionManager.IsAtWarAgainstFaction(...)` (blocks hostile only). AI lords can now deposit prisoners at any non-hostile castle they enter, including neutral ones.
+
+**AI auto-recruitment — neutral castles allowed** (fixed)
+- `AiAutoRecruit`: Changed faction check from `party.MapFaction != faction` (same-faction only) to `FactionManager.IsAtWarAgainstFaction(...)` (blocks hostile only). AI lord parties at neutral castles can now recruit from the elite pool and converted prisoners. Cross-clan gold rules still apply (neutral lords pay full price).
+
+**Player deposit at neutral castles — new menu option** (new)
+- Vanilla's "Donate prisoners" dungeon menu option requires same-faction (`MapFaction == MainHero.MapFaction`). This blocks player deposits at neutral castles.
+- Added a new dungeon menu option "⚔️ Deposit prisoners" (`b1071_castle_deposit_prisoners`) that appears only at neutral castles where vanilla's option doesn't.
+- Uses the same vanilla `PartyScreenHelper.OpenScreenAsDonatePrisoners()` API — identical party screen, identical done handler.
+- The existing `OnPrisonerDonatedToSettlement` event hook fires automatically, recording depositor tracking for the consignment model.
+- Shows prisoner count and holding fee percentage in the label: "⚔️ Deposit prisoners (12 available, 30% holding fee)".
+- Disabled with tooltip when player has no prisoners or prison is full.
+
+**Access rule summary (after this fix):**
+| Actor  | Recruitment           | Deposit                    |
+|--------|-----------------------|----------------------------|
+| Player | Own + Allied + Neutral ✅ | Own (Manage) + Same-faction (vanilla Donate) + Neutral (our option) ✅ |
+| AI     | Same-faction + Neutral ✅ | Same-faction + Neutral ✅ |
+| Both   | Hostile ❌              | Hostile ❌                  |
+
+**Minor fixes from audit:**
+- Added null check for `donatedPrisoners` parameter in `OnPrisonerDonatedToSettlement` handler (defensive safety).
+- Updated all doc comments to reflect neutral castle access rules.
+
+### Compatibility
+- **Save-safe:** No new serialized data. Existing saves load normally.
+- **Backward compatible:** Old saves without depositor data treat all prisoners as untracked (castle owner gets 100%).
+- **Mod removal safe:** All data uses flat `SyncData` lists. Removing the mod loses tracking data but doesn't corrupt saves.
+
+---
+
 ## [0.1.7.0] — 2026-02-25
 
 ### New Systems
@@ -36,7 +76,9 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 
 **Access rules**
 - Player can recruit from any castle NOT hostile to them (own, allied, or neutral faction).
-- AI lord parties recruit from same-faction castles only — visiting enemy or neutral castles does not trigger AI recruitment.
+- Player can deposit prisoners at neutral castles via a dedicated dungeon menu option ("⚔️ Deposit prisoners"). Vanilla's "Donate prisoners" covers same-faction; our option extends to neutral castles.
+- AI lord parties recruit from any non-hostile castle (own faction or neutral). Hostile castles are skipped.
+- AI lord parties deposit prisoners at any non-hostile castle they enter (own faction or neutral).
 - Hostile castles are hidden from the game menu entirely (no greyed-out option, just not shown).
 - The menu shows availability at a glance: "🏰 Recruit troops (5 available, 3 pending)".
 

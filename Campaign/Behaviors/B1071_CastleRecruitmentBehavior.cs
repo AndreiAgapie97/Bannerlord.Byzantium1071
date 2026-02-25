@@ -41,7 +41,10 @@ namespace Byzantium1071.Campaign.Behaviors
     ///
     ///  ACCESS RULES
     ///   Player can recruit from any castle that is NOT hostile (own, allied, or neutral).
-    ///   AI lords recruit from their own faction's castles only.
+    ///   Player can deposit prisoners at neutral castles via a custom dungeon menu option
+    ///   (vanilla's "Donate prisoners" only covers same-faction; our menu extends to neutral).
+    ///   AI lords recruit from any non-hostile castle (own faction or neutral).
+    ///   AI lords deposit prisoners at any non-hostile castle they enter.
     ///
     ///  PERSISTENCE
     ///   _prisonerDaysHeld: per-castle per-troop day counters (prisoner conversion)
@@ -468,6 +471,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
         /// currently at this castle. Same-clan lords recruit for free; cross-clan lords
         /// pay gold per troop, which is credited to the castle owner.
+        /// Non-hostile (same-faction or neutral) lords can recruit; hostile lords cannot.
         /// Prisoner recruitment costs zero manpower; elite recruitment costs manpower
         /// only when <see cref="B1071_McmSettings.CastleRecruitDrainsManpower"/> is on.
         ///
@@ -496,7 +500,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (party == null || party == MobileParty.MainParty) continue;
                 if (party.LeaderHero == null) continue;
                 if (!party.IsLordParty) continue;
-                if (party.MapFaction != faction) continue;
+                if (party.MapFaction == null || FactionManager.IsAtWarAgainstFaction(party.MapFaction, faction)) continue;
 
                 int partyLimit = party.Party.PartySizeLimit;
                 int partySize = party.MemberRoster.TotalManCount;
@@ -1043,6 +1047,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 CastleRecruitConsequence,
                 isLeave: false,
                 index: 3);
+
+            // Player deposit at neutral castles — vanilla's "Donate prisoners" only
+            // appears at same-faction castles. This extends coverage to neutral ones.
+            starter.AddGameMenuOption(
+                "castle_dungeon",
+                "b1071_castle_deposit_prisoners",
+                "{B1071_CASTLE_DEPOSIT_TEXT}",
+                CastleDepositPrisonersCondition,
+                CastleDepositPrisonersConsequence,
+                isLeave: false,
+                index: 2);
         }
 
         private bool CastleRecruitCondition(MenuCallbackArgs args)
@@ -1096,6 +1111,71 @@ namespace Byzantium1071.Campaign.Behaviors
             Byzantium1071.Campaign.UI.B1071_CastleRecruitmentScreen.OpenScreen(castle);
         }
 
+        // ── Player deposit at neutral castles ─────────────────────────────────────
+
+        /// <summary>
+        /// Shows "Deposit prisoners" at neutral castles where vanilla's "Donate prisoners"
+        /// option does not appear (vanilla requires same-faction). Uses the same vanilla
+        /// party screen; our <see cref="OnPrisonerDonatedToSettlement"/> hook records
+        /// depositor tracking automatically.
+        /// </summary>
+        private bool CastleDepositPrisonersCondition(MenuCallbackArgs args)
+        {
+            if (!Settings.EnableCastleRecruitment) return false;
+
+            Settlement? s = Settlement.CurrentSettlement;
+            if (s == null || !s.IsCastle) return false;
+
+            // Own castle — vanilla's "Manage prisoners" handles this.
+            if (s.OwnerClan == Clan.PlayerClan) return false;
+
+            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
+            IFaction? castleFaction = s.OwnerClan?.MapFaction;
+            if (playerFaction == null || castleFaction == null) return false;
+
+            // Same faction — vanilla's "Donate prisoners" already handles this.
+            if (playerFaction == castleFaction) return false;
+
+            // Hostile — not allowed.
+            if (FactionManager.IsAtWarAgainstFaction(playerFaction, castleFaction)) return false;
+
+            // Neutral castle — show our option.
+            int prisonerCount = MobileParty.MainParty.PrisonRoster?.TotalRegulars ?? 0;
+            if (prisonerCount <= 0)
+            {
+                args.IsEnabled = false;
+                args.Tooltip = new TaleWorlds.Localization.TextObject("You have no prisoners to deposit.");
+            }
+            else
+            {
+                args.IsEnabled = true;
+            }
+
+            // Check prison capacity.
+            int prisonCap = s.Party?.PrisonerSizeLimit ?? 0;
+            int prisonOccupied = s.Party?.NumberOfPrisoners ?? 0;
+            if (prisonCap > 0 && prisonOccupied >= prisonCap)
+            {
+                args.IsEnabled = false;
+                args.Tooltip = new TaleWorlds.Localization.TextObject("The castle's prison is full.");
+            }
+
+            args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
+
+            int feePercent = Settings.CastleHoldingFeePercent;
+            string label = $"\u2694\ufe0f Deposit prisoners ({prisonerCount} available, {feePercent}% holding fee)";
+            TaleWorlds.Localization.MBTextManager.SetTextVariable("B1071_CASTLE_DEPOSIT_TEXT", label);
+
+            return true;
+        }
+
+        private void CastleDepositPrisonersConsequence(MenuCallbackArgs args)
+        {
+            // Vanilla API — opens the party screen for prisoner donation.
+            // The done handler fires OnPrisonerDonatedToSettlement, which our hook records.
+            PartyScreenHelper.OpenScreenAsDonatePrisoners();
+        }
+
         // ══════════════════════════════════════════════════════════════════════════
         //  HELPERS
         // ══════════════════════════════════════════════════════════════════════════
@@ -1110,6 +1190,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (!Settings.EnableCastleRecruitment) return;
             if (settlement == null || !settlement.IsCastle) return;
+            if (donatedPrisoners == null) return;
 
             // Skip own-clan castles — no economic difference for same-clan deposits.
             Hero? depositorHero = donatingParty?.LeaderHero;

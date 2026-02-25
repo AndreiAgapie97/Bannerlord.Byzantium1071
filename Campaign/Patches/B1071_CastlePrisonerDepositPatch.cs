@@ -29,12 +29,15 @@ namespace Byzantium1071.Campaign.Patches
     /// and populate the Pending/Ready lists. If prisoners never enter that roster, the system
     /// has no raw material to work with.
     ///
-    /// THIS FIX:
+    /// This fix:
     /// A Harmony Prefix on the private <c>OnSettlementEntered</c> method. For castles with
     /// castle recruitment enabled, we move ALL non-hero regular prisoners from the party's
     /// prison roster directly into the castle's prison roster (free deposit — no gold paid).
     /// After our prefix, the party's roster contains only heroes; vanilla's handler still
     /// runs, finds no regulars, and handles hero prisoners normally.
+    ///
+    /// Any non-hostile (same-faction or neutral) party can deposit. Hostile parties are
+    /// skipped (they wouldn't normally enter peacefully anyway).
     ///
     /// T1-T3 prisoners deposited will be auto-enslaved on the next daily tick by
     /// <see cref="Behaviors.B1071_CastleRecruitmentBehavior.AutoEnslaveLowTierPrisoners"/>.
@@ -57,9 +60,9 @@ namespace Byzantium1071.Campaign.Patches
                 var settings = Settings.B1071_McmSettings.Instance ?? Settings.B1071_McmSettings.Defaults;
                 if (!settings.EnableCastleRecruitment) return;
 
-                // Only same-faction parties deposit prisoners (matches vanilla's check).
+                // Any non-hostile party can deposit prisoners (neutral castles included).
                 if (mobileParty.MapFaction == null || mobileParty.IsDisbanding) return;
-                if (mobileParty.MapFaction != settlement.MapFaction) return;
+                if (FactionManager.IsAtWarAgainstFaction(mobileParty.MapFaction, settlement.MapFaction)) return;
 
                 TroopRoster? partyPrison = mobileParty.PrisonRoster;
                 TroopRoster? castlePrison = settlement.Party?.PrisonRoster;
