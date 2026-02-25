@@ -115,6 +115,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlement);
+            CampaignEvents.OnPrisonerDonatedToSettlementEvent.AddNonSerializedListener(this, OnPrisonerDonatedToSettlement);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -1098,6 +1099,56 @@ namespace Byzantium1071.Campaign.Behaviors
         // ══════════════════════════════════════════════════════════════════════════
         //  HELPERS
         // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Fires when any party (typically the player) donates prisoners via vanilla's
+        /// party screen ("Donate prisoners" in the dungeon menu).
+        /// Registers depositor tracking so the consignment model applies to player deposits.
+        /// </summary>
+        private void OnPrisonerDonatedToSettlement(
+            MobileParty donatingParty, FlattenedTroopRoster donatedPrisoners, Settlement settlement)
+        {
+            if (!Settings.EnableCastleRecruitment) return;
+            if (settlement == null || !settlement.IsCastle) return;
+
+            // Skip own-clan castles — no economic difference for same-clan deposits.
+            Hero? depositorHero = donatingParty?.LeaderHero;
+            if (depositorHero == null) return;
+            if (depositorHero.Clan == settlement.OwnerClan) return;
+
+            string castleId = settlement.StringId;
+            string heroId = depositorHero.StringId;
+
+            // Group the flattened roster (one entry per soldier) by troop type.
+            var grouped = new Dictionary<string, (CharacterObject Troop, int Count)>();
+            foreach (FlattenedTroopRosterElement element in donatedPrisoners)
+            {
+                if (element.Troop == null || element.Troop.IsHero) continue;
+                string troopId = element.Troop.StringId;
+                if (grouped.TryGetValue(troopId, out var existing))
+                    grouped[troopId] = (existing.Troop, existing.Count + 1);
+                else
+                    grouped[troopId] = (element.Troop, 1);
+            }
+
+            int totalDeposited = 0;
+            foreach (var kvp in grouped)
+            {
+                RecordDeposit(castleId, heroId, kvp.Key, kvp.Value.Count);
+                totalDeposited += kvp.Value.Count;
+            }
+
+            // Show consignment notification to the player.
+            if (totalDeposited > 0 && donatingParty != null && donatingParty.IsMainParty)
+            {
+                int feePercent = Settings.CastleHoldingFeePercent;
+                int depositorPercent = 100 - feePercent;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"\u2694\ufe0f Deposited {totalDeposited} prisoner{(totalDeposited > 1 ? "s" : "")} at {settlement.Name}. " +
+                    $"You receive {depositorPercent}% of processing income (holding fee: {feePercent}%).",
+                    new Color(0.3f, 0.7f, 0.9f)));
+            }
+        }
 
         private static Settlement? FindNearestTown(Settlement origin)
         {

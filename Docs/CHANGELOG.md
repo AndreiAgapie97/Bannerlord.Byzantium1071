@@ -144,6 +144,14 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 - The deposit patch previously checked `!IsAtWarWith(settlement.MapFaction)`, which was broader than vanilla (allowed neutral/unaffiliated parties to deposit). Now uses `mobileParty.MapFaction != settlement.MapFaction` — only same-faction parties deposit, matching vanilla's `OnSettlementEntered` condition.
 - Deposit patch now calls `RecordDeposit` after moving prisoners, recording the depositing lord's hero ID for each troop type and count.
 
+**Player prisoner deposits now tracked (consignment model parity)** (new)
+- The behavior now listens to `CampaignEvents.OnPrisonerDonatedToSettlementEvent` — the campaign event vanilla fires when the player donates prisoners via the dungeon menu's "Donate prisoners" party screen.
+- When the player deposits prisoners at another clan's castle, `RecordDeposit` is called for each non-hero troop type, establishing the player as the depositor in the consignment model.
+- The player now receives their share (default 70%) of all enslavement income and recruitment fees from their deposited prisoners, just like AI lords.
+- Own-clan castles are skipped (no economic difference — same-clan deposits → owner gets 100%).
+- An information message is shown: "⚔️ Deposited 15 prisoners at [castle]. You receive 70% of processing income (holding fee: 30%)."
+- Uses vanilla's existing dungeon → "Donate prisoners" flow (`PartyScreenHelper.OpenScreenAsDonatePrisoners`) — no new UI or menu options needed. This matches AI/Player parity: both deposit at same-faction castles, both get tracked.
+
 **Persistence — depositor tracking added**
 - `_depositorTracking`: `Dictionary<castleId, Dictionary<troopId, List<(heroId, count)>>>` — FIFO depositor entries per castle per troop type.
 - Serialized via 4 parallel save/load lists: `b1071_cr_depCastles`, `b1071_cr_depTroops`, `b1071_cr_depHeroes`, `b1071_cr_depCounts`.
