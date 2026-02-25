@@ -755,11 +755,11 @@ namespace Byzantium1071.Campaign.Settings
         public int CastleEliteManpowerCost { get; set; } = 10;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("AI recruits from elite pool", Order = 13, HintText = "When enabled, AI lord parties visiting their own faction's castles auto-recruit from the elite pool. Keeps the AI competitive. Default: true.")]
+        [SettingPropertyBool("AI recruits from castle", Order = 13, HintText = "When enabled, AI lord parties visiting their own faction's castles recruit from both the elite pool and converted prisoners, paying gold per troop (same as player). No daily cap — lords fill to party limit. Default: true.")]
         public bool CastleEliteAiRecruits { get; set; } = true;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("AI max recruits per day", 1, 20, "0", Order = 14, HintText = "Maximum elite troops an AI party can recruit from one castle per daily tick. Default: 3.")]
+        [SettingPropertyInteger("AI max recruits per day (legacy)", 1, 20, "0", Order = 14, HintText = "LEGACY — no longer used. AI now recruits up to party limit. Kept for save compatibility. Default: 3.")]
         public int CastleEliteAiMaxPerDay { get; set; } = 3;
     }
 }

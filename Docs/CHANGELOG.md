@@ -2,6 +2,75 @@
 
 ---
 
+## [0.1.7.0] — 2026-02-24
+
+### Castle Recruitment — AI & Garrison Overhaul
+
+**AI lord parties now recruit converted prisoners at castles** (new)
+- AI lords visiting their own faction's castles now recruit from **both** the elite troop pool **and** converted (ready) prisoners, paying gold per troop (same cost as the player).
+- Previously, AI could only recruit from the elite pool. Converted prisoners (T4+) sat idle indefinitely because no code path existed for AI or garrison to claim them.
+- Gold is deducted from `party.LeaderHero.Gold` via `ChangeHeroGold(-cost)`. Lords who can't afford a troop skip it.
+- Prisoner recruitment costs **zero manpower** (by design — prisoners are already captured, not drawn from the population). Elite recruitment still drains manpower when `CastleRecruitDrainsManpower` is enabled.
+
+**AI recruitment daily cap removed** (changed)
+- The old `CastleEliteAiMaxPerDay` cap (default 3) has been removed. AI lords now recruit up to their party size limit from both sources in a single visit.
+- Both pools (elite + prisoners) are available simultaneously with no priority — lords take what they can afford from both.
+- MCM setting `CastleEliteAiMaxPerDay` kept for save compatibility but marked as legacy/unused.
+
+**Garrison absorbs ready prisoners at auto-recruit rate** (new)
+- Castles with garrison auto-recruitment enabled (vanilla setting + positive food) now transfer converted prisoners into the garrison at the same daily rate as vanilla auto-recruitment (`GetMaximumDailyAutoRecruitmentCount`, typically 1/day + building bonuses).
+- Our existing manpower postfix (`B1071_GarrisonAutoRecruitManpowerPatch`) still caps the total daily garrison growth.
+- Garrison absorption costs zero manpower (prisoner-sourced, not population-sourced).
+- Respects garrison size limit and food requirements.
+- Step 5 in the castle daily tick, after AI recruitment.
+
+### Bug Fixes
+
+**AI lord flickering at castles** (fixed)
+- **Symptom:** Lords entered a castle, exited for a split-second, re-entered, exited again, repeating several times before stabilizing. Only occurred after the castle recruitment system was added.
+- **Root cause:** `AiAutoRecruit` called `party.MemberRoster.AddToCounts()` which fires `CampaignEventDispatcher.OnPartySizeChanged` and bumps `MobileParty.VersionNo`, invalidating cached AI decisions. On the next engine tick, `MobilePartyTickData.CheckExitingSettlementParallel` checks `ShortTermTargetSettlement == CurrentSettlement` — the version bump caused AI to re-evaluate its target, briefly picking a different destination, triggering an exit → immediate re-entry loop.
+- **Fix:** After modifying any party's roster at a castle, `SetMoveGoToSettlement(settlement)` + `RecalculateShortTermBehavior()` is called, re-anchoring the party so that `ShortTermTargetSettlement` remains equal to `CurrentSettlement` through the next tick check. Applied to both elite and prisoner recruitment paths.
+
+**Manpower cost formula changed to flat 1 per troop** (changed)
+- `GetManpowerCostPerTroop` now returns a flat `BaseManpowerCostPerTroop` (default 1) regardless of tier.
+- Old formula `baseCost + ((tier-1) / tiersPerStep)` scaled T1=1, T2=1, T3=2, T4=2, T5=3. Now all tiers cost 1.
+- MCM settings `TiersPerExtraCost` and `CostMultiplierPercent` are no longer used (kept for save compatibility).
+
+**Prisoner recruitment costs zero manpower** (changed)
+- `TryRecruitPrisoner` (player path) no longer checks or consumes manpower. Prisoner recruitment still costs gold.
+- AI prisoner recruitment also costs zero manpower.
+- Rationale: prisoners are already captured — recruiting them does not drain the settlement's population.
+
+**Elite pool regen manpower mismatch** (fixed)
+- **Bug:** `RegenerateElitePool` used `CastleEliteManpowerCost=10` for the affordability check (how many troops can we afford?) but then called `ConsumeManpowerPublic` per-troop using `GetManpowerCostPerTroop` (which was tier-based, 1-3). The actual drain was far less than what the affordability check budgeted.
+- **Fix:** Added `ConsumeManpowerFlat(settlement, totalCost)` method to `B1071_ManpowerBehavior` that drains an exact flat amount. Regen now consumes exactly `toAdd × CastleEliteManpowerCost` — matching the affordability check precisely.
+
+### UI Changes
+
+**Gold / Manpower stats row layout** (changed)
+- "Gold" stays pinned left, "Manpower" moved to right side of the stats row with 120px right margin for visual centering.
+- Replaced single `HorizontalLeftToRight` ListPanel with a `Widget` container holding two independently aligned child groups.
+
+### Internal Changes
+
+- `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Complete rewrite — now recruits from both elite pool and converted prisoners, pays gold, no daily cap, includes flickering fix.
+- `B1071_CastleRecruitmentBehavior.GarrisonAbsorbPrisoners()`: New method — daily garrison absorption of ready prisoners at vanilla auto-recruit rate.
+- `B1071_ManpowerBehavior.GetManpowerCostPerTroop()`: Simplified to flat `BaseManpowerCostPerTroop`.
+- `B1071_ManpowerBehavior.ConsumeManpowerFlat()`: New method — consumes exact flat manpower amount, ignoring troop tier.
+- `B1071_CastleRecruitmentBehavior.TryRecruitPrisoner()`: Removed manpower check/consumption.
+- `B1071_McmSettings.CastleEliteAiRecruits`: Updated hint text to reflect both pools + no cap.
+- `B1071_McmSettings.CastleEliteAiMaxPerDay`: Marked as legacy (kept for save compatibility).
+- Castle daily tick now has 5 steps: AutoEnslave → TrackDays → RegenerateElitePool → AiAutoRecruit → GarrisonAbsorbPrisoners.
+
+### Save Compatibility
+
+**100% save-compatible with 0.1.6.x saves.** No new campaign required.
+- No new `SyncData` keys. All changes modify existing method behavior.
+- `CastleEliteAiMaxPerDay` MCM setting kept in save data but ignored at runtime.
+- New garrison absorption starts immediately on load — any existing ready prisoners will begin transferring to garrison at auto-recruit rate.
+
+---
+
 ## [0.1.6.0] — 2026-02-24
 
 ### New Systems

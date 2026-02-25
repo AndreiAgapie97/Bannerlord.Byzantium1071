@@ -225,8 +225,11 @@ namespace Byzantium1071.Campaign.Behaviors
             // 3. Regenerate elite troop pool from manpower
             RegenerateElitePool(settlement);
 
-            // 4. AI auto-recruitment from elite pool
+            // 4. AI auto-recruitment from elite pool + converted prisoners
             AiAutoRecruit(settlement);
+
+            // 5. Garrison absorbs ready prisoners at the auto-recruit rate
+            GarrisonAbsorbPrisoners(settlement);
         }
 
         // ── 1. Auto-enslave ───────────────────────────────────────────────────────
@@ -367,17 +370,18 @@ namespace Byzantium1071.Campaign.Behaviors
         // ── 4. AI auto-recruitment ────────────────────────────────────────────────
 
         /// <summary>
-        /// Recruits from the elite pool into AI lord parties currently at this castle.
+        /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
+        /// currently at this castle. Lords from the same faction can recruit up to their
+        /// party size limit from either source, paying gold per troop (same as player).
+        /// Prisoner recruitment costs zero manpower; elite recruitment costs manpower
+        /// only when <see cref="B1071_McmSettings.CastleRecruitDrainsManpower"/> is on.
         ///
-        /// IMPORTANT: MemberRoster.AddToCounts fires CampaignEventDispatcher.OnPartySizeChanged
-        /// and bumps MobileParty.VersionNo, which invalidates cached AI decisions. On the very
-        /// next tick, CheckExitingSettlementParallel checks ShortTermTargetSettlement ==
-        /// CurrentSettlement — if the version bump caused the AI to re-evaluate and pick a new
-        /// target, the party would exit the castle and immediately turn back (visual "flickering").
-        ///
-        /// Fix: after modifying the roster, re-anchor the party to this settlement via
-        /// SetMoveGoToSettlement + RecalculateShortTermBehavior so that ShortTermTargetSettlement
-        /// remains equal to CurrentSettlement through the next tick.
+        /// FLICKERING FIX: MemberRoster.AddToCounts fires OnPartySizeChanged and bumps
+        /// MobileParty.VersionNo, invalidating cached AI decisions. On the next tick,
+        /// CheckExitingSettlementParallel checks ShortTermTargetSettlement ==
+        /// CurrentSettlement — if the version bump causes re-evaluation, the party
+        /// would exit and immediately return ("flickering"). After modifying the roster,
+        /// we re-anchor the party via SetMoveGoToSettlement + RecalculateShortTermBehavior.
         /// </summary>
         private void AiAutoRecruit(Settlement settlement)
         {
@@ -387,7 +391,12 @@ namespace Byzantium1071.Campaign.Behaviors
             var faction = settlement.OwnerClan.MapFaction;
             if (faction == null) return;
 
-            foreach (MobileParty party in settlement.Parties)
+            string castleId = settlement.StringId;
+
+            // Snapshot the party list to avoid collection-modification issues.
+            var partiesSnapshot = settlement.Parties.ToList();
+
+            foreach (MobileParty party in partiesSnapshot)
             {
                 if (party == null || party == MobileParty.MainParty) continue;
                 if (party.LeaderHero == null) continue;
@@ -396,41 +405,170 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 int partyLimit = party.Party.PartySizeLimit;
                 int partySize = party.MemberRoster.TotalManCount;
-                if (partySize >= (int)(partyLimit * 0.9f)) continue;
+                if (partySize >= partyLimit) continue;
 
-                int budget = Math.Min(Settings.CastleEliteAiMaxPerDay, partyLimit - partySize);
-                int recruited = 0;
+                int room = partyLimit - partySize;
+                int gold = party.LeaderHero.Gold;
+                int totalRecruited = 0;
 
-                string castleId = settlement.StringId;
-                if (!_elitePool.TryGetValue(castleId, out var poolDict) || poolDict.Count == 0) continue;
-
-                var entries = poolDict.ToList();
-                foreach (var entry in entries)
+                // ── Recruit from elite pool ──
+                if (_elitePool.TryGetValue(castleId, out var poolDict) && poolDict.Count > 0)
                 {
-                    string troopId = entry.Key;
-                    int count = entry.Value;
-                    if (recruited >= budget) break;
-                    if (count <= 0) continue;
+                    var entries = poolDict.ToList();
+                    foreach (var entry in entries)
+                    {
+                        if (room <= 0 || gold <= 0) break;
 
-                    CharacterObject? troop = MBObjectManager.Instance.GetObject<CharacterObject>(troopId);
-                    if (troop == null) continue;
+                        string troopId = entry.Key;
+                        int available = entry.Value;
+                        if (available <= 0) continue;
 
-                    int take = Math.Min(count, budget - recruited);
-                    party.MemberRoster.AddToCounts(troop, take);
-                    poolDict[troopId] = count - take;
-                    if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
-                    recruited += take;
+                        CharacterObject? troop = MBObjectManager.Instance.GetObject<CharacterObject>(troopId);
+                        if (troop == null) continue;
+
+                        int costPer = GetGoldCostForTier(troop.Tier);
+                        int affordableByGold = costPer > 0 ? gold / costPer : available;
+                        int take = Math.Min(available, Math.Min(room, affordableByGold));
+                        if (take <= 0) continue;
+
+                        // Manpower check for elite recruitment.
+                        if (Settings.CastleRecruitDrainsManpower)
+                        {
+                            B1071_ManpowerBehavior? mp = B1071_ManpowerBehavior.Instance;
+                            if (mp != null)
+                            {
+                                mp.GetManpowerPool(settlement, out int curMp, out _, out _);
+                                // 1 manpower per troop (flat cost).
+                                take = Math.Min(take, curMp);
+                                if (take <= 0) continue;
+                                mp.ConsumeManpowerPublic(settlement, troop, take);
+                            }
+                        }
+
+                        party.MemberRoster.AddToCounts(troop, take);
+                        party.LeaderHero.ChangeHeroGold(-(costPer * take));
+                        gold -= costPer * take;
+                        room -= take;
+                        poolDict[troopId] = available - take;
+                        if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
+                        totalRecruited += take;
+                    }
                 }
 
-                // Re-anchor the party to this castle so the AI version-bump doesn't
-                // cause CheckExitingSettlementParallel to eject the party next tick.
-                if (recruited > 0 && party.CurrentSettlement == settlement)
+                // ── Recruit from converted prisoners (ready for recruitment) ──
+                var readyPrisoners = GetRecruitablePrisoners(settlement);
+                if (readyPrisoners.Count > 0)
+                {
+                    TroopRoster? prisonRoster = settlement.Party?.PrisonRoster;
+                    if (prisonRoster != null)
+                    {
+                        foreach (var (troop, count, _, prisonerGoldCost) in readyPrisoners)
+                        {
+                            if (room <= 0 || gold <= 0) break;
+
+                            int affordableByGold = prisonerGoldCost > 0 ? gold / prisonerGoldCost : count;
+                            int take = Math.Min(count, Math.Min(room, affordableByGold));
+                            if (take <= 0) continue;
+
+                            // Prisoner recruitment costs zero manpower (by design).
+
+                            party.MemberRoster.AddToCounts(troop, take);
+                            prisonRoster.RemoveTroop(troop, take);
+                            party.LeaderHero.ChangeHeroGold(-(prisonerGoldCost * take));
+                            gold -= prisonerGoldCost * take;
+                            room -= take;
+                            totalRecruited += take;
+
+                            // Clean up prisoner day tracking for fully recruited entries.
+                            int remaining = prisonRoster.GetTroopRoster()
+                                .Where(e => e.Character == troop).Select(e => e.Number).FirstOrDefault();
+                            if (remaining <= 0 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
+                                castleDict.Remove(troop.StringId);
+                        }
+                    }
+                }
+
+                // Re-anchor to prevent flickering from version-bump.
+                if (totalRecruited > 0 && party.CurrentSettlement == settlement)
                 {
                     party.SetMoveGoToSettlement(settlement,
                         party.DesiredAiNavigationType,
                         party.IsTargetingPort);
                     party.RecalculateShortTermBehavior();
                 }
+            }
+        }
+
+        // ── 5. Garrison absorbs ready prisoners at auto-recruit rate ──────────────
+
+        /// <summary>
+        /// Transfers converted (ready) prisoners into the castle's garrison at the
+        /// vanilla auto-recruit rate (GetMaximumDailyAutoRecruitmentCount, typically
+        /// 1/day + building bonuses). Only fires if garrison auto-recruit is enabled,
+        /// food is positive, and there's room in the garrison.
+        /// Prisoner absorption costs zero manpower (prisoners, not fresh recruits).
+        /// </summary>
+        private void GarrisonAbsorbPrisoners(Settlement settlement)
+        {
+            Town? town = settlement.Town;
+            if (town == null) return;
+
+            // Respect vanilla guard: auto-recruit must be enabled and food positive.
+            if (!town.GarrisonAutoRecruitmentIsEnabled) return;
+            if (town.FoodChange <= 0f) return;
+            if (settlement.Party?.MapEvent != null || settlement.Party?.SiegeEvent != null) return;
+
+            // Create garrison if missing.
+            MobileParty? garrisonParty = town.GarrisonParty;
+
+            var readyPrisoners = GetRecruitablePrisoners(settlement);
+            if (readyPrisoners.Count == 0) return;
+
+            // Use the vanilla model for the daily cap (our manpower postfix still caps this).
+            int dailyCap = TaleWorlds.CampaignSystem.Campaign.Current.Models.SettlementGarrisonModel
+                .GetMaximumDailyAutoRecruitmentCount(town);
+            if (dailyCap <= 0) return;
+
+            // Respect garrison size limit.
+            int garrisonSize = garrisonParty?.Party.NumberOfAllMembers ?? 0;
+            int garrisonLimit = garrisonParty?.Party.PartySizeLimit
+                ?? (int)TaleWorlds.CampaignSystem.Campaign.Current.Models.PartySizeLimitModel
+                    .CalculateGarrisonPartySizeLimit(settlement).ResultNumber;
+            int room = garrisonLimit - garrisonSize;
+            if (room <= 0) return;
+
+            int toAbsorb = Math.Min(dailyCap, room);
+            int absorbed = 0;
+
+            TroopRoster? prisonRoster = settlement.Party?.PrisonRoster;
+            if (prisonRoster == null) return;
+
+            string castleId = settlement.StringId;
+
+            foreach (var (troop, count, _, _) in readyPrisoners)
+            {
+                if (absorbed >= toAbsorb) break;
+
+                int take = Math.Min(count, toAbsorb - absorbed);
+                if (take <= 0) continue;
+
+                // Create garrison party if needed.
+                if (garrisonParty == null)
+                {
+                    settlement.AddGarrisonParty();
+                    garrisonParty = town.GarrisonParty;
+                    if (garrisonParty == null) break;
+                }
+
+                garrisonParty.MemberRoster.AddToCounts(troop, take);
+                prisonRoster.RemoveTroop(troop, take);
+                absorbed += take;
+
+                // Clean up prisoner day tracking for fully recruited entries.
+                int remaining = prisonRoster.GetTroopRoster()
+                    .Where(e => e.Character == troop).Select(e => e.Number).FirstOrDefault();
+                if (remaining <= 0 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
+                    castleDict.Remove(troop.StringId);
             }
         }
 
