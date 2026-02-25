@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -88,6 +89,25 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string>? _savedEliteCastleIds;
         private List<string>? _savedEliteTroopIds;
         private List<int>? _savedEliteCounts;
+
+        // ── Depositor tracking (consignment model) ────────────────────────────────
+
+        /// <summary>
+        /// Tracks WHO deposited each prisoner at each castle, enabling fair income splits.
+        ///
+        /// Structure: castleId → troopId → list of (heroStringId, count) entries (FIFO order).
+        /// When prisoners are consumed (enslaved, recruited, garrison-absorbed), we pop
+        /// counts from the front of the list. If the list is exhausted but prisoners
+        /// remain in the roster (siege conquest or pre-tracking), those have no depositor
+        /// and the castle owner gets 100%.
+        /// </summary>
+        private Dictionary<string, Dictionary<string, List<(string HeroId, int Count)>>> _depositorTracking
+            = new Dictionary<string, Dictionary<string, List<(string, int)>>>();
+
+        private List<string>? _savedDepositorCastleIds;
+        private List<string>? _savedDepositorTroopIds;
+        private List<string>? _savedDepositorHeroIds;
+        private List<int>? _savedDepositorCounts;
 
         // ── CampaignBehaviorBase ──────────────────────────────────────────────────
 
@@ -194,6 +214,70 @@ namespace Byzantium1071.Campaign.Behaviors
                     dict[tId] = _savedEliteCounts[i];
                 }
             }
+
+            // ── Depositor tracking: flatten Dict<castle, Dict<troop, List<(hero, count)>>> → 4 parallel lists ──
+            _savedDepositorCastleIds ??= new List<string>();
+            _savedDepositorTroopIds ??= new List<string>();
+            _savedDepositorHeroIds ??= new List<string>();
+            _savedDepositorCounts ??= new List<int>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedDepositorCastleIds.Clear();
+                _savedDepositorTroopIds.Clear();
+                _savedDepositorHeroIds.Clear();
+                _savedDepositorCounts.Clear();
+
+                foreach (var castleKvp in _depositorTracking)
+                    foreach (var troopKvp in castleKvp.Value)
+                        foreach (var entry in troopKvp.Value)
+                        {
+                            if (entry.Count <= 0) continue;
+                            _savedDepositorCastleIds.Add(castleKvp.Key);
+                            _savedDepositorTroopIds.Add(troopKvp.Key);
+                            _savedDepositorHeroIds.Add(entry.HeroId);
+                            _savedDepositorCounts.Add(entry.Count);
+                        }
+            }
+
+            dataStore.SyncData("b1071_cr_depCastles", ref _savedDepositorCastleIds);
+            dataStore.SyncData("b1071_cr_depTroops", ref _savedDepositorTroopIds);
+            dataStore.SyncData("b1071_cr_depHeroes", ref _savedDepositorHeroIds);
+            dataStore.SyncData("b1071_cr_depCounts", ref _savedDepositorCounts);
+
+            _savedDepositorCastleIds ??= new List<string>();
+            _savedDepositorTroopIds ??= new List<string>();
+            _savedDepositorHeroIds ??= new List<string>();
+            _savedDepositorCounts ??= new List<int>();
+
+            if (dataStore.IsLoading)
+            {
+                _depositorTracking.Clear();
+                int nd = Math.Min(_savedDepositorCastleIds.Count,
+                         Math.Min(_savedDepositorTroopIds.Count,
+                         Math.Min(_savedDepositorHeroIds.Count, _savedDepositorCounts.Count)));
+                for (int i = 0; i < nd; i++)
+                {
+                    string cId = _savedDepositorCastleIds[i];
+                    string tId = _savedDepositorTroopIds[i];
+                    string hId = _savedDepositorHeroIds[i];
+                    int cnt = _savedDepositorCounts[i];
+                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)
+                        || string.IsNullOrEmpty(hId) || cnt <= 0) continue;
+
+                    if (!_depositorTracking.TryGetValue(cId, out var troopDict))
+                    {
+                        troopDict = new Dictionary<string, List<(string, int)>>();
+                        _depositorTracking[cId] = troopDict;
+                    }
+                    if (!troopDict.TryGetValue(tId, out var heroList))
+                    {
+                        heroList = new List<(string, int)>();
+                        troopDict[tId] = heroList;
+                    }
+                    heroList.Add((hId, cnt));
+                }
+            }
         }
 
         // ── Session launch ────────────────────────────────────────────────────────
@@ -255,16 +339,26 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? nearestTown = FindNearestTown(settlement);
             if (nearestTown == null) return;
 
-            int totalEnslaved = 0;
+            int slavePrice = nearestTown.Town?.GetItemPrice(_slaveItem) ?? 0;
+            string castleId = settlement.StringId;
+
             foreach (var element in toEnslave)
             {
                 int count = element.Number;
                 prisonRoster.RemoveTroop(element.Character, count);
                 nearestTown.ItemRoster.AddToCounts(_slaveItem, count);
-                totalEnslaved += count;
-            }
 
-            // No per-tick log — enslaved count is visible in the recruitment screen.
+                // Distribute enslavement income per depositor (consignment model).
+                if (slavePrice > 0)
+                {
+                    var depositorEntries = ConsumeDepositorEntries(castleId, element.Character.StringId, count);
+                    foreach (var (heroId, consumed) in depositorEntries)
+                    {
+                        int income = slavePrice * consumed;
+                        DistributeIncome(settlement, heroId, income);
+                    }
+                }
+            }
         }
 
         // ── 2. Track high-tier prisoner days ──────────────────────────────────────
@@ -371,8 +465,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
-        /// currently at this castle. Lords from the same faction can recruit up to their
-        /// party size limit from either source, paying gold per troop (same as player).
+        /// currently at this castle. Same-clan lords recruit for free; cross-clan lords
+        /// pay gold per troop, which is credited to the castle owner.
         /// Prisoner recruitment costs zero manpower; elite recruitment costs manpower
         /// only when <see cref="B1071_McmSettings.CastleRecruitDrainsManpower"/> is on.
         ///
@@ -410,6 +504,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 int room = partyLimit - partySize;
                 int gold = party.LeaderHero.Gold;
                 int totalRecruited = 0;
+                bool isSameClan = (party.LeaderHero.Clan == settlement.OwnerClan);
 
                 // ── Recruit from elite pool ──
                 if (_elitePool.TryGetValue(castleId, out var poolDict) && poolDict.Count > 0)
@@ -417,7 +512,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     var entries = poolDict.ToList();
                     foreach (var entry in entries)
                     {
-                        if (room <= 0 || gold <= 0) break;
+                        if (room <= 0 || (!isSameClan && gold <= 0)) break;
 
                         string troopId = entry.Key;
                         int available = entry.Value;
@@ -427,7 +522,9 @@ namespace Byzantium1071.Campaign.Behaviors
                         if (troop == null) continue;
 
                         int costPer = GetGoldCostForTier(troop.Tier);
-                        int affordableByGold = costPer > 0 ? gold / costPer : available;
+                        int affordableByGold = isSameClan
+                            ? available
+                            : (costPer > 0 ? gold / costPer : available);
                         int take = Math.Min(available, Math.Min(room, affordableByGold));
                         if (take <= 0) continue;
 
@@ -447,8 +544,19 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
 
                         party.MemberRoster.AddToCounts(troop, take);
-                        party.LeaderHero.ChangeHeroGold(-(costPer * take));
-                        gold -= costPer * take;
+
+                        // Gold: same-clan = free, cross-clan = pay castle owner.
+                        if (!isSameClan)
+                        {
+                            int totalCost = costPer * take;
+                            Hero? owner = settlement.Owner;
+                            if (owner != null)
+                                GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, owner, totalCost, disableNotification: true);
+                            else
+                                party.LeaderHero.ChangeHeroGold(-totalCost);
+                            gold -= totalCost;
+                        }
+
                         room -= take;
                         poolDict[troopId] = available - take;
                         if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
@@ -465,9 +573,17 @@ namespace Byzantium1071.Campaign.Behaviors
                     {
                         foreach (var (troop, count, _, prisonerGoldCost) in readyPrisoners)
                         {
-                            if (room <= 0 || gold <= 0) break;
+                            if (room <= 0) break;
 
-                            int affordableByGold = prisonerGoldCost > 0 ? gold / prisonerGoldCost : count;
+                            // Peek depositor for affordability check (uses first tracked entry).
+                            string? depositorId = PeekDepositor(castleId, troop.StringId);
+                            int effectiveCost = GetEffectiveGoldCost(settlement, party.LeaderHero, depositorId, prisonerGoldCost);
+
+                            if (effectiveCost > 0 && gold <= 0) break;
+
+                            int affordableByGold = effectiveCost > 0
+                                ? gold / effectiveCost
+                                : count;
                             int take = Math.Min(count, Math.Min(room, affordableByGold));
                             if (take <= 0) continue;
 
@@ -475,8 +591,16 @@ namespace Byzantium1071.Campaign.Behaviors
 
                             party.MemberRoster.AddToCounts(troop, take);
                             prisonRoster.RemoveTroop(troop, take);
-                            party.LeaderHero.ChangeHeroGold(-(prisonerGoldCost * take));
-                            gold -= prisonerGoldCost * take;
+
+                            // Consume depositor entries and handle gold per depositor.
+                            var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, take);
+                            foreach (var (heroId, consumed) in depositorEntries)
+                            {
+                                HandleRecruitmentGold(settlement, party.LeaderHero, heroId, prisonerGoldCost, consumed);
+                                int paidPerEntry = GetEffectiveGoldCost(settlement, party.LeaderHero, heroId, prisonerGoldCost) * consumed;
+                                gold -= paidPerEntry;
+                            }
+
                             room -= take;
                             totalRecruited += take;
 
@@ -550,7 +674,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string castleId = settlement.StringId;
 
-            foreach (var (troop, count, _, _) in readyPrisoners)
+            foreach (var (troop, count, _, prisonerGoldCost) in readyPrisoners)
             {
                 if (absorbed >= toAbsorb) break;
 
@@ -568,6 +692,26 @@ namespace Byzantium1071.Campaign.Behaviors
                 garrisonParty.MemberRoster.AddToCounts(troop, take);
                 prisonRoster.RemoveTroop(troop, take);
                 absorbed += take;
+
+                // Compensate cross-clan depositors: castle owner pays their share.
+                Hero? owner = settlement.Owner;
+                if (owner != null && prisonerGoldCost > 0)
+                {
+                    var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, take);
+                    foreach (var (heroId, consumed) in depositorEntries)
+                    {
+                        if (string.IsNullOrEmpty(heroId)) continue; // Untracked → no payment.
+
+                        Hero? depositor = FindAliveHero(heroId);
+                        if (depositor == null || depositor.Clan == settlement.OwnerClan) continue; // Same-clan → free.
+
+                        // Castle owner pays depositor their share from own gold.
+                        float feePercent = Settings.CastleHoldingFeePercent / 100f;
+                        int depositorShare = (int)(prisonerGoldCost * (1f - feePercent)) * consumed;
+                        if (depositorShare > 0 && owner.Gold >= depositorShare)
+                            GiveGoldAction.ApplyBetweenCharacters(owner, depositor, depositorShare, disableNotification: true);
+                    }
+                }
 
                 // Clean up prisoner day tracking for fully recruited entries.
                 int remaining = prisonRoster.GetTroopRoster()
@@ -745,8 +889,9 @@ namespace Byzantium1071.Campaign.Behaviors
         // ══════════════════════════════════════════════════════════════════════════
 
         /// <summary>
-        /// Recruit one prisoner from the castle. Removes from prison, adds to player party,
-        /// deducts gold. Prisoner recruitment costs zero manpower.
+        /// Recruit one prisoner from the castle. Removes from prison, adds to player party.
+        /// Same-clan recruitment is free; outsiders pay gold to the castle owner.
+        /// Prisoner recruitment costs zero manpower.
         /// </summary>
         public bool TryRecruitPrisoner(Settlement castle, CharacterObject troop)
         {
@@ -760,26 +905,35 @@ namespace Byzantium1071.Campaign.Behaviors
             if (inPrison <= 0) return false;
             if (!IsReadyForRecruitment(castle.StringId, troop)) return false;
 
-            int goldCost = GetGoldCostForTier(troop.Tier);
-            if (Hero.MainHero.Gold < goldCost) return false;
+            string castleId = castle.StringId;
+            int baseCost = GetGoldCostForTier(troop.Tier);
+
+            // 3-party clan-waiver affordability check.
+            string? depositorId = PeekDepositor(castleId, troop.StringId);
+            int effectiveCost = GetEffectiveGoldCost(castle, Hero.MainHero, depositorId, baseCost);
+            if (effectiveCost > 0 && Hero.MainHero.Gold < effectiveCost) return false;
 
             // Prisoner recruitment costs zero manpower (by design).
 
-            // Execute
-            Hero.MainHero.ChangeHeroGold(-goldCost);
+            // Consume depositor entry and distribute gold.
+            var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, 1);
+            foreach (var (heroId, consumed) in depositorEntries)
+                HandleRecruitmentGold(castle, Hero.MainHero, heroId, baseCost, consumed);
+
             prisonRoster.RemoveTroop(troop, 1);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
 
-            if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castle.StringId, out var castleDict))
+            if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
                 castleDict.Remove(troop.StringId);
 
-            ShowRecruitMessage(troop, castle, goldCost, "Prisoner");
+            ShowRecruitMessage(troop, castle, effectiveCost, "Prisoner");
             return true;
         }
 
         /// <summary>
         /// Recruit one elite troop from the castle's culture pool.
-        /// Removes from pool, adds to player party, deducts gold, drains manpower if configured.
+        /// Same-clan recruitment is free; outsiders pay gold to the castle owner.
+        /// Drains manpower if configured.
         /// </summary>
         public bool TryRecruitElite(Settlement castle, CharacterObject troop)
         {
@@ -792,12 +946,22 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!poolDict.TryGetValue(troopId, out int available) || available <= 0) return false;
 
             int goldCost = GetGoldCostForTier(troop.Tier);
-            if (Hero.MainHero.Gold < goldCost) return false;
+            bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
+
+            // Same-clan lords recruit for free; outsiders must afford the cost.
+            if (!isSameClan && Hero.MainHero.Gold < goldCost) return false;
 
             if (Settings.CastleRecruitDrainsManpower && !CheckManpower(castle, troop)) return false;
 
-            // Execute
-            Hero.MainHero.ChangeHeroGold(-goldCost);
+            // Execute — gold goes to the castle owner.
+            if (!isSameClan)
+            {
+                Hero? owner = castle.Owner;
+                if (owner != null)
+                    GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, owner, goldCost, disableNotification: true);
+                else
+                    Hero.MainHero.ChangeHeroGold(-goldCost);
+            }
             poolDict[troopId] = available - 1;
             if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
@@ -805,7 +969,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (Settings.CastleRecruitDrainsManpower)
                 B1071_ManpowerBehavior.Instance?.ConsumeManpowerPublic(castle, troop, 1);
 
-            ShowRecruitMessage(troop, castle, goldCost, "Elite");
+            ShowRecruitMessage(troop, castle, isSameClan ? 0 : goldCost, "Elite");
             return true;
         }
 
@@ -960,6 +1124,265 @@ namespace Byzantium1071.Campaign.Behaviors
             var staleKeys = castleDict.Keys.Where(k => !currentTroopIds.Contains(k)).ToList();
             foreach (var key in staleKeys) castleDict.Remove(key);
             if (castleDict.Count == 0) _prisonerDaysHeld.Remove(castleId);
+
+            // Also clean depositor tracking for troops no longer in the roster.
+            if (_depositorTracking.TryGetValue(castleId, out var depDict))
+            {
+                var staleDepKeys = depDict.Keys.Where(k => !currentTroopIds.Contains(k)).ToList();
+                foreach (var key in staleDepKeys) depDict.Remove(key);
+                if (depDict.Count == 0) _depositorTracking.Remove(castleId);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  DEPOSITOR TRACKING & INCOME SPLIT (CONSIGNMENT MODEL)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Records that a hero deposited prisoners of a specific troop type at a castle.
+        /// Called from <see cref="Patches.B1071_CastlePrisonerDepositPatch"/> and (future)
+        /// player deposit game menu.
+        /// </summary>
+        public void RecordDeposit(string castleId, string heroStringId, string troopStringId, int count)
+        {
+            if (string.IsNullOrEmpty(castleId) || string.IsNullOrEmpty(heroStringId)
+                || string.IsNullOrEmpty(troopStringId) || count <= 0) return;
+
+            if (!_depositorTracking.TryGetValue(castleId, out var troopDict))
+            {
+                troopDict = new Dictionary<string, List<(string, int)>>();
+                _depositorTracking[castleId] = troopDict;
+            }
+            if (!troopDict.TryGetValue(troopStringId, out var heroList))
+            {
+                heroList = new List<(string, int)>();
+                troopDict[troopStringId] = heroList;
+            }
+
+            // Append to existing entry for this hero or create new one (keeps FIFO order).
+            int existingIdx = heroList.FindIndex(e => e.HeroId == heroStringId);
+            if (existingIdx >= 0)
+                heroList[existingIdx] = (heroStringId, heroList[existingIdx].Count + count);
+            else
+                heroList.Add((heroStringId, count));
+        }
+
+        /// <summary>
+        /// Consumes 'count' prisoners from depositor tracking for a specific castle+troop.
+        /// Returns a list of (heroStringId, consumed) pairs in FIFO order.
+        /// If tracked entries are exhausted but count remains (siege-conquest prisoners),
+        /// the remainder has no depositor → castle owner gets 100%.
+        /// </summary>
+        private List<(string? HeroId, int Consumed)> ConsumeDepositorEntries(
+            string castleId, string troopStringId, int count)
+        {
+            var result = new List<(string?, int)>();
+            if (count <= 0) return result;
+
+            if (!_depositorTracking.TryGetValue(castleId, out var troopDict)
+                || !troopDict.TryGetValue(troopStringId, out var heroList)
+                || heroList.Count == 0)
+            {
+                // No depositor info — all untracked (siege conquest or pre-tracking).
+                result.Add((null, count));
+                return result;
+            }
+
+            int remaining = count;
+            while (remaining > 0 && heroList.Count > 0)
+            {
+                var (heroId, available) = heroList[0];
+                int take = Math.Min(remaining, available);
+                result.Add((heroId, take));
+                remaining -= take;
+
+                if (take >= available)
+                    heroList.RemoveAt(0);
+                else
+                    heroList[0] = (heroId, available - take);
+            }
+
+            if (remaining > 0)
+                result.Add((null, remaining)); // Untracked remainder.
+
+            // Clean up empty lists.
+            if (heroList.Count == 0) troopDict.Remove(troopStringId);
+            if (troopDict.Count == 0) _depositorTracking.Remove(castleId);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Distributes income from prisoner processing (enslavement or recruitment)
+        /// between the depositor and the castle owner based on the holding fee.
+        ///
+        /// - If depositor is same-clan as castle owner: owner gets 100% (family).
+        /// - If depositor is null (untracked): owner gets 100%.
+        /// - If depositor is dead/unavailable: owner gets 100%.
+        /// - Otherwise: depositor gets (100% - fee), owner gets fee%.
+        /// </summary>
+        private void DistributeIncome(Settlement castle, string? depositorHeroId, int totalIncome)
+        {
+            if (totalIncome <= 0 || castle == null) return;
+
+            Hero? owner = castle.Owner;
+            if (owner == null) return;
+
+            // Untracked prisoner → all to owner.
+            if (string.IsNullOrEmpty(depositorHeroId))
+            {
+                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                return;
+            }
+
+            Hero? depositor = FindAliveHero(depositorHeroId);
+            if (depositor == null)
+            {
+                // Depositor dead/gone → fallback to owner.
+                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                return;
+            }
+
+            // Same-clan → owner gets 100% (family).
+            if (depositor.Clan == castle.OwnerClan)
+            {
+                GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, disableNotification: true);
+                return;
+            }
+
+            // Cross-clan split.
+            float feePercent = Settings.CastleHoldingFeePercent / 100f;
+            int ownerShare = (int)(totalIncome * feePercent);
+            int depositorShare = totalIncome - ownerShare;
+
+            if (depositorShare > 0)
+                GiveGoldAction.ApplyBetweenCharacters(null, depositor, depositorShare, disableNotification: true);
+            if (ownerShare > 0)
+                GiveGoldAction.ApplyBetweenCharacters(null, owner, ownerShare, disableNotification: true);
+        }
+
+        /// <summary>
+        /// Calculates and distributes gold when a prisoner is recruited (by player, AI, or garrison).
+        /// Handles the 3-party clan-waiver model:
+        /// - Recruiter same-clan as depositor → depositor's share waived
+        /// - Recruiter same-clan as castle owner → owner's share waived
+        /// - Both → free
+        /// - Untracked prisoners → current behavior (recruiter-owner relationship only)
+        /// </summary>
+        private void HandleRecruitmentGold(
+            Settlement castle, Hero? recruiterHero,
+            string? depositorHeroId, int goldCostPerTroop, int count)
+        {
+            if (goldCostPerTroop <= 0 || count <= 0 || castle == null) return;
+
+            Hero? owner = castle.Owner;
+            Hero? depositor = FindAliveHero(depositorHeroId);
+
+            // Determine clan relationships.
+            Clan? recruiterClan = recruiterHero?.Clan;
+            bool recruiterIsSameClanAsOwner = (recruiterClan != null && recruiterClan == castle.OwnerClan);
+            bool recruiterIsSameClanAsDepositor = (depositor != null && recruiterClan != null
+                && recruiterClan == depositor.Clan);
+
+            // For untracked prisoners, depositor = owner effectively.
+            if (depositor == null || depositor.Clan == castle.OwnerClan)
+            {
+                // Simple 2-party: recruiter vs. owner.
+                if (recruiterIsSameClanAsOwner)
+                    return; // Free — family.
+
+                int totalCost = goldCostPerTroop * count;
+                if (recruiterHero != null && owner != null)
+                    GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, totalCost, disableNotification: true);
+                else if (recruiterHero != null)
+                    recruiterHero.ChangeHeroGold(-totalCost);
+                return;
+            }
+
+            // 3-party split: depositor, owner, recruiter all potentially different clans.
+            float feePercent = Settings.CastleHoldingFeePercent / 100f;
+            int totalGold = goldCostPerTroop * count;
+            int ownerShareAmount = (int)(totalGold * feePercent);
+            int depositorShareAmount = totalGold - ownerShareAmount;
+
+            // Waive shares based on clan relationships.
+            int recruiterPays = 0;
+            if (!recruiterIsSameClanAsDepositor)
+                recruiterPays += depositorShareAmount;
+            if (!recruiterIsSameClanAsOwner)
+                recruiterPays += ownerShareAmount;
+
+            // Deduct from recruiter.
+            if (recruiterPays > 0 && recruiterHero != null)
+                recruiterHero.ChangeHeroGold(-recruiterPays);
+
+            // Pay depositor their share (only if recruiter is not family).
+            if (!recruiterIsSameClanAsDepositor && depositorShareAmount > 0)
+                GiveGoldAction.ApplyBetweenCharacters(null, depositor, depositorShareAmount, disableNotification: true);
+
+            // Pay owner their share (only if recruiter is not family).
+            if (!recruiterIsSameClanAsOwner && ownerShareAmount > 0 && owner != null)
+                GiveGoldAction.ApplyBetweenCharacters(null, owner, ownerShareAmount, disableNotification: true);
+        }
+
+        /// <summary>
+        /// Calculates effective gold cost for a recruiter considering clan waivers.
+        /// Used for affordability checks before actual recruitment.
+        /// </summary>
+        private int GetEffectiveGoldCost(
+            Settlement castle, Hero? recruiterHero,
+            string? depositorHeroId, int goldCostPerTroop)
+        {
+            if (goldCostPerTroop <= 0) return 0;
+
+            Hero? owner = castle?.Owner;
+            Hero? depositor = FindAliveHero(depositorHeroId);
+
+            Clan? recruiterClan = recruiterHero?.Clan;
+            bool recruiterIsSameClanAsOwner = (recruiterClan != null && recruiterClan == castle?.OwnerClan);
+            bool recruiterIsSameClanAsDepositor = (depositor != null && recruiterClan != null
+                && recruiterClan == depositor.Clan);
+
+            // Untracked or same-clan-as-owner depositor → 2-party rule.
+            if (depositor == null || depositor.Clan == castle?.OwnerClan)
+                return recruiterIsSameClanAsOwner ? 0 : goldCostPerTroop;
+
+            // 3-party.
+            float feePercent = Settings.CastleHoldingFeePercent / 100f;
+            int ownerShare = (int)(goldCostPerTroop * feePercent);
+            int depositorShare = goldCostPerTroop - ownerShare;
+
+            int cost = 0;
+            if (!recruiterIsSameClanAsDepositor) cost += depositorShare;
+            if (!recruiterIsSameClanAsOwner) cost += ownerShare;
+            return cost;
+        }
+
+        /// <summary>
+        /// Gets the depositor hero ID for the first tracked entry of a troop at a castle.
+        /// Returns null if untracked (siege conquest, pre-tracking save).
+        /// Does NOT consume entries — use <see cref="ConsumeDepositorEntries"/> for that.
+        /// </summary>
+        private string? PeekDepositor(string castleId, string troopStringId)
+        {
+            if (_depositorTracking.TryGetValue(castleId, out var troopDict)
+                && troopDict.TryGetValue(troopStringId, out var heroList)
+                && heroList.Count > 0)
+            {
+                return heroList[0].HeroId;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds an alive hero by their StringId. Returns null if dead or not found.
+        /// </summary>
+        private static Hero? FindAliveHero(string? heroStringId)
+        {
+            if (string.IsNullOrEmpty(heroStringId)) return null;
+            foreach (Hero h in Hero.AllAliveHeroes)
+                if (h.StringId == heroStringId) return h;
+            return null;
         }
     }
 }

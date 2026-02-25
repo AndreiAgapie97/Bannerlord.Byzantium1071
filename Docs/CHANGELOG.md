@@ -32,6 +32,7 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 
 **Low-tier prisoner auto-enslavement**
 - T1–T3 prisoners at castles are automatically enslaved daily to the nearest town's slave market (requires Slave Economy enabled). This keeps castle prisons focused on high-value T4+ prisoners and feeds into the town-level slave economy.
+- The castle owner receives the dynamic slave market price per enslaved prisoner. Income is generated from the nearest town’s market price for the `b1071_slave` item (e.g., if slaves trade at 154 denars, 20 enslaved prisoners = 3,080 denars).
 
 **Access rules**
 - Player can recruit from any castle NOT hostile to them (own, allied, or neutral faction).
@@ -77,9 +78,10 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 ### Castle Recruitment — AI & Garrison Overhaul
 
 **AI lord parties now recruit converted prisoners at castles** (new)
-- AI lords visiting their own faction's castles now recruit from **both** the elite troop pool **and** converted (ready) prisoners, paying gold per troop (same cost as the player).
+- AI lords visiting their own faction's castles now recruit from **both** the elite troop pool **and** converted (ready) prisoners.
+- **Same-clan lords recruit for free**; cross-clan lords (different clan, same faction) pay gold per troop, which is credited to the castle owner.
 - Previously, AI could only recruit from the elite pool. Converted prisoners (T4+) sat idle indefinitely because no code path existed for AI or garrison to claim them.
-- Gold is deducted from `party.LeaderHero.Gold` via `ChangeHeroGold(-cost)`. Lords who can't afford a troop skip it.
+- Gold transfer: cross-clan recruitment uses `GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, settlement.Owner, cost)`. Same-clan lords skip the gold check entirely (unlimited budget from own castle).
 - Prisoner recruitment costs **zero manpower** (by design — prisoners are already captured, not drawn from the population). Elite recruitment still drains manpower when `CastleRecruitDrainsManpower` is enabled.
 
 **AI recruitment daily cap removed** (changed)
@@ -94,7 +96,76 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 - Respects garrison size limit and food requirements.
 - Step 5 in the castle daily tick, after AI recruitment.
 
-### Bug Fixes
+### Castle Economy — Enslavement & Recruitment Income
+
+**Castle Economy — Consignment Model (depositor tracking & income splitting)** (new)
+- Lords who deposit prisoners at another clan's castle now receive their fair share of the income when those prisoners are processed (enslaved or recruited). This is the **consignment model** — depositors "consign" prisoners; the castle takes a commission.
+- **New data structure:** `_depositorTracking` — per-castle, per-troop-type, per-depositor FIFO list tracking who deposited which prisoners and how many. Survives save/load via 4-parallel-list serialization in `SyncData`.
+
+**Enslavement income split (T1–T3)**
+- When low-tier prisoners are auto-enslaved, the slave market income is now split between the depositor and castle owner based on the **Castle Holding Fee %** (MCM, default 30%). 
+- Cross-clan depositor: depositor gets 70%, castle owner gets 30%.
+- Same-clan depositor (depositing at own clan's castle): castle owner gets 100% (family).
+- Untracked prisoners (siege conquest, pre-tracking saves): castle owner gets 100%.
+- If depositor hero is dead/unavailable: castle owner gets 100%.
+
+**Recruitment income split (T4+ converted prisoners)**
+- 3-party **independent clan-waiver** model: recruiter, depositor, and castle owner each have separate clan relationships that independently determine which shares are paid.
+- Recruiter same-clan as depositor → depositor's share (70%) waived.
+- Recruiter same-clan as castle owner → owner's share (30%) waived.
+- Recruiter same-clan as both → fully free.
+- No depositor (untracked) → current behavior: same-clan free, cross-clan pays owner 100%.
+
+| Recruiter vs Depositor | Recruiter vs Owner | Recruiter Pays | Depositor Gets | Owner Gets |
+|---|---|---|---|---|
+| Cross-clan | Cross-clan | Full cost | 70% | 30% |
+| Same-clan | Cross-clan | 30% only | — | 30% |
+| Cross-clan | Same-clan | 70% only | 70% | — |
+| Same-clan | Same-clan | Free | — | — |
+| No depositor | Cross-clan | Full cost | — | 100% |
+| No depositor | Same-clan | Free | — | — |
+
+**Garrison absorption now compensates depositors** (changed)
+- When the garrison absorbs a cross-clan depositor's prisoner, the castle owner pays the depositor their share (70%) from the owner's own gold.
+- Affordability check: absorption only pays if the castle owner has enough gold.
+- Same-clan depositor's prisoners: free (family).
+- Untracked prisoners: free (castle owner's own).
+
+**Elite pool recruitment unchanged**
+- Elite pool troops are castle-generated, not deposited. No depositor involvement.
+- Current rules preserved: same-clan free, cross-clan pays castle owner.
+
+**MCM Settings — new**
+| Setting | Default | Range | Description |
+|---------|---------|-------|-------------|
+| `CastleHoldingFeePercent` | 30 | 5–50 | Castle owner's commission on prisoner processing |
+
+**Deposit patch — faction check fixed** (fixed)
+- The deposit patch previously checked `!IsAtWarWith(settlement.MapFaction)`, which was broader than vanilla (allowed neutral/unaffiliated parties to deposit). Now uses `mobileParty.MapFaction != settlement.MapFaction` — only same-faction parties deposit, matching vanilla's `OnSettlementEntered` condition.
+- Deposit patch now calls `RecordDeposit` after moving prisoners, recording the depositing lord's hero ID for each troop type and count.
+
+**Persistence — depositor tracking added**
+- `_depositorTracking`: `Dictionary<castleId, Dictionary<troopId, List<(heroId, count)>>>` — FIFO depositor entries per castle per troop type.
+- Serialized via 4 parallel save/load lists: `b1071_cr_depCastles`, `b1071_cr_depTroops`, `b1071_cr_depHeroes`, `b1071_cr_depCounts`.
+- Stale entries cleaned during `CleanupStalePrisonerEntries` (integrated into existing cleanup).
+- Backward compatible: loading an old save with no depositor data treats all existing prisoners as untracked (castle owner gets 100%).
+
+**Enslavement income (T1–T3 prisoners)** (previous implementation, now superseded by consignment split above)
+- When T1–T3 prisoners are auto-enslaved at a castle, the castle owner (`settlement.Owner`) receives the dynamic slave market price per prisoner. Price is obtained from `nearestTown.Town.GetItemPrice(_slaveItem)` — the same town that receives the slave goods.
+- Gold is created via `GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, true)` (same mechanism vanilla uses for prisoner ransoming). This makes prisoner management a genuine income source for lords — even T1 prisoners (ransom value ~30g) become worth the full slave market price (e.g., 154g).
+
+**Recruitment income (elite pool & converted prisoners)** (new)
+- When any party recruits from a castle’s elite pool or converted prisoner list, the gold cost is now routed to the castle owner.
+- **Same-clan lords recruit for free** — lords from the same clan as the castle owner (including the owner themselves) pay no gold cost. This models the clan’s internal resource sharing (same household, shared holdings).
+- **Cross-clan lords pay the castle owner** — lords from different clans (even if same kingdom/faction) pay the listed gold cost. Gold transfers via `GiveGoldAction.ApplyBetweenCharacters(recruiter, owner, cost, true)`.
+- **Player follows the same rules** — recruiting from your own clan’s castle is free; recruiting from an allied/neutral castle pays the owner.
+- Garrison absorption remains free (internal castle operation, no external buyer).
+
+**Economic impact**
+- Castles now generate meaningful income for their owners through two channels: enslaved prisoners (market-price-driven, potentially lucrative) and recruitment fees from visiting lords of other clans.
+- This creates a positive feedback loop: lords who invest prisoners in their castles are rewarded with income, and well-stocked castles attract recruitment from allies (generating further income).
+- The income is dynasty-level: `settlement.Owner` returns the clan leader, so all castle income flows to the clan head.
+
 
 **Prisoners from visiting lords never appeared in castle pending/ready lists** (fixed)
 - **Symptom:** AI lords visiting castles deposited prisoners, but none of them ever appeared in the Pending or Ready prisoner lists. Only prisoners originating from siege conquests or game start were tracked. No matter how many parties visited, the prisoner counts never grew.
@@ -138,7 +209,9 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 ### Internal Changes
 
 - New files: `B1071_CastleRecruitmentBehavior.cs` (~960 lines), `B1071_CastleRecruitmentScreen.cs`, `B1071_CastleRecruitmentVM.cs`, `B1071_CastleRecruitTroopVM.cs`, `B1071_CastlePrisonerRetentionPatch.cs`, `B1071_CastlePrisonerDepositPatch.cs`, `B1071_CastleRecruitment.xml` (Gauntlet prefab)
-- `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Complete rewrite — now recruits from both elite pool and converted prisoners, pays gold, no daily cap, includes flickering fix.
+- `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Complete rewrite — now recruits from both elite pool and converted prisoners, same-clan free / cross-clan pays owner, no daily cap, includes flickering fix.
+- `B1071_CastleRecruitmentBehavior.AutoEnslaveLowTierPrisoners()`: Now pays castle owner the dynamic slave market price per enslaved prisoner via `GiveGoldAction`.
+- `B1071_CastleRecruitmentBehavior.TryRecruitPrisoner()` / `TryRecruitElite()`: Same-clan recruitment is free; cross-clan gold routed to castle owner via `GiveGoldAction.ApplyBetweenCharacters`.
 - `B1071_CastleRecruitmentBehavior.GarrisonAbsorbPrisoners()`: New method — daily garrison absorption of ready prisoners; hardcoded rate of 1/day, bypassing manpower-gated model.
 - `B1071_ManpowerBehavior.GetManpowerCostPerTroop()`: Simplified to flat `BaseManpowerCostPerTroop`.
 - `B1071_ManpowerBehavior.ConsumeManpowerFlat()`: New method — consumes exact flat manpower amount, ignoring troop tier.

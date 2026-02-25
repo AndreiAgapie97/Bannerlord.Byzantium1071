@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Byzantium1071.Campaign.Behaviors;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
@@ -56,9 +57,9 @@ namespace Byzantium1071.Campaign.Patches
                 var settings = Settings.B1071_McmSettings.Instance ?? Settings.B1071_McmSettings.Defaults;
                 if (!settings.EnableCastleRecruitment) return;
 
-                // Skip hostile/disbanding parties (vanilla skips them too).
+                // Only same-faction parties deposit prisoners (matches vanilla's check).
                 if (mobileParty.MapFaction == null || mobileParty.IsDisbanding) return;
-                if (mobileParty.MapFaction.IsAtWarWith(settlement.MapFaction)) return;
+                if (mobileParty.MapFaction != settlement.MapFaction) return;
 
                 TroopRoster? partyPrison = mobileParty.PrisonRoster;
                 TroopRoster? castlePrison = settlement.Party?.PrisonRoster;
@@ -82,6 +83,18 @@ namespace Byzantium1071.Campaign.Patches
                 {
                     partyPrison.AddToCounts(troop, -count, insertAtFront: false, -wounded);
                     castlePrison.AddToCounts(troop, count, insertAtFront: false, wounded);
+                }
+
+                // Record depositor for consignment income tracking.
+                string? depositorHeroId = mobileParty.LeaderHero?.StringId;
+                if (!string.IsNullOrEmpty(depositorHeroId))
+                {
+                    var behavior = B1071_CastleRecruitmentBehavior.Instance;
+                    if (behavior != null)
+                    {
+                        foreach (var (troop, count, _) in toDeposit)
+                            behavior.RecordDeposit(settlement.StringId, depositorHeroId!, troop.StringId, count);
+                    }
                 }
 
                 // After this prefix, the party's prison roster contains only heroes.

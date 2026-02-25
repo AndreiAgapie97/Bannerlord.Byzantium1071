@@ -761,5 +761,9 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("AI max recruits per day (legacy)", 1, 20, "0", Order = 14, HintText = "LEGACY — no longer used. AI now recruits up to party limit. Kept for save compatibility. Default: 3.")]
         public int CastleEliteAiMaxPerDay { get; set; } = 3;
+
+        [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("Castle holding fee %", 5, 50, "0", Order = 15, HintText = "Commission the castle owner receives when another clan's prisoners are processed (enslaved or recruited). The depositing lord gets the remainder. Example: 30% fee on a 1,200g recruitment → owner gets 360g, depositor gets 840g. Default: 30.")]
+        public int CastleHoldingFeePercent { get; set; } = 30;
     }
 }
