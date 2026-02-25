@@ -733,7 +733,13 @@ namespace Byzantium1071.Campaign.Behaviors
                             float feePercent = Settings.CastleHoldingFeePercent / 100f;
                             int depositorShare = (int)(prisonerGoldCost * (1f - feePercent)) * consumed;
                             if (depositorShare > 0)
+                            {
                                 GiveGoldAction.ApplyBetweenCharacters(owner, depositor, depositorShare, disableNotification: true);
+                                if (depositor == Hero.MainHero)
+                                    InformationManager.DisplayMessage(new InformationMessage(
+                                        $"\u2694\ufe0f Consignment: received {depositorShare}g from {settlement.Name} (garrison absorbed your prisoner, {100 - Settings.CastleHoldingFeePercent}% share).",
+                                        new Color(0.3f, 0.7f, 0.9f)));
+                            }
                         }
                     }
                 }
@@ -1310,12 +1316,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 troopDict[troopStringId] = heroList;
             }
 
-            // Append to existing entry for this hero or create new one (keeps FIFO order).
-            int existingIdx = heroList.FindIndex(e => e.HeroId == heroStringId);
-            if (existingIdx >= 0)
-                heroList[existingIdx] = (heroStringId, heroList[existingIdx].Count + count);
-            else
-                heroList.Add((heroStringId, count));
+            // Always append — never consolidate — to preserve strict FIFO ordering
+            // when the same hero deposits the same troop type at the same castle
+            // interleaved with deposits from other heroes.
+            heroList.Add((heroStringId, count));
         }
 
         /// <summary>
@@ -1412,7 +1416,13 @@ namespace Byzantium1071.Campaign.Behaviors
             int depositorShare = totalIncome - ownerShare;
 
             if (depositorShare > 0)
+            {
                 PayHero(payingTown, depositor, depositorShare);
+                if (depositor == Hero.MainHero)
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"\u2694\ufe0f Consignment: received {depositorShare}g from {castle.Name} (enslavement income, {100 - Settings.CastleHoldingFeePercent}% share).",
+                        new Color(0.3f, 0.7f, 0.9f)));
+            }
             if (ownerShare > 0)
                 PayHero(payingTown, owner, ownerShare);
         }
@@ -1484,7 +1494,13 @@ namespace Byzantium1071.Campaign.Behaviors
             // Pay depositor their share (waived if recruiter is family of depositor).
             if (!recruiterIsSameClanAsDepositor && depositorShareAmount > 0
                 && recruiterHero != null)
+            {
                 GiveGoldAction.ApplyBetweenCharacters(recruiterHero, depositor, depositorShareAmount, disableNotification: true);
+                if (depositor == Hero.MainHero)
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        $"\u2694\ufe0f Consignment: received {depositorShareAmount}g from {castle.Name} (recruitment income, {100 - Settings.CastleHoldingFeePercent}% share).",
+                        new Color(0.3f, 0.7f, 0.9f)));
+            }
 
             // Pay owner their share (waived if recruiter is family of owner).
             if (!recruiterIsSameClanAsOwner && ownerShareAmount > 0
@@ -1541,6 +1557,19 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float feePercent = Settings.CastleHoldingFeePercent / 100f;
             return (int)(goldCostPerTroop * (1f - feePercent));
+        }
+
+        /// <summary>
+        /// Returns the effective gold cost the player would pay to recruit one unit of
+        /// the given prisoner troop from this castle, accounting for clan waivers.
+        /// Used by the castle recruitment UI to correctly enable/disable the recruit button.
+        /// </summary>
+        public int GetPlayerEffectivePrisonerCost(Settlement castle, CharacterObject troop)
+        {
+            if (castle == null || troop == null) return 0;
+            int baseCost = GetGoldCostForTier(troop.Tier);
+            string? depositorId = PeekDepositor(castle.StringId, troop.StringId);
+            return GetEffectiveGoldCost(castle, Hero.MainHero, depositorId, baseCost);
         }
 
         /// <summary>

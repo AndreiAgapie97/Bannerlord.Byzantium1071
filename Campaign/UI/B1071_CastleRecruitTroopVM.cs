@@ -1,3 +1,4 @@
+using Byzantium1071.Campaign.Behaviors;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -54,11 +55,17 @@ namespace Byzantium1071.Campaign.UI
             _count = count.ToString();
             _isReady = true;
 
-            _canRecruit = Hero.MainHero.Gold >= goldCost;
-            _statusText = "Elite";
+            // Same-clan lords recruit elites for free — match backend TryRecruitElite logic.
+            bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
+            int effectiveCost = isSameClan ? 0 : goldCost;
+            _canRecruit = Hero.MainHero.Gold >= effectiveCost;
+            _statusText = isSameClan ? "Elite (Free)" : "Elite";
 
             _recruitHint = _canRecruit
-                ? new HintViewModel(new TaleWorlds.Localization.TextObject($"Recruit one {_name} for {goldCost} gold"))
+                ? new HintViewModel(new TaleWorlds.Localization.TextObject(
+                    isSameClan
+                        ? $"Recruit one {_name} (same clan \u2014 free)"
+                        : $"Recruit one {_name} for {goldCost} gold"))
                 : new HintViewModel(new TaleWorlds.Localization.TextObject($"Not enough gold (need {goldCost})"));
         }
 
@@ -87,10 +94,15 @@ namespace Byzantium1071.Campaign.UI
             _count = count.ToString();
             _isReady = isReady;
 
+            // Compute effective cost for hint text (used by both ready and pending branches).
+            int hintEffectiveCost = goldCost;
             if (isReady)
             {
-                _canRecruit = Hero.MainHero.Gold >= goldCost;
-                _statusText = "Ready";
+                // Use effective cost after clan waivers — match backend TryRecruitPrisoner logic.
+                var behavior = B1071_CastleRecruitmentBehavior.Instance;
+                hintEffectiveCost = behavior?.GetPlayerEffectivePrisonerCost(castle, character) ?? goldCost;
+                _canRecruit = Hero.MainHero.Gold >= hintEffectiveCost;
+                _statusText = hintEffectiveCost == 0 ? "Ready (Free)" : "Ready";
             }
             else
             {
@@ -100,9 +112,12 @@ namespace Byzantium1071.Campaign.UI
             }
 
             _recruitHint = _canRecruit
-                ? new HintViewModel(new TaleWorlds.Localization.TextObject($"Recruit one {_name} for {goldCost} gold"))
+                ? new HintViewModel(new TaleWorlds.Localization.TextObject(
+                    hintEffectiveCost == 0
+                        ? $"Recruit one {_name} (clan waivers \u2014 free)"
+                        : $"Recruit one {_name} for {hintEffectiveCost} gold"))
                 : new HintViewModel(new TaleWorlds.Localization.TextObject(
-                    !isReady ? $"Not yet ready — {_statusText}" : $"Not enough gold (need {goldCost})"));
+                    !isReady ? $"Not yet ready \u2014 {_statusText}" : $"Not enough gold (need {hintEffectiveCost})"));
         }
 
         public CharacterObject Character => _character;

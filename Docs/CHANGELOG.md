@@ -2,6 +2,46 @@
 
 ---
 
+## [0.1.7.2] — 2026-02-25
+
+### Comprehensive Audit — 89-Scenario Financial & Safety Verification
+
+Full audit of the castle recruitment system covering 89 financial scenarios, save/load safety, mod removal safety, exploit analysis, and AI/player parity.
+
+**Bug Fix — UI clan-waiver display (B1071_CastleRecruitTroopVM)**
+- The recruit button was checking `Hero.MainHero.Gold >= goldCost` (raw cost) without accounting for clan waivers.
+- At your own castle: elite troops and same-clan depositor prisoners showed "Not enough gold" even though they're free.
+- Fix: Elite constructor now checks `Clan.PlayerClan == castle.OwnerClan` → effective cost = 0 (free).
+- Fix: Prisoner constructor now calls `behavior.GetPlayerEffectivePrisonerCost()` for the effective cost after waivers.
+- Added `GetPlayerEffectivePrisonerCost()` public helper to `B1071_CastleRecruitmentBehavior`.
+- Status text now shows "Elite (Free)" / "Ready (Free)" when clan waivers eliminate cost.
+- Hint text updated: "Recruit one {name} (same clan — free)" or "(clan waivers — free)".
+
+**Bug Fix — FIFO depositor tracking (RecordDeposit)**
+- `RecordDeposit` previously consolidated same-hero entries: if Hero B deposited 3, Hero C deposited 2, then Hero B deposited 4 more, the list became [(B,7), (C,2)] instead of strict FIFO [(B,3), (C,2), (B,4)].
+- This broke strict FIFO ordering when interleaved deposits occurred, potentially over-crediting earlier depositors if processing stopped midway (e.g., town out of gold).
+- Fix: Always append new entries, never consolidate. Strict FIFO ordering preserved.
+
+**Removed — CastleEliteAiMaxPerDay MCM setting**
+- The `CastleEliteAiMaxPerDay` setting (default: 3) was never used in code. AI was already uncapped.
+- Setting removed from MCM entirely. No save compatibility impact (MCM handles missing keys gracefully).
+
+### Audit Results Summary (89 scenarios)
+
+- **Enslavement path (A):** 10 scenarios — all pass ✅
+- **Player recruit prisoner (B):** 10 scenarios — all pass ✅
+- **AI recruit prisoner (C):** 10 scenarios — all pass ✅
+- **AI recruit elite (D):** 10 scenarios — all pass ✅
+- **Player recruit elite (E):** 6 scenarios — all pass ✅
+- **Garrison absorb (F):** 10 scenarios — all pass ✅
+- **Cross-cutting:** 16 scenarios — all pass ✅
+- **Exploits:** 7 scenarios — all mitigated ✅
+- **Save/load safety:** Verified all 13 save keys, null-safe loading, old save compatibility ✅
+- **Mod removal safety:** Verified clean Harmony unpatch, orphaned data inert, no state corruption ✅
+- **AI/Player parity:** Full parity across all 6 gold flow paths ✅
+
+---
+
 ## [0.1.7.1] — 2026-02-25
 
 ### Neutral Castle Access (Full-Audit Fix)
