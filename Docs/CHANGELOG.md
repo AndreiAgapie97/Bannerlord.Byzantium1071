@@ -2,6 +2,38 @@
 
 ---
 
+## [0.1.7.4] — 2026-02-26
+
+### Audit Fixes — Comprehensive 26-finding code audit
+
+**Critical (2)**
+- **B-1**: Wartime gold exploit — depositor at war with castle owner now forfeits their share to the castle owner. Applied to `DistributeIncome`, `HandleRecruitmentGold`, `GetPlayerDepositorShare`, `GetPlayerRecruitmentShare`, `GetEffectiveGoldCost`, and `GetGarrisonAbsorptionCost`.
+- **D-4**: `SlaveEconomyBehavior.Instance` now properly nulled in `OnSubModuleUnloaded` (was missing from cleanup).
+
+**High (5)**
+- **E-1**: Forced peace now applies to the player's kingdom when `DiplomacyEnforcePlayerParity` is enabled.
+- **A-1**: AI recruit dedup now tracks `_lastAIRecruitPartyId` to prevent false positive dedup when multiple AI parties recruit the same troop+amount from the same settlement.
+- **B-4/E-3**: Town AI slave auto-enslavement now uses the `CastlePrisonerAutoEnslaveTierMax` MCM setting instead of hardcoded `Tier <= 2`.
+- **D-3**: `_dynamicFoodPatchApplied` static flag now properly reset in `OnSubModuleUnloaded` via `ResetDynamicPatchFlag()`.
+- **A-3**: Soft-cap defaults to `current = 0` (instead of `current = max`) when `Instance` is null, preventing regen from being crushed at startup.
+
+**Medium (8)**
+- **G-1**: New combined prosperity penalty cap (`MaxCombinedModProsperityPenalty`, default -8.0/day) prevents runaway settlement death spirals. Implemented via `B1071_ProsperityPenaltyCapPatch` shared tracker with HarmonyPrefix reset.
+- **B-3**: Same-clan elite recruitment now costs 50% of normal price (was free). UI updated to show "Elite (50%)" with correct cost display.
+- **G-4**: New `SlaveManpowerCapPerTown` MCM setting (default 20/day) caps daily slave manpower injection per town.
+- **G-6**: `FindAliveHero` now uses a `Dictionary<string, Hero>` cache rebuilt once per game day instead of O(n) linear scan over `Hero.AllAliveHeroes`.
+- **G-7**: `IsEnemyBesiegingCoreSettlement` now iterates `kingdom.Settlements` instead of `Settlement.All` for better performance.
+- **A-5/A-6/A-7**: Dead MCM settings (`TiersPerExtraCost`, `CostMultiplierPercent`, `SlaveConstructionBonusDays`) moved to "Legacy" group with `[LEGACY — NOT USED]` labels (kept for save compatibility).
+- **F-1**: `PayHero` now logs a warning when `payingTown` is null (gold created from thin air fallback).
+- **A-2**: Daily regen skipped entirely when pool is already at max capacity.
+
+**Low (4)**
+- **A-4**: Raid dedup maps no longer cleared daily in `OnDailyTick` — uses periodic prune of entries older than 2 days instead, preventing mid-day dedup gaps.
+- **C-1**: `_seeded` flag now persisted in `SyncData` to prevent re-seeding manpower pools on save/load.
+- **C-2**: Culture troop cache tree traversal replaced with safe BFS using visited-set guard to prevent infinite loops from circular `UpgradeTargets` in modded troop trees.
+
+---
+
 ## [0.1.7.3] — 2026-02-25
 
 ### UX — Batched player consignment notifications

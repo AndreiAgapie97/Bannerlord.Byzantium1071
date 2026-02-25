@@ -154,6 +154,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             // ── Manpower ─────────────────────────────────────────────────────────
             int manpowerGain = Math.Max(1, (int)(slaveCount * Settings.SlaveManpowerPerUnit * eff));
+            // G-4: Cap slave MP injection per town to prevent runaway recovery.
+            int mpCap = Settings.SlaveManpowerCapPerTown;
+            if (mpCap > 0 && manpowerGain > mpCap)
+                manpowerGain = mpCap;
             if (B1071_ManpowerBehavior.Instance != null)
                 B1071_ManpowerBehavior.Instance.AddManpowerToSettlement(settlement, manpowerGain);
 
@@ -224,12 +228,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 settlement.ItemRoster.AddToCounts(_slaveItem, slavesCarried);
             }
 
-            // 2. Tier-based prisoner enslavement: T1-T2 → slaves, T3+ stays as prisoners.
+            // 2. Tier-based prisoner enslavement: up to configured tier → slaves, rest stays as prisoners.
             var roster = party.PrisonRoster;
             if (roster == null) return;
 
+            int maxEnslaveTier = Settings.CastlePrisonerAutoEnslaveTierMax;
             var toEnslave = roster.GetTroopRoster()
-                .Where(e => e.Character != null && !e.Character.IsHero && e.Number > 0 && e.Character.Tier <= 2)
+                .Where(e => e.Character != null && !e.Character.IsHero && e.Number > 0 && e.Character.Tier <= maxEnslaveTier)
                 .ToList();
 
             foreach (var element in toEnslave)

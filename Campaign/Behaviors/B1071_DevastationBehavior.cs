@@ -122,6 +122,13 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Resets the static dynamic-patch flag so that the next session correctly
+        /// re-evaluates whether food model compat patches need to be applied.
+        /// Called from <see cref="SubModule.OnSubModuleUnloaded"/> after UnpatchAll().
+        /// </summary>
+        internal static void ResetDynamicPatchFlag() => _dynamicFoodPatchApplied = false;
+
+        /// <summary>
         /// If a third-party mod (e.g. EconomyOverhaul) replaces the food model with a class
         /// that does NOT inherit from DefaultSettlementFoodModel, our static Harmony patches on
         /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange become dead code.

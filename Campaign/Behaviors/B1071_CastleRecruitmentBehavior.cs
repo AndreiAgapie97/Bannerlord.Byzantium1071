@@ -112,6 +112,15 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string>? _savedDepositorHeroIds;
         private List<int>? _savedDepositorCounts;
 
+        // ── Hero lookup cache (G-6 optimisation) ──────────────────────────────────────────
+
+        /// <summary>
+        /// StringId → Hero cache, rebuilt lazily once per game day.
+        /// Replaces O(n) scan of Hero.AllAliveHeroes with O(1) dictionary lookup.
+        /// </summary>
+        private Dictionary<string, Hero> _heroLookup = new Dictionary<string, Hero>();
+        private int _heroLookupDay = -1;
+
         // ── CampaignBehaviorBase ──────────────────────────────────────────────────
 
         public override void RegisterEvents()
@@ -821,29 +830,49 @@ namespace Byzantium1071.Campaign.Behaviors
 
             var result = new HashSet<CharacterObject>();
 
-            // Walk the basic (infantry/common) troop tree.
+            // C-2: Use safe BFS traversal with visited-set guard instead of
+            // CharacterHelper.GetTroopTree to prevent infinite loops from
+            // circular UpgradeTargets in modded troop trees.
             if (culture.BasicTroop != null)
-            {
-                foreach (var troop in CharacterHelper.GetTroopTree(culture.BasicTroop, 4f))
-                {
-                    if (troop != null && troop.Tier >= 4 && troop.Tier <= 6 && !troop.IsHero)
-                        result.Add(troop);
-                }
-            }
+                CollectTroopsFromTree(culture.BasicTroop, result);
 
-            // Walk the elite (noble) troop tree.
             if (culture.EliteBasicTroop != null)
-            {
-                foreach (var troop in CharacterHelper.GetTroopTree(culture.EliteBasicTroop, 4f))
-                {
-                    if (troop != null && troop.Tier >= 4 && troop.Tier <= 6 && !troop.IsHero)
-                        result.Add(troop);
-                }
-            }
+                CollectTroopsFromTree(culture.EliteBasicTroop, result);
 
             var list = result.ToList();
             _cultureTroopCache[cultureId] = list;
             return list;
+        }
+
+        /// <summary>
+        /// BFS traversal of the troop upgrade tree, collecting T4-T6 non-hero troops.
+        /// Uses a visited set to guard against infinite loops from circular UpgradeTargets.
+        /// </summary>
+        private static void CollectTroopsFromTree(CharacterObject root, HashSet<CharacterObject> result)
+        {
+            var visited = new HashSet<CharacterObject>();
+            var queue = new Queue<CharacterObject>();
+            queue.Enqueue(root);
+            visited.Add(root);
+
+            while (queue.Count > 0)
+            {
+                CharacterObject current = queue.Dequeue();
+
+                if (current.Tier >= 4 && current.Tier <= 6 && !current.IsHero)
+                    result.Add(current);
+
+                if (current.UpgradeTargets == null) continue;
+                foreach (CharacterObject target in current.UpgradeTargets)
+                {
+                    if (target != null && !visited.Contains(target))
+                    {
+                        visited.Add(target);
+                        if (target.Tier <= 6) // Don't traverse beyond T6
+                            queue.Enqueue(target);
+                    }
+                }
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════════
@@ -1014,8 +1043,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Recruit one elite troop from the castle's culture pool.
-        /// Same-clan recruitment is free; outsiders pay gold to the castle owner.
-        /// Drains manpower if configured.
+        /// Same-clan recruitment costs 50% of the normal price; outsiders pay full price.
+        /// Gold goes to the castle owner. Drains manpower if configured.
         /// </summary>
         public bool TryRecruitElite(Settlement castle, CharacterObject troop)
         {
@@ -1027,21 +1056,22 @@ namespace Byzantium1071.Campaign.Behaviors
             string troopId = troop.StringId;
             if (!poolDict.TryGetValue(troopId, out int available) || available <= 0) return false;
 
-            int goldCost = GetGoldCostForTier(troop.Tier);
+            int fullGoldCost = GetGoldCostForTier(troop.Tier);
             bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
 
-            // Same-clan lords recruit for free; outsiders must afford the cost.
-            if (!isSameClan && Hero.MainHero.Gold < goldCost) return false;
+            // B-3: Same-clan pays 50% (family discount); outsiders pay full price.
+            int goldCost = isSameClan ? fullGoldCost / 2 : fullGoldCost;
+
+            if (goldCost > 0 && Hero.MainHero.Gold < goldCost) return false;
 
             if (Settings.CastleRecruitDrainsManpower && !CheckManpower(castle, troop)) return false;
 
             // Execute — gold goes to the castle owner via direct transfer.
-            if (!isSameClan)
+            if (goldCost > 0)
             {
                 Hero? owner = castle.Owner;
                 if (owner != null)
                     GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, owner, goldCost, disableNotification: true);
-                // If owner is null (shouldn't happen), skip — don't silently destroy gold.
             }
             poolDict[troopId] = available - 1;
             if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
@@ -1050,7 +1080,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (Settings.CastleRecruitDrainsManpower)
                 B1071_ManpowerBehavior.Instance?.ConsumeManpowerPublic(castle, troop, 1);
 
-            ShowRecruitMessage(troop, castle, isSameClan ? 0 : goldCost, "Elite");
+            ShowRecruitMessage(troop, castle, goldCost, "Elite");
             return true;
         }
 
@@ -1461,6 +1491,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
             }
 
+            // Hostile depositor → forfeit share to owner (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction))
+            {
+                PayHero(payingTown, owner, totalIncome);
+                return;
+            }
+
             // Cross-clan split.
             float feePercent = Settings.CastleHoldingFeePercent / 100f;
             int ownerShare = (int)(totalIncome * feePercent);
@@ -1489,6 +1526,8 @@ namespace Byzantium1071.Campaign.Behaviors
             Hero? depositor = FindAliveHero(depositorHeroId);
             if (depositor == null || depositor != Hero.MainHero) return 0;
             if (depositor.Clan == castle.OwnerClan) return 0;
+            // Hostile depositor → forfeit (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction)) return 0;
 
             float feePercent = Settings.CastleHoldingFeePercent / 100f;
             return totalIncome - (int)(totalIncome * feePercent);
@@ -1511,6 +1550,8 @@ namespace Byzantium1071.Campaign.Behaviors
             Hero? depositor = FindAliveHero(depositorHeroId);
             if (depositor == null || depositor != Hero.MainHero) return 0;
             if (depositor.Clan == castle.OwnerClan) return 0;
+            // Hostile depositor → forfeit (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction)) return 0;
 
             // Family waiver: recruiter same clan as depositor → depositor gets nothing.
             if (recruiterHero?.Clan != null && recruiterHero.Clan == depositor.Clan) return 0;
@@ -1533,9 +1574,14 @@ namespace Byzantium1071.Campaign.Behaviors
             if (amount <= 0 || recipient == null) return;
 
             if (payingTown != null)
+            {
                 GiveGoldAction.ApplyForSettlementToCharacter(payingTown, recipient, amount, disableNotification: true);
+            }
             else
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071][CastleRecruitment] PayHero: payingTown is null — gold created from thin air ({amount}g to {recipient.Name}). This should not happen.");
                 GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount, disableNotification: true);
+            }
         }
 
         /// <summary>
@@ -1572,6 +1618,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (recruiterHero != null && owner != null)
                     GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, totalCost, disableNotification: true);
                 // If owner is null, skip — don't silently destroy gold.
+                return;
+            }
+
+            // Hostile depositor → forfeit share to owner (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction))
+            {
+                if (recruiterIsSameClanAsOwner)
+                    return; // Free — family.
+                int totalCost = goldCostPerTroop * count;
+                if (recruiterHero != null && owner != null)
+                    GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, totalCost, disableNotification: true);
                 return;
             }
 
@@ -1617,6 +1674,10 @@ namespace Byzantium1071.Campaign.Behaviors
             if (depositor == null || depositor.Clan == castle?.OwnerClan)
                 return recruiterIsSameClanAsOwner ? 0 : goldCostPerTroop;
 
+            // Hostile depositor → treat as untracked; owner keeps all (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle?.OwnerClan?.MapFaction))
+                return recruiterIsSameClanAsOwner ? 0 : goldCostPerTroop;
+
             // 3-party.
             float feePercent = Settings.CastleHoldingFeePercent / 100f;
             int ownerShare = (int)(goldCostPerTroop * feePercent);
@@ -1641,6 +1702,8 @@ namespace Byzantium1071.Campaign.Behaviors
             Hero? depositor = FindAliveHero(depositorHeroId);
             if (depositor == null) return 0; // Dead depositor → free.
             if (depositor.Clan == castle.OwnerClan) return 0; // Family → free.
+            // Hostile depositor → forfeit; owner absorbs for free (wartime exploit prevention).
+            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction)) return 0;
 
             float feePercent = Settings.CastleHoldingFeePercent / 100f;
             return (int)(goldCostPerTroop * (1f - feePercent));
@@ -1677,13 +1740,35 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Finds an alive hero by their StringId. Returns null if dead or not found.
+        /// Uses a dictionary cache rebuilt once per game day (G-6).
         /// </summary>
-        private static Hero? FindAliveHero(string? heroStringId)
+        private Hero? FindAliveHero(string? heroStringId)
         {
             if (string.IsNullOrEmpty(heroStringId)) return null;
-            foreach (Hero h in Hero.AllAliveHeroes)
-                if (h.StringId == heroStringId) return h;
-            return null;
+
+            int today = (int)CampaignTime.Now.ToDays;
+            if (today != _heroLookupDay)
+            {
+                _heroLookup.Clear();
+                foreach (Hero h in Hero.AllAliveHeroes)
+                {
+                    if (!string.IsNullOrEmpty(h.StringId))
+                        _heroLookup[h.StringId] = h;
+                }
+                _heroLookupDay = today;
+            }
+
+            if (!_heroLookup.TryGetValue(heroStringId!, out Hero? hero))
+                return null;
+
+            // Guard against stale cache: hero died mid-day after cache was built.
+            if (hero.IsDead)
+            {
+                _heroLookup.Remove(heroStringId!);
+                return null;
+            }
+
+            return hero;
         }
     }
 }

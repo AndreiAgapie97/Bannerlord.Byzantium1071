@@ -152,12 +152,12 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("Base manpower cost", 1, 50, "0", Order = 0, HintText = "Base manpower cost for a tier-1 recruit.")]
         public int BaseManpowerCostPerTroop { get; set; } = 1;
 
-        [SettingPropertyGroup("Recruitment Cost", GroupOrder = 4)]
-        [SettingPropertyInteger("Tiers per +1 cost step", 1, 10, "0", Order = 1, HintText = "How many tiers are needed before manpower cost increases by 1.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("[Legacy] Tiers per +1 cost step", 1, 10, "0", Order = 10, HintText = "[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility.")]
         public int TiersPerExtraCost { get; set; } = 2;
 
-        [SettingPropertyGroup("Recruitment Cost", GroupOrder = 4)]
-        [SettingPropertyInteger("Cost multiplier %", 1, 1000, "0", Order = 2, HintText = "Final manpower cost multiplier applied to tier-based cost.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("[Legacy] Cost multiplier %", 1, 1000, "0", Order = 11, HintText = "[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility.")]
         public int CostMultiplierPercent { get; set; } = 100;
 
         // ─── Combat Realism ───
@@ -597,7 +597,9 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyFloatingInteger("Manpower per slave per day", 0f, 5f, "0.00", Order = 3, HintText = "Manpower per slave per day. At default effectiveness (1.5\u00d7): 0.67 \u00d7 1.5 \u2248 1 manpower/slave. E.g., 100 slaves \u2192 ~100 manpower/day. Default: 0.67.")]
         public float SlaveManpowerPerUnit { get; set; } = 0.67f;
-
+        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
+        [SettingPropertyInteger("Max manpower from slaves per town/day", 0, 200, "0", Order = 31, HintText = "Daily cap on manpower injected by slaves at each town. Prevents large slave populations from trivialising manpower recovery. 0 = uncapped. Default: 20.")]
+        public int SlaveManpowerCapPerTown { get; set; } = 20;
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyFloatingInteger("Prosperity per slave per day", 0f, 0.1f, "0.0000", Order = 4, HintText = "Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5\u00d7): 0.0067 \u00d7 1.5 \u2248 0.01/slave. E.g., 100 slaves \u2192 ~1 prosperity/day. Default: 0.0067.")]
         public float SlaveProsperityPerUnit { get; set; } = 0.0067f;
@@ -618,8 +620,8 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyFloatingInteger("Daily slave decay (%)", 0f, 10f, "0.00", Order = 8, HintText = "Percentage of the slave population lost per day (deaths, escapes, manumission). Without decay, slave populations grow forever. At 1%: 100 slaves lose 1/day. At 2%: 100 slaves lose 2/day. Creates equilibrium where inflow must match decay. Set to 0 to disable. Default: 1.0.")]
         public float SlaveDailyDecayPercent { get; set; } = 1.0f;
 
-        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyInteger("Construction bonus duration (days) [legacy]", 1, 180, "0", Order = 9, HintText = "[Not used in v3] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus.")]
+        [SettingPropertyGroup("Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]
         public int SlaveConstructionBonusDays { get; set; } = 30;
 
         [SettingPropertyGroup("Legacy", GroupOrder = 99)]
@@ -669,6 +671,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Provincial Governance", GroupOrder = 20)]
         [SettingPropertyFloatingInteger("Strain cap", 10f, 200f, "0", Order = 5, HintText = "Maximum governance strain a settlement can accumulate. Default: 100.")]
         public float GovernanceStrainCap { get; set; } = 100f;
+
+        [SettingPropertyGroup("Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("Max combined prosperity penalty", -20f, 0f, "0.0", Order = 6, HintText = "Floor for the combined daily prosperity penalty from Governance Strain + Devastated Hinterlands. Prevents runaway settlement death spirals when both systems stack. Default: -8.0.")]
+        public float MaxCombinedModProsperityPenalty { get; set; } = -8.0f;
 
         // ─── Frontier Devastation ───
 

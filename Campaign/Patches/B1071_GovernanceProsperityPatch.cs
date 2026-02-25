@@ -44,6 +44,9 @@ namespace Byzantium1071.Campaign.Patches
                 float cap = Math.Max(1f, Settings.GovernanceStrainCap);
                 float penalty = -(strain / cap) * Settings.GovernanceMaxProsperityPenalty;
 
+                // Apply combined B1071 prosperity penalty cap (G-1).
+                penalty = B1071_ProsperityPenaltyCapPatch.ClampPenalty(penalty);
+
                 if (penalty < 0f)
                     __result.Add(penalty, _label);
             }

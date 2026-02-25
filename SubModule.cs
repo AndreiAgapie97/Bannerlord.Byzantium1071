@@ -68,9 +68,11 @@ namespace Byzantium1071
             _harmony = null;
 
             B1071_ManpowerBehavior.Instance = null;
+            B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
             B1071_DevastationBehavior.Instance = null;
             B1071_CastleRecruitmentBehavior.Instance = null;
+            B1071_DevastationBehavior.ResetDynamicPatchFlag();
             B1071_OverlayController.Reset();
 
             _uiExtender?.Disable();

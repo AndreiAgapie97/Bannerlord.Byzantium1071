@@ -49,7 +49,11 @@ namespace Byzantium1071.Campaign.Patches
                 float ratio = avgDev / 100f;
                 float penalty = -(ratio * Settings.DevastationMaxProsperityPenalty);
 
-                __result.Add(penalty, _label);
+                // Apply combined B1071 prosperity penalty cap (G-1).
+                penalty = B1071_ProsperityPenaltyCapPatch.ClampPenalty(penalty);
+
+                if (penalty < 0f)
+                    __result.Add(penalty, _label);
             }
             catch (Exception ex)
             {

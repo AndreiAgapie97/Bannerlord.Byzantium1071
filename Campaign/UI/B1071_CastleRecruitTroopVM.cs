@@ -55,18 +55,18 @@ namespace Byzantium1071.Campaign.UI
             _count = count.ToString();
             _isReady = true;
 
-            // Same-clan lords recruit elites for free — match backend TryRecruitElite logic.
+            // B-3: Same-clan lords pay 50% (family discount) — match backend TryRecruitElite logic.
             bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
-            int effectiveCost = isSameClan ? 0 : goldCost;
+            int effectiveCost = isSameClan ? goldCost / 2 : goldCost;
             _canRecruit = Hero.MainHero.Gold >= effectiveCost;
-            _statusText = isSameClan ? "Elite (Free)" : "Elite";
+            _statusText = isSameClan ? "Elite (50%)" : "Elite";
 
             _recruitHint = _canRecruit
                 ? new HintViewModel(new TaleWorlds.Localization.TextObject(
                     isSameClan
-                        ? $"Recruit one {_name} (same clan \u2014 free)"
+                        ? $"Recruit one {_name} (same clan — 50% cost: {effectiveCost} gold)"
                         : $"Recruit one {_name} for {goldCost} gold"))
-                : new HintViewModel(new TaleWorlds.Localization.TextObject($"Not enough gold (need {goldCost})"));
+                : new HintViewModel(new TaleWorlds.Localization.TextObject($"Not enough gold (need {effectiveCost})"));
         }
 
         /// <summary>

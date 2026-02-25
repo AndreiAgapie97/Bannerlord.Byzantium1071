@@ -143,6 +143,9 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("B1071_Manpower_Ids", ref _savedIds);
             dataStore.SyncData("B1071_Manpower_Values", ref _savedValues);
 
+            // C-1: Persist the seeded flag so we don't re-seed pools after load.
+            dataStore.SyncData("B1071_Seeded", ref _seeded);
+
             _savedIds ??= new List<string>();
             _savedValues ??= new List<int>();
 
@@ -434,6 +437,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private CharacterObject? _lastAIRecruitTroop;
         private int _lastAIRecruitAmount;
         private string? _lastAIRecruitSettlementId;
+        private string? _lastAIRecruitPartyId;
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
@@ -446,12 +450,14 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? currentSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
             string? currentSettlementId = currentSettlement?.StringId;
             if (_lastRecruitWasAI && _lastAIRecruitTroop == troop && _lastAIRecruitAmount == amount
-                && _lastAIRecruitSettlementId == currentSettlementId)
+                && _lastAIRecruitSettlementId == currentSettlementId
+                && _lastAIRecruitPartyId != MobileParty.MainParty?.StringId)
             {
                 _lastRecruitWasAI = false;
                 _lastAIRecruitTroop = null;
                 _lastAIRecruitAmount = 0;
                 _lastAIRecruitSettlementId = null;
+                _lastAIRecruitPartyId = null;
                 return;
             }
 
@@ -496,6 +502,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!_manpowerByPoolId.TryGetValue(poolId, out int cur))
                 cur = max;
+
+            // A-2: Skip regen computation if already at or above max.
+            if (cur >= max) return;
+
             int regen = GetDailyRegen(pool, max);
 
             int newCur = Math.Min(max, cur + regen);
@@ -532,9 +542,12 @@ namespace Byzantium1071.Campaign.Behaviors
             // Notify the overlay to rebuild its cached settlement data.
             UI.B1071_OverlayController.MarkCacheStale();
 
-            // Daily raid bookkeeping.
-            _lastRaidDrainDayByVillageId.Clear();
-            _raidDrainSpentByPoolDay.Clear();
+            // A-4: Do NOT clear raid dedup maps daily — the embedded day-value
+            // comparison already prevents stale matches. Clearing mid-day could
+            // cause a same-day raid to bypass dedup if it fires after OnDailyTick.
+            // Instead, periodically prune entries older than 2 days to keep the maps small.
+            int today = (int)CampaignTime.Now.ToDays;
+            PruneStaleRaidDedupEntries(today);
 
             CleanupExpiredDelayedRecovery();
 
@@ -785,6 +798,45 @@ namespace Byzantium1071.Campaign.Behaviors
                 _recoveryPenaltyExpiryDayByPoolId.Remove(poolId);
                 _recoveryPenaltyStartDayByPoolId.Remove(poolId);
                 _recoveryPenaltyBaseByPoolId.Remove(poolId);
+            }
+        }
+
+        /// <summary>
+        /// A-4: Removes stale entries from raid dedup maps (older than 2 days).
+        /// Called daily instead of clearing the maps, to prevent mid-day dedup gaps.
+        /// </summary>
+        private void PruneStaleRaidDedupEntries(int today)
+        {
+            int cutoff = today - 2;
+
+            // Prune _lastRaidDrainDayByVillageId: value is the day number.
+            if (_lastRaidDrainDayByVillageId.Count > 0)
+            {
+                if (_cleanupKeysScratch == null) _cleanupKeysScratch = new List<string>();
+                else _cleanupKeysScratch.Clear();
+
+                foreach (var kvp in _lastRaidDrainDayByVillageId)
+                    if (kvp.Value < cutoff) _cleanupKeysScratch.Add(kvp.Key);
+
+                for (int i = 0; i < _cleanupKeysScratch.Count; i++)
+                    _lastRaidDrainDayByVillageId.Remove(_cleanupKeysScratch[i]);
+            }
+
+            // Prune _raidDrainSpentByPoolDay: key is "poolId|day".
+            if (_raidDrainSpentByPoolDay.Count > 0)
+            {
+                if (_cleanupKeysScratch == null) _cleanupKeysScratch = new List<string>();
+                else _cleanupKeysScratch.Clear();
+
+                foreach (var kvp in _raidDrainSpentByPoolDay)
+                {
+                    int sepIdx = kvp.Key.LastIndexOf('|');
+                    if (sepIdx > 0 && int.TryParse(kvp.Key.Substring(sepIdx + 1), out int day) && day < cutoff)
+                        _cleanupKeysScratch.Add(kvp.Key);
+                }
+
+                for (int i = 0; i < _cleanupKeysScratch.Count; i++)
+                    _raidDrainSpentByPoolDay.Remove(_cleanupKeysScratch[i]);
             }
         }
 
@@ -1086,10 +1138,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (string.IsNullOrEmpty(kingdom.StringId))
                     continue;
 
-                if (Clan.PlayerClan?.Kingdom == kingdom)
+                if (Clan.PlayerClan?.Kingdom == kingdom && !Settings.DiplomacyEnforcePlayerParity)
                 {
-                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: player kingdom context.");
-                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: player kingdom";
+                    DebugDiplomacy($"Skip forced peace for {kingdom.Name}: player kingdom context (parity OFF).");
+                    _telemetryLastForcedPeace = $"Skip {kingdom.Name}: player kingdom (parity OFF)";
                     continue;
                 }
 
@@ -1233,12 +1285,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static bool IsEnemyBesiegingCoreSettlement(Kingdom defender, IFaction attacker)
         {
-            foreach (Settlement settlement in Settlement.All)
+            // G-7: Use kingdom.Settlements instead of Settlement.All for better performance.
+            foreach (Settlement settlement in defender.Settlements)
             {
                 if (settlement == null || (!settlement.IsTown && !settlement.IsCastle))
-                    continue;
-
-                if (settlement.OwnerClan?.Kingdom != defender)
                     continue;
 
                 if (!settlement.IsUnderSiege || settlement.SiegeEvent == null)
@@ -1270,6 +1320,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 _lastAIRecruitTroop = null;
                 _lastAIRecruitAmount = 0;
                 _lastAIRecruitSettlementId = null;
+                _lastAIRecruitPartyId = null;
                 return;
             }
 
@@ -1301,6 +1352,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 _lastAIRecruitTroop = troop;
                 _lastAIRecruitAmount = amount;
                 _lastAIRecruitSettlementId = recruitmentSettlement?.StringId;
+                _lastAIRecruitPartyId = null; // No party for partyless recruitment.
                 return;
             }
 
@@ -1309,6 +1361,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _lastAIRecruitTroop = troop;
             _lastAIRecruitAmount = amount;
             _lastAIRecruitSettlementId = recruitmentSettlement?.StringId;
+            _lastAIRecruitPartyId = party?.StringId;
 
             string recruitContext = (recruitmentSettlement != null && party == recruitmentSettlement.Town?.GarrisonParty)
                 ? "TroopRecruited(Garrison)"
@@ -1771,7 +1824,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (startRatio < 0.999f && strength > 0f)
                 {
-                    int current = max;
+                    // A-3: Default to 0 when Instance is null so the soft-cap is effectively
+                    // disabled rather than assuming full pool and crushing regen.
+                    int current = 0;
                     if (Instance != null && !string.IsNullOrEmpty(pool.StringId) && Instance._manpowerByPoolId.TryGetValue(pool.StringId, out int cur))
                         current = cur;
 
