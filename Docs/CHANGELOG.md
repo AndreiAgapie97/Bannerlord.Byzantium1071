@@ -35,6 +35,37 @@ Previously, several faction checks restricted castle deposit and AI recruitment 
 - Added null check for `donatedPrisoners` parameter in `OnPrisonerDonatedToSettlement` handler (defensive safety).
 - Updated all doc comments to reflect neutral castle access rules.
 
+### Gold Transaction Bug Fixes (4 bugs found via financial audit)
+
+**BUG 1 (Medium): Garrison absorption stiffing depositors when owner is broke** (fixed)
+- **Problem:** When the castle garrison absorbed a cross-clan deposited prisoner and the castle owner couldn't afford the depositor's share, the prisoner was consumed, the depositor tracking was consumed, but the depositor received **nothing**. The owner got a free garrison troop at the depositor's expense.
+- **Fix:** Garrison now processes prisoners one at a time. Before absorbing each prisoner, we pre-check (`GetGarrisonAbsorptionCost`) whether the owner can afford the depositor's share. If they can't, that prisoner is **skipped** — it stays in the prison roster. The garrison can still absorb untracked or same-clan prisoners (which are free).
+- **New helper:** `GetGarrisonAbsorptionCost(castle, depositorHeroId, goldCostPerTroop)` — returns 0 for untracked, dead, or same-clan depositors; otherwise returns `goldCostPerTroop * (1 - feePercent)`.
+
+**BUG 2 (Low): PeekDepositor mismatch causing unexpected charges** (fixed)
+- **Problem:** AI prisoner recruitment used `PeekDepositor` (checks first depositor only) for a bulk affordability check, then consumed N prisoners via `ConsumeDepositorEntries` which iterates FIFO across potentially different depositors. If depositors had different clan relationships, the recruiter could be charged more than the affordability check predicted.
+- **Example:** 5 T5 prisoners — first 3 deposited by same-clan (free to recruit), last 2 by cross-clan (300g each). Peek says "free" → recruiter takes all 5 → gets charged 600g unexpectedly.
+- **Fix:** AI prisoner recruitment now processes **one unit at a time** in a `for` loop. Each iteration peeks the current first depositor, checks affordability for that specific depositor, and only proceeds if the recruiter can afford it.
+
+**BUG 3 (Medium — was classified Low, upgraded after decompilation): Gold inflation in HandleRecruitmentGold** (fixed)
+- **Problem:** `HandleRecruitmentGold` used `ChangeHeroGold(-X)` to deduct from recruiter (gold destroyed, clamped at 0 by `set_Gold` → `Math.Max(0, value)`), then `GiveGoldAction(null, recipient, share)` to create gold from nothing for depositor and owner. If recruiter had less than X gold, they lost only what they had (e.g., 100g), but depositor+owner received the full amount (e.g., 300g total). **Net: 200g created from nothing. Gold inflation.**
+- **Root cause:** Two different mechanisms — `ChangeHeroGold` (raw field modification, no campaign events) vs. `GiveGoldAction` (proper API with events). `GiveGoldAction.ApplyInternal` clamps transfers to `MathF.Min(giverHero.Gold, goldAmount)`, but `ChangeHeroGold` does not.
+- **Fix:** Replaced with two direct `GiveGoldAction.ApplyBetweenCharacters` calls: `(recruiter, depositor, depositorShare)` + `(recruiter, owner, ownerShare)`. Benefits: clamped to available gold (no inflation), proper campaign events fired, no gold creation from nothing, waived shares correctly skip the transfer.
+
+**BUG 4 (Cosmetic): Null owner fallback silently destroys gold** (fixed)
+- **Problem:** In `TryRecruitElite` and `AiAutoRecruit` elite section, when `owner == null`, the fallback was `recruiterHero.ChangeHeroGold(-totalCost)` — gold deducted from recruiter but paid to nobody. Gold simply vanished.
+- **Fix:** Removed the `else ChangeHeroGold(-cost)` fallback from both locations. If owner is null (shouldn't happen — castles always have owners), the transaction is silently skipped instead of destroying gold.
+
+### Vanilla API findings (from decompilation)
+
+Documented for future reference — these apply to Bannerlord v1.3.15:
+
+| API | Behavior |
+|-----|----------|
+| `GiveGoldAction.ApplyBetweenCharacters(giver, recipient, amount)` | `ApplyInternal` clamps amount to `MathF.Min(giver.Gold, amount)` before deducting. Recipient gets only what was actually deducted. Safe. Fires `OnHeroOrPartyTradedGold`. |
+| `GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount)` | Giver block skipped entirely (no deduction). Recipient gets full amount. **Gold created from nothing.** |
+| `Hero.ChangeHeroGold(amount)` | Adds `amount` to `_gold`. `set_Gold` calls `Math.Max(0, value)` — gold clamped at 0, never negative. But if deducting more than available, excess is silently discarded. **No campaign events fired.** |
+
 ### Compatibility
 - **Save-safe:** No new serialized data. Existing saves load normally.
 - **Backward compatible:** Old saves without depositor data treat all prisoners as untracked (castle owner gets 100%).
