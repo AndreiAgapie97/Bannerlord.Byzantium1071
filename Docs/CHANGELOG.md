@@ -45,9 +45,9 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 - Stats bar at top shows current gold (left) and castle manpower (right).
 - Lists auto-refresh after each recruitment. Empty lists show a placeholder message.
 
-**Vanilla prisoner selling — blocked at castles**
-- The vanilla `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` sells ~10% of settlement prisoners daily at AI castles. This is blocked by `B1071_CastlePrisonerRetentionPatch` when castle recruitment is enabled. Without this, T4+ prisoners would vanish before finishing their waiting period.
-- The vanilla `OnSettlementEntered` handler (which transfers a *mobile party's* prisoners into the castle prison) is NOT blocked — this is how prisoners arrive at castles in the first place.
+**Vanilla prisoner handling — patched at castles (two patches)**
+- **Daily tick blocked** (`B1071_CastlePrisonerRetentionPatch`): The vanilla `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` sells ~10% of settlement prisoners daily at AI castles. This is blocked when castle recruitment is enabled. Without this, T4+ prisoners would vanish before finishing their waiting period.
+- **Settlement entry redirected** (`B1071_CastlePrisonerDepositPatch`): The vanilla `OnSettlementEntered` handler sells ALL non-hero regular prisoners when a lord enters any fortification — removing them from the party's prison roster, paying gold, and **never adding them to the settlement's prison roster** (they simply vanish). At castles, our prefix intercepts this: all regular prisoners are moved from the party's roster directly into the castle's prison roster (free deposit, no gold). Vanilla then runs, finds no regulars left, and handles hero prisoners normally. T1–T3 prisoners deposited will be auto-enslaved on the next daily tick; T4+ begin conversion tracking immediately.
 
 **Persistence**
 - `_prisonerDaysHeld`: per-castle per-troop day counters (prisoner conversion tracking). Survives save/load via `SyncData`.
@@ -96,6 +96,12 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 
 ### Bug Fixes
 
+**Prisoners from visiting lords never appeared in castle pending/ready lists** (fixed)
+- **Symptom:** AI lords visiting castles deposited prisoners, but none of them ever appeared in the Pending or Ready prisoner lists. Only prisoners originating from siege conquests or game start were tracked. No matter how many parties visited, the prisoner counts never grew.
+- **Root cause:** Vanilla's `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` creates a roster of ALL non-hero regular prisoners from the visiting party and calls `SellPrisonersAction.ApplyForSelectedPrisoners`. Inside that action, for regular prisoners, the code executes `sellerParty.PrisonRoster.AddToCounts(character, -count)` (removes from party) and calculates gold — but **never calls** `buyerParty.PrisonRoster.AddToCounts(character, count)`. The prisoners are removed from the party's roster and gold is given; they are never transferred to the settlement's prison roster. They simply vanish.
+- **Impact:** Our castle recruitment system reads from `settlement.Party.PrisonRoster` to track T4+ prisoner conversion. Since vanilla never puts visiting lords' prisoners there, the entire prisoner conversion pipeline was starved of input — it could only work with prisoners originating from siege conquests (the only source that writes directly to the settlement roster).
+- **Fix:** Added `B1071_CastlePrisonerDepositPatch` — a Harmony Prefix on the private `OnSettlementEntered` method. For castles with castle recruitment enabled, ALL non-hero regular prisoners are moved from the party's prison roster directly into the castle's prison roster (free deposit, no gold paid to the lord). After this prefix, the party's roster contains only heroes; vanilla's handler still runs, finds no regulars, and handles hero prisoners normally. T1–T3 prisoners deposited will be auto-enslaved on the next daily tick; T4+ prisoners begin their conversion day-count immediately.
+
 **AI lord flickering at castles** (fixed)
 - **Symptom:** Lords entered a castle, exited for a split-second, re-entered, exited again, repeating several times before stabilizing. Only occurred after the castle recruitment system was added.
 - **Root cause:** `AiAutoRecruit` called `party.MemberRoster.AddToCounts()` which fires `CampaignEventDispatcher.OnPartySizeChanged` and bumps `MobileParty.VersionNo`, invalidating cached AI decisions. On the next engine tick, `MobilePartyTickData.CheckExitingSettlementParallel` checks `ShortTermTargetSettlement == CurrentSettlement` — the version bump caused AI to re-evaluate its target, briefly picking a different destination, triggering an exit → immediate re-entry loop.
@@ -131,7 +137,7 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 
 ### Internal Changes
 
-- New files: `B1071_CastleRecruitmentBehavior.cs` (~960 lines), `B1071_CastleRecruitmentScreen.cs`, `B1071_CastleRecruitmentVM.cs`, `B1071_CastleRecruitTroopVM.cs`, `B1071_CastlePrisonerRetentionPatch.cs`, `B1071_CastleRecruitment.xml` (Gauntlet prefab)
+- New files: `B1071_CastleRecruitmentBehavior.cs` (~960 lines), `B1071_CastleRecruitmentScreen.cs`, `B1071_CastleRecruitmentVM.cs`, `B1071_CastleRecruitTroopVM.cs`, `B1071_CastlePrisonerRetentionPatch.cs`, `B1071_CastlePrisonerDepositPatch.cs`, `B1071_CastleRecruitment.xml` (Gauntlet prefab)
 - `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Complete rewrite — now recruits from both elite pool and converted prisoners, pays gold, no daily cap, includes flickering fix.
 - `B1071_CastleRecruitmentBehavior.GarrisonAbsorbPrisoners()`: New method — daily garrison absorption of ready prisoners; hardcoded rate of 1/day, bypassing manpower-gated model.
 - `B1071_ManpowerBehavior.GetManpowerCostPerTroop()`: Simplified to flat `BaseManpowerCostPerTroop`.
@@ -140,7 +146,7 @@ Castles now offer a dedicated recruitment screen with three independent troop so
 - `B1071_CastleRecruitmentBehavior.AiAutoRecruit()`: Elite manpower check now uses `BaseManpowerCostPerTroop` setting + `ConsumeManpowerFlat` for aligned affordability.
 - `B1071_McmSettings.CastleEliteAiRecruits`: Updated hint text to reflect both pools + no cap.
 - `B1071_McmSettings.CastleEliteAiMaxPerDay`: Marked as legacy (kept for save compatibility).
-- Harmony patch count: 29 → 30 (+`B1071_CastlePrisonerRetentionPatch`)
+- Harmony patch count: 29 → 31 (+`B1071_CastlePrisonerRetentionPatch`, +`B1071_CastlePrisonerDepositPatch`)
 
 ### Save Compatibility
 
