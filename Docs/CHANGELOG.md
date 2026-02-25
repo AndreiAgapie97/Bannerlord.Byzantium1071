@@ -2,6 +2,22 @@
 
 ---
 
+## [0.1.7.5] — 2026-02-25
+
+### Balance — Diplomacy default tuning (wars ending too soon)
+
+Wars were ending prematurely due to three independent peace-pressure systems stacking additively: exhaustion-driven diplomacy bias, manpower-depletion diplomacy pressure, and multi-war pressure. Analysis showed a kingdom at moderate exhaustion (~50) with depleted manpower could accumulate ~490+ peace support bias per clan vote — overwhelming any vanilla war motivation.
+
+**MCM default changes:**
+- `DiplomacyEnforcePlayerParity`: `false` → `true` — player kingdom now follows the same truce/no-war diplomacy gates as AI by default.
+- `DiplomacyForcedPeaceThreshold`: `75` → `85` — forced peace requires higher exhaustion before activating.
+- `DiplomacyForcedPeaceCooldownDays`: `3` → `10` — forced peace cascade slowed significantly.
+- `MinWarDurationDaysBeforeForcedPeace`: `20` → `40` — wars are protected from forced peace for twice as long.
+
+All values remain configurable via MCM.
+
+---
+
 ## [0.1.7.4] — 2026-02-26
 
 ### Audit Fixes — Comprehensive 26-finding code audit

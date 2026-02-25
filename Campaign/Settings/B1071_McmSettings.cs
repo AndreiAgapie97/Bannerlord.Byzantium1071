@@ -482,11 +482,11 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Forced peace threshold", 1f, 200f, "0.0", Order = 6, HintText = "At or above this exhaustion score, forced peace checks become active.")]
-        public float DiplomacyForcedPeaceThreshold { get; set; } = 75f;
+        public float DiplomacyForcedPeaceThreshold { get; set; } = 85f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyInteger("Forced peace cooldown (days)", 1, 30, "0", Order = 7, HintText = "Minimum number of days between automatic peaces for the same kingdom.")]
-        public int DiplomacyForcedPeaceCooldownDays { get; set; } = 3;
+        public int DiplomacyForcedPeaceCooldownDays { get; set; } = 10;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyInteger("Forced peace max active wars", 0, 10, "0", Order = 8, HintText = "Forced peace only triggers when active wars exceed this number.")]
@@ -494,7 +494,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyInteger("Min war days before forced peace", 0, 365, "0", Order = 9, HintText = "Forced peace cannot end a war younger than this many days.")]
-        public int MinWarDurationDaysBeforeForcedPeace { get; set; } = 20;
+        public int MinWarDurationDaysBeforeForcedPeace { get; set; } = 40;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyBool("Ignore if enemy besieges core fief", Order = 10, HintText = "Do not force peace with an enemy currently besieging one of your owned towns/castles.")]
@@ -522,7 +522,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyBool("Enforce player parity", Order = 15, HintText = "If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
-        public bool DiplomacyEnforcePlayerParity { get; set; } = false;
+        public bool DiplomacyEnforcePlayerParity { get; set; } = true;
 
         // ─── WP5 Pressure Bands ───
 
