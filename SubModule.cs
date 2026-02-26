@@ -1,4 +1,5 @@
 ﻿using Byzantium1071.Campaign.Behaviors;
+using Byzantium1071.Campaign.Settings;
 using Byzantium1071.Campaign.UI;
 using Bannerlord.UIExtenderEx;
 using HarmonyLib;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 
@@ -101,6 +103,20 @@ namespace Byzantium1071
         {
             base.OnBeforeInitialModuleScreenSetAsRoot();
 
+            // MCM is initialized by this point. Run one-time settings migration.
+            try
+            {
+                string? migrationMessage = B1071_McmSettings.Instance?.MigrateToLatestProfile();
+                if (!string.IsNullOrEmpty(migrationMessage))
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        migrationMessage, TaleWorlds.Library.Colors.Green));
+                }
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migration error: {ex}");
+            }
         }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)

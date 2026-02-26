@@ -2,6 +2,79 @@
 
 ---
 
+## [0.1.8.2] — 2026-02-26
+
+### Balance — Historically-calibrated war exhaustion & diplomacy retuning + settings migration system
+
+**14 diplomacy/exhaustion settings retuned based on mathematical modeling against playtest data (212 in-game days, 9 kingdoms) and historical calibration against the 1071–1081 Byzantine-Seljuk period.**
+
+#### Core problem identified
+
+The playtest revealed a critical settings persistence issue: `ExhaustionDailyDecay` had been changed from 0.5→1.0 in v0.1.7.8's code defaults, but the user's MCM config file retained the old 0.5 value. MCM persists all settings to a JSON file on disk — changing code defaults only affects fresh installs. This means every balance change shipped since v0.1.7.8 was invisible to existing users. Fixed by implementing a version-gated settings migration system (see below).
+
+#### Mathematical modeling approach
+
+- Extracted WE accumulation rates from playtest: ~1.02 WE/kingdom/day average, ~0.4–0.6/day during active single war
+- Calibrated against historical timelines: minor wars (60–120 days), major wars (120–250 days), existential multi-front wars (200+ days)
+- Bannerlord time scale: 1 in-game year ≈ 84 days; 1071–1081 period ≈ 840 days
+- Target recovery from catastrophic exhaustion (100→0): ~154 days (1.8 years) — matches post-Manzikert partial stabilization timeline
+
+---
+
+#### Setting changes
+
+| Setting | Old | New | Reasoning |
+|---|---|---|---|
+| `ExhaustionDailyDecay` | 1.0 | **0.65** | At 1.0, WE gain barely exceeds decay — wars never escalate. At 0.65, recovery from 100→0 takes 154 days (1.8 years), matching post-crisis historical timelines. |
+| `PressureBandRisingStart` | 30 | **35** | Rising requires ~70 days of moderate war. 30 was too early (reached in ~40 days). |
+| `PressureBandCrisisStart` | 60 | **65** | Crisis requires ~130 days (~1.5 years). Reserves Crisis for genuinely protracted wars. |
+| `DiplomacyForcedPeaceThreshold` | 85 | **80** | ~43 days from Crisis entry to forced peace (~5 months), matching historical political pressure timelines. |
+| `DiplomacyForcedPeaceThresholdReductionPerMajorWar` | 8 | **5** | Each extra war reduces threshold by 5 (80→75→70). Multi-front wars collapse faster without going below Crisis entry. |
+| `DiplomacyNoNewWarThreshold` | 55 | **65** | Aligned with CrisisStart. Moderate exhaustion shouldn't hard-block war declarations. |
+| `PeaceBiasBandLow` | 2.0 | **1.5** | Low band creates gentle drift. At WE=20: 30 support bonus (noticeable, not deterministic). |
+| `PeaceBiasBandHigh` | 8.0 | **3.0** | Largest single reduction. At WE=50 Rising band: 150 support (strong but reasonable). At WE=65 Crisis: 292.5 (near-deterministic). Previous 8.0 produced runaway peace voting. |
+| `DiplomacyWarSupportPenaltyPerPoint` | 6.0 | **4.0** | At WE=50 Rising: 140 penalty (solid deterrent). At WE=65 Crisis: 260 (very strong). |
+| `DiplomacyExtraPeaceBiasPerMajorWar` | 40 | **20** | Two extra wars add 40 support, comparable to Rising band at WE=13. Meaningful but not dominant. |
+| `WarSupportPenaltyCap` | -800 | **-400** | At 4.0/point, WE=100 naturally hits 400. Clean ceiling — prevents absolute lockout while remaining decisive. |
+| `PeaceSupportBonusCap` | 600 | **350** | Prevents extreme outlier peace support spikes. Crisis at WE=100: 450 uncapped → clamped to 350. |
+| `ManpowerDiplomacyThresholdPercent` | 40 | **35** | Pressure starts only at deeper depletion. With v0.1.8.1's improved castle regen, 35% is genuinely low. |
+| `ManpowerDiplomacyPressureStrength` | 200 | **100** | 0% manpower adds +100 peace support (equivalent to WE=33 in Rising). Strong but proportionate. |
+
+#### Settings kept unchanged (with reasoning)
+
+| Setting | Value | Why kept |
+|---|---|---|
+| `PressureBandHysteresis` | 5 | Playtest showed clean Crisis→Rising transitions at exactly 54.5–54.8 (=60-5). No oscillation. Reducing to 3 would risk band flicker. |
+| `DiplomacyForcedPeaceCooldownDays` | 10 | Already increased from 3 in v0.1.7.8. 10 days = ~3.5 months in-game between forced peaces. |
+| `DiplomacyPeacePressureThreshold` | 45 | Legacy-mode threshold. In band mode maps to Rising. Provides buffer above RisingStart. |
+| `DiplomacyMajorWarPressureStartCount` | 2 | 2-front wars were the primary cause of state collapse in this period. Pressure must start early. |
+| `ManpowerDepletionAmplifier` | 0.5 | Already reduced ManpowerDiplomacyPressureStrength by 50%. Double-stacking reduction would overcorrect. |
+| WE event gains (battle/raid/siege/conquest/noble) | unchanged | Need post-v0.1.7.9 playtest data (bandit WE fix already eliminated biggest snowball source). |
+
+---
+
+#### NEW: Settings migration system
+
+**Problem:** MCM `AttributeGlobalSettings` persists all user-modified values in a JSON file. Code default changes are invisible to existing users.
+
+**Solution:** Version-gated hard migration with notification.
+
+- Added `SettingsProfileVersion` property (integer, Developer Tools group)
+- Added `MigrateToLatestProfile()` method with versioned migration blocks
+- On first mod load after update, all 13 rebalanced settings are force-overwritten to new values
+- Non-rebalanced settings (pool sizes, slave economy, castle recruitment, toggles, etc.) are preserved
+- Green in-game notification: *"Campaign++ v0.1.8.2: Balance settings updated to new defaults."*
+- Future rebalances simply bump `LATEST_PROFILE_VERSION` and add a new migration block
+- Migration logged to `rgl_log` for diagnostics
+
+#### Files changed:
+| File | Change |
+|---|---|
+| `B1071_McmSettings.cs` | Added `SettingsProfileVersion`, `MigrateToLatestProfile()`, updated 13 setting defaults |
+| `SubModule.cs` | Hooked migration in `OnBeforeInitialModuleScreenSetAsRoot()` with green notification |
+
+---
+
 ## [0.1.8.1] — 2025-02-27
 
 ### Balance — Castle regen crisis, ping-pong border castles, recovery penalty rebalance

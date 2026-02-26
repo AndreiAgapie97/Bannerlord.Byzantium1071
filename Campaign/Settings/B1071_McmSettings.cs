@@ -1,6 +1,7 @@
 using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
+using System;
 
 namespace Byzantium1071.Campaign.Settings
 {
@@ -15,6 +16,82 @@ namespace Byzantium1071.Campaign.Settings
         public override string DisplayName => "Campaign++";
         public override string FolderName => "Byzantium1071";
         public override string FormatType => "json";
+
+        // ─── Settings Profile Version ───
+        // MCM persists user-modified values to a JSON file on disk. When we ship
+        // new balance defaults, existing users keep the old values forever.
+        // This version counter gates one-time hard migration of specific settings.
+        // Bump LATEST_PROFILE_VERSION and add a new migration block below.
+        internal const int LATEST_PROFILE_VERSION = 2;
+
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
+        [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
+        public int SettingsProfileVersion { get; set; } = 0;
+
+        /// <summary>
+        /// One-time migration: force-overwrites specific settings that were rebalanced
+        /// between mod versions. Preserves all settings NOT listed in the migration block
+        /// (pool sizes, slave economy, toggles, etc.). Called from SubModule on first load.
+        /// Returns a user-facing message if migration occurred, or null if no migration needed.
+        /// </summary>
+        internal string? MigrateToLatestProfile()
+        {
+            if (SettingsProfileVersion >= LATEST_PROFILE_VERSION)
+                return null;
+
+            string migrated = string.Empty;
+
+            // ── Profile v2: v0.1.8.2 historically-calibrated rebalance ──
+            if (SettingsProfileVersion < 2)
+            {
+                // War exhaustion
+                ExhaustionDailyDecay = 0.65f;
+                BattleExhaustionPerCasualty = 0.001f; // unchanged, but pin to ensure consistency
+                NobleCaptureExhaustionGain = 3f;
+                RaidExhaustionGain = 2f;
+                SiegeExhaustionDefender = 5f;
+                SiegeExhaustionAttacker = 3f;
+                ConquestExhaustionGain = 4f;
+                ManpowerDepletionAmplifier = 0.5f;
+                BattleCasualtyDrainMultiplier = 0f; // changed 0.5→0 in v0.1.7.9
+
+                // Pressure bands
+                PressureBandRisingStart = 35f;
+                PressureBandCrisisStart = 65f;
+                PressureBandHysteresis = 5f;
+
+                // Diplomacy
+                DiplomacyForcedPeaceThreshold = 80f;
+                DiplomacyForcedPeaceCooldownDays = 10;
+                DiplomacyForcedPeaceThresholdReductionPerMajorWar = 5f;
+                DiplomacyNoNewWarThreshold = 65f;
+                DiplomacyPeacePressureThreshold = 45f;
+                MinWarDurationDaysBeforeForcedPeace = 40;
+
+                // Support formulas
+                PeaceBiasBandLow = 1.5f;
+                PeaceBiasBandHigh = 3.0f;
+                DiplomacyWarSupportPenaltyPerPoint = 4.0f;
+                DiplomacyExtraPeaceBiasPerMajorWar = 20f;
+                DiplomacyMajorWarPressureStartCount = 2;
+                WarSupportPenaltyCap = -400f;
+                PeaceSupportBonusCap = 350f;
+
+                // Manpower diplomacy
+                ManpowerDiplomacyThresholdPercent = 35;
+                ManpowerDiplomacyPressureStrength = 100f;
+
+                migrated += "v0.1.8.2 balance retuning (war exhaustion, pressure bands, diplomacy). ";
+            }
+
+            // ── Future migrations go here ──
+            // if (SettingsProfileVersion < 3) { ... migrated += "..."; }
+
+            SettingsProfileVersion = LATEST_PROFILE_VERSION;
+
+            TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migrated to profile v{LATEST_PROFILE_VERSION}: {migrated}");
+            return $"Campaign++ v0.1.8.2: Balance settings updated to new defaults. Customize in MCM if desired. ({migrated.Trim()})";
+        }
 
         [SettingPropertyGroup("Pool Sizes", GroupOrder = 0)]
         [SettingPropertyInteger("Town max manpower", 50, 50000, "0", Order = 0, HintText = "Base manpower pool for towns before economic scaling.")]
@@ -438,7 +515,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Daily decay", 0.1f, 5f, "0.0", Order = 1, HintText = "How much exhaustion decays per day toward 0.")]
-        public float ExhaustionDailyDecay { get; set; } = 1.0f;
+        public float ExhaustionDailyDecay { get; set; } = 0.65f;
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Regen penalty divisor", 50f, 500f, "0", Order = 2, HintText = "Regen is multiplied by (1 - exhaustion/divisor). Higher = softer penalty. E.g., 200 means 100 exhaustion halves regen.")]
@@ -502,7 +579,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("No-new-war threshold", 1f, 200f, "0.0", Order = 1, HintText = "At or above this exhaustion, AI kingdoms are prevented from starting new wars.")]
-        public float DiplomacyNoNewWarThreshold { get; set; } = 55f;
+        public float DiplomacyNoNewWarThreshold { get; set; } = 65f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Peace pressure threshold", 1f, 200f, "0.0", Order = 2, HintText = "At or above this exhaustion, AI support strongly favors peace outcomes.")]
@@ -510,7 +587,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("War support penalty / point", 0f, 100f, "0.0", Order = 3, HintText = "Support penalty applied to declaring-war outcomes per exhaustion point.")]
-        public float DiplomacyWarSupportPenaltyPerPoint { get; set; } = 6f;
+        public float DiplomacyWarSupportPenaltyPerPoint { get; set; } = 4f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Peace support bonus / point", 0f, 100f, "0.0", Order = 4, HintText = "Support bonus applied to make-peace outcomes per exhaustion point.")]
@@ -522,7 +599,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Forced peace threshold", 1f, 200f, "0.0", Order = 6, HintText = "At or above this exhaustion score, forced peace checks become active.")]
-        public float DiplomacyForcedPeaceThreshold { get; set; } = 85f;
+        public float DiplomacyForcedPeaceThreshold { get; set; } = 80f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyInteger("Forced peace cooldown (days)", 1, 30, "0", Order = 7, HintText = "Minimum number of days between automatic peaces for the same kingdom.")]
@@ -554,11 +631,11 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Extra peace bias per major war", 0f, 500f, "0.0", Order = 13, HintText = "Additional support bias toward peace for each war above the pressure start count.")]
-        public float DiplomacyExtraPeaceBiasPerMajorWar { get; set; } = 40f;
+        public float DiplomacyExtraPeaceBiasPerMajorWar { get; set; } = 20f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Forced peace threshold reduction/war", 0f, 100f, "0.0", Order = 14, HintText = "Lowers forced-peace exhaustion threshold per extra major war.")]
-        public float DiplomacyForcedPeaceThresholdReductionPerMajorWar { get; set; } = 8f;
+        public float DiplomacyForcedPeaceThresholdReductionPerMajorWar { get; set; } = 5f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyBool("Enforce player parity", Order = 15, HintText = "If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
@@ -572,11 +649,11 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Rising band start", 1f, 200f, "0.0", Order = 21, HintText = "Exhaustion level at which kingdom enters Rising pressure band (elevated peace bias, softer war penalties).")]
-        public float PressureBandRisingStart { get; set; } = 30f;
+        public float PressureBandRisingStart { get; set; } = 35f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Crisis band start", 1f, 200f, "0.0", Order = 22, HintText = "Exhaustion level at which kingdom enters Crisis band (war declarations blocked, strong peace pressure).")]
-        public float PressureBandCrisisStart { get; set; } = 60f;
+        public float PressureBandCrisisStart { get; set; } = 65f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Band hysteresis", 0f, 30f, "0.0", Order = 23, HintText = "Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation.")]
@@ -584,19 +661,19 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Peace bias (Low band)", 0f, 50f, "0.0", Order = 24, HintText = "Per-point peace support bias when kingdom is in Low pressure band.")]
-        public float PeaceBiasBandLow { get; set; } = 2f;
+        public float PeaceBiasBandLow { get; set; } = 1.5f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Peace bias (Rising band)", 0f, 100f, "0.0", Order = 25, HintText = "Per-point peace support bias when kingdom is in Rising pressure band.")]
-        public float PeaceBiasBandHigh { get; set; } = 8f;
+        public float PeaceBiasBandHigh { get; set; } = 3.0f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("War support penalty cap", -5000f, 0f, "0", Order = 26, HintText = "Maximum total penalty applied to war declaration support in band mode. Replaces the hard -10000 override.")]
-        public float WarSupportPenaltyCap { get; set; } = -800f;
+        public float WarSupportPenaltyCap { get; set; } = -400f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Peace support bonus cap", 0f, 5000f, "0", Order = 27, HintText = "Maximum total bonus applied to peace decision support in band mode. Replaces the hard +200 override.")]
-        public float PeaceSupportBonusCap { get; set; } = 600f;
+        public float PeaceSupportBonusCap { get; set; } = 350f;
 
         // ─── Low-manpower diplomacy pressure (independent of war exhaustion) ───
 
@@ -606,11 +683,11 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyInteger("Manpower diplomacy threshold %", 10, 80, "0", Order = 31, HintText = "Average settlement manpower fill below which peace pressure kicks in. E.g., 40 = pressure starts when average pool is below 40%.")]
-        public int ManpowerDiplomacyThresholdPercent { get; set; } = 40;
+        public int ManpowerDiplomacyThresholdPercent { get; set; } = 35;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyFloatingInteger("Manpower diplomacy pressure strength", 0f, 1000f, "0", Order = 32, HintText = "Maximum peace-support bonus added when average manpower is at 0%. Scales linearly down to 0 as manpower approaches the threshold. Default: 200.")]
-        public float ManpowerDiplomacyPressureStrength { get; set; } = 200f;
+        [SettingPropertyFloatingInteger("Manpower diplomacy pressure strength", 0f, 1000f, "0", Order = 32, HintText = "Maximum peace-support bonus added when average manpower is at 0%. Scales linearly down to 0 as manpower approaches the threshold. Default: 100.")]
+        public float ManpowerDiplomacyPressureStrength { get; set; } = 100f;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Enable diplomacy debug logs", Order = 16, HintText = "Logs detailed reasons for forced-peace and war-gate decisions.")]
