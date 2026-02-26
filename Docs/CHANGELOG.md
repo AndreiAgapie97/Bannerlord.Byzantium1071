@@ -2,6 +2,46 @@
 
 ---
 
+## [0.1.8.0] — 2025-02-27
+
+### Feature — Comprehensive verbose debug logging
+
+**New MCM setting: `Enable verbose mod log`** (Developer Tools group) — a master switch that logs ALL mod activity to Bannerlord's `rgl_log` file. Superset of every individual debug toggle (`LogAiManpowerConsumption`, `TelemetryDebugLogs`, `DiplomacyDebugLogs`). Performance cost — disable for normal play.
+
+#### What gets logged when enabled:
+
+| System | Events logged |
+|---|---|
+| **Manpower** | Session start, pool seeding, daily regen per settlement, consumption (player + AI with full context), recovery penalties |
+| **War exhaustion** | Every gain (raid/siege/battle/conquest/noble capture with amount + source), daily decay per kingdom, pressure band transitions |
+| **Diplomacy** | Forced peace attempts (all skip reasons + successful), truce registration, peace events, war-gate blocks, DeclareWar/MakePeace support bias |
+| **Slave economy** | Raid captures (all parties), daily bonuses per town, AI deposits, town enslavement (AI lords), player enslavement, slave decay/attrition, initial stock seeding |
+| **Prisoners** | Castle deposits (party, count, room remaining) |
+| **Garrison** | Auto-recruit capping (when manpower < vanilla recruit count) |
+| **Devastation** | Village loot devastation changes |
+| **AI recruitment** | Manpower gate blocks (when verbose OR `LogAiManpowerConsumption` is ON) |
+
+#### Implementation:
+- New `B1071_VerboseLog` static helper class — centralized `[Byzantium1071][Subsystem] message` format
+- All logging goes to `Debug.Print` (rgl_log file), never to in-game UI
+- When verbose is ON, all individual debug toggles also fire (OR logic)
+- ~30 instrumentation points across ManpowerBehavior, SlaveEconomyBehavior, DevastationBehavior, and 4 Harmony patches
+
+#### Files changed:
+| File | Change |
+|---|---|
+| `B1071_McmSettings.cs` | Added `EnableVerboseModLog` setting (Developer Tools, Order = -1) |
+| `B1071_VerboseLog.cs` | **NEW** — static helper class with `Enabled` property and `Log()` method |
+| `B1071_ManpowerBehavior.cs` | 18 `VLog` calls + wired 3 existing debug gates to verbose |
+| `B1071_SlaveEconomyBehavior.cs` | 6 `VLog` calls (raids, bonuses, deposits, decay, enslavement, seeding) |
+| `B1071_DevastationBehavior.cs` | Wired `TelemetryDebugLogs` gate to also fire on verbose |
+| `B1071_CastlePrisonerDepositPatch.cs` | 2 `VLog` calls (castle deposit, town enslavement) |
+| `B1071_GarrisonAutoRecruitManpowerPatch.cs` | 1 `VLog` call (garrison cap) |
+| `B1071_AiRecruitmentManpowerGatePatch.cs` | Wired AI gate log to also fire on verbose |
+| `B1071_ExhaustionDiplomacyPatch.cs` | Wired `EnableDebugLogs` to also fire on verbose |
+
+---
+
 ## [0.1.7.9] — 2026-02-27
 
 ### Bugfixes — War exhaustion accuracy, slave market pricing, log spam

@@ -189,6 +189,10 @@ namespace Byzantium1071.Campaign.Settings
         public int GarrisonWagePercent { get; set; } = 60;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
+        [SettingPropertyBool("Enable verbose mod log", Order = -1, HintText = "Master switch: logs ALL mod activity (manpower, slaves, diplomacy, patches) to the Bannerlord rgl_log file. Superset of every other debug toggle. Performance cost — disable for normal play.")]
+        public bool EnableVerboseModLog { get; set; } = false;
+
+        [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("Show player debug messages", Order = 0, HintText = "Shows slave economy and manpower messages in the game UI for player actions. Disable for normal play.")]
         public bool ShowPlayerDebugMessages { get; set; } = false;
 

@@ -148,6 +148,9 @@ namespace Byzantium1071.Campaign.Patches
 
             // Record depositor for consignment income tracking.
             string? depositorHeroId = mobileParty.LeaderHero?.StringId;
+
+            B1071_VerboseLog.Log("Prisoners", $"Castle deposit: {mobileParty.Name} deposited {totalQueued} prisoner(s) at {settlement.Name} (room={room}).");
+
             if (!string.IsNullOrEmpty(depositorHeroId))
             {
                 var behavior = B1071_CastleRecruitmentBehavior.Instance;
@@ -217,6 +220,9 @@ namespace Byzantium1071.Campaign.Patches
                 }
             }
             done:;
+
+            if (totalEnslaved > 0)
+                B1071_VerboseLog.Log("SlaveEconomy", $"Town enslavement: {mobileParty.Name} enslaved {totalEnslaved} prisoner(s) at {settlement.Name} @ {slavePrice}g each.");
 
             // After this, roster contains only heroes + T4+ regulars + any T1-T3
             // the town couldn't afford. Vanilla's handler will sell/ransom those normally.

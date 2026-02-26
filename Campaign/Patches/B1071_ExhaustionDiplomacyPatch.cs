@@ -39,7 +39,7 @@ namespace Byzantium1071.Campaign.Patches
             return false;
         }
 
-        internal static bool EnableDebugLogs => Settings.DiplomacyDebugLogs;
+        internal static bool EnableDebugLogs => Settings.DiplomacyDebugLogs || B1071_VerboseLog.Enabled;
         internal static bool UsePressureBands => Settings.EnableDiplomacyPressureBands;
         internal static bool IsTruceEnforcementEnabled => Settings.EnableTruceEnforcement;
 

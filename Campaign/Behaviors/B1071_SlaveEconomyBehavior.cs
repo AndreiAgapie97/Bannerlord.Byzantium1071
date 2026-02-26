@@ -169,6 +169,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             mobileParty.ItemRoster.AddToCounts(_slaveItem, count);
 
+            B1071_VerboseLog.Log("SlaveEconomy", $"Raid slaves: {mobileParty.Name} captured {count} slave(s) from {mapEvent.MapEventSettlement?.Name} ({(int)hearths} hearths / {divisor}).");
+
             // Only notify the player for their own raids.
             if (mobileParty == MobileParty.MainParty)
             {
@@ -203,6 +205,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (B1071_ManpowerBehavior.Instance != null)
                 B1071_ManpowerBehavior.Instance.AddManpowerToSettlement(settlement, manpowerGain);
 
+            B1071_VerboseLog.Log("SlaveEconomy", $"Daily bonus {settlement.Name}: {slaveCount} slave(s), +{manpowerGain} MP (cap={mpCap}), eff={eff:0.##}.");
+
             // NOTE: Prosperity and Construction bonuses are applied via Harmony postfixes:
             //   B1071_SlaveProsperityPatch  → DefaultSettlementProsperityModel.CalculateProsperityChange
             //   B1071_SlaveConstructionPatch → DefaultBuildingConstructionModel.CalculateDailyConstructionPower
@@ -227,6 +231,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     settlement.ItemRoster.AddToCounts(_slaveItem, -wholeLoss);
                     slaveCount -= wholeLoss;  // update local count for notification
                     accum -= wholeLoss;
+                    B1071_VerboseLog.Log("SlaveEconomy", $"Decay {settlement.Name}: -{wholeLoss} slave(s) attrition, {slaveCount} remaining.");
                 }
                 _decayAccumulator[decayKey] = accum;
             }
@@ -272,6 +277,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 party.ItemRoster.AddToCounts(_slaveItem, -slavesCarried);
                 settlement.ItemRoster.AddToCounts(_slaveItem, slavesCarried);
+                B1071_VerboseLog.Log("SlaveEconomy", $"AI deposit: {party.Name} deposited {slavesCarried} slave(s) at {settlement.Name}.");
             }
         }
 
@@ -291,13 +297,18 @@ namespace Byzantium1071.Campaign.Behaviors
             _slaveItem ??= MBObjectManager.Instance.GetObject<ItemObject>("b1071_slave");
             if (_slaveItem == null) return;
 
+            int seededCount = 0;
             foreach (Settlement settlement in Settlement.All)
             {
                 if (!settlement.IsTown) continue;
                 int count = MBRandom.RandomInt(0, 11); // 0-10 inclusive
                 if (count > 0)
+                {
                     settlement.ItemRoster.AddToCounts(_slaveItem, count);
+                    seededCount++;
+                }
             }
+            B1071_VerboseLog.Log("SlaveEconomy", $"Initial stock seeded: {seededCount} town(s) with starting slaves.");
         }
 
         // ── Public helpers used by Harmony patches ────────────────────────────────
@@ -536,6 +547,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 party.ItemRoster.AddToCounts(_slaveItem, count);
                 total += count;
             }
+            B1071_VerboseLog.Log("SlaveEconomy", $"Enslavement: {party.Name} converted {total} prisoner(s) to slave goods (max tier {maxTier}).");
             return total;
         }
     }

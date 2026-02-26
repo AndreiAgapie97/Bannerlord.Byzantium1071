@@ -64,7 +64,8 @@ namespace Byzantium1071.Campaign.Patches
                         $"Manpower: cannot recruit {troopName} — {poolName} needs {required}, only {available} left.",
                         Colors.Yellow));
                 }
-                else if (B1071_McmSettings.Instance?.LogAiManpowerConsumption == true)
+                else if (B1071_McmSettings.Instance?.LogAiManpowerConsumption == true
+                    || B1071_VerboseLog.Enabled)
                 {
                     Debug.Print(
                         $"[Byzantium1071][AIManpowerGate] Blocked {detail} for {troopName} x{number} at {poolName}. Need {required}, available {available}.");

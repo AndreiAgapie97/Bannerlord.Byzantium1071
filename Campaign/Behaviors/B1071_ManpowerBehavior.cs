@@ -410,6 +410,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             SeedAllPoolsIfNeeded();
 
+            B1071_VerboseLog.Log("Session", $"ManpowerBehavior launched. Pools seeded={_seeded}, tracked={_manpowerByPoolId.Count}, exhaustion entries={_warExhaustion.Count}.");
+
             if (Hero.MainHero != null)
                 InformationManager.DisplayMessage(new InformationMessage("[Byzantium1071] Manpower active."));
         }
@@ -476,6 +478,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (_seeded) return;
             _seeded = true;
 
+            B1071_VerboseLog.Log("Manpower", "Seeding all manpower pools for the first time.");
+
             foreach (var settlement in Settlement.All)
             {
                 if (settlement == null || settlement.IsHideout) continue;
@@ -510,6 +514,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int newCur = Math.Min(max, cur + regen);
             _manpowerByPoolId[poolId] = newCur;
+
+            B1071_VerboseLog.Log("Manpower", $"Regen {pool.Name}: +{regen} ({cur}->{newCur}/{max}).");
 
             // Crisis alerts for player settlements.
             if (Settings.EnableManpowerAlerts && IsPlayerSettlement(pool))
@@ -573,6 +579,7 @@ namespace Byzantium1071.Campaign.Behaviors
                             _warExhaustion[key] = val;
 
                         _telemetryExhaustionDecayToday += Math.Min(decay, before);
+                        B1071_VerboseLog.Log("Exhaustion", $"Decay {key}: {before:0.0}->{Math.Max(0f, val):0.0} (-{decay:0.0}).");
                     }
                 }
 
@@ -615,8 +622,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float maxScore = Math.Max(1f, Settings.ExhaustionMaxScore);
             float cur = _warExhaustion.TryGetValue(kingdomId!, out float v) ? v : 0f;
-            _warExhaustion[kingdomId!] = Math.Min(maxScore, cur + amount);
+            float newExh = Math.Min(maxScore, cur + amount);
+            _warExhaustion[kingdomId!] = newExh;
             _telemetryExhaustionGainToday += amount;
+            B1071_VerboseLog.Log("Exhaustion", $"Gain {kingdomId}: +{amount:0.0} ({cur:0.0}->{newExh:0.0}).");
         }
 
         /// <summary>
@@ -672,7 +681,7 @@ namespace Byzantium1071.Campaign.Behaviors
         internal void RecordDiplomacyTelemetry(string reason)
         {
             _telemetryLastDiplomacyDecision = string.IsNullOrEmpty(reason) ? "None" : reason;
-            if (Settings.TelemetryDebugLogs)
+            if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
                 Debug.Print("[Byzantium1071][Telemetry][Diplomacy] " + _telemetryLastDiplomacyDecision);
         }
 
@@ -936,6 +945,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _recoveryPenaltyStartDayByPoolId[poolId] = now;
             _recoveryPenaltyExpiryDayByPoolId[poolId] = newExpiry;
 
+            B1071_VerboseLog.Log("Manpower", $"Recovery penalty at {pool.Name}: {(combined * 100f):0}% for {Math.Max(0f, newExpiry - now):0.0} days ({reason}).");
+
             if (Settings.ShowPlayerDebugMessages)
             {
                 float remainingDays = Math.Max(0f, newExpiry - now);
@@ -1010,6 +1021,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
+            if (newBand != current)
+                B1071_VerboseLog.Log("Diplomacy", $"Band transition {kingdomId}: {current}->{newBand} at exhaustion {exhaustion:0.0}.");
             _pressureBandByKingdom[kingdomId] = newBand;
             return newBand;
         }
@@ -1056,6 +1069,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float expiryDay = (float)CampaignTime.Now.ToDays + truceDays;
             _truceExpiryByPair[key] = expiryDay;
+            B1071_VerboseLog.Log("Diplomacy", $"Truce registered: {kingdom1.Name} vs {kingdom2.Name}, {truceDays} days until {FormatCampaignDateTime(expiryDay)}.");
             _telemetryLastTruce = $"Truce {kingdom1.Name}-{kingdom2.Name} until {FormatCampaignDateTime(expiryDay)}";
         }
 
@@ -1257,13 +1271,14 @@ namespace Byzantium1071.Campaign.Behaviors
                 _lastForcedPeaceDayByKingdom[kingdom.StringId] = nowDays;
                 _telemetryLastForcedPeace = $"Peace {kingdom.Name}-{bestFactionToPeace.Name} at {FormatCampaignDateTime(nowDays)} (ex {exhaustion:0.0})";
 
-                Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}.");
+                Debug.Print($"[Byzantium1071][Diplomacy] Forced peace: {kingdom.Name} ended war with {bestFactionToPeace.Name} at exhaustion {exhaustion:0.0}, wars={activeWarCount}.");
             }
         }
 
         private static void DebugDiplomacy(string message)
         {
-            if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyDebugLogs)
+            if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyDebugLogs
+                && !B1071_VerboseLog.Enabled)
                 return;
 
             Debug.Print($"[Byzantium1071][Diplomacy][Debug] {message}");
@@ -1344,7 +1359,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : 0;
                     int consumed = Math.Min(available, amount * costPer);
                     _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
-                    if (Settings.LogAiManpowerConsumption)
+                    if (Settings.LogAiManpowerConsumption || B1071_VerboseLog.Enabled)
                         Debug.Print($"[Byzantium1071][AIManpower] Partyless recruit {troop.Name} x{amount} from {recruitmentSettlement.Name}, pool {available}->{available - consumed}");
                 }
                 // Flag so fallback skips it.
@@ -1431,7 +1446,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             // AI: log to file, throttled
-            if (!isPlayer && Settings.LogAiManpowerConsumption)
+            if (!isPlayer && (Settings.LogAiManpowerConsumption || B1071_VerboseLog.Enabled))
             {
                 bool shouldLog = false;
 
@@ -1453,6 +1468,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 _aiPoolBandByPoolId[poolId] = band;
             }
+
+            B1071_VerboseLog.Log("Manpower", $"Consume [{context}] {troop.Name} x{amount} (tier {troop.Tier}) @ {recruitmentSettlement.Name}: pool {before}->{after}/{max}, costPer={costPer}, allowed={allowed}, removed={toRemove}.");
         }
 
         private void EnsureEntry(Settlement? anySettlement)
@@ -2121,6 +2138,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _raidDrainSpentByPoolDay[poolDayKey] = spentToday + drain;
             _telemetryRaidDrainToday += drain;
 
+            B1071_VerboseLog.Log("WarEffects", $"Raid drain {village.Name} (pool {pool.Name}): -{drain} ({cur}->{newVal}/{max}).");
+
             ApplyDelayedRecoveryPenalty(
                 pool,
                 Settings.RecoveryPenaltyRaidPercent,
@@ -2188,6 +2207,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _manpowerByPoolId[poolId] = appliedVal; // only reduce, never increase
             _telemetrySiegeDrainToday += Math.Max(0, cur - appliedVal);
 
+            B1071_VerboseLog.Log("WarEffects", $"Siege aftermath ({aftermathType}) at {settlement.Name}: pool {cur}->{appliedVal}/{max} ({retainPct:P0} retain).");
+
             ApplyDelayedRecoveryPenalty(
                 pool,
                 Settings.RecoveryPenaltySiegePercent,
@@ -2220,7 +2241,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             AddWarExhaustion(kingdom.StringId, gain);
 
-            if (Settings.TelemetryDebugLogs)
+            if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
                 Debug.Print($"[Byzantium1071][Exhaustion] Noble captured: {prisoner.Name} ({kingdom.Name}) by {capturerKingdom.Name} +{gain:0.0} exhaustion.");
         }
 
@@ -2415,6 +2436,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 int newVal = Math.Max(0, cur - drain);
                 _manpowerByPoolId[poolId] = newVal;
                 _telemetryBattleDrainToday += Math.Max(0, cur - newVal);
+                B1071_VerboseLog.Log("WarEffects", $"Battle drain {mp.Name} -> pool {pool.Name}: -{drain} ({cur}->{newVal}/{max}).");
             }
         }
 
@@ -2464,6 +2486,8 @@ namespace Byzantium1071.Campaign.Behaviors
             int newVal = Math.Max(0, (int)(cur * retainPct));
             _manpowerByPoolId[poolId] = newVal;
 
+            B1071_VerboseLog.Log("WarEffects", $"Conquest at {settlement.Name}: {oldKingdom?.Name}->{newKingdom?.Name}, pool {cur}->{newVal}/{max} ({retainPct:P0} retain).");
+
             ApplyDelayedRecoveryPenalty(
                 pool,
                 Settings.RecoveryPenaltyConquestPercent,
@@ -2494,6 +2518,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnMakePeaceEvent(IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail)
         {
             if (!(Settings.EnableTruceEnforcement)) return;
+            B1071_VerboseLog.Log("Diplomacy", $"Peace event ({detail}): {faction1?.Name} and {faction2?.Name}.");
             RegisterKingdomPairTruce(faction1, faction2);
         }
     }

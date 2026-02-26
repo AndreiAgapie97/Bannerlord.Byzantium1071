@@ -208,7 +208,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 float added = Settings.DevastationPerRaid;
                 _devastationByVillage[key] = Math.Min(100f, current + added);
 
-                if (Settings.TelemetryDebugLogs)
+                if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
                 {
                     Debug.Print(
                         $"[Byzantium1071][Devastation] {village.Settlement.Name} looted: " +
