@@ -2,6 +2,49 @@
 
 ---
 
+## [0.1.7.7] — 2026-02-26
+
+### Balance — T3 enslavement cap + slave price 200d → 300d
+
+**Enslavement tier cap (player parity fix)**
+
+The player's "Enslave prisoners" town menu now respects the same `CastlePrisonerAutoEnslaveTierMax` MCM setting (default 3) that already controlled AI town enslavement and castle auto-enslavement. Previously, the player could enslave ALL non-hero prisoners regardless of tier — a parity gap that made the prisoner path disproportionately powerful for the player compared to AI behavior.
+
+**What changed:**
+- `ConvertPrisonersToSlaves`: tier filter added — only prisoners at `Tier <= CastlePrisonerAutoEnslaveTierMax` (default T1–T3) are converted. T4+ prisoners stay in the player's prison roster.
+- `SlaveTradeEnterCondition`: now counts only enslaveable (T1–T3) prisoners. When the player has only T4+ prisoners, the menu option is visible but **disabled** with tooltip: *"Only Tier 1–3 prisoners can be enslaved. Take T4+ to a castle for recruitment conversion or ransom at the tavern."*
+- `EnslaveCondition`: text updated to show T1–T3 eligible count and how many T4+ are kept.
+- `EnslaveConsequence`: notification message reports how many T4+ prisoners were kept and what to do with them.
+- `RefreshSlaveMenuBody`: submenu body now shows enslaveable vs. non-enslaveable prisoner counts separately with guidance for T4+ disposal.
+- New helpers: `CountEnslavablePrisoners()` (T1–T3 only) and `CountAllNonHeroPrisoners()` (all tiers) replace the former `CountNonHeroPrisoners()`.
+
+**MCM setting update:**
+- `CastlePrisonerAutoEnslaveTierMax` HintText updated to reflect its role as a **unified** enslavement tier cap across all three paths: (1) player town menu, (2) AI town auto-enslave, (3) castle auto-enslave. Variable name and default unchanged — fully save compatible.
+
+**Slave base price: 200d → 300d** (`items.xml`)
+
+Historically, 300 denars places slaves between spice and fur — reasonable for unskilled field labour in the 1071 Near East context. This is the minimal change that moves toward historical accuracy without disrupting the existing economy.
+
+**Economic impact (with T3 cap):**
+| Scenario | Before (200d, all tiers) | After (300d, T1–T3 only) |
+|----------|--------------------------|--------------------------|
+| Village raid (600h, 18 events) | 2 slaves/event × 18 = 36 × ~100d sell = 3,600d | 2 slaves/event × 18 = 36 × ~150d sell = 5,400d |
+| Enslave 20 T1–T3 prisoners | 20 × ~100d sell = 2,000d | 20 × ~150d sell = 3,000d |
+| Enslave 20 mixed (10 T1–T3 + 10 T4–T5) | 20 × ~100d sell = 2,000d | 10 × ~150d sell = 1,500d (T4+ kept) |
+| Ransom 20 T4–T5 at tavern | N/A (would have been enslaved) | ~2,000–3,000d total ransom |
+
+**Key behavioral changes:**
+- Post-battle with mixed prisoners: player now naturally routes T4+ to castles (for elite recruitment) or tavern (for ransom), while T1–T3 go to enslavement. This creates a meaningful strategic decision instead of "enslave everything."
+- AI already had this behavior — now player matches exactly.
+- Raid income slightly increases per-slave due to higher price, but total income per raid is unchanged (slaves from raids are hearth-based, not prisoner-based).
+- No new serialized data. Price change in XML re-reads every session. T3 cap is a runtime logic filter.
+
+**Save/load safety:** No new `SyncData` keys. `items.xml` `value` is re-read on session launch. Existing slave items in inventories/markets retain their identity; the engine applies the new base price on next market interaction. Compatible with existing campaigns including mid-game mod addition.
+
+**Mod removal safety:** If the mod is removed, slave items become orphaned trade goods (vanilla handles unknown items gracefully). No campaign corruption regardless of when the mod is added or removed.
+
+---
+
 ## [0.1.7.6] — 2026-02-26
 
 ### Rebrand — Byzantium 1071 → Campaign++

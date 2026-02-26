@@ -16,17 +16,19 @@ using TaleWorlds.Localization;
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
-    /// Slave Economy System (v3):
+    /// Slave Economy System (v4):
     ///
     ///  ACQUISITION
     ///   1. Village raids (ItemsLooted + MapEvent.IsRaid): fires for all parties (player and AI lords).
     ///      Slave count per batch = floor(village.Hearth / SlaveHearthDivisor).
     ///      Notification is shown only for the player's own raids.
-    ///   2. Prisoner enslavement (player): at any town the player can convert non-hero prisoners via
-    ///      the "Enslave prisoners" town menu option (1:1; hero prisoners excluded).
-    ///   3. Prisoner enslavement (AI): when an AI lord enters a town, Tier 1-2 non-hero prisoners
-    ///      are automatically enslaved and deposited into the town market. Tier 3+ are left for
-    ///      vanilla ransom/release behaviour.
+    ///   2. Prisoner enslavement (player): at any town the player can convert non-hero prisoners
+    ///      at or below CastlePrisonerAutoEnslaveTierMax (default T3) via the "Enslave prisoners"
+    ///      town menu option (1:1; hero prisoners and T4+ excluded).
+    ///      T4+ prisoners must be taken to a castle for recruitment conversion or ransomed.
+    ///   3. Prisoner enslavement (AI): when an AI lord enters a town, non-hero prisoners at or
+    ///      below CastlePrisonerAutoEnslaveTierMax are automatically enslaved and deposited
+    ///      into the town market. Higher-tier prisoners are left for vanilla ransom/release.
     ///
     ///  DISTRIBUTION
     ///   Slaves are sold through the normal civilian town market (like any other trade good).
@@ -334,13 +336,32 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement? s = Settlement.CurrentSettlement;
             if (s == null || !s.IsTown) return false;
 
-            int prisoners = CountNonHeroPrisoners();
-            if (prisoners <= 0) return false;
+            int enslavable = CountEnslavablePrisoners();
+            int totalPrisoners = CountAllNonHeroPrisoners();
+            if (totalPrisoners <= 0) return false;
 
+            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-            args.IsEnabled       = true;
-            MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
-                $"\u26d3 Enslave prisoners  ({prisoners} non-hero prisoner{(prisoners != 1 ? "s" : "")})");
+
+            if (enslavable > 0)
+            {
+                args.IsEnabled = true;
+                int skipped = totalPrisoners - enslavable;
+                string skippedNote = skipped > 0
+                    ? $", {skipped} T{maxTier + 1}+ kept"
+                    : "";
+                MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
+                    $"\u26d3 Enslave prisoners  ({enslavable} T1\u2013{maxTier} eligible{skippedNote})");
+            }
+            else
+            {
+                args.IsEnabled = false;
+                MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
+                    $"\u26d3 Enslave prisoners  (0 eligible \u2014 {totalPrisoners} T{maxTier + 1}+)");
+                args.Tooltip = new TextObject(
+                    $"Only Tier 1\u2013{maxTier} prisoners can be enslaved. " +
+                    $"Take T{maxTier + 1}+ to a castle for recruitment conversion or ransom at the tavern.");
+            }
             return true;
         }
 
@@ -350,15 +371,23 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             Settlement? s         = Settlement.CurrentSettlement;
             string settlementName = s?.Name?.ToString() ?? "this town";
-            int    prisoners      = CountNonHeroPrisoners();
+            int    enslavable     = CountEnslavablePrisoners();
+            int    totalPrisoners = CountAllNonHeroPrisoners();
+            int    highTier       = totalPrisoners - enslavable;
+            int    maxTier        = Settings.CastlePrisonerAutoEnslaveTierMax;
             int    marketSlaves   = (_slaveItem != null && s?.Town != null)
                                     ? s.ItemRoster.GetItemNumber(_slaveItem)
                                     : 0;
             int    inventorySlaves = GetSlaveGoodsCount();
 
+            string highTierNote = highTier > 0
+                ? $"\nPrisoners T{maxTier + 1}+ (not enslaveable): {highTier}  \u2192 take to castle or ransom\n"
+                : "\n";
+
             string body =
                 $"\u26d3  Slave Trade \u2014 {settlementName}\n\n" +
-                $"Prisoners (non-hero, enslaveable):  {prisoners}\n" +
+                $"Prisoners (T1\u2013{maxTier}, enslaveable):   {enslavable}\n" +
+                highTierNote +
                 $"Slave goods in your inventory:      {inventorySlaves}\n" +
                 $"Slaves in {settlementName} market:  {marketSlaves}\n\n" +
                 $"Sell slaves through the Trade screen.\n" +
@@ -370,16 +399,23 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private bool EnslaveCondition(MenuCallbackArgs args)
         {
-            int count = CountNonHeroPrisoners();
-            if (count <= 0) return false;
+            int enslavable = CountEnslavablePrisoners();
+            if (enslavable <= 0) return false;
+
+            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
+            int highTier = CountAllNonHeroPrisoners() - enslavable;
+            string skippedNote = highTier > 0
+                ? $" ({highTier} T{maxTier + 1}+ prisoner{(highTier != 1 ? "s" : "")} kept)"
+                : "";
 
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
             args.IsEnabled       = true;
             MBTextManager.SetTextVariable("B1071_ENSLAVE_TEXT",
-                $"Enslave prisoners  ({count} non-hero prisoner{(count != 1 ? "s" : "")} \u2192 +{count} Slave goods)");
+                $"Enslave prisoners  ({enslavable} T1\u2013{maxTier} \u2192 +{enslavable} Slave goods){skippedNote}");
             args.Tooltip = new TextObject(
-                "Converts ALL non-hero prisoners in your camp to Slave trade goods (1:1). " +
-                "Heroes can never be enslaved. " +
+                $"Converts all non-hero prisoners at Tier {maxTier} or below to Slave trade goods (1:1). " +
+                $"Heroes and T{maxTier + 1}+ prisoners cannot be enslaved \u2014 " +
+                $"take them to a castle for recruitment conversion or ransom at the tavern. " +
                 "Sell Slave goods via the town Trade screen. " +
                 "While Slave goods remain in the market, the town gains daily " +
                 "manpower, prosperity, and construction bonuses.");
@@ -391,11 +427,16 @@ namespace Byzantium1071.Campaign.Behaviors
             MobileParty? party = MobileParty.MainParty;
             if (_slaveItem == null || party == null) return;
 
+            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
+            int highTierBefore = CountAllNonHeroPrisoners() - CountEnslavablePrisoners();
             int converted = ConvertPrisonersToSlaves(party);
             if (converted > 0)
             {
+                string keptNote = highTierBefore > 0
+                    ? $" ({highTierBefore} T{maxTier + 1}+ kept \u2014 take to castle or ransom)"
+                    : "";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u26d3 Enslaved {converted} prisoner{(converted != 1 ? "s" : "")}. " +
+                    $"\u26d3 Enslaved {converted} T1\u2013{maxTier} prisoner{(converted != 1 ? "s" : "")}.{keptNote} " +
                     $"Slave goods in inventory: {party.ItemRoster.GetItemNumber(_slaveItem)}. " +
                     $"Open the Trade screen to sell them to the market.",
                     new Color(0.83f, 0.67f, 0.05f)));
@@ -405,7 +446,28 @@ namespace Byzantium1071.Campaign.Behaviors
 
         // ── Helpers ────────────────────────────────────────────────────────────────
 
-        private static int CountNonHeroPrisoners()
+        /// <summary>
+        /// Counts non-hero prisoners that are eligible for enslavement (Tier &lt;= CastlePrisonerAutoEnslaveTierMax).
+        /// </summary>
+        private static int CountEnslavablePrisoners()
+        {
+            var roster = MobileParty.MainParty?.PrisonRoster;
+            if (roster == null) return 0;
+            int maxTier = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).CastlePrisonerAutoEnslaveTierMax;
+            int total = 0;
+            foreach (var element in roster.GetTroopRoster())
+            {
+                if (element.Character != null && !element.Character.IsHero
+                    && element.Number > 0 && element.Character.Tier <= maxTier)
+                    total += element.Number;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// Counts ALL non-hero prisoners regardless of tier.
+        /// </summary>
+        private static int CountAllNonHeroPrisoners()
         {
             var roster = MobileParty.MainParty?.PrisonRoster;
             if (roster == null) return 0;
@@ -424,19 +486,22 @@ namespace Byzantium1071.Campaign.Behaviors
                : 0;
 
         /// <summary>
-        /// Converts ALL non-hero party prisoners to Slave ItemObjects (1:1).
-        /// Heroes are always skipped. Returns the number converted.
+        /// Converts non-hero party prisoners at or below CastlePrisonerAutoEnslaveTierMax
+        /// to Slave ItemObjects (1:1). Heroes and T4+ prisoners are always skipped.
+        /// Returns the number converted.
         /// </summary>
         private int ConvertPrisonersToSlaves(MobileParty party)
         {
             if (_slaveItem == null) return 0;
-            var nonHeroes = party.PrisonRoster
+            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
+            var enslavable = party.PrisonRoster
                 .GetTroopRoster()
-                .Where(e => e.Character != null && !e.Character.IsHero && e.Number > 0)
+                .Where(e => e.Character != null && !e.Character.IsHero
+                         && e.Number > 0 && e.Character.Tier <= maxTier)
                 .ToList();
 
             int total = 0;
-            foreach (var element in nonHeroes)
+            foreach (var element in enslavable)
             {
                 int count = element.Number;
                 party.PrisonRoster.RemoveTroop(element.Character, count);

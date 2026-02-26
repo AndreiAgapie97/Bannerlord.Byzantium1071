@@ -713,7 +713,7 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableCastleRecruitment { get; set; } = true;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("Auto-enslave tier max", 1, 6, "0", Order = 1, HintText = "Prisoners at or below this tier are automatically enslaved and sent to the nearest town market. Prisoners above this tier are held for recruitment. Default: 3 (T1-T3 enslaved, T4+ recruitable).")]
+        [SettingPropertyInteger("Auto-enslave tier max", 1, 6, "0", Order = 1, HintText = "Unified enslavement tier cap (player + AI parity). Prisoners at or below this tier can be enslaved: (1) player 'Enslave prisoners' at towns, (2) AI auto-enslave at towns, (3) castle auto-enslave to nearest market. Prisoners above this tier must be taken to castles for recruitment conversion or ransomed. Default: 3 (T1-T3 enslaved, T4+ recruitable).")]
         public int CastlePrisonerAutoEnslaveTierMax { get; set; } = 3;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
