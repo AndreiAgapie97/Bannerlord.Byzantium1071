@@ -421,7 +421,7 @@ namespace Byzantium1071.Campaign.UI
             _currentText = text;
             _viewDirty = true;
             if (!_panelModeActive)
-                MBInformationManager.ShowHint("Byzantium 1071 Overlay\n" + text);
+                MBInformationManager.ShowHint("Campaign++ Overlay\n" + text);
         }
 
         private static InputKey GetConfiguredHotkey()
@@ -481,7 +481,7 @@ namespace Byzantium1071.Campaign.UI
                 _lastText = string.Empty;
                 _currentText = BuildOverlayText();
                 if (!_panelModeActive)
-                    MBInformationManager.ShowHint("Byzantium 1071 Overlay\n" + _currentText);
+                    MBInformationManager.ShowHint("Campaign++ Overlay\n" + _currentText);
             }
             else
             {

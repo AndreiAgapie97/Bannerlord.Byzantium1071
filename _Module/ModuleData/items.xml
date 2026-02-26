@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Byzantium 1071 — Custom Trade Items
+  Campaign++ — Custom Trade Items
   Slaves: A Goods-type trade item representing enslaved captives.
     - Gained during village raids (B1071_SlaveEconomyBehavior, ItemsLooted + MapEvent.IsRaid)
     - Gained by converting non-hero prisoners at any town via the "Enslave prisoners" menu option

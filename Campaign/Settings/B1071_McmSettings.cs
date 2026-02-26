@@ -209,7 +209,7 @@ namespace Byzantium1071.Campaign.Settings
         public bool ShowTelemetryInOverlay { get; set; } = false;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]
-        [SettingPropertyBool("Enable in-game overlay", Order = 0, HintText = "Enables the standalone Byzantium 1071 overlay on campaign map.")]
+        [SettingPropertyBool("Enable in-game overlay", Order = 0, HintText = "Enables the standalone Campaign++ overlay on campaign map.")]
         public bool EnableOverlay { get; set; } = true;
 
         [SettingPropertyGroup("Overlay", GroupOrder = 6)]

@@ -1,4 +1,17 @@
-# Byzantium 1071 — Changelog
+# Campaign++ — Changelog
+
+---
+
+## [0.1.7.6] — 2026-02-26
+
+### Rebrand — Byzantium 1071 → Campaign++
+
+Mod renamed from "Byzantium 1071" to "Campaign++" in the launcher (`SubModule.xml` `<Name>`) and MCM settings (`DisplayName`). The name "Byzantium 1071" was causing confusion — players expected a Byzantine total conversion or troop overhaul, not a faction-agnostic campaign systems mod.
+
+- `SubModule.xml` `<Name>`: `Byzantium 1071` → `Campaign++`
+- `B1071_McmSettings.DisplayName`: `Byzantium 1071` → `Campaign++`
+- Nexus mod page title, description, and all in-game references updated
+- Module `<Id>` (`Byzantium1071`), folder name, assembly name, and `.csproj` unchanged — **fully save compatible**
 
 ---
 

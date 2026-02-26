@@ -173,7 +173,7 @@ namespace Byzantium1071.Campaign.UI
         private bool _panelExpanded = true;
         private int _panelLeftOffset = 22;
         private int _panelTopOffset = 152;
-        private string _panelText = "Byzantium 1071 Overlay\n[Press M to toggle]";
+        private string _panelText = "Campaign++ Overlay\n[Press M to toggle]";
         private string _toggleText = "Press M";
         private string _tabCurrentText = "Current";
         private string _tabNearbyText = "Nearby";

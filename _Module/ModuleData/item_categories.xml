@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Byzantium 1071 — Custom Item Categories
+  Campaign++ — Custom Item Categories
   b1071_slaves: Trade good category for the slave economy system.
 
   IMPORTANT: XML-loaded ItemCategory demand values are set as raw floats directly
