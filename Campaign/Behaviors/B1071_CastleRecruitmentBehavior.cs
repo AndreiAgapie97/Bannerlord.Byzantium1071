@@ -779,6 +779,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
                             Hero? depositor = FindAliveHero(heroId);
                             if (depositor == null || depositor.Clan == settlement.OwnerClan) continue; // Same-clan → free.
+                            // Hostile depositor → forfeit share (wartime exploit prevention, parity with B-1 fix).
+                            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, settlement.OwnerClan?.MapFaction)) continue;
 
                             float feePercent = Settings.CastleHoldingFeePercent / 100f;
                             int depositorShare = (int)(prisonerGoldCost * (1f - feePercent)) * consumed;

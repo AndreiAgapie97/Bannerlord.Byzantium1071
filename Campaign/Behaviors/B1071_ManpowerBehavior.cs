@@ -611,7 +611,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Manpower-depletion amplifier: when a kingdom's pools are depleted, losses hit harder.
             if (Settings.EnableManpowerDepletionAmplifier && Settings.ManpowerDepletionAmplifier > 0f)
             {
-                Kingdom? k = Kingdom.All?.Find(x => x.StringId == kingdomId);
+                Kingdom? k = Kingdom.All?.Find(x => x != null && x.StringId == kingdomId);
                 if (k != null)
                 {
                     float avgRatio = GetKingdomAverageManpowerRatio(k);
@@ -1422,7 +1422,7 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         // Centralized manpower consumption logic.
-        private void ConsumeManpower(Settlement? recruitmentSettlement, MobileParty party, CharacterObject troop, int amount, bool isPlayer, string context)
+        private void ConsumeManpower(Settlement? recruitmentSettlement, MobileParty? party, CharacterObject troop, int amount, bool isPlayer, string context)
         {
             if (recruitmentSettlement == null || party == null || troop == null) return;
             if (amount <= 0) return;

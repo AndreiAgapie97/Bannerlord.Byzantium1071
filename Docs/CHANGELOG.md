@@ -75,6 +75,19 @@ The playtest revealed a critical settings persistence issue: `ExhaustionDailyDec
 
 ---
 
+#### Audit fix: GarrisonAbsorbPrisoners hostile depositor forfeit
+
+**Bug (MEDIUM):** When garrison absorption pays depositors for absorbed prisoners, the hostile-depositor forfeit check was missing. A depositor whose faction became hostile to the castle owner after depositing would still receive gold when the garrison absorbed "their" prisoner — bypassing the wartime forfeit policy applied in all 6 other gold flow paths (DistributeIncome, HandleRecruitmentGold, TryRecruitElite, AiAutoRecruit preview, GetPlayerDepositorShare, GetPlayerRecruitmentShare).
+
+**Fix:** Added `FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, settlement.OwnerClan?.MapFaction)` check in `GarrisonAbsorbPrisoners` payment loop, consistent with the pattern used in all other gold paths. Hostile depositors are now skipped (forfeit) during garrison absorption, matching wantime policy.
+
+#### Files changed (audit fix):
+| File | Change |
+|---|---|
+| `B1071_CastleRecruitmentBehavior.cs` | Added hostile depositor forfeit in `GarrisonAbsorbPrisoners` payment loop |
+
+---
+
 ## [0.1.8.1] — 2025-02-27
 
 ### Balance — Castle regen crisis, ping-pong border castles, recovery penalty rebalance
