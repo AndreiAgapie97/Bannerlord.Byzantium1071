@@ -102,9 +102,23 @@ namespace Byzantium1071.Campaign.Patches
             // Snapshot the roster to avoid collection-modification during iteration.
             var toDeposit = new List<(CharacterObject Troop, int Count, int Wounded)>();
             int totalQueued = 0;
+
+            // When slave economy is disabled, T1-T3 prisoners have no processing
+            // pipeline at castles: AutoEnslaveLowTierPrisoners exits early (no slave
+            // economy), TrackHighTierPrisonerDays skips them (below tier threshold),
+            // and the retention patch blocks vanilla's 10% daily sell. They'd be
+            // permanently stuck. Skip T1-T3 so they stay with the lord — vanilla
+            // sells them for ransom gold at the next town.
+            bool slaveEconEnabled = settings.EnableSlaveEconomy;
+            int enslaveTierMax = settings.CastlePrisonerAutoEnslaveTierMax;
+
             foreach (TroopRosterElement element in partyPrison.GetTroopRoster())
             {
                 if (element.Character == null || element.Character.IsHero || element.Number <= 0)
+                    continue;
+
+                // Skip T1-T3 when slave economy is OFF — no processing pipeline.
+                if (!slaveEconEnabled && element.Character.Tier <= enslaveTierMax)
                     continue;
 
                 // Clamp by remaining room.

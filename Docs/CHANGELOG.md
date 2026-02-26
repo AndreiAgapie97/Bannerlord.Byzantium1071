@@ -23,6 +23,10 @@ After the prefix runs, vanilla's handler only sees heroes (at castles) or heroes
 
 AI castle deposits now enforce the vanilla `PrisonerSizeLimit`. When a castle's prison is full, excess prisoners are not deposited — they remain with the lord's party and fall through to vanilla sell behavior at the next town visited. Partial deposits use proportional wounded calculations to avoid stranding more wounded than total count.
 
+**T1–T3 stuck-at-castle fix (CastleRecruitment ON + SlaveEconomy OFF)**
+
+When the slave economy is disabled but castle recruitment is enabled, T1–T3 prisoners deposited at castles had no processing pipeline: auto-enslavement exits early (no slave economy), day tracking skips them (below tier threshold), and the retention patch blocks vanilla's daily 10% sell. They’d sit in the castle prison permanently, consuming capacity. Fixed by filtering T1–T3 out of castle deposits when slave economy is OFF — they stay with the lord and vanilla sells them for ransom at the next town.
+
 **Dead code removal (`B1071_SlaveEconomyBehavior`)**
 
 The `OnSettlementEntered` handler in `SlaveEconomyBehavior` previously attempted to enslave prisoners but was always pre-empted by vanilla (the race condition above). That dead prisoner-enslavement code has been removed. The handler now only transfers slave trade goods already in the AI lord's inventory into the town market — which works correctly because item rosters are not affected by vanilla's prisoner sell handler.
