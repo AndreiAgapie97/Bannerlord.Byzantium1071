@@ -4,6 +4,7 @@ using System.Linq;
 using Byzantium1071.Campaign.Behaviors;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -38,8 +39,12 @@ namespace Byzantium1071.Campaign.Patches
     /// AT TOWNS (when slave economy is enabled):
     ///   Non-hero prisoners at or below CastlePrisonerAutoEnslaveTierMax (default T3)
     ///   are converted to b1071_slave trade goods and added directly to the town's
-    ///   market ItemRoster. Higher-tier prisoners (T4+) are left in the party roster
-    ///   for vanilla to sell/ransom normally. This runs BEFORE vanilla's handler,
+    ///   market ItemRoster. The town pays the AI lord the current slave market price
+    ///   for each enslaved prisoner via GiveGoldAction.ApplyForSettlementToCharacter
+    ///   (deducts from Town.Gold, properly clamped, fires campaign events). If the
+    ///   town runs out of gold mid-batch, remaining prisoners stay with the lord for
+    ///   vanilla to sell/ransom. Higher-tier prisoners (T4+) are left in the party
+    ///   roster for vanilla to sell/ransom normally. This runs BEFORE vanilla's handler,
     ///   solving the race condition where vanilla would vaporize all prisoners before
     ///   our SlaveEconomyBehavior.OnSettlementEntered could act.
     ///
@@ -154,7 +159,16 @@ namespace Byzantium1071.Campaign.Patches
             TroopRoster? roster = mobileParty.PrisonRoster;
             if (roster == null || roster.TotalRegulars <= 0) return;
 
+            Town? town = settlement.Town;
+            if (town == null) return;
+
             int maxEnslaveTier = settings.CastlePrisonerAutoEnslaveTierMax;
+
+            // Town buys slaves at current market price — mirrors castle auto-enslave model.
+            int slavePrice = town.GetItemPrice(slaveItem);
+            if (slavePrice <= 0) return;
+
+            Hero? lordHero = mobileParty.LeaderHero;
 
             // Snapshot eligible prisoners.
             var toEnslave = roster.GetTroopRoster()
@@ -167,14 +181,31 @@ namespace Byzantium1071.Campaign.Patches
             int totalEnslaved = 0;
             foreach (var element in toEnslave)
             {
-                int count = element.Number;
-                roster.RemoveTroop(element.Character, count);
-                settlement.ItemRoster.AddToCounts(slaveItem, count);
-                totalEnslaved += count;
-            }
+                for (int unit = 0; unit < element.Number; unit++)
+                {
+                    // Affordability gate: town must have gold to buy this slave.
+                    // When the town is broke, remaining prisoners stay with the lord
+                    // and fall through to vanilla sell behavior (ransom gold).
+                    if (town.Gold < slavePrice) goto done;
 
-            // After this, roster contains only heroes + T4+ regulars.
-            // Vanilla's handler will sell/ransom those normally.
+                    roster.RemoveTroop(element.Character, 1);
+                    settlement.ItemRoster.AddToCounts(slaveItem, 1);
+
+                    // Town pays the lord at market price — gold properly deducted from
+                    // Town.Gold via GiveGoldAction (clamped, fires campaign events).
+                    if (lordHero != null)
+                    {
+                        GiveGoldAction.ApplyForSettlementToCharacter(
+                            settlement, lordHero, slavePrice, disableNotification: true);
+                    }
+
+                    totalEnslaved++;
+                }
+            }
+            done:;
+
+            // After this, roster contains only heroes + T4+ regulars + any T1-T3
+            // the town couldn't afford. Vanilla's handler will sell/ransom those normally.
         }
     }
 }

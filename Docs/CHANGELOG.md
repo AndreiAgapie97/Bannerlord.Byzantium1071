@@ -15,7 +15,7 @@ When an AI lord entered a town, two `OnSettlementEntered` listeners fired in reg
 The existing castle deposit Harmony Prefix (which runs BEFORE vanilla's handler) now handles both castles AND towns:
 
 - **Castle branch (unchanged in behavior):** All non-hero regular prisoners are moved from the party's prison roster into the castle's prison roster. Depositor tracking recorded for consignment income. T1–T3 auto-enslaved on next daily tick; T4+ begin conversion tracking.
-- **Town branch (new):** Non-hero prisoners at or below `CastlePrisonerAutoEnslaveTierMax` (default T3) are converted to `b1071_slave` trade goods and added directly to the town's market `ItemRoster`. T4+ prisoners are left in the party roster for vanilla to sell/ransom normally.
+- **Town branch (new):** Non-hero prisoners at or below `CastlePrisonerAutoEnslaveTierMax` (default T3) are converted to `b1071_slave` trade goods and added directly to the town's market `ItemRoster`. The town pays the AI lord the current slave market price for each enslaved prisoner via `GiveGoldAction.ApplyForSettlementToCharacter` (deducts from Town.Gold, properly clamped). If the town runs out of gold mid-batch, remaining T1–T3 prisoners stay with the lord and fall through to vanilla sell behavior. T4+ prisoners are left in the party roster for vanilla to sell/ransom normally.
 
 After the prefix runs, vanilla's handler only sees heroes (at castles) or heroes + T4+ regulars (at towns) — it processes those normally.
 
