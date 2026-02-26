@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Byzantium1071.Campaign.Behaviors;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -8,12 +9,13 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.ObjectSystem;
 
 namespace Byzantium1071.Campaign.Patches
 {
     /// <summary>
-    /// Redirects regular (non-hero) prisoners from visiting AI lord parties into the
-    /// castle's prison roster instead of letting vanilla sell/vaporize them.
+    /// Intercepts vanilla's prisoner sell/vaporize logic for AI lord parties entering
+    /// fortifications (castles AND towns) before vanilla can destroy the prisoners.
     ///
     /// VANILLA BEHAVIOR:
     /// <see cref="PartiesSellPrisonerCampaignBehavior.OnSettlementEntered"/> fires when
@@ -23,25 +25,26 @@ namespace Byzantium1071.Campaign.Patches
     /// prison roster and pays gold to the lord — it never adds them to the settlement's
     /// prison roster. The prisoners simply vanish.
     ///
-    /// WHY THIS MATTERS:
-    /// Our castle recruitment system (<see cref="Behaviors.B1071_CastleRecruitmentBehavior"/>)
-    /// reads from <c>settlement.Party.PrisonRoster</c> to track T4+ prisoner conversion
-    /// and populate the Pending/Ready lists. If prisoners never enter that roster, the system
-    /// has no raw material to work with.
+    /// THIS FIX (two branches):
     ///
-    /// This fix:
-    /// A Harmony Prefix on the private <c>OnSettlementEntered</c> method. For castles with
-    /// castle recruitment enabled, we move ALL non-hero regular prisoners from the party's
-    /// prison roster directly into the castle's prison roster (free deposit — no gold paid).
-    /// After our prefix, the party's roster contains only heroes; vanilla's handler still
-    /// runs, finds no regulars, and handles hero prisoners normally.
+    /// AT CASTLES (when castle recruitment is enabled):
+    ///   All non-hero regular prisoners are moved from the party's prison roster into
+    ///   the castle's prison roster (free deposit — no gold paid). Depositor tracking
+    ///   is recorded for the consignment income model. T1-T3 will be auto-enslaved
+    ///   on the next daily tick; T4+ begin conversion tracking. A prison capacity
+    ///   check limits deposits to PrisonerSizeLimit — excess prisoners fall through
+    ///   to vanilla sell behavior.
     ///
-    /// Any non-hostile (same-faction or neutral) party can deposit. Hostile parties are
-    /// skipped (they wouldn't normally enter peacefully anyway).
+    /// AT TOWNS (when slave economy is enabled):
+    ///   Non-hero prisoners at or below CastlePrisonerAutoEnslaveTierMax (default T3)
+    ///   are converted to b1071_slave trade goods and added directly to the town's
+    ///   market ItemRoster. Higher-tier prisoners (T4+) are left in the party roster
+    ///   for vanilla to sell/ransom normally. This runs BEFORE vanilla's handler,
+    ///   solving the race condition where vanilla would vaporize all prisoners before
+    ///   our SlaveEconomyBehavior.OnSettlementEntered could act.
     ///
-    /// T1-T3 prisoners deposited will be auto-enslaved on the next daily tick by
-    /// <see cref="Behaviors.B1071_CastleRecruitmentBehavior.AutoEnslaveLowTierPrisoners"/>.
-    /// T4+ prisoners begin their conversion tracking immediately.
+    /// After this prefix, the party's prison roster contains only heroes (at castles)
+    /// or heroes + T4+ regulars (at towns). Vanilla still runs and handles what remains.
     ///
     /// NOTE: "OnSettlementEntered" is a private method. Verified against v1.3.15
     /// TaleWorlds.CampaignSystem.dll. Re-verify after game updates.
@@ -53,56 +56,14 @@ namespace Byzantium1071.Campaign.Patches
         {
             try
             {
-                // Only intercept at castles with castle recruitment enabled.
-                if (settlement == null || !settlement.IsCastle) return;
-                if (mobileParty == null || mobileParty.IsMainParty) return;
-
-                var settings = Settings.B1071_McmSettings.Instance ?? Settings.B1071_McmSettings.Defaults;
-                if (!settings.EnableCastleRecruitment) return;
-
-                // Any non-hostile party can deposit prisoners (neutral castles included).
+                if (settlement == null || mobileParty == null || mobileParty.IsMainParty) return;
                 if (mobileParty.MapFaction == null || mobileParty.IsDisbanding) return;
                 if (FactionManager.IsAtWarAgainstFaction(mobileParty.MapFaction, settlement.MapFaction)) return;
 
-                TroopRoster? partyPrison = mobileParty.PrisonRoster;
-                TroopRoster? castlePrison = settlement.Party?.PrisonRoster;
-                if (partyPrison == null || castlePrison == null) return;
-                if (partyPrison.TotalRegulars <= 0) return;
-
-                // Snapshot the roster to avoid collection-modification during iteration.
-                var toDeposit = new List<(CharacterObject Troop, int Count, int Wounded)>();
-                foreach (TroopRosterElement element in partyPrison.GetTroopRoster())
-                {
-                    if (element.Character == null || element.Character.IsHero || element.Number <= 0)
-                        continue;
-                    toDeposit.Add((element.Character, element.Number, element.WoundedNumber));
-                }
-
-                if (toDeposit.Count == 0) return;
-
-                // Move all regular prisoners: party → castle prison.
-                // No gold paid — lords deliver prisoners to their faction's castles as duty.
-                foreach (var (troop, count, wounded) in toDeposit)
-                {
-                    partyPrison.AddToCounts(troop, -count, insertAtFront: false, -wounded);
-                    castlePrison.AddToCounts(troop, count, insertAtFront: false, wounded);
-                }
-
-                // Record depositor for consignment income tracking.
-                string? depositorHeroId = mobileParty.LeaderHero?.StringId;
-                if (!string.IsNullOrEmpty(depositorHeroId))
-                {
-                    var behavior = B1071_CastleRecruitmentBehavior.Instance;
-                    if (behavior != null)
-                    {
-                        foreach (var (troop, count, _) in toDeposit)
-                            behavior.RecordDeposit(settlement.StringId, depositorHeroId!, troop.StringId, count);
-                    }
-                }
-
-                // After this prefix, the party's prison roster contains only heroes.
-                // Vanilla's OnSettlementEntered will still run, iterate the roster,
-                // find no regulars, and handle hero prisoners normally (transfer/ransom).
+                if (settlement.IsCastle)
+                    HandleCastleDeposit(mobileParty, settlement);
+                else if (settlement.IsTown)
+                    HandleTownEnslavement(mobileParty, settlement);
             }
             catch (Exception ex)
             {
@@ -110,6 +71,110 @@ namespace Byzantium1071.Campaign.Patches
                     $"[Byzantium1071] CastlePrisonerDepositPatch error: {ex}");
                 // Fail-open: if we crash, vanilla still runs and sells prisoners as before.
             }
+        }
+
+        // ── Castle branch: deposit all regulars into castle prison ─────────────
+
+        private static void HandleCastleDeposit(MobileParty mobileParty, Settlement settlement)
+        {
+            var settings = Settings.B1071_McmSettings.Instance ?? Settings.B1071_McmSettings.Defaults;
+            if (!settings.EnableCastleRecruitment) return;
+
+            TroopRoster? partyPrison = mobileParty.PrisonRoster;
+            TroopRoster? castlePrison = settlement.Party?.PrisonRoster;
+            if (partyPrison == null || castlePrison == null) return;
+            if (partyPrison.TotalRegulars <= 0) return;
+
+            // ── Prison capacity check ──
+            // Enforce vanilla PrisonerSizeLimit. If the castle prison is full,
+            // skip the deposit entirely — vanilla will sell/ransom the prisoners
+            // at the next town the lord visits instead.
+            int prisonCap = settlement.Party?.PrisonerSizeLimit ?? 0;
+            int prisonOccupied = castlePrison.TotalManCount;
+            int room = prisonCap > 0 ? prisonCap - prisonOccupied : int.MaxValue;
+            if (room <= 0) return;
+
+            // Snapshot the roster to avoid collection-modification during iteration.
+            var toDeposit = new List<(CharacterObject Troop, int Count, int Wounded)>();
+            int totalQueued = 0;
+            foreach (TroopRosterElement element in partyPrison.GetTroopRoster())
+            {
+                if (element.Character == null || element.Character.IsHero || element.Number <= 0)
+                    continue;
+
+                // Clamp by remaining room.
+                int take = Math.Min(element.Number, room - totalQueued);
+                if (take <= 0) break;
+
+                // Proportional wounded: if depositing a partial batch, take the same
+                // fraction of wounded to avoid stranding more wounded than total count.
+                int wounded = element.WoundedNumber;
+                if (take < element.Number && wounded > 0)
+                    wounded = Math.Min(wounded, (int)Math.Round((double)wounded * take / element.Number));
+
+                toDeposit.Add((element.Character, take, wounded));
+                totalQueued += take;
+                if (totalQueued >= room) break;
+            }
+
+            if (toDeposit.Count == 0) return;
+
+            // Move regular prisoners: party → castle prison.
+            // No gold paid — lords deliver prisoners to their faction's castles as duty.
+            foreach (var (troop, count, wounded) in toDeposit)
+            {
+                partyPrison.AddToCounts(troop, -count, insertAtFront: false, -wounded);
+                castlePrison.AddToCounts(troop, count, insertAtFront: false, wounded);
+            }
+
+            // Record depositor for consignment income tracking.
+            string? depositorHeroId = mobileParty.LeaderHero?.StringId;
+            if (!string.IsNullOrEmpty(depositorHeroId))
+            {
+                var behavior = B1071_CastleRecruitmentBehavior.Instance;
+                if (behavior != null)
+                {
+                    foreach (var (troop, count, _) in toDeposit)
+                        behavior.RecordDeposit(settlement.StringId, depositorHeroId!, troop.StringId, count);
+                }
+            }
+        }
+
+        // ── Town branch: enslave T1-T3 prisoners into slave goods ──────────────
+
+        private static void HandleTownEnslavement(MobileParty mobileParty, Settlement settlement)
+        {
+            var settings = Settings.B1071_McmSettings.Instance ?? Settings.B1071_McmSettings.Defaults;
+            if (!settings.EnableSlaveEconomy) return;
+            if (!mobileParty.IsLordParty) return;
+
+            ItemObject? slaveItem = MBObjectManager.Instance.GetObject<ItemObject>("b1071_slave");
+            if (slaveItem == null) return;
+
+            TroopRoster? roster = mobileParty.PrisonRoster;
+            if (roster == null || roster.TotalRegulars <= 0) return;
+
+            int maxEnslaveTier = settings.CastlePrisonerAutoEnslaveTierMax;
+
+            // Snapshot eligible prisoners.
+            var toEnslave = roster.GetTroopRoster()
+                .Where(e => e.Character != null && !e.Character.IsHero
+                         && e.Number > 0 && e.Character.Tier <= maxEnslaveTier)
+                .ToList();
+
+            if (toEnslave.Count == 0) return;
+
+            int totalEnslaved = 0;
+            foreach (var element in toEnslave)
+            {
+                int count = element.Number;
+                roster.RemoveTroop(element.Character, count);
+                settlement.ItemRoster.AddToCounts(slaveItem, count);
+                totalEnslaved += count;
+            }
+
+            // After this, roster contains only heroes + T4+ regulars.
+            // Vanilla's handler will sell/ransom those normally.
         }
     }
 }

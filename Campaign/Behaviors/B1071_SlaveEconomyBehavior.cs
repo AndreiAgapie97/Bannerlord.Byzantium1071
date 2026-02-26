@@ -16,7 +16,7 @@ using TaleWorlds.Localization;
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
-    /// Slave Economy System (v4):
+    /// Slave Economy System (v5):
     ///
     ///  ACQUISITION
     ///   1. Village raids (ItemsLooted + MapEvent.IsRaid): fires for all parties (player and AI lords).
@@ -26,13 +26,19 @@ namespace Byzantium1071.Campaign.Behaviors
     ///      at or below CastlePrisonerAutoEnslaveTierMax (default T3) via the "Enslave prisoners"
     ///      town menu option (1:1; hero prisoners and T4+ excluded).
     ///      T4+ prisoners must be taken to a castle for recruitment conversion or ransomed.
-    ///   3. Prisoner enslavement (AI): when an AI lord enters a town, non-hero prisoners at or
-    ///      below CastlePrisonerAutoEnslaveTierMax are automatically enslaved and deposited
-    ///      into the town market. Higher-tier prisoners are left for vanilla ransom/release.
+    ///   3. Prisoner enslavement (AI): handled by the Harmony Prefix in
+    ///      <see cref="Patches.B1071_CastlePrisonerDepositPatch"/>. When an AI lord enters a
+    ///      town, the prefix intercepts vanilla's OnSettlementEntered BEFORE vanilla can sell
+    ///      the prisoners, converts T1-T3 to slave goods in the town market, and leaves T4+
+    ///      for vanilla to ransom/sell. This solves the event-ordering race condition where
+    ///      vanilla would vaporize prisoners before our handler could act.
+    ///   4. Castle auto-enslavement: T1-T3 prisoners deposited at castles are auto-enslaved
+    ///      on the next daily tick by B1071_CastleRecruitmentBehavior.AutoEnslaveLowTierPrisoners.
     ///
     ///  DISTRIBUTION
     ///   Slaves are sold through the normal civilian town market (like any other trade good).
-    ///   AI lords deposit slave items into the town market on arrival (OnSettlementEntered).
+    ///   AI lords deposit slave items (from raids) into the town market on arrival via this
+    ///   behavior's OnSettlementEntered handler (slave goods only — no prisoner enslavement).
     ///   On new-game creation, each town is seeded with 0-10 slaves to make the system
     ///   visible from turn one without saturating markets (OnNewGameCreatedPartialFollowUpEnd, seeded once).
     ///
@@ -45,7 +51,7 @@ namespace Byzantium1071.Campaign.Behaviors
     ///
     ///  SUBMENU (town game-menu entry point: "Enslave prisoners")
     ///   Visible only when the player has non-hero prisoners.
-    ///   * "Enslave prisoners" -- converts all non-hero prisoners to Slave ItemObjects.
+    ///   * "Enslave prisoners" -- converts all eligible (T1-T3) non-hero prisoners to Slave ItemObjects.
     ///   * "Leave"             -- returns to town menu.
     ///
     ///  PRICE / GOLD
@@ -210,10 +216,14 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Fires when any mobile party enters a settlement.
-        /// For AI lord parties (not the player):
-        ///   1. Any slave items already in the party's item roster are deposited to the town market.
-        ///   2. Non-hero prisoners of Tier 1-2 are enslaved and added directly to the town market.
-        ///      Tier 3+ prisoners are left for vanilla ransom/release logic.
+        /// For AI lord parties (not the player) entering towns:
+        ///   Deposits any slave items already in the party's item roster to the town market.
+        ///   (Example: slave goods acquired through village raids sitting in inventory.)
+        ///
+        /// NOTE: Prisoner enslavement (T1-T3 → slave goods) is handled by the Harmony
+        /// Prefix in B1071_CastlePrisonerDepositPatch.HandleTownEnslavement, which runs
+        /// BEFORE vanilla's OnSettlementEntered to prevent the event-ordering race condition.
+        /// This handler only moves existing slave ITEMS from party inventory to town market.
         /// </summary>
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
@@ -222,28 +232,12 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!party.IsLordParty) return;                                // ignore caravans, bandits, etc.
             if (settlement == null || !settlement.IsTown) return;
 
-            // 1. Deposit any slaves the lord is already carrying into the town market.
+            // Deposit any slaves the lord is already carrying into the town market.
             int slavesCarried = party.ItemRoster.GetItemNumber(_slaveItem);
             if (slavesCarried > 0)
             {
                 party.ItemRoster.AddToCounts(_slaveItem, -slavesCarried);
                 settlement.ItemRoster.AddToCounts(_slaveItem, slavesCarried);
-            }
-
-            // 2. Tier-based prisoner enslavement: up to configured tier → slaves, rest stays as prisoners.
-            var roster = party.PrisonRoster;
-            if (roster == null) return;
-
-            int maxEnslaveTier = Settings.CastlePrisonerAutoEnslaveTierMax;
-            var toEnslave = roster.GetTroopRoster()
-                .Where(e => e.Character != null && !e.Character.IsHero && e.Number > 0 && e.Character.Tier <= maxEnslaveTier)
-                .ToList();
-
-            foreach (var element in toEnslave)
-            {
-                int count = element.Number;
-                roster.RemoveTroop(element.Character, count);
-                settlement.ItemRoster.AddToCounts(_slaveItem, count);
             }
         }
 

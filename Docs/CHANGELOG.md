@@ -2,6 +2,37 @@
 
 ---
 
+## [0.1.7.8] — 2026-02-26
+
+### Fix — AI town enslavement race condition + prison capacity enforcement
+
+**Critical bug: AI town enslavement was non-functional (race condition)**
+
+When an AI lord entered a town, two `OnSettlementEntered` listeners fired in registration order: vanilla's `PartiesSellPrisonerCampaignBehavior` and our `B1071_SlaveEconomyBehavior`. Because vanilla behaviors register before mod behaviors (`MbEvent` fires FIFO), vanilla would collect and sell ALL prisoners before our handler could enslave them. Result: zero slaves were ever produced from AI lord town visits — the feature existed in code but never actually executed.
+
+**Fix — Expanded Harmony Prefix (`B1071_CastlePrisonerDepositPatch`)**
+
+The existing castle deposit Harmony Prefix (which runs BEFORE vanilla's handler) now handles both castles AND towns:
+
+- **Castle branch (unchanged in behavior):** All non-hero regular prisoners are moved from the party's prison roster into the castle's prison roster. Depositor tracking recorded for consignment income. T1–T3 auto-enslaved on next daily tick; T4+ begin conversion tracking.
+- **Town branch (new):** Non-hero prisoners at or below `CastlePrisonerAutoEnslaveTierMax` (default T3) are converted to `b1071_slave` trade goods and added directly to the town's market `ItemRoster`. T4+ prisoners are left in the party roster for vanilla to sell/ransom normally.
+
+After the prefix runs, vanilla's handler only sees heroes (at castles) or heroes + T4+ regulars (at towns) — it processes those normally.
+
+**Prison capacity enforcement (new)**
+
+AI castle deposits now enforce the vanilla `PrisonerSizeLimit`. When a castle's prison is full, excess prisoners are not deposited — they remain with the lord's party and fall through to vanilla sell behavior at the next town visited. Partial deposits use proportional wounded calculations to avoid stranding more wounded than total count.
+
+**Dead code removal (`B1071_SlaveEconomyBehavior`)**
+
+The `OnSettlementEntered` handler in `SlaveEconomyBehavior` previously attempted to enslave prisoners but was always pre-empted by vanilla (the race condition above). That dead prisoner-enslavement code has been removed. The handler now only transfers slave trade goods already in the AI lord's inventory into the town market — which works correctly because item rosters are not affected by vanilla's prisoner sell handler.
+
+**Save/load safety:** No new `SyncData` keys. No serialized state changes. Existing campaigns will immediately benefit from working AI town enslavement on next load. Fully compatible with saves from v0.1.7.7 or earlier.
+
+**Mod removal safety:** No campaign data changes. If the mod is removed, vanilla resumes normal prisoner sell behavior at all settlements.
+
+---
+
 ## [0.1.7.7] — 2026-02-26
 
 ### Balance — T3 enslavement cap + slave price 200d → 300d
