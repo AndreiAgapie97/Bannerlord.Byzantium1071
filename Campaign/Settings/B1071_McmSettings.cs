@@ -757,8 +757,8 @@ namespace Byzantium1071.Campaign.Settings
         public int CastleEliteRegenMax { get; set; } = 3;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("Elite regen manpower cost", 1, 100, "0", Order = 12, HintText = "Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 10.")]
-        public int CastleEliteManpowerCost { get; set; } = 10;
+        [SettingPropertyInteger("Elite regen manpower cost", 1, 100, "0", Order = 12, HintText = "Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 1.")]
+        public int CastleEliteManpowerCost { get; set; } = 1;
 
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyBool("AI recruits from castle", Order = 13, HintText = "When enabled, AI lord parties visiting their own faction's castles recruit from both the elite pool and converted prisoners, paying gold per troop (same as player). No daily cap — lords fill to party limit. Default: true.")]
