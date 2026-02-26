@@ -1,4 +1,5 @@
 using Byzantium1071.Campaign.Behaviors;
+using Byzantium1071.Campaign.Settings;
 using HarmonyLib;
 using System;
 using TaleWorlds.CampaignSystem;
@@ -63,7 +64,7 @@ namespace Byzantium1071.Campaign.Patches
                         $"Manpower: cannot recruit {troopName} — {poolName} needs {required}, only {available} left.",
                         Colors.Yellow));
                 }
-                else
+                else if (B1071_McmSettings.Instance?.LogAiManpowerConsumption == true)
                 {
                     Debug.Print(
                         $"[Byzantium1071][AIManpowerGate] Blocked {detail} for {troopName} x{number} at {poolName}. Need {required}, available {available}.");

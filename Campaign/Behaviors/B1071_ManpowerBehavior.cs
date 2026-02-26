@@ -2210,13 +2210,18 @@ namespace Byzantium1071.Campaign.Behaviors
             if (prisoner?.MapFaction is not Kingdom kingdom) return;
             if (!prisoner.IsLord) return;  // Only nobles/heroes with a clan, not wanderers
 
+            // Only add WE when captured by an enemy kingdom at war — not bandits,
+            // caravans, or other non-kingdom factions.
+            if (capturer?.MapFaction is not Kingdom capturerKingdom) return;
+            if (!capturerKingdom.IsAtWarWith(kingdom)) return;
+
             float gain = Math.Max(0f, Settings.NobleCaptureExhaustionGain);
             if (gain <= 0f) return;
 
             AddWarExhaustion(kingdom.StringId, gain);
 
             if (Settings.TelemetryDebugLogs)
-                Debug.Print($"[Byzantium1071][Exhaustion] Noble captured: {prisoner.Name} ({kingdom.Name}) +{gain:0.0} exhaustion.");
+                Debug.Print($"[Byzantium1071][Exhaustion] Noble captured: {prisoner.Name} ({kingdom.Name}) by {capturerKingdom.Name} +{gain:0.0} exhaustion.");
         }
 
         private void OnMapEventEnded(MapEvent mapEvent)
@@ -2232,9 +2237,9 @@ namespace Byzantium1071.Campaign.Behaviors
             DrainPoolFromSide(mapEvent.AttackerSide, multiplier);
             DrainPoolFromSide(mapEvent.DefenderSide, multiplier);
 
-            // War exhaustion from battle casualties.
-            AccumulateBattleExhaustion(mapEvent.AttackerSide);
-            AccumulateBattleExhaustion(mapEvent.DefenderSide);
+            // War exhaustion from battle casualties (kingdom-vs-kingdom only).
+            AccumulateBattleExhaustion(mapEvent.AttackerSide, mapEvent.DefenderSide);
+            AccumulateBattleExhaustion(mapEvent.DefenderSide, mapEvent.AttackerSide);
         }
 
         private static bool IsVillageRaidRelatedMapEvent(MapEvent mapEvent)
@@ -2307,9 +2312,30 @@ namespace Byzantium1071.Campaign.Behaviors
             return false;
         }
 
-        private void AccumulateBattleExhaustion(MapEventSide side)
+        /// <summary>
+        /// Returns true if the given side contains at least one party belonging to a kingdom.
+        /// Used to filter WE accumulation to kingdom-vs-kingdom combat only.
+        /// </summary>
+        private static bool HasKingdomParty(MapEventSide? side)
+        {
+            if (side?.Parties == null) return false;
+            foreach (MapEventParty mep in side.Parties)
+            {
+                if (mep == null) continue;
+                MobileParty? mp = mep.Party?.MobileParty;
+                if (mp == null) continue;
+                if (mp.LeaderHero?.Clan?.Kingdom != null) return true;
+            }
+            return false;
+        }
+
+        private void AccumulateBattleExhaustion(MapEventSide side, MapEventSide? opposingSide)
         {
             if (side?.Parties == null || !Settings.EnableWarExhaustion) return;
+
+            // Only accumulate WE from kingdom-vs-kingdom combat.
+            // Skip bandit ambushes, caravan attacks, villager defense, etc.
+            if (!HasKingdomParty(opposingSide)) return;
 
             float perCasualty = Math.Max(0f, Settings.BattleExhaustionPerCasualty);
             if (perCasualty <= 0f) return;

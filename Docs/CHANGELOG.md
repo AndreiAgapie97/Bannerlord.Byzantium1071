@@ -2,6 +2,111 @@
 
 ---
 
+## [0.1.7.9] — 2026-02-27
+
+### Bugfixes — War exhaustion accuracy, slave market pricing, log spam
+
+**7 issues identified and resolved from 50-day playtest data + game log analysis.**
+
+---
+
+#### BUG #1: War exhaustion accumulated from non-war events (FIXED)
+
+`OnHeroPrisonerTaken` only checked if the prisoner belonged to a kingdom — it never checked the capturer. Bandits capturing a lord would add +5 WE to the lord's kingdom. Similarly, `AccumulateBattleExhaustion` filtered out bandit *parties* from accumulating WE, but didn't check if the *opposing* side had any kingdom parties. A kingdom lord fighting bandits would still accumulate battle-casualty WE.
+
+**Fix:**
+- `OnHeroPrisonerTaken`: Now requires `capturer.MapFaction is Kingdom` AND that the capturer's kingdom is at war with the prisoner's kingdom. Bandit/caravan/villager captures no longer generate WE.
+- `AccumulateBattleExhaustion`: New `opposingSide` parameter + `HasKingdomParty()` helper. WE only accumulates when the opposing side has at least one kingdom-affiliated party. Bandit ambushes, caravan attacks, and villager defense battles no longer generate WE.
+
+**Impact:** Eliminates the largest source of phantom WE accumulation. In the 50-day playtest, Aserai reached 41 WE by Day 8 — much of that was from bandit interactions, not actual war.
+
+---
+
+#### BUG #2: 40-day minimum war duration bypassed for initial sandbox wars (BY DESIGN)
+
+`stance.WarStartDate` for pre-existing sandbox wars is set to a date before campaign start, so `ElapsedDaysUntilNow` was already >40 on Day 1. After analysis, this is **intentional**: the 40-day minimum prevents AI from declaring a war and immediately making peace. Pre-existing sandbox wars represent long-running conflicts that should be able to end at any time based on exhaustion levels. No code change.
+
+---
+
+#### BUG #3: AIManpowerGate log spam — 1183 identical lines per session (FIXED)
+
+Vanilla calls `VolunteerFromIndividual` in a tight loop for every notable at every settlement. With 9 castles at 0 MP, each blocked call logged a full `Debug.Print` line — producing 1183 out of 1200 total mod log lines with identical content.
+
+**Fix:** AI recruitment block logging now gated behind the existing `LogAiManpowerConsumption` MCM setting (default: OFF). Player recruitment blocks still always show an in-game message.
+
+---
+
+#### BUG #4: Slave price stuck at 255 regardless of supply (FIXED — root cause: ItemCategory.IsValid)
+
+Decompilation of Bannerlord's trade price system (`DefaultTradeItemPriceFactorModel`, `TownMarketData`, `TradeCampaignBehavior`, `ItemCategory`) revealed the root cause:
+
+1. `ItemCategory.IsValid` defaults to `false` in C# (properties have private setters).
+2. Code-registered vanilla categories call `InitializeObject()` which sets `IsValid = true`.
+3. XML-loaded categories (like `b1071_slaves`) never call `InitializeObject` — they set properties directly via XML attribute mapping.
+4. Our XML had no `is_valid` attribute → `IsValid` remained `false`.
+5. Vanilla's `TradeCampaignBehavior.InitializeMarkets` iterates `ItemCategories.All` with `if (item.IsValid)` → our category was **skipped**.
+6. No supply/demand entry was ever created in `TownMarketData._itemDict`.
+7. `GetCategoryData()` returned `default(ItemData)` = all zeros.
+8. Price formula `Pow(demand / denominator, 0.6)` with demand=0 → always 0 → clamped to non-trade-good floor of 0.8.
+9. Buy price: `300 × 0.8 × (1 + tradePenalty) ≈ 255`. Constant regardless of stock.
+
+**Fix (two-pronged for save compatibility):**
+- `item_categories.xml`: Added `is_valid="true"` attribute. New games will have the category properly initialized by vanilla's `InitializeMarkets`.
+- `B1071_SlaveEconomyBehavior.OnSessionLaunched`: New `InitializeSlaveMarketData()` method iterates all towns and calls `MarketData.AddDemand(slaveCat, 3f)` / `MarketData.AddSupply(slaveCat, 2f)` for any town where the slave category has no existing demand. Safe for existing saves — idempotent (skips towns already initialized).
+
+**Expected behavior after fix:** Slave prices will now respond dynamically to supply like all other trade goods. High-stock towns will have depressed prices; low-stock frontier towns will pay premium.
+
+---
+
+#### BALANCE #5: War exhaustion too aggressive (RETUNED)
+
+After Bug #1 fix removes phantom bandit WE, default values are retuned for target war duration of 60–80 days:
+
+| Setting | Old Default | New Default | Rationale |
+|---------|-------------|-------------|-----------|
+| Noble capture exhaustion gain | 5.0 | **3.0** | Single capture was 10 days of decay; now 3 days |
+| Exhaustion daily decay | 0.5 | **1.0** | Faster natural recovery between engagements |
+| Manpower depletion amplifier | 1.0 | **0.5** | At 0% MP, exhaustion gains now ×1.5 instead of ×2.0 |
+
+All values remain MCM-configurable. These are default changes only — existing saves using previously-set MCM values will retain those values.
+
+---
+
+#### BALANCE #6: Battle casualty double-dip on manpower (REMOVED by default)
+
+Recruiting a troop costs 1 MP. When that troop died in battle, `BattleCasualtyDrainMultiplier` (0.5) drained another 0.5–1.0 MP from the home settlement. Total lifecycle cost per soldier: 1.5–2.0 MP. This double-dip was the primary driver of the rapid MP collapse observed in the playtest (20+ castles under 100 MP by Day 42).
+
+**Fix:** Default changed from 0.5 → **0.0** (disabled). The mechanic remains fully functional and MCM-configurable for users who want demographic battle impact.
+
+---
+
+#### UX #7: Slave daily notification clarity (IMPROVED)
+
+The debug notification (gated behind `ShowPlayerDebugMessages`) was reformatted for clarity:
+
+- **Before:** `⛓ Lycaron: 32 slaves → +20 MP, +1.60 pros, +3.2 cons/day.`
+- **After:** `⛓ Lycaron: 32 slaves in market. Daily: +20 MP, +1.6 prosperity, +3.2 construction.`
+
+Changes: singular/plural "slave(s)", full words "prosperity"/"construction" instead of abbreviations, removed arrow symbol that could be misread as "minus".
+
+---
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `B1071_ManpowerBehavior.cs` | Bug #1: faction-at-war checks in `OnHeroPrisonerTaken` + `AccumulateBattleExhaustion` with new `HasKingdomParty()` helper |
+| `B1071_AiRecruitmentManpowerGatePatch.cs` | Bug #3: AI log gated behind `LogAiManpowerConsumption` |
+| `B1071_SlaveEconomyBehavior.cs` | Bug #4: `InitializeSlaveMarketData()` in `OnSessionLaunched`; UX #7: notification format |
+| `item_categories.xml` | Bug #4: added `is_valid="true"` |
+| `B1071_McmSettings.cs` | Balance: `NobleCaptureExhaustionGain` 5→3, `ExhaustionDailyDecay` 0.5→1.0, `ManpowerDepletionAmplifier` 1.0→0.5, `BattleCasualtyDrainMultiplier` 0.5→0 |
+
+**Save/load safety:** No new `SyncData` keys. Market data initialization is idempotent. All changes are backward-compatible with v0.1.7.8 saves.
+
+**Mod removal safety:** No persistent campaign data changes. All effects cease immediately on mod removal.
+
+---
+
 ## [0.1.7.8] — 2026-02-26
 
 ### Fix — AI town enslavement race condition + prison capacity enforcement

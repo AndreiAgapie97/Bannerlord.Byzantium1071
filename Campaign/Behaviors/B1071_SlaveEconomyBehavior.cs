@@ -106,7 +106,41 @@ namespace Byzantium1071.Campaign.Behaviors
             _slaveItem = MBObjectManager.Instance.GetObject<ItemObject>("b1071_slave");
             if (_slaveItem == null)
                 Debug.Print("[Byzantium1071][WARN] b1071_slave item not found in MBObjectManager — slave economy will be disabled.");
+            InitializeSlaveMarketData();
             RegisterMenus(starter);
+        }
+
+        /// <summary>
+        /// Ensures every town's TownMarketData has supply/demand entries for the slave
+        /// ItemCategory. Without this, vanilla's InitializeMarkets may skip our custom
+        /// category (IsValid defaults to false for XML-loaded categories prior to the
+        /// is_valid="true" fix), leaving demand=0 and producing a flat price regardless
+        /// of stock. Runs every session launch for save-load compatibility — idempotent
+        /// because we skip towns that already have demand &gt; 0 for the category.
+        /// </summary>
+        private void InitializeSlaveMarketData()
+        {
+            if (_slaveItem == null) return;
+            ItemCategory? slaveCat = _slaveItem.ItemCategory;
+            if (slaveCat == null) return;
+
+            int initialized = 0;
+            foreach (Town town in Town.AllTowns)
+            {
+                if (town == null) continue;
+                // Only initialize if the category has no demand yet — prevents
+                // accumulating extra demand across repeated session loads.
+                float existingDemand = town.MarketData.GetDemand(slaveCat);
+                if (existingDemand > 0f) continue;
+
+                // Match vanilla TradeCampaignBehavior.InitializeMarkets: demand=3, supply=2.
+                town.MarketData.AddDemand(slaveCat, 3f);
+                town.MarketData.AddSupply(slaveCat, 2f);
+                initialized++;
+            }
+
+            if (initialized > 0)
+                Debug.Print($"[Byzantium1071][SlaveEconomy] Initialized slave market data for {initialized} town(s).");
         }
 
         /// <summary>
@@ -207,9 +241,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     Settings.SlaveConstructionBonusCap,
                     slaveCount * Settings.SlaveConstructionAcceleration * eff);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u26d3 {settlement.Name}: {slaveCount} slaves \u2192 " +
-                    $"+{manpowerGain} MP, +{prosDisplay:F2} pros, " +
-                    $"+{consDisplay:F1} cons/day.",
+                    $"\u26d3 {settlement.Name}: {slaveCount} slave{(slaveCount != 1 ? "s" : "")} in market. " +
+                    $"Daily: +{manpowerGain} MP, +{prosDisplay:F1} prosperity, " +
+                    $"+{consDisplay:F1} construction.",
                     new Color(0.83f, 0.67f, 0.05f)));
             }
         }

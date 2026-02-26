@@ -33,5 +33,6 @@
     base_demand="0.015"
     luxury_demand="0.032"
     is_trade_good="true"
-    is_animal="false" />
+    is_animal="false"
+    is_valid="true" />
 </ItemCategories>

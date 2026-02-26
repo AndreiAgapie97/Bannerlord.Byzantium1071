@@ -272,7 +272,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
         [SettingPropertyFloatingInteger("Battle casualty drain multiplier", 0f, 2f, "0.00", Order = 6, HintText = "Each battle casualty drains this × 1 manpower from the party's home pool.")]
-        public float BattleCasualtyDrainMultiplier { get; set; } = 0.5f;
+        public float BattleCasualtyDrainMultiplier { get; set; } = 0f;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
         [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 7, HintText = "% of current pool retained when settlement changes hands.")]
@@ -398,7 +398,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Daily decay", 0.1f, 5f, "0.0", Order = 1, HintText = "How much exhaustion decays per day toward 0.")]
-        public float ExhaustionDailyDecay { get; set; } = 0.5f;
+        public float ExhaustionDailyDecay { get; set; } = 1.0f;
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Regen penalty divisor", 50f, 500f, "0", Order = 2, HintText = "Regen is multiplied by (1 - exhaustion/divisor). Higher = softer penalty. E.g., 200 means 100 exhaustion halves regen.")]
@@ -435,8 +435,8 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableNobleCaptureExhaustion { get; set; } = true;
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
-        [SettingPropertyFloatingInteger("Noble capture exhaustion gain", 0f, 20f, "0.0", Order = 10, HintText = "Exhaustion added to a kingdom each time one of its nobles is captured in battle. Default: 5.")]
-        public float NobleCaptureExhaustionGain { get; set; } = 5f;
+        [SettingPropertyFloatingInteger("Noble capture exhaustion gain", 0f, 20f, "0.0", Order = 10, HintText = "Exhaustion added to a kingdom each time one of its nobles is captured in battle. Default: 3.")]
+        public float NobleCaptureExhaustionGain { get; set; } = 3f;
 
         // ─── Tier-weighted battle casualties ───
 
@@ -452,7 +452,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Manpower depletion amplifier", 0f, 3f, "0.00", Order = 13, HintText = "Scales how much depleted manpower amplifies exhaustion gains. At 1.0, a kingdom at 0% average manpower gets 2× exhaustion from each event; at 50% manpower it gets 1.5×. 0 = disabled.")]
-        public float ManpowerDepletionAmplifier { get; set; } = 1.0f;
+        public float ManpowerDepletionAmplifier { get; set; } = 0.5f;
 
         // ─── Diplomacy (War Exhaustion) ───
 
