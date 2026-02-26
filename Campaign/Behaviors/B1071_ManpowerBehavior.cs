@@ -873,7 +873,44 @@ namespace Byzantium1071.Campaign.Behaviors
             float duration = Math.Max(1f, expiryDay - startDay);
             float remaining = Math.Max(0f, expiryDay - now);
             float ratio = Clamp01(remaining / duration);
-            return Math.Max(0f, basePenalty * ratio);
+            float penalty = Math.Max(0f, basePenalty * ratio);
+
+            // Reduce penalty effectiveness when pool is depleted (below threshold).
+            // A ruined settlement has nothing left to penalize — halve the penalty.
+            if (Settings.ReduceRecoveryPenaltyWhenDepleted && penalty > 0f)
+            {
+                float depletedThreshold = Clamp01(Math.Max(0f, Settings.RecoveryDepletedThresholdPercent) / 100f);
+                if (depletedThreshold > 0f && !string.IsNullOrEmpty(poolId))
+                {
+                    // Prefer cache (populated during daily tick) to avoid Settlement.All iteration.
+                    int max = _maxManpowerCache.TryGetValue(poolId, out int cached) ? cached : 0;
+                    if (max <= 0)
+                    {
+                        // Cache miss — find settlement to compute max. Only happens
+                        // if called before the first daily tick (e.g. conquest event).
+                        foreach (var s in Settlement.All)
+                        {
+                            if (s != null && s.StringId == poolId && (s.IsTown || s.IsCastle))
+                            {
+                                max = GetMaxManpowerCached(s);
+                                break;
+                            }
+                        }
+                    }
+                    if (max > 0)
+                    {
+                        int cur = _manpowerByPoolId.TryGetValue(poolId, out int cv) ? cv : max;
+                        float fillRatio = Clamp01((float)cur / max);
+                        if (fillRatio < depletedThreshold)
+                        {
+                            // Halve the penalty when depleted.
+                            penalty *= 0.5f;
+                        }
+                    }
+                }
+            }
+
+            return penalty;
         }
 
         /// <summary>
@@ -1880,15 +1917,44 @@ namespace Byzantium1071.Campaign.Behaviors
             if (regen > cap)
                 regen = cap;
 
-            int minDailyRegen = Math.Max(0, settings.MinimumDailyRegen);
+            // Castle-specific minimum daily regen (garrison rotation / Crown resettlement).
+            int minDailyRegen = pool.IsCastle
+                ? Math.Max(0, settings.CastleMinimumDailyRegen)
+                : Math.Max(0, settings.MinimumDailyRegen);
             // Cap always wins: ensure minimum never exceeds the hard cap.
             int result = Math.Min(cap, Math.Max(minDailyRegen, regen));
+
+            // Depleted Emergency Regen: when pool is below threshold, add a flat bonus
+            // that scales inversely with fill ratio (emptier = faster recovery).
+            // Models Crown frontier investment and refugee influx to devastated settlements.
+            int depletedBonus = 0;
+            if (settings.EnableDepletedEmergencyRegen && max > 0)
+            {
+                float depletedThreshold = Clamp01(Math.Max(0f, settings.DepletedRegenThresholdPercent) / 100f);
+                int maxBonus = Math.Max(0, settings.DepletedRegenBonusAtZero);
+                if (depletedThreshold > 0f && maxBonus > 0)
+                {
+                    int current = 0;
+                    if (Instance != null && !string.IsNullOrEmpty(pool.StringId) && Instance._manpowerByPoolId.TryGetValue(pool.StringId, out int depCur))
+                        current = depCur;
+                    float fillRatio = Clamp01((float)current / max);
+                    if (fillRatio < depletedThreshold)
+                    {
+                        // Linear interpolation: at 0% fill → full bonus, at threshold → 0 bonus.
+                        float t = 1f - (fillRatio / depletedThreshold);
+                        depletedBonus = Math.Max(0, (int)(maxBonus * t));
+                        result += depletedBonus;
+                        // Emergency bonus intentionally bypasses the normal hard cap to
+                        // ensure critically depleted settlements can recover.
+                    }
+                }
+            }
 
             if (Instance != null)
             {
                 Instance._telemetryLastRegenPoolId = pool.StringId ?? string.Empty;
                 Instance._telemetryLastRegenBreakdown =
-                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} Var:{varianceMul:0.##} => +{result}";
+                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} Var:{varianceMul:0.##} Dep:+{depletedBonus} => +{result}";
             }
 
             return result;
@@ -2481,12 +2547,29 @@ namespace Byzantium1071.Campaign.Behaviors
             if (string.IsNullOrEmpty(poolId)) return;
 
             int max = GetMaxManpowerCached(pool);
-            float retainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
+            float baseRetainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
+
+            // Dynamic conquest protection: depleted pools retain a higher percentage.
+            // Prevents ping-pong border castles from being permanently zeroed.
+            float retainPct = baseRetainPct;
+            if (Settings.EnableDynamicConquestProtection && max > 0)
+            {
+                float depletedThreshold = Clamp01(Math.Max(0f, Settings.ConquestDepletedThresholdPercent) / 100f);
+                float depletedRetain = Math.Max(baseRetainPct, Math.Max(0f, Settings.ConquestDepletedRetainPercent) / 100f);
+                float fillRatio = Clamp01((float)cur / max);
+                if (fillRatio < depletedThreshold && depletedThreshold > 0f)
+                {
+                    // Linear interpolation: at 0% fill → depletedRetain, at threshold → baseRetainPct.
+                    float t = fillRatio / depletedThreshold;
+                    retainPct = depletedRetain + (baseRetainPct - depletedRetain) * t;
+                }
+            }
+
             int newVal = Math.Max(0, (int)(cur * retainPct));
             _manpowerByPoolId[poolId] = newVal;
 
-            B1071_VerboseLog.Log("WarEffects", $"Conquest at {settlement.Name}: {oldKingdom?.Name}->{newKingdom?.Name}, pool {cur}->{newVal}/{max} ({retainPct:P0} retain).");
+            B1071_VerboseLog.Log("WarEffects", $"Conquest at {settlement.Name}: {oldKingdom?.Name}->{newKingdom?.Name}, pool {cur}->{newVal}/{max} ({retainPct:P0} retain{(retainPct > baseRetainPct ? $", boosted from {baseRetainPct:P0}" : "")}).");
 
             ApplyDelayedRecoveryPenalty(
                 pool,

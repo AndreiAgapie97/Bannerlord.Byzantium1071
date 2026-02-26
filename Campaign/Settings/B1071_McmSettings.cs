@@ -97,8 +97,24 @@ namespace Byzantium1071.Campaign.Settings
         public float SiegeRegenMultiplierPercent { get; set; } = 25.00f;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyInteger("Minimum daily regen", 0, 500, "0", Order = 8, HintText = "Absolute minimum manpower regenerated per day.")]
+        [SettingPropertyInteger("Minimum daily regen", 0, 500, "0", Order = 8, HintText = "Absolute minimum manpower regenerated per day (towns and fallback).")]
         public int MinimumDailyRegen { get; set; } = 1;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("Castle minimum daily regen", 0, 20, "0", Order = 81, HintText = "Castle-specific regen floor. Castles have low prosperity and their computed regen often rounds to 0; this guarantees a viable pulse. Represents garrison rotation and Crown-directed resettlement. Default: 3.")]
+        public int CastleMinimumDailyRegen { get; set; } = 3;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyBool("Enable depleted emergency regen", Order = 82, HintText = "When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models the Crown's frontier investment and refugee influx to devastated settlements.")]
+        public bool EnableDepletedEmergencyRegen { get; set; } = true;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("Depleted threshold %", 5, 50, "0", Order = 83, HintText = "Pool fill ratio below which emergency regen activates. E.g., 25 = emergency regen when pool is below 25% full. Default: 25.")]
+        public int DepletedRegenThresholdPercent { get; set; } = 25;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("Depleted regen bonus at 0%", 1, 30, "0", Order = 84, HintText = "Maximum flat bonus manpower/day added when pool is at 0%. Scales linearly to 0 as pool approaches the depleted threshold. E.g., 5 = at 0% pool get +5/day bonus, at 12.5% get +2.5, at 25% get +0. Default: 5.")]
+        public int DepletedRegenBonusAtZero { get; set; } = 5;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Regen cap % of pool/day", 0.1f, 20f, "0.00", Order = 9, HintText = "Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full).")]
@@ -279,8 +295,20 @@ namespace Byzantium1071.Campaign.Settings
         public float BattleCasualtyDrainMultiplier { get; set; } = 0f;
 
         [SettingPropertyGroup("War Effects", GroupOrder = 7)]
-        [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 7, HintText = "% of current pool retained when settlement changes hands.")]
+        [SettingPropertyInteger("Conquest pool retain %", 0, 100, "0", Order = 7, HintText = "% of current pool retained when settlement changes hands (at full pool). Scales higher for depleted pools if dynamic conquest protection is enabled.")]
         public int ConquestPoolRetainPercent { get; set; } = 50;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyBool("Enable dynamic conquest protection", Order = 71, HintText = "Depleted pools retain a higher percentage during conquest. Prevents ping-pong border castles from being permanently zeroed by repeated ownership changes.")]
+        public bool EnableDynamicConquestProtection { get; set; } = true;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Conquest depleted retain %", 50, 100, "0", Order = 72, HintText = "Retain % when pool is below the depleted threshold. Scales linearly between this and ConquestPoolRetainPercent based on fill ratio. Default: 85.")]
+        public int ConquestDepletedRetainPercent { get; set; } = 85;
+
+        [SettingPropertyGroup("War Effects", GroupOrder = 7)]
+        [SettingPropertyInteger("Conquest depleted threshold %", 5, 50, "0", Order = 73, HintText = "Pool fill ratio below which dynamic conquest protection kicks in. Default: 25.")]
+        public int ConquestDepletedThresholdPercent { get; set; } = 25;
 
         // ─── Delayed Recovery (WP3) ───
 
@@ -315,6 +343,14 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Delayed Recovery", GroupOrder = 8)]
         [SettingPropertyInteger("Recovery penalty max %", 0, 100, "0", Order = 7, HintText = "Maximum stacked delayed-recovery penalty.")]
         public int RecoveryPenaltyMaxPercent { get; set; } = 50;
+
+        [SettingPropertyGroup("Delayed Recovery", GroupOrder = 8)]
+        [SettingPropertyBool("Reduce penalty when depleted", Order = 8, HintText = "When pool is below the depleted threshold, recovery penalty effectiveness is halved. Prevents penalties from crushing already-ruined settlements that have nothing left to penalize.")]
+        public bool ReduceRecoveryPenaltyWhenDepleted { get; set; } = true;
+
+        [SettingPropertyGroup("Delayed Recovery", GroupOrder = 8)]
+        [SettingPropertyInteger("Recovery depleted threshold %", 5, 50, "0", Order = 9, HintText = "Pool fill ratio below which recovery penalty is halved. Default: 25.")]
+        public int RecoveryDepletedThresholdPercent { get; set; } = 25;
 
         // ─── Bounded Stochasticity (WP4) ───
 

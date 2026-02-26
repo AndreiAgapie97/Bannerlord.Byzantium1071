@@ -2,6 +2,92 @@
 
 ---
 
+## [0.1.8.1] — 2025-02-27
+
+### Balance — Castle regen crisis, ping-pong border castles, recovery penalty rebalance
+
+**3 critical balance issues identified from deep analysis of 120,600-line verbose playtest log (77 minutes, all subsystems active).**
+
+Playtest findings:
+- **Castle regen broken**: All castles regen exactly +1/day. `CastleRegenMinPercent` (0.05%) of typical castle prosperity (500–3500) / normalizer (6000) rounds to near-zero; `MinimumDailyRegen=1` was the only thing keeping castles alive. Towns provide 63% of all regen, castles only 37%.
+- **Map-wide manpower unsustainable**: Net deficit of -29,970 in 77 min (regen +42,719, consumption -59,276, war drains -13,413). 26 of ~82 castles hit 0 manpower with 4,476 AI recruitment blocks.
+- **Ping-pong border castles**: Contested castles (e.g. Tirby) conquered 4–5 times in rapid succession, pool going 257→34→17→8→0 permanently. Each conquest applied a flat 50% retain regardless of how depleted the pool already was.
+- **Recovery penalties crush depleted pools**: The 25% recovery penalty applied at full strength even when the pool was already at 0%, preventing any meaningful recovery.
+
+---
+
+#### FIX #1: Castle minimum regen floor + depleted emergency regen
+
+**Problem:** Castles have fundamentally lower prosperity than towns, so the prosperity-scaled regen formula always rounds down to 0–1 for castles. The global `MinimumDailyRegen=1` saved castles from zero but still left them far below sustainable regen.
+
+**Fix (two-part):**
+
+**A) Castle-specific minimum regen floor** — New MCM setting `CastleMinimumDailyRegen` (default: 3). Castles now use this separate floor instead of the global `MinimumDailyRegen` (1). This triples castle minimum regen without affecting towns.
+
+**B) Depleted emergency regen** — When a pool drops below a threshold (default: 25% of max), an additive flat bonus is applied that scales inversely with fill ratio. At 0% fill → +5/day bonus. At 12.5% fill → +2.5/day. At threshold → +0. Models Crown frontier investment and refugee influx to devastated settlements. Emergency bonus intentionally bypasses the normal hard cap.
+
+New MCM settings:
+| Setting | Default | Description |
+|---|---|---|
+| `CastleMinimumDailyRegen` | 3 | Castle-specific minimum daily regen floor |
+| `EnableDepletedEmergencyRegen` | ON | Master toggle for emergency regen |
+| `DepletedRegenThresholdPercent` | 25 | Pool fill % below which emergency regen activates |
+| `DepletedRegenBonusAtZero` | 5 | Maximum daily bonus at 0% fill |
+
+**Impact:** A castle at 0% now regens ~8/day (3 floor + 5 emergency) instead of 1/day. At 12.5% fill, ~5.5/day. At 25%+, reverts to normal formula (≥3).
+
+---
+
+#### FIX #2: Dynamic conquest protection (ping-pong defense)
+
+**Problem:** Each conquest applied `ConquestPoolRetainPercent` (50%) uniformly. A castle at 100 manpower retains 50 — reasonable. But a castle already at 8 manpower retains 4, then 2, then 1 — the flat percentage creates a death spiral where border castles can never recover between rapid conquests.
+
+**Fix:** When `EnableDynamicConquestProtection` is ON and the pool's fill ratio is below `ConquestDepletedThresholdPercent` (25%), the retain percentage is linearly interpolated from `ConquestDepletedRetainPercent` (85%) at 0% fill up to the normal `ConquestPoolRetainPercent` (50%) at the threshold. Pools above 25% fill use the normal 50% retain.
+
+New MCM settings:
+| Setting | Default | Description |
+|---|---|---|
+| `EnableDynamicConquestProtection` | ON | Master toggle for fill-ratio-scaled retain |
+| `ConquestDepletedRetainPercent` | 85 | Retain % used at 0% pool fill |
+| `ConquestDepletedThresholdPercent` | 25 | Fill % below which dynamic protection activates |
+
+**Impact:** A castle at 8/400 manpower (2% fill) now retains ~84% (≈7) instead of 50% (≈4). Combined with emergency regen, depleted border castles can recover between rapid conquests instead of spiraling to permanent zero.
+
+---
+
+#### FIX #3: Recovery penalty reduction when depleted
+
+**Problem:** Conquest applies a delayed recovery penalty (25% over 30 days) that reduces regen effectiveness. When applied to an already-depleted pool (0–25% fill), this penalty compounds the crisis — the settlement needs faster regen most, but gets penalized the hardest.
+
+**Fix:** When `ReduceRecoveryPenaltyWhenDepleted` is ON and the pool's fill ratio is below `RecoveryDepletedThresholdPercent` (25%), the recovery penalty is halved. A 25% regen penalty becomes 12.5%.
+
+New MCM settings:
+| Setting | Default | Description |
+|---|---|---|
+| `ReduceRecoveryPenaltyWhenDepleted` | ON | Halve recovery penalty for depleted pools |
+| `RecoveryDepletedThresholdPercent` | 25 | Fill % below which penalty is halved |
+
+**Impact:** Depleted settlements recover from conquest penalties 50% faster, working synergistically with emergency regen to pull settlements out of the death spiral.
+
+---
+
+#### Safety audits performed:
+
+| Audit | Result |
+|---|---|
+| **Save/Load Safety** | PASS — No new persisted state. Zero new SyncData keys. All features are runtime-computed from MCM settings + existing save data. Old saves load cleanly. |
+| **Mod Removal Safety** | PASS — No new save keys or Harmony patches. MCM settings stored in external JSON, not game save. |
+| **AI/Player Parity** | PASS — All 3 fixes are owner-agnostic. Castle min regen keyed on `IsCastle`, not owner. Conquest protection keyed on cross-kingdom flag. Recovery reduction keyed on pool fill ratio. |
+| **Exploit Analysis** | PASS — Emergency regen has negative ROI (17+ days with zero manpower for marginal regen gain). Conquest protection is always a net loss (retain ≤ 100%). Recovery reduction incentivizes recovery, not staying depleted. All division-by-zero and edge cases guarded. |
+
+#### Files changed:
+| File | Change |
+|---|---|
+| `B1071_McmSettings.cs` | Added 9 new MCM settings across 3 groups (castle regen, conquest protection, recovery penalty) |
+| `B1071_ManpowerBehavior.cs` | Modified `GetDailyRegen()`, `OnSettlementOwnerChanged()`, `GetRecoveryPenaltyFraction()` |
+
+---
+
 ## [0.1.8.0] — 2025-02-27
 
 ### Feature — Comprehensive verbose debug logging
