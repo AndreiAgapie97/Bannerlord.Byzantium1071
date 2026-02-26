@@ -2,7 +2,7 @@
 <Module xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/BUTR/Bannerlord.XmlSchemas/master/SubModule.xsd" >
   <Id value="Byzantium1071" />
-  <Name value="Byzantium 1071" />
+  <Name value="Campaign++" />
   <Version value="v0.1.7.5" />
   <DefaultModule value="false" />
   <ModuleCategory value="Singleplayer"/>

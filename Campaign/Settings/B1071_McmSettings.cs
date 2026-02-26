@@ -12,7 +12,7 @@ namespace Byzantium1071.Campaign.Settings
         internal static B1071_McmSettings Defaults => _defaults ??= new();
 
         public override string Id => "Byzantium1071";
-        public override string DisplayName => "Byzantium 1071";
+        public override string DisplayName => "Campaign++";
         public override string FolderName => "Byzantium1071";
         public override string FormatType => "json";
 
