@@ -14,10 +14,15 @@
 
 ### Bugfix — Slave trade pricing
 
-**Fixed:** Slave item category `IsTradeGood` was silently ignored by Bannerlord's XML deserialization for custom categories, defaulting to `false`. This clamped the price factor to [0.8, 1.3] instead of the trade-good range [0.1, 10.0], making slave prices nearly supply-insensitive (e.g. 569 slaves in a town → ~245 denars instead of crashing to ~30). Caravans saw no price differential and never redistributed stock.
+**Fixed (IsTradeGood):** Slave item category `IsTradeGood` was silently ignored by Bannerlord's XML deserialization for custom categories, defaulting to `false`. This clamped the price factor to [0.8, 1.3] instead of the trade-good range [0.1, 10.0], making slave prices nearly supply-insensitive (e.g. 569 slaves in a town → ~245 denars instead of crashing to ~30). Caravans saw no price differential and never redistributed stock.
 
 - **Fix:** `InitializeSlaveMarketData()` now force-sets `IsTradeGood = true` via reflection on the auto-property backing field at session launch.
 - **Effect:** Slave prices now respond properly to supply/demand. Oversaturated towns crash in price; undersupplied towns stay high. Caravans will naturally redistribute slaves via trade arbitrage.
+
+**Fixed (Supply EMA stickiness):** Bannerlord's MarketData tracks supply as an exponential moving average (EMA) that decays at only 15%/day (half-life ~4.3 days). When 100+ slaves accumulated in a town, the Supply EMA converged to ~30,000+. If a player or caravan bought them all, InStoreValue dropped to 0 instantly but the EMA retained the old value for weeks, pinning the price at the 0.1× floor (~28 denars) indefinitely. Slave trading was unprofitable — no buy-low-sell-high arbitrage was possible.
+
+- **Fix:** `OnDailyTickSettlement` now calls `CorrectSlaveSupplyEma()` which caps the Supply EMA at 2× actual InStoreValue + a small baseline. When stock is cleared, the EMA snaps down within 1 daily tick instead of decaying over 30 days.
+- **Effect:** After buying slaves from a town, the price recovers within 1–2 days to near-base levels. Slave trade arbitrage is now viable — buy cheap at oversaturated towns, sell dear at undersupplied ones.
 
 #### Problem identified
 

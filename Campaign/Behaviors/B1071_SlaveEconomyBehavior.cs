@@ -176,6 +176,45 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Corrects the MarketData Supply EMA for the slave category when it's
+        /// grossly out of proportion with actual stock.
+        ///
+        /// Bannerlord's Supply EMA decays at only 15%/day (half-life ~4.3 days).
+        /// When 100+ slaves sit in a town, Supply converges to ~30,000+ (count × 300 value).
+        /// If a player buys them all, InStoreValue drops to 0 instantly but the EMA
+        /// retains the old value for weeks, pinning the price at the 0.1× floor (~30 denars).
+        /// This makes slave trading unprofitable — you can't buy low and sell high
+        /// because the "memory" of old stock kills prices everywhere.
+        ///
+        /// Fix: each daily tick, if Supply EMA exceeds 2× actual InStoreValue + a
+        /// baseline buffer, snap it down.  This lets prices recover within 1–3 days
+        /// instead of 30+, making slave trade arbitrage viable.
+        /// </summary>
+        private void CorrectSlaveSupplyEma(Town town, int currentSlaveCount)
+        {
+            if (_slaveItem == null) return;
+            ItemCategory slaveCat = _slaveItem.ItemCategory;
+            if (slaveCat == null) return;
+
+            float supply = town.MarketData.GetSupply(slaveCat);
+            float demand = town.MarketData.GetDemand(slaveCat);
+            int inStoreValue = currentSlaveCount * _slaveItem.Value;
+
+            // Allow Supply to be at most 2× actual InStoreValue + a small baseline.
+            // The baseline (600 = 2 slaves worth) prevents snapping to zero when
+            // stock is legitimately empty but we don't want the price to be infinite.
+            float maxReasonableSupply = inStoreValue * 2f + 600f;
+
+            if (supply > maxReasonableSupply)
+            {
+                town.MarketData.SetSupplyDemand(slaveCat, maxReasonableSupply, demand);
+                B1071_VerboseLog.Log("SlaveEconomy",
+                    $"Supply EMA correction {town.Name}: {supply:F0} → {maxReasonableSupply:F0} " +
+                    $"(stock={currentSlaveCount}, inStoreValue={inStoreValue}, demand={demand:F1}).");
+            }
+        }
+
+        /// <summary>
         /// Fires each time the player's party receives a loot batch.
         /// We filter for raid MapEvents (MapEvent.IsRaid == true) to distinguish village raids
         /// from post-battle loot pickup.
@@ -224,6 +263,16 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!settlement.IsTown || settlement.Town == null) return;
 
             int slaveCount = settlement.ItemRoster.GetItemNumber(_slaveItem);
+
+            // ── Supply EMA correction ─────────────────────────────────────────
+            // Bannerlord's MarketData tracks a Supply EMA that decays at only
+            // 15%/day toward InStoreValue.  When a large slave stock (e.g. 112)
+            // accumulates and is then bought/removed, the EMA retains the old
+            // high value for weeks, pinning the price at floor (~30 denars).
+            // We accelerate the decay: if Supply > 2× actual InStoreValue, snap
+            // it down so prices recover within a few days instead of 30+.
+            CorrectSlaveSupplyEma(settlement.Town, slaveCount);
+
             if (slaveCount <= 0) return;
 
             float eff = Settings.SlaveRansomMultiplier; // bonus effectiveness multiplier
