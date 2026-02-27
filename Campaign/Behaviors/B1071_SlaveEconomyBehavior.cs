@@ -45,9 +45,10 @@ namespace Byzantium1071.Campaign.Behaviors
     ///  BONUSES
     ///   Each campaign day, every town with Slave goods in its market ItemRoster receives
     ///   proportional daily bonuses (until the last slave is bought from the market):
-    ///     Manpower     += slavesInMarket * SlaveManpowerPerUnit * SlaveRansomMultiplier
     ///     Prosperity   += slavesInMarket * SlaveProsperityPerUnit * SlaveRansomMultiplier
     ///     Construction += min(cap, slavesInMarket * SlaveConstructionAcceleration * SlaveRansomMultiplier)
+    ///   Slaves are labor — historically they were NOT a source of military manpower.
+    ///   Manpower injection was removed in v0.1.8.3.
     ///
     ///  SUBMENU (town game-menu entry point: "Enslave prisoners")
     ///   Visible only when the player has non-hero prisoners.
@@ -196,16 +197,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float eff = Settings.SlaveRansomMultiplier; // bonus effectiveness multiplier
 
-            // ── Manpower ─────────────────────────────────────────────────────────
-            int manpowerGain = Math.Max(1, (int)(slaveCount * Settings.SlaveManpowerPerUnit * eff));
-            // G-4: Cap slave MP injection per town to prevent runaway recovery.
-            int mpCap = Settings.SlaveManpowerCapPerTown;
-            if (mpCap > 0 && manpowerGain > mpCap)
-                manpowerGain = mpCap;
-            if (B1071_ManpowerBehavior.Instance != null)
-                B1071_ManpowerBehavior.Instance.AddManpowerToSettlement(settlement, manpowerGain);
+            // ── Manpower removed (v0.1.8.3) ─────────────────────────────────────
+            // Slaves are labor (construction, prosperity) — historically NOT a
+            // recruitment source. The +174K MP/session firehose was the #1 reason
+            // settlement pools never ran dry. Removed entirely.
 
-            B1071_VerboseLog.Log("SlaveEconomy", $"Daily bonus {settlement.Name}: {slaveCount} slave(s), +{manpowerGain} MP (cap={mpCap}), eff={eff:0.##}.");
+            B1071_VerboseLog.Log("SlaveEconomy", $"Daily bonus {settlement.Name}: {slaveCount} slave(s), eff={eff:0.##} (labor only, no MP).");
 
             // NOTE: Prosperity and Construction bonuses are applied via Harmony postfixes:
             //   B1071_SlaveProsperityPatch  → DefaultSettlementProsperityModel.CalculateProsperityChange
@@ -247,8 +244,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     slaveCount * Settings.SlaveConstructionAcceleration * eff);
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"\u26d3 {settlement.Name}: {slaveCount} slave{(slaveCount != 1 ? "s" : "")} in market. " +
-                    $"Daily: +{manpowerGain} MP, +{prosDisplay:F1} prosperity, " +
-                    $"+{consDisplay:F1} construction.",
+                    $"Daily: +{prosDisplay:F1} prosperity, +{consDisplay:F1} construction.",
                     new Color(0.83f, 0.67f, 0.05f)));
             }
         }

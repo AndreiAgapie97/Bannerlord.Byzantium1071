@@ -2,6 +2,41 @@
 
 ---
 
+## [0.1.8.3] — 2026-02-27
+
+### Balance — Historical demographic realism pass
+
+**Two major changes grounded in 11th-century Byzantine demographic research:**
+
+1. **Slaves are labor, not soldiers.** Removed the slave economy's daily manpower injection into settlement pools. Historically, enslaved populations in the Byzantine-Seljuk context were used for construction, agriculture, and domestic service — never as a military recruitment source.
+
+2. **Castle/depleted regen historically calibrated.** Castles did not generate manpower through births — garrisons were rotated from towns by the *strategos* or *doux*. Recovery of devastated frontier provinces took decades (post-Manzikert Anatolia never fully recovered). Settings adjusted to match.
+
+#### Problem identified
+
+Playtest analysis (65-min session, ~108 game days) revealed the slave economy was injecting **+174,804 MP** — 3.8× more than natural settlement regen (+46,326). Combined with a castle regen floor of 3/day (6× the historically-calibrated rate of ~0.5/day per castle) and emergency regen of +5/day at zero, settlement pools never ran dry.
+
+Historical demographic analysis (CBR 40/1000, 50% child mortality, 50% male, 10-15% military participation) yields ~1.25 new military-eligible males per 1,000 population per year. For a castle community of ~2,500 this is ~0.5/day after Bannerlord time compression — the previous floor of 3 was **6× too high**.
+
+#### Changes
+
+**Slave manpower removed:**
+- **Removed** `SlaveManpowerPerUnit` and `SlaveManpowerCapPerTown` from MCM (hidden stubs kept for JSON compatibility).
+- **Removed** manpower injection from `B1071_SlaveEconomyBehavior.OnDailyTickSettlement`. Slaves no longer call `AddManpowerToSettlement`.
+- **Retained** all labor bonuses: construction speed, prosperity, food consumption, decay. These are historically appropriate.
+
+**Regen historically calibrated:**
+
+| Setting | Old | New | Historical basis |
+|---------|-----|-----|-----------------|
+| `CastleMinimumDailyRegen` | 3 | **1** | Castles received garrisons from towns (institutional rotation), not local births. 1/day = slow Crown logistics during wartime. |
+| `DepletedRegenBonusAtZero` | 5 | **2** | Devastated provinces (e.g., post-Manzikert eastern Anatolia) took decades to recover. Refugees fled *away* from the frontier. |
+| `DepletedRegenThresholdPercent` | 25% | **15%** | Emergency regen should only activate at critical depletion, not routine low fill. |
+
+**Migration:** All changes applied via `LATEST_PROFILE_VERSION = 3`.
+
+---
+
 ## [0.1.8.2] — 2026-02-26
 
 ### Balance — Historically-calibrated war exhaustion & diplomacy retuning + settings migration system

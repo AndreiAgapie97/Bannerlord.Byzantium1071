@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 2;
+        internal const int LATEST_PROFILE_VERSION = 3;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -84,13 +84,31 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.8.2 balance retuning (war exhaustion, pressure bands, diplomacy). ";
             }
 
+            // ── Profile v3: v0.1.8.3 historical realism pass ──
+            if (SettingsProfileVersion < 3)
+            {
+                // Slaves are labor (construction, prosperity), not a recruitment pool.
+                // Zero out the legacy manpower settings so existing saves stop injecting MP.
+                SlaveManpowerPerUnit = 0f;
+                SlaveManpowerCapPerTown = 0;
+
+                // Historically-calibrated regen: castles received garrisons from towns
+                // (institutional rotation), not from local births. Reduce castle floor
+                // and emergency regen to match 11th-century demographic reality.
+                CastleMinimumDailyRegen = 1;       // was 3; castles don't generate MP organically
+                DepletedRegenBonusAtZero = 2;       // was 5; devastated provinces took decades to recover
+                DepletedRegenThresholdPercent = 15; // was 25; emergency only at critical depletion
+
+                migrated += "v0.1.8.3 slave manpower removed, regen historically calibrated. ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 3) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 4) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
             TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migrated to profile v{LATEST_PROFILE_VERSION}: {migrated}");
-            return $"Campaign++ v0.1.8.2: Balance settings updated to new defaults. Customize in MCM if desired. ({migrated.Trim()})";
+            return $"Campaign++ v{LATEST_PROFILE_VERSION}: Balance settings updated to new defaults. Customize in MCM if desired. ({migrated.Trim()})";
         }
 
         [SettingPropertyGroup("Pool Sizes", GroupOrder = 0)]
@@ -178,20 +196,20 @@ namespace Byzantium1071.Campaign.Settings
         public int MinimumDailyRegen { get; set; } = 1;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyInteger("Castle minimum daily regen", 0, 20, "0", Order = 81, HintText = "Castle-specific regen floor. Castles have low prosperity and their computed regen often rounds to 0; this guarantees a viable pulse. Represents garrison rotation and Crown-directed resettlement. Default: 3.")]
-        public int CastleMinimumDailyRegen { get; set; } = 3;
+        [SettingPropertyInteger("Castle minimum daily regen", 0, 20, "0", Order = 81, HintText = "Castle-specific regen floor. Castles did not generate manpower through births — garrisons were rotated from towns by the Crown. 1/day represents slow institutional replacement logistics during wartime. Default: 1.")]
+        public int CastleMinimumDailyRegen { get; set; } = 1;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyBool("Enable depleted emergency regen", Order = 82, HintText = "When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models the Crown's frontier investment and refugee influx to devastated settlements.")]
+        [SettingPropertyBool("Enable depleted emergency regen", Order = 82, HintText = "When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models limited Crown frontier investment — historically, devastated provinces took decades to recover.")]
         public bool EnableDepletedEmergencyRegen { get; set; } = true;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyInteger("Depleted threshold %", 5, 50, "0", Order = 83, HintText = "Pool fill ratio below which emergency regen activates. E.g., 25 = emergency regen when pool is below 25% full. Default: 25.")]
-        public int DepletedRegenThresholdPercent { get; set; } = 25;
+        [SettingPropertyInteger("Depleted threshold %", 5, 50, "0", Order = 83, HintText = "Pool fill ratio below which emergency regen activates. E.g., 15 = emergency regen when pool is below 15% full. Default: 15.")]
+        public int DepletedRegenThresholdPercent { get; set; } = 15;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyInteger("Depleted regen bonus at 0%", 1, 30, "0", Order = 84, HintText = "Maximum flat bonus manpower/day added when pool is at 0%. Scales linearly to 0 as pool approaches the depleted threshold. E.g., 5 = at 0% pool get +5/day bonus, at 12.5% get +2.5, at 25% get +0. Default: 5.")]
-        public int DepletedRegenBonusAtZero { get; set; } = 5;
+        [SettingPropertyInteger("Depleted regen bonus at 0%", 1, 30, "0", Order = 84, HintText = "Maximum flat bonus manpower/day added when pool is at 0%. Scales linearly to 0 as pool approaches the depleted threshold. E.g., 2 = at 0% pool get +2/day bonus, at 7.5% get +1, at 15% get +0. Default: 2.")]
+        public int DepletedRegenBonusAtZero { get; set; } = 2;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyFloatingInteger("Regen cap % of pool/day", 0.1f, 20f, "0.00", Order = 9, HintText = "Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full).")]
@@ -711,12 +729,15 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyFloatingInteger("Slave effectiveness multiplier", 1.0f, 4.0f, "0.00", Order = 2, HintText = "Scales all daily town bonuses generated by slaves in the market (manpower, prosperity, construction). Higher = more effective slaves. Gold from selling slaves comes from the normal trade price in items.xml. Default: 1.5.")]
         public float SlaveRansomMultiplier { get; set; } = 1.5f;
 
-        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Manpower per slave per day", 0f, 5f, "0.00", Order = 3, HintText = "Manpower per slave per day. At default effectiveness (1.5\u00d7): 0.67 \u00d7 1.5 \u2248 1 manpower/slave. E.g., 100 slaves \u2192 ~100 manpower/day. Default: 0.67.")]
-        public float SlaveManpowerPerUnit { get; set; } = 0.67f;
-        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyInteger("Max manpower from slaves per town/day", 0, 200, "0", Order = 31, HintText = "Daily cap on manpower injected by slaves at each town. Prevents large slave populations from trivialising manpower recovery. 0 = uncapped. Default: 20.")]
-        public int SlaveManpowerCapPerTown { get; set; } = 20;
+        // SlaveManpowerPerUnit and SlaveManpowerCapPerTown REMOVED in v0.1.8.3.
+        // Slaves are labor (construction, prosperity), not a recruitment pool.
+        // Properties kept as hidden stubs so that existing MCM JSON files don't
+        // cause deserialization errors on upgrade.
+        [System.ComponentModel.Browsable(false)]
+        public float SlaveManpowerPerUnit { get; set; } = 0f;
+        [System.ComponentModel.Browsable(false)]
+        public int SlaveManpowerCapPerTown { get; set; } = 0;
+
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyFloatingInteger("Prosperity per slave per day", 0f, 0.1f, "0.0000", Order = 4, HintText = "Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5\u00d7): 0.0067 \u00d7 1.5 \u2248 0.01/slave. E.g., 100 slaves \u2192 ~1 prosperity/day. Default: 0.0067.")]
         public float SlaveProsperityPerUnit { get; set; } = 0.0067f;
