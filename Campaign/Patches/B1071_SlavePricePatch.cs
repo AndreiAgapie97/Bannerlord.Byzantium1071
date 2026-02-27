@@ -35,20 +35,21 @@ namespace Byzantium1071.Campaign.Patches
     ///   priceFactor = max(0.1, decayRate ^ stock)
     ///
     /// where stock = inStoreValue / slaveBaseValue (1500) and decayRate is an
-    /// MCM-configurable setting (default 0.925). This gives a gradual, natural
-    /// price curve:
+    /// MCM-configurable setting (default 0.98). This gives a gradual, natural
+    /// price curve that creates meaningful price differentials across towns:
     ///
     ///   Stock  Factor  Price    Notes
     ///     0    1.000   1500d    Empty market, full value
-    ///    10    0.458    688d    Very scarce — high demand
-    ///    15    0.310    466d    Scarce
-    ///    20    0.210    315d    Moderate supply
-    ///    25    0.142    213d    Heavy supply
-    ///    30    0.096    150d    At floor (0.1 × 1500)
-    ///    40+   0.100    150d    Clamped at floor
+    ///    10    0.817   1226d    Very scarce — high demand
+    ///    30    0.545    818d    Light supply
+    ///    50    0.364    546d    Moderate supply
+    ///    80    0.199    298d    Heavy supply
+    ///   100    0.133    199d    Saturated market
+    ///   114    0.100    150d    At floor (0.1 × 1500)
     ///
-    /// The floor (150d) is always more profitable than T1-T3 ransom, making
-    /// enslavement economically rational at any stock level.
+    /// Price differentials between towns (e.g., stock 40 = 669d vs stock 80 = 298d)
+    /// incentivize caravan slave trading. The floor (150d) is always more profitable
+    /// than T1-T3 ransom, making enslavement economically rational at any stock level.
     ///
     /// SCOPE: Only affects ItemCategory "b1071_slaves". All other items use
     /// the vanilla formula unmodified.

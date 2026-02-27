@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 3;
+        internal const int LATEST_PROFILE_VERSION = 4;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -106,8 +106,20 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.8.3 slave manpower removed, regen historically calibrated, castle supply chain enabled. ";
             }
 
+            // ── Profile v4: v0.1.8.4 slave price curve flattening ──
+            if (SettingsProfileVersion < 4)
+            {
+                // Playtest data showed 0.925 decay was far too steep: stock 30+ = floor (150d),
+                // 96.7% of towns at floor, zero price differential → no caravan trading.
+                // 0.98 puts the "interesting range" at stock 30-100 (818d-199d),
+                // creating 125%+ differentials between towns for caravan arbitrage.
+                SlavePriceDecayRate = 0.98f;
+
+                migrated += "v0.1.8.4 slave price decay flattened (0.925→0.98) for caravan trading. ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 4) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 5) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
@@ -775,8 +787,8 @@ namespace Byzantium1071.Campaign.Settings
         public int SlaveCapMinimum { get; set; } = 10;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Slave price decay rate", 0.80f, 0.99f, "0.000", Order = 11, HintText = "Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 150d at base value 1500). Lower values = steeper price drop. At 0.925: stock 10 = ~688d, stock 20 = ~315d, stock 30+ = floor 150d. At 0.95: stock 10 = ~928d, stock 30 = ~463d, stock 45+ = floor 150d. Default: 0.925.")]
-        public float SlavePriceDecayRate { get; set; } = 0.925f;
+        [SettingPropertyFloatingInteger("Slave price decay rate", 0.90f, 0.999f, "0.000", Order = 11, HintText = "Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 150d at base value 1500). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~1226d, stock 30 = ~818d, stock 50 = ~546d, stock 80 = ~298d, stock 114 = floor. At 0.96: stock 30 = ~294d, stock 50 = ~130d (floor). Default: 0.98.")]
+        public float SlavePriceDecayRate { get; set; } = 0.98f;
 
         [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]

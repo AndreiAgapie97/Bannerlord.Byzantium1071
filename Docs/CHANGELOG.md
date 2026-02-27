@@ -16,20 +16,22 @@
 
 **Replaced vanilla trade price formula for slaves** with a custom exponential-decay model. Vanilla's `GetBasePriceFactor` formula (`Pow(demand / (0.1*supply + inStoreValue*0.04 + 2), 0.6)`) was designed for low-value bulk goods (grain=10d, pottery=15d). With a 1500d base value, each slave contributes 60 to the denominator -- which equals the demand (~60). One slave literally halves the price.
 
-**New formula:** `priceFactor = max(0.1, decayRate ^ stock)` where `decayRate` is MCM-configurable (default 0.925).
+**New formula:** `priceFactor = max(0.1, decayRate ^ stock)` where `decayRate` is MCM-configurable (default 0.98).
 
-Price curve at default settings (1500d base, decayRate=0.925):
+Price curve at default settings (1500d base, decayRate=0.98):
 
 | Stock | Factor | Price | Notes |
 |-------|--------|-------|-------|
 | 0 | 1.000 | 1500d | Empty market, full value |
-| 10 | 0.458 | 688d | Scarce -- strong caravan incentive |
-| 15 | 0.310 | 466d | Moderate supply |
-| 20 | 0.210 | 315d | Heavy supply |
-| 25 | 0.142 | 213d | Near floor |
-| 30+ | 0.1 | 150d | At floor (0.1 * 1500) |
+| 10 | 0.817 | 1226d | Very scarce -- high demand |
+| 30 | 0.545 | 818d | Light supply |
+| 50 | 0.364 | 546d | Moderate supply |
+| 80 | 0.199 | 298d | Heavy supply |
+| 100 | 0.133 | 199d | Saturated market |
+| 114+ | 0.1 | 150d | At floor (0.1 * 1500) |
 
-- **MCM setting:** `SlavePriceDecayRate` (float, 0.80-0.99, default 0.925). Lower = steeper curve.
+- **MCM setting:** `SlavePriceDecayRate` (float, 0.90-0.999, default 0.98). Lower = steeper curve.
+- **v0.1.8.4 update:** Default raised from 0.925 to 0.98 after playtest showed 96.7% of towns stuck at floor price (152d) with zero caravan trading. The flatter curve creates 125%+ price differentials between low-stock and saturated towns.
 - **Technical:** Harmony postfix on `DefaultTradeItemPriceFactorModel.GetBasePriceFactor`. Only fires for `ItemCategory "b1071_slaves"` -- all other items use vanilla formula unmodified.
 - **Effect:** Meaningful price differentials between low-stock and saturated towns. Caravan trade should now be profitable. Floor 150d still beats T1-T3 ransom.
 
