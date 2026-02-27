@@ -12,6 +12,13 @@
 
 2. **Castle/depleted regen historically calibrated.** Castles did not generate manpower through births — garrisons were rotated from towns by the *strategos* or *doux*. Recovery of devastated frontier provinces took decades (post-Manzikert Anatolia never fully recovered). Settings adjusted to match.
 
+### Bugfix — Slave trade pricing
+
+**Fixed:** Slave item category `IsTradeGood` was silently ignored by Bannerlord's XML deserialization for custom categories, defaulting to `false`. This clamped the price factor to [0.8, 1.3] instead of the trade-good range [0.1, 10.0], making slave prices nearly supply-insensitive (e.g. 569 slaves in a town → ~245 denars instead of crashing to ~30). Caravans saw no price differential and never redistributed stock.
+
+- **Fix:** `InitializeSlaveMarketData()` now force-sets `IsTradeGood = true` via reflection on the auto-property backing field at session launch.
+- **Effect:** Slave prices now respond properly to supply/demand. Oversaturated towns crash in price; undersupplied towns stay high. Caravans will naturally redistribute slaves via trade arbitrage.
+
 #### Problem identified
 
 Playtest analysis (65-min session, ~108 game days) revealed the slave economy was injecting **+174,804 MP** — 3.8× more than natural settlement regen (+46,326). Combined with a castle regen floor of 3/day (6× the historically-calibrated rate of ~0.5/day per castle) and emergency regen of +5/day at zero, settlement pools never ran dry.

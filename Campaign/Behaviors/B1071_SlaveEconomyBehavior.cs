@@ -125,6 +125,37 @@ namespace Byzantium1071.Campaign.Behaviors
             ItemCategory? slaveCat = _slaveItem.ItemCategory;
             if (slaveCat == null) return;
 
+            // ── Fix IsTradeGood ───────────────────────────────────────────────
+            // Bannerlord's XML deserialization silently ignores is_trade_good="true"
+            // on custom ItemCategories, leaving IsTradeGood=false.  With false the
+            // price-factor clamp is [0.8, 1.3] instead of [0.1, 10.0], making
+            // prices almost supply-insensitive (e.g. 569 slaves → ~245 denars
+            // instead of crashing to ~30).  We force-set it via reflection on the
+            // auto-property backing field because the public setter may be
+            // inlined / stripped in release builds.
+            try
+            {
+                var field = typeof(ItemCategory).GetField(
+                    "<IsTradeGood>k__BackingField",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(slaveCat, true);
+                    Debug.Print("[Byzantium1071][SlaveEconomy] Set IsTradeGood=true for slave category via backing field.");
+                }
+                else
+                {
+                    // Fallback: try property setter via reflection.
+                    var prop = typeof(ItemCategory).GetProperty("IsTradeGood");
+                    prop?.SetValue(slaveCat, true);
+                    Debug.Print("[Byzantium1071][SlaveEconomy] Set IsTradeGood=true for slave category via property reflection.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][WARN] Failed to set IsTradeGood on slave category: {ex.Message}");
+            }
+
             int initialized = 0;
             foreach (Town town in Town.AllTowns)
             {

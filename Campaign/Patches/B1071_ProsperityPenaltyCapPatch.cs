@@ -30,7 +30,14 @@ namespace Byzantium1071.Campaign.Patches
         [HarmonyPriority(Priority.First)]
         public static void Prefix()
         {
-            _accumulatedPenalty = 0f;
+            try
+            {
+                _accumulatedPenalty = 0f;
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] ProsperityPenaltyCapPatch Prefix error: {ex}");
+            }
         }
 
         /// <summary>
