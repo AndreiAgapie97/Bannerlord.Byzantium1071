@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.ObjectSystem;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -719,12 +720,14 @@ namespace Byzantium1071.Campaign.UI
         {
             public string Name = string.Empty;
             public string TypeTag = string.Empty;
-            public string TypeCategory = string.Empty;  // "Hero","Place","Army","Clan","Kingdom"
+            public string TypeCategory = string.Empty;  // "Hero","Place","Army","Clan","Kingdom","Market"
             public string Affiliation = string.Empty;
             public string Detail = string.Empty;
             public float DistanceSq = float.MaxValue;
             public bool HasPosition;
             public int MatchScore;
+            /// <summary>Numeric sort value for Detail column. Market rows store price here for numeric sorting.</summary>
+            public int SortValue;
         }
 
         // Unweighted overload — used by Clans tab and other non-Search tabs.
@@ -864,9 +867,9 @@ namespace Byzantium1071.Campaign.UI
                 _pageLabel = "Page 1/1";
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
-                    "Enter a query (e.g., Andronikos)",
+                    "Enter a query (e.g., Andronikos, Grain)",
                     string.Empty,
-                    "Heroes, settlements, clans, kingdoms, armies",
+                    "Heroes, settlements, armies, market prices",
                     string.Empty,
                     false,
                     true));
@@ -1073,6 +1076,76 @@ namespace Byzantium1071.Campaign.UI
                 });
             }
 
+            // ─── Market: Trade goods & food ───
+            // Matches query against item names. For each matching item, shows one row per town
+            // with the local price, stock count, and distance. All APIs are read-only queries —
+            // no save-state modification. Our Harmony postfix on GetPrice fires automatically
+            // for slave items, so custom slave prices appear correctly without special handling.
+            {
+                var allItems = MBObjectManager.Instance?.GetObjectTypeList<ItemObject>();
+                if (allItems != null)
+                {
+                    // Collect matching items first (typically 1-3 out of ~40 trade/food items)
+                    var matchedItems = new List<(ItemObject item, string name, int score)>(8);
+                    for (int i = 0; i < allItems.Count; i++)
+                    {
+                        ItemObject item = allItems[i];
+                        if (item == null)
+                            continue;
+                        if (!item.IsTradeGood && !item.IsFood)
+                            continue;
+
+                        string itemName = item.Name?.ToString() ?? string.Empty;
+                        if (itemName.Length == 0)
+                            continue;
+
+                        // Also match against ItemCategory name for broader discoverability
+                        // (e.g., searching "grain" finds the Grain trade good).
+                        string catName = item.ItemCategory?.GetName()?.ToString() ?? string.Empty;
+                        int itemScore = ComputeQueryScore(query,
+                            new[] { itemName, catName },
+                            new[] { 3f,       1f });
+                        if (itemScore <= 0)
+                            continue;
+
+                        matchedItems.Add((item, itemName, itemScore));
+                    }
+
+                    // For each matching item, iterate towns to build price rows.
+                    for (int mi = 0; mi < matchedItems.Count; mi++)
+                    {
+                        var (item, itemName, itemScore) = matchedItems[mi];
+
+                        foreach (Settlement settlement in Settlement.All)
+                        {
+                            if (settlement == null || !settlement.IsTown)
+                                continue;
+
+                            Town? town = settlement.Town;
+                            if (town == null)
+                                continue;
+
+                            string townName = settlement.Name?.ToString() ?? "Unknown";
+                            int price = town.GetItemPrice(item);
+                            int stock = settlement.ItemRoster?.GetItemNumber(item) ?? 0;
+
+                            results.Add(new SearchResultRow
+                            {
+                                Name = townName,
+                                TypeTag = "Market",
+                                TypeCategory = "Market",
+                                Affiliation = itemName,
+                                Detail = price + "d (×" + stock + ")",
+                                HasPosition = true,
+                                DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
+                                MatchScore = price,   // Price = relevance for market rows → default sort shows highest price first
+                                SortValue = price
+                            });
+                        }
+                    }
+                }
+            }
+
             if (results.Count == 0)
             {
                 ClearColumns("Search Intel");
@@ -1100,7 +1173,12 @@ namespace Byzantium1071.Campaign.UI
                 int compare = _sortColumn switch
                 {
                     1 => string.Compare(a.Affiliation, b.Affiliation, StringComparison.Ordinal),
-                    2 => string.Compare(a.Detail, b.Detail, StringComparison.Ordinal),
+                    // Column 2 (Detail): use numeric SortValue when both rows have one (market prices),
+                    // otherwise fall back to string comparison for non-market Detail text.
+                    2 => (a.SortValue > 0 && b.SortValue > 0)
+                        ? a.SortValue.CompareTo(b.SortValue)
+                        : (a.SortValue > 0 ? 1 : b.SortValue > 0 ? -1
+                        : string.Compare(a.Detail, b.Detail, StringComparison.Ordinal)),
                     3 => string.Compare(a.Name, b.Name, StringComparison.Ordinal),
                     _ => a.MatchScore.CompareTo(b.MatchScore)
                 };
@@ -1156,7 +1234,7 @@ namespace Byzantium1071.Campaign.UI
             }
 
             // ─── Totals: entity type breakdown ───
-            int heroCount = 0, placeCount = 0, armyCount = 0, otherCount = 0;
+            int heroCount = 0, placeCount = 0, armyCount = 0, marketCount = 0, otherCount = 0;
             for (int i = 0; i < results.Count; i++)
             {
                 switch (results[i].TypeCategory)
@@ -1164,15 +1242,17 @@ namespace Byzantium1071.Campaign.UI
                     case "Hero":    heroCount++;  break;
                     case "Place":   placeCount++; break;
                     case "Army":    armyCount++;  break;
+                    case "Market":  marketCount++; break;
                     default:        otherCount++; break;
                 }
             }
 
-            // Build compact type summary: "H:3  P:2  A:1  +1"
+            // Build compact type summary: "H:3  P:2  A:1  M:12  +1"
             var typeParts = new System.Text.StringBuilder();
             if (heroCount  > 0) typeParts.Append("H:").Append(heroCount).Append("  ");
             if (placeCount > 0) typeParts.Append("P:").Append(placeCount).Append("  ");
             if (armyCount  > 0) typeParts.Append("A:").Append(armyCount).Append("  ");
+            if (marketCount > 0) typeParts.Append("M:").Append(marketCount).Append("  ");
             if (otherCount > 0) typeParts.Append("+").Append(otherCount);
             string typeSummary = typeParts.ToString().TrimEnd();
 

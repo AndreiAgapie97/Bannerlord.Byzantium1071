@@ -1,5 +1,18 @@
 # Campaign++ — Changelog
 
+## [0.1.8.6] — 2026-02-28
+
+### Feature — Market price search in Search tab
+
+**Added trade good and food price comparison to the Search tab.** Type any trade good or food item name (e.g., "Grain", "Slaves", "Fish") and the overlay shows prices at every town on the map, along with current stock and distance.
+
+- **Scope:** All trade goods and food items, including custom slave items. Our Harmony price postfix fires automatically, so slave prices reflect the mod's dynamic pricing.
+- **Columns:** Town name, item name, price with stock count (e.g., "85d (×23)"), and distance from current party.
+- **Default sort:** Price descending (highest sell price first). Click column headers to re-sort by town name, item name, price, or distance.
+- **Mixed results:** Market results appear alongside heroes, settlements, armies, clans, and kingdoms in the same search. The totals bar shows "M:48" to indicate how many matches are market listings.
+- **Performance:** Only iterates towns for items matching the query (~1-3 items × ~50 towns). No impact on non-market searches.
+- **Safety:** All APIs are read-only queries on existing game state. No save-state modification, no new persistent data. Fully compatible with existing saves and safe for mod removal.
+
 ## [0.1.8.5] — 2026-02-27
 
 ### Balance — Slave base value rebalance (1500d → 300d)
