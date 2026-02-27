@@ -12,6 +12,17 @@
 - **Effect:** Towns will stabilize at their cap. Over-enslaved towns manumit excess quickly, creating supply differentials that should drive caravan trade. The MP return ensures excess slaves aren't simply lost — they become recruitable population.
 - **MCM settings:** `SlaveCapPerProsperity` (float, 0–0.1, default 0.015) and `SlaveCapMinimum` (int, 0–100, default 10) under Slave Economy group.
 
+### Balance — Slave base price 300d → 1500d
+
+**Raised slave base value from 300 to 1500 denars** (`items.xml`). At 300d, the [0.1×–10.0×] trade-good price range produced a floor of ~30 denars — less than a T1 ransom. With the slave cap holding towns at 15–55 slaves (well into floor territory), prices were universally crushed and enslavement was economically irrational.
+
+At 1500d base:
+- **Floor price:** 150d (always better than T1–T2 ransom, competitive with T3)
+- **5 slaves:** ~270d | **10 slaves:** ~180d | **15+ slaves:** ~150d (floor)
+- **Empty market:** ~700–1500d (strong caravan trade incentive)
+- **Supply EMA baseline** updated from 600 to 3000 (2 slaves' worth at new value)
+- Town treasury naturally throttles AI enslavement: at 150d/slave, poor towns can’t afford bulk purchases
+
 ---
 
 ## [0.1.8.3] — 2026-02-27

@@ -202,9 +202,9 @@ namespace Byzantium1071.Campaign.Behaviors
             int inStoreValue = currentSlaveCount * _slaveItem.Value;
 
             // Allow Supply to be at most 2× actual InStoreValue + a small baseline.
-            // The baseline (600 = 2 slaves worth) prevents snapping to zero when
-            // stock is legitimately empty but we don't want the price to be infinite.
-            float maxReasonableSupply = inStoreValue * 2f + 600f;
+            // The baseline (3000 = 2 slaves worth at 1500d base) prevents snapping
+            // to zero when stock is legitimately empty.
+            float maxReasonableSupply = inStoreValue * 2f + 3000f;
 
             if (supply > maxReasonableSupply)
             {
