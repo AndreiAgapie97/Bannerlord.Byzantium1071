@@ -11,6 +11,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 
 
 namespace Byzantium1071
@@ -23,6 +24,12 @@ namespace Byzantium1071
         private readonly System.Collections.Generic.Dictionary<string, int> _exceptionCounts = new();
         private const int EXCEPTION_LOG_INTERVAL = 100; // re-log every N occurrences
 
+        /// <summary>
+        /// The custom ItemCategory for slaves, registered before XML loading so
+        /// items.xml's item_category="b1071_slaves" resolves correctly.
+        /// </summary>
+        internal static ItemCategory? SlaveItemCategory { get; private set; }
+
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
@@ -33,6 +40,63 @@ namespace Byzantium1071
             _uiExtender = UIExtender.Create("com.andrei.byzantium1071.ui");
             _uiExtender.Register(Assembly.GetExecutingAssembly());
             _uiExtender.Enable();
+        }
+
+        /// <summary>
+        /// Register the b1071_slaves ItemCategory in the ObjectManager BEFORE
+        /// XML deserialization runs. This is the same lifecycle phase that vanilla
+        /// uses for DefaultItemCategories — without this, the items.xml attribute
+        /// item_category="b1071_slaves" silently falls back to "unassigned"
+        /// because Bannerlord's XML loader does NOT support ItemCategory XML nodes.
+        /// </summary>
+        public override void RegisterSubModuleObjects(bool isSavedCampaign)
+        {
+            base.RegisterSubModuleObjects(isSavedCampaign);
+
+            try
+            {
+                // Check if already registered (e.g., from a previous game session
+                // without unloading the module).
+                var existing = MBObjectManager.Instance?.GetObject<ItemCategory>("b1071_slaves");
+                if (existing != null)
+                {
+                    SlaveItemCategory = existing;
+                    TaleWorlds.Library.Debug.Print("[Byzantium1071] b1071_slaves ItemCategory already registered, reusing.");
+                }
+                else
+                {
+                    // Register exactly like DefaultItemCategories.Create():
+                    // ObjectManager.RegisterPresumedObject(new ItemCategory(stringId))
+                    SlaveItemCategory = MBObjectManager.Instance!.RegisterPresumedObject(
+                        new ItemCategory("b1071_slaves"));
+                    TaleWorlds.Library.Debug.Print("[Byzantium1071] b1071_slaves ItemCategory registered in ObjectManager.");
+                }
+
+                // Initialize with trade-good properties matching our XML intent:
+                //   BaseDemand  = 15 × 0.001 = 0.015  (same as wine/velvet)
+                //   LuxuryDemand = 32 × 0.001 = 0.032 (same as jewelry/velvet)
+                //   IsTradeGood = true
+                //   IsValid     = true
+                SlaveItemCategory.InitializeObject(
+                    isTradeGood: true,
+                    baseDemand: 15,
+                    luxuryDemand: 32,
+                    properties: ItemCategory.Property.None,
+                    canSubstitute: null,
+                    substitutionFactor: 0f,
+                    isAnimal: false,
+                    isValid: true);
+
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071] b1071_slaves initialized: IsTradeGood={SlaveItemCategory.IsTradeGood}, " +
+                    $"BaseDemand={SlaveItemCategory.BaseDemand:F4}, LuxuryDemand={SlaveItemCategory.LuxuryDemand:F4}, " +
+                    $"IsValid={SlaveItemCategory.IsValid}");
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071][ERROR] Failed to register b1071_slaves ItemCategory: {ex.GetType().Name}: {ex.Message}");
+            }
         }
 
         private static void PatchAssemblySafely(Harmony harmony, Assembly assembly)

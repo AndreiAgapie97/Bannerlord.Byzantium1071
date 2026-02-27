@@ -87,19 +87,23 @@ namespace Byzantium1071.Campaign.Patches
         {
             try
             {
-                if (itemCategory == null) return;
-                if (itemCategory.StringId != "b1071_slaves") return;
-                if (!Settings.EnableSlaveEconomy) return;
+                if (itemCategory == null || itemCategory.StringId != "b1071_slaves")
+                    return;
 
-                // Derive stock from inStoreValue. When selling, vanilla adds
-                // transferValue to inStoreValue before calling this method,
-                // so our stock calculation already accounts for the transfer.
+                var settings = Settings;
+                if (settings == null || !settings.EnableSlaveEconomy)
+                    return;
+
+                // Derive stock from inStoreValue. Vanilla's GetBasePriceFactor
+                // adds transferValue to a local copy of inStoreValue when
+                // isSelling is true, but the Harmony postfix receives the
+                // ORIGINAL parameter — so we must re-apply the addition here.
                 float effectiveValue = inStoreValue;
                 if (isSelling) effectiveValue += transferValue;
 
                 int stock = (int)(effectiveValue / SlaveBaseValue);
 
-                float decayRate = Settings.SlavePriceDecayRate;
+                float decayRate = settings.SlavePriceDecayRate;
 
                 // priceFactor = max(0.1, decayRate ^ stock)
                 // At stock=0: 1.0 (full price). Decays exponentially per unit.
@@ -108,9 +112,9 @@ namespace Byzantium1071.Campaign.Patches
                 // Clamp to [0.1, 10.0] — same bounds as vanilla IsTradeGood.
                 __result = Math.Max(0.1f, Math.Min(10f, factor));
             }
-            catch
+            catch (Exception)
             {
-                // Silently fall through to vanilla result on any error.
+                // Fall through to vanilla result on any error.
             }
         }
     }
