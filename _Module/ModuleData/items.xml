@@ -14,7 +14,7 @@
     name="{=!}Slaves"
     mesh="bd_barrel_a"
     item_category="b1071_slaves"
-    value="1500"
+    value="300"
     weight="5"
     Type="Goods">
     <Flags

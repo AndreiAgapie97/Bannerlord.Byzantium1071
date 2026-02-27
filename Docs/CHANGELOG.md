@@ -1,5 +1,51 @@
 # Campaign++ — Changelog
 
+## [0.1.8.5] — 2026-02-27
+
+### Balance — Slave base value rebalance (1500d → 300d)
+
+**Reduced slave item base value from 1500d to 300d.** Mathematical analysis showed the 1500d base made enslaving 10–13× more profitable than ransoming T1-T3 prisoners (avg ransom ~45d). A single 16-event village raid selling into a moderately stocked town yielded ~8,400d — pure profit on a zero-cost item.
+
+At 300d base (decay=0.98), the price curve becomes:
+
+| Stock | Factor | Price | Notes |
+|-------|--------|-------|-------|
+| 0 | 1.000 | 300d | Empty market, full value |
+| 10 | 0.817 | 245d | Scarce — high demand |
+| 20 | 0.668 | 200d | Light supply |
+| 30 | 0.545 | 164d | Moderate supply |
+| 50 | 0.364 | 109d | Heavy supply (~2.4× ransom) |
+| 80 | 0.199 | 60d | Saturated market |
+| 114+ | 0.100 | 30d | At floor (0.1 × 300) |
+
+- **Enslaving vs ransoming:** Selling 10 slaves into a town with stock 40 yields ~1,107d vs 450d ransom (2.5×). Selling 16 yields ~1,671d vs 720d (2.3×). Consistently 2–2.5× ransom — worthwhile but not exploitative.
+- **`SlaveBaseValue` constant** in `B1071_SlavePricePatch` updated from 1500 to 300.
+
+### Balance — Slave cap per prosperity lowered (0.03 → 0.02)
+
+**Reduced `SlaveCapPerProsperity` from 0.03 to 0.02.** At 0.03, a P3000 town held 90 slaves — too much inventory for the lower base value. At 0.02:
+
+| Prosperity | Cap |
+|------------|-----|
+| 1000 | 20 |
+| 2000 | 40 |
+| 3000 | 60 |
+| 4000 | 80 |
+| 5000 | 100 |
+
+Equilibrium sell prices at cap: P2000 → ~121d (2.7× ransom), P3000 → ~81d (1.8× ransom). Enslaving remains profitable at all stock levels.
+
+### Housekeeping — Debug logging stripped
+
+Removed all diagnostic scaffolding from the price postfix and slave economy behavior:
+- `_totalCalls`, `_slaveCalls` counters
+- `_seenCategories` HashSet and ALL CATEGORIES dump
+- ALIVE/ENTERED/APPLIED per-call logging (was 26K+ lines/session)
+- DIAG model-type logging from daily tick
+- Duplicate category-check log in `InitializeSlaveMarketData`
+
+**Migration:** Profile version bumped to 5. Existing saves auto-migrate `SlaveCapPerProsperity` from 0.03 to 0.02. Base value change is in items.xml (immediate).
+
 ## [0.1.8.4] — 2026-02-27
 
 ### Balance — Slave stock cap & manumission

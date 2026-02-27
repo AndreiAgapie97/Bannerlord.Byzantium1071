@@ -18,10 +18,10 @@ namespace Byzantium1071.Campaign.Patches
     /// Vanilla's GetBasePriceFactor formula:
     ///   priceFactor = Pow(demand / (0.1 × supply + inStoreValue × 0.04 + 2), 0.6)
     ///
-    /// With base value 1500d, each slave adds 1500 × 0.04 = 60 to the denominator,
-    /// which EQUALS the typical demand (~60). So 1 slave literally doubles the
-    /// denominator and halves the raw price factor. The formula was designed for
-    /// low-value bulk goods (grain=10, pottery=15), not a 1500d luxury item.
+    /// With a high base value, each slave adds baseValue × 0.04 to the denominator,
+    /// which quickly overwhelms the typical demand (~60). The formula was designed
+    /// for low-value bulk goods (grain=10, pottery=15), not trade items worth
+    /// hundreds of denars.
     ///
     /// Result: stock 0 → ~1500d, stock 1 → ~700d, stock 2 → ~450d, stock 5 → floor.
     /// This makes the price curve absurdly steep — a town of 3000 prosperity
@@ -34,22 +34,22 @@ namespace Byzantium1071.Campaign.Patches
     /// Replaces the vanilla formula with:
     ///   priceFactor = max(0.1, decayRate ^ stock)
     ///
-    /// where stock = inStoreValue / slaveBaseValue (1500) and decayRate is an
+    /// where stock = inStoreValue / slaveBaseValue (300) and decayRate is an
     /// MCM-configurable setting (default 0.98). This gives a gradual, natural
     /// price curve that creates meaningful price differentials across towns:
     ///
     ///   Stock  Factor  Price    Notes
-    ///     0    1.000   1500d    Empty market, full value
-    ///    10    0.817   1226d    Very scarce — high demand
-    ///    30    0.545    818d    Light supply
-    ///    50    0.364    546d    Moderate supply
-    ///    80    0.199    298d    Heavy supply
-    ///   100    0.133    199d    Saturated market
-    ///   114    0.100    150d    At floor (0.1 × 1500)
+    ///     0    1.000    300d    Empty market, full value
+    ///    10    0.817    245d    Very scarce — high demand
+    ///    20    0.668    200d    Light supply
+    ///    30    0.545    164d    Moderate supply
+    ///    50    0.364    109d    Heavy supply (~2.4× ransom)
+    ///    80    0.199     60d    Saturated market
+    ///   114    0.100     30d    At floor (0.1 × 300)
     ///
-    /// Price differentials between towns (e.g., stock 40 = 669d vs stock 80 = 298d)
-    /// incentivize caravan slave trading. The floor (150d) is always more profitable
-    /// than T1-T3 ransom, making enslavement economically rational at any stock level.
+    /// Enslaving pays ~2–2.5× T1-T3 ransom (avg ~45d) at typical stock levels,
+    /// making it consistently better than ransoming without being exploitative.
+    /// Price differentials between towns drive caravan slave trading.
     ///
     /// SCOPE: Only affects ItemCategory "b1071_slaves". All other items use
     /// the vanilla formula unmodified.
@@ -65,10 +65,10 @@ namespace Byzantium1071.Campaign.Patches
     public static class B1071_SlavePricePatch
     {
         /// <summary>
-        /// The base value of the slave item (from items.xml value="1500").
+        /// The base value of the slave item (from items.xml value="300").
         /// Used to derive stock count from inStoreValue.
         /// </summary>
-        private const int SlaveBaseValue = 1500;
+        private const int SlaveBaseValue = 300;
 
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 

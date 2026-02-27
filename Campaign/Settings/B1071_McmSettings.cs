@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 4;
+        internal const int LATEST_PROFILE_VERSION = 5;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -118,8 +118,20 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.8.4 slave price decay flattened (0.925→0.98) for caravan trading. ";
             }
 
+            // ── Profile v5: v0.1.8.5 slave price rebalance ──
+            if (SettingsProfileVersion < 5)
+            {
+                // Base value lowered from 1500d to 300d (in items.xml) to align
+                // slave sell prices with ~2× T1-T3 ransom. Cap lowered to match:
+                // P3000 town holds 60 slaves (was 90). Enslaving still beats
+                // ransoming but no longer prints 10× the gold.
+                SlaveCapPerProsperity = 0.02f;
+
+                migrated += "v0.1.8.5 slave base value 1500→300d, cap/prosperity 0.03→0.02 for balanced economics. ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 5) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 6) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
@@ -779,15 +791,15 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveDailyDecayPercent { get; set; } = 1.0f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Slave cap per prosperity", 0f, 0.1f, "0.0000", Order = 9, HintText = "Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.03: a 3000-prosperity town can hold 90 slaves; 5000 prosperity = 150. Set to 0 to disable the cap. Default: 0.03.")]
-        public float SlaveCapPerProsperity { get; set; } = 0.03f;
+        [SettingPropertyFloatingInteger("Slave cap per prosperity", 0f, 0.1f, "0.0000", Order = 9, HintText = "Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.02: a 3000-prosperity town can hold 60 slaves; 5000 prosperity = 100. Set to 0 to disable the cap. Default: 0.02.")]
+        public float SlaveCapPerProsperity { get; set; } = 0.02f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyInteger("Slave cap minimum", 0, 100, "0", Order = 10, HintText = "Minimum slave cap regardless of prosperity. Even a low-prosperity town can hold at least this many slaves before manumission kicks in. Default: 10.")]
         public int SlaveCapMinimum { get; set; } = 10;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Slave price decay rate", 0.90f, 0.999f, "0.000", Order = 11, HintText = "Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 150d at base value 1500). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~1226d, stock 30 = ~818d, stock 50 = ~546d, stock 80 = ~298d, stock 114 = floor. At 0.96: stock 30 = ~294d, stock 50 = ~130d (floor). Default: 0.98.")]
+        [SettingPropertyFloatingInteger("Slave price decay rate", 0.90f, 0.999f, "0.000", Order = 11, HintText = "Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 30d at base value 300). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~245d, stock 30 = ~164d, stock 50 = ~109d, stock 80 = ~60d. At 0.96: stock 30 = ~88d, stock 50 = ~39d (floor). Default: 0.98.")]
         public float SlavePriceDecayRate { get; set; } = 0.98f;
 
         [SettingPropertyGroup("Legacy", GroupOrder = 99)]
