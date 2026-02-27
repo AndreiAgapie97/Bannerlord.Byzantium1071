@@ -89,6 +89,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlement);
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
             CampaignEvents.OnNewGameCreatedPartialFollowUpEndEvent.AddNonSerializedListener(this, OnNewGameCreatedEnd);
+            CampaignEvents.OnCaravanTransactionCompletedEvent.AddNonSerializedListener(this, OnCaravanTransaction);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -215,6 +216,52 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Logs a daily price/supply/demand snapshot for the slave category at a town.
+        /// Only fires when verbose logging is enabled.
+        /// </summary>
+        private void LogSlavePriceSnapshot(Town town, int slaveCount)
+        {
+            if (!B1071_VerboseLog.Enabled || _slaveItem == null) return;
+            ItemCategory slaveCat = _slaveItem.ItemCategory;
+            if (slaveCat == null) return;
+
+            float supply = town.MarketData.GetSupply(slaveCat);
+            float demand = town.MarketData.GetDemand(slaveCat);
+            int price = town.MarketData.GetPrice(_slaveItem);
+            B1071_VerboseLog.Log("SlaveEconomy",
+                $"Price snapshot {town.Name}: price={price}d, stock={slaveCount}, " +
+                $"supply={supply:F0}, demand={demand:F1}.");
+        }
+
+        /// <summary>
+        /// Fires when a caravan completes a buy/sell transaction at a town.
+        /// Logs any slave items traded with price details.
+        /// </summary>
+        private void OnCaravanTransaction(MobileParty caravan, Town town,
+            List<(EquipmentElement, int)> itemList)
+        {
+            if (!B1071_VerboseLog.Enabled || _slaveItem == null) return;
+            if (itemList == null) return;
+
+            foreach (var (eq, count) in itemList)
+            {
+                if (eq.Item == null || eq.Item.StringId != _slaveItem.StringId) continue;
+
+                string action = count > 0 ? "SOLD" : "BOUGHT";
+                int absCount = Math.Abs(count);
+                int price = town.MarketData.GetPrice(_slaveItem);
+                float supply = town.MarketData.GetSupply(_slaveItem.ItemCategory);
+                float demand = town.MarketData.GetDemand(_slaveItem.ItemCategory);
+                int stock = town.Owner.ItemRoster.GetItemNumber(_slaveItem);
+
+                B1071_VerboseLog.Log("SlaveEconomy",
+                    $"Caravan trade: {caravan.Name} {action} {absCount} slave(s) " +
+                    $"at {town.Name} (price={price}d, stock={stock}, " +
+                    $"supply={supply:F0}, demand={demand:F1}).");
+            }
+        }
+
+        /// <summary>
         /// Fires each time the player's party receives a loot batch.
         /// We filter for raid MapEvents (MapEvent.IsRaid == true) to distinguish village raids
         /// from post-battle loot pickup.
@@ -273,6 +320,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // it down so prices recover within a few days instead of 30+.
             CorrectSlaveSupplyEma(settlement.Town, slaveCount);
 
+            // ── Price snapshot (verbose log) ─────────────────────────────────
+            LogSlavePriceSnapshot(settlement.Town, slaveCount);
+
             if (slaveCount <= 0) return;
 
             float eff = Settings.SlaveRansomMultiplier; // bonus effectiveness multiplier
@@ -311,6 +361,43 @@ namespace Byzantium1071.Campaign.Behaviors
                     B1071_VerboseLog.Log("SlaveEconomy", $"Decay {settlement.Name}: -{wholeLoss} slave(s) attrition, {slaveCount} remaining.");
                 }
                 _decayAccumulator[decayKey] = accum;
+            }
+
+            // ── Manumission (slave cap overflow → freed → MP) ─────────────────────
+            // If the town holds more slaves than its prosperity can support, the excess
+            // are manumitted (freed) and converted 1:1 into the town's manpower pool.
+            // This prevents global oversaturation (~119 slaves/town at equilibrium)
+            // and creates supply differentials that drive caravan trade.
+            if (Settings.SlaveCapPerProsperity > 0f && slaveCount > 0)
+            {
+                int cap = Math.Max(Settings.SlaveCapMinimum,
+                                   (int)(settlement.Town.Prosperity * Settings.SlaveCapPerProsperity));
+                if (slaveCount > cap)
+                {
+                    int freed = slaveCount - cap;
+                    settlement.ItemRoster.AddToCounts(_slaveItem, -freed);
+                    slaveCount -= freed;
+
+                    // Convert freed slaves to manpower in the town's MP pool.
+                    B1071_ManpowerBehavior? mpBehavior = B1071_ManpowerBehavior.Instance;
+                    if (mpBehavior != null)
+                    {
+                        mpBehavior.AddManpowerToSettlement(settlement, freed);
+                    }
+
+                    B1071_VerboseLog.Log("SlaveEconomy",
+                        $"Manumission at {settlement.Name}: {freed} slave(s) freed " +
+                        $"(cap={cap}, stock was {slaveCount + freed}, now {slaveCount}). " +
+                        $"+{freed} MP to town pool.");
+
+                    // Notify player if at this settlement.
+                    if (Settings.ShowPlayerDebugMessages && Settlement.CurrentSettlement == settlement)
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            $"\u2694 {settlement.Name}: {freed} slave{(freed != 1 ? "s" : "")} manumitted (cap {cap}). +{freed} MP to town pool.",
+                            new Color(0.4f, 0.8f, 0.4f)));
+                    }
+                }
             }
 
             // ── Daily notification ────────────────────────────────────────────────

@@ -1,5 +1,17 @@
 # Campaign++ — Changelog
 
+## [0.1.8.4] — 2026-02-27
+
+### Balance — Slave stock cap & manumission
+
+**Added:** Prosperity-based slave cap with manumission overflow. Playtest analysis showed global slave oversaturation (~61,000 slaves across the map, ~119/town average) pinning nearly all towns at the price floor (31 denars). AI enslavement inflow far exceeded the 1%/day decay, eliminating price differentials and caravan trade.
+
+- **Mechanism:** Each daily tick, if a town holds more slaves than `max(SlaveCapMinimum, prosperity × SlaveCapPerProsperity)`, excess slaves are **manumitted** (freed) and converted 1:1 into the town's manpower pool.
+- **Defaults:** `SlaveCapPerProsperity = 0.015`, `SlaveCapMinimum = 10`. A 3000-prosperity town can hold ~45 slaves; a 1000-prosperity town ~15.
+- **Gameplay loop:** War → prisoners → slaves → construction/prosperity bonuses while stock is under cap. Overflow → freed → MP returned to town pool. Creates a natural ceiling that prevents oversaturation while recycling excess labor into military manpower.
+- **Effect:** Towns will stabilize at their cap. Over-enslaved towns manumit excess quickly, creating supply differentials that should drive caravan trade. The MP return ensures excess slaves aren't simply lost — they become recruitable population.
+- **MCM settings:** `SlaveCapPerProsperity` (float, 0–0.1, default 0.015) and `SlaveCapMinimum` (int, 0–100, default 10) under Slave Economy group.
+
 ---
 
 ## [0.1.8.3] — 2026-02-27
