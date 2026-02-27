@@ -512,10 +512,57 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int regen = GetDailyRegen(pool, max);
 
-            int newCur = Math.Min(max, cur + regen);
+            // ── Castle supply chain ──────────────────────────────────────
+            // Castles did not generate soldiers from births — garrisons were
+            // rotated from towns by the strategos. Only a tiny trickle (peasant 
+            // levy from bound villages) is created organically. Everything above
+            // that trickle is *transferred* from the nearest same-faction town,
+            // draining its pool rather than materialising manpower from nothing.
+            //
+            // If no same-faction town exists or the supply town is depleted,
+            // the castle receives only the local trickle.
+            int actualRegen;
+            if (pool.IsCastle && Settings.EnableCastleSupplyChain)
+            {
+                int localTrickle = Math.Min(regen, Settings.CastleMinimumDailyRegen);
+                int supplyRequest = regen - localTrickle;
+
+                int supplyTransfer = 0;
+                string supplySource = "none";
+
+                if (supplyRequest > 0)
+                {
+                    Settlement? supplyTown = FindNearestSameFactionTown(pool);
+                    if (supplyTown != null)
+                    {
+                        string supplyId = supplyTown.StringId;
+                        EnsureEntry(supplyTown);
+                        int supplyMax = GetMaxManpowerCached(supplyTown);
+                        int supplyCur = _manpowerByPoolId.TryGetValue(supplyId, out int sv) ? sv : supplyMax;
+
+                        supplyTransfer = Math.Min(supplyRequest, supplyCur);
+                        if (supplyTransfer > 0)
+                        {
+                            _manpowerByPoolId[supplyId] = supplyCur - supplyTransfer;
+                        }
+                        supplySource = $"{supplyTown.Name} ({supplyCur}->{supplyCur - supplyTransfer})";
+                    }
+                }
+
+                actualRegen = localTrickle + supplyTransfer;
+                B1071_VerboseLog.Log("Manpower",
+                    $"CastleSupply {pool.Name}: trickle={localTrickle} request={supplyRequest} " +
+                    $"transfer={supplyTransfer} supply={supplySource} total=+{actualRegen}");
+            }
+            else
+            {
+                actualRegen = regen;
+            }
+
+            int newCur = Math.Min(max, cur + actualRegen);
             _manpowerByPoolId[poolId] = newCur;
 
-            B1071_VerboseLog.Log("Manpower", $"Regen {pool.Name}: +{regen} ({cur}->{newCur}/{max}).");
+            B1071_VerboseLog.Log("Manpower", $"Regen {pool.Name}: +{actualRegen} ({cur}->{newCur}/{max}).");
 
             // Crisis alerts for player settlements.
             if (Settings.EnableManpowerAlerts && IsPlayerSettlement(pool))
@@ -1591,6 +1638,29 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             return s;
+        }
+
+        /// <summary>
+        /// Finds the nearest town belonging to the same faction as <paramref name="castle"/>.
+        /// Used by the castle supply chain: castles draw manpower from their nearest
+        /// same-faction town rather than generating it from nothing.
+        /// Returns null if no same-faction town exists (e.g. last faction holdout is a castle).
+        /// </summary>
+        private static Settlement? FindNearestSameFactionTown(Settlement castle)
+        {
+            var faction = castle.OwnerClan?.MapFaction;
+            if (faction == null) return null;
+
+            Settlement? nearest = null;
+            float bestDist = float.MaxValue;
+            foreach (Town town in Town.AllTowns)
+            {
+                if (town.Settlement == null) continue;
+                if (town.Settlement.OwnerClan?.MapFaction != faction) continue;
+                float dist = (castle.GetPosition2D - town.Settlement.GetPosition2D).LengthSquared;
+                if (dist < bestDist) { bestDist = dist; nearest = town.Settlement; }
+            }
+            return nearest;
         }
 
         /// <summary>

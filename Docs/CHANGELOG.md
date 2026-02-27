@@ -33,6 +33,14 @@ Historical demographic analysis (CBR 40/1000, 50% child mortality, 50% male, 10-
 | `DepletedRegenBonusAtZero` | 5 | **2** | Devastated provinces (e.g., post-Manzikert eastern Anatolia) took decades to recover. Refugees fled *away* from the frontier. |
 | `DepletedRegenThresholdPercent` | 25% | **15%** | Emergency regen should only activate at critical depletion, not routine low fill. |
 
+**Castle supply chain:**
+- Castles no longer generate manpower from nothing. Regen above the local trickle floor (`CastleMinimumDailyRegen`, 1/day) is **transferred** from the nearest same-faction town's pool — not created.
+- The local trickle (1/day) represents peasant levies from bound villages and is free (no drain on towns).
+- If no same-faction town exists or the supply town is depleted, the castle receives only the local trickle.
+- Strategic implication: **raiding a town now starves its dependent castles**. Players must defend their towns to keep frontier castles garrisoned.
+- New MCM setting: `EnableCastleSupplyChain` (default: true). Disable to revert to legacy behavior.
+- Multiple castles can share the same supply town — towns near many castles drain faster.
+
 **Migration:** All changes applied via `LATEST_PROFILE_VERSION = 3`.
 
 ---

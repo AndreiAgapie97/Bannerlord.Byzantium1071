@@ -99,7 +99,11 @@ namespace Byzantium1071.Campaign.Settings
                 DepletedRegenBonusAtZero = 2;       // was 5; devastated provinces took decades to recover
                 DepletedRegenThresholdPercent = 15; // was 25; emergency only at critical depletion
 
-                migrated += "v0.1.8.3 slave manpower removed, regen historically calibrated. ";
+                // Castle supply chain: castles transfer MP from nearest same-faction town
+                // rather than creating it from nothing. Only a local trickle is free.
+                EnableCastleSupplyChain = true;
+
+                migrated += "v0.1.8.3 slave manpower removed, regen historically calibrated, castle supply chain enabled. ";
             }
 
             // ── Future migrations go here ──
@@ -196,8 +200,12 @@ namespace Byzantium1071.Campaign.Settings
         public int MinimumDailyRegen { get; set; } = 1;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
-        [SettingPropertyInteger("Castle minimum daily regen", 0, 20, "0", Order = 81, HintText = "Castle-specific regen floor. Castles did not generate manpower through births — garrisons were rotated from towns by the Crown. 1/day represents slow institutional replacement logistics during wartime. Default: 1.")]
+        [SettingPropertyInteger("Castle minimum daily regen", 0, 20, "0", Order = 81, HintText = "Castle-specific regen floor. Represents peasant levies from bound villages and the castle's tiny civilian community. This trickle is organic (not drawn from towns). Default: 1.")]
         public int CastleMinimumDailyRegen { get; set; } = 1;
+
+        [SettingPropertyGroup("Regen", GroupOrder = 2)]
+        [SettingPropertyBool("Enable castle supply chain", Order = 78, HintText = "When enabled, castle regen above the local trickle floor is transferred from the nearest same-faction town (not created from nothing). If the supply town is depleted, the castle starves. Historically, castle garrisons were rotated from towns by the strategos. Disabling reverts to legacy behavior where castles regen independently.")]
+        public bool EnableCastleSupplyChain { get; set; } = true;
 
         [SettingPropertyGroup("Regen", GroupOrder = 2)]
         [SettingPropertyBool("Enable depleted emergency regen", Order = 82, HintText = "When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models limited Crown frontier investment — historically, devastated provinces took decades to recover.")]
