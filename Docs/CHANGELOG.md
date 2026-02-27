@@ -7,10 +7,41 @@
 **Added:** Prosperity-based slave cap with manumission overflow. Playtest analysis showed global slave oversaturation (~61,000 slaves across the map, ~119/town average) pinning nearly all towns at the price floor (31 denars). AI enslavement inflow far exceeded the 1%/day decay, eliminating price differentials and caravan trade.
 
 - **Mechanism:** Each daily tick, if a town holds more slaves than `max(SlaveCapMinimum, prosperity × SlaveCapPerProsperity)`, excess slaves are **manumitted** (freed) and converted 1:1 into the town's manpower pool.
-- **Defaults:** `SlaveCapPerProsperity = 0.015`, `SlaveCapMinimum = 10`. A 3000-prosperity town can hold ~45 slaves; a 1000-prosperity town ~15.
+- **Defaults:** `SlaveCapPerProsperity = 0.03`, `SlaveCapMinimum = 10`. A 3000-prosperity town can hold ~90 slaves; a 1000-prosperity town ~30.
 - **Gameplay loop:** War → prisoners → slaves → construction/prosperity bonuses while stock is under cap. Overflow → freed → MP returned to town pool. Creates a natural ceiling that prevents oversaturation while recycling excess labor into military manpower.
 - **Effect:** Towns will stabilize at their cap. Over-enslaved towns manumit excess quickly, creating supply differentials that should drive caravan trade. The MP return ensures excess slaves aren't simply lost — they become recruitable population.
-- **MCM settings:** `SlaveCapPerProsperity` (float, 0–0.1, default 0.015) and `SlaveCapMinimum` (int, 0–100, default 10) under Slave Economy group.
+- **MCM settings:** `SlaveCapPerProsperity` (float, 0–0.1, default 0.03) and `SlaveCapMinimum` (int, 0–100, default 10) under Slave Economy group.
+
+### Balance — Custom slave price curve (Harmony patch)
+
+**Replaced vanilla trade price formula for slaves** with a custom exponential-decay model. Vanilla's `GetBasePriceFactor` formula (`Pow(demand / (0.1*supply + inStoreValue*0.04 + 2), 0.6)`) was designed for low-value bulk goods (grain=10d, pottery=15d). With a 1500d base value, each slave contributes 60 to the denominator -- which equals the demand (~60). One slave literally halves the price.
+
+**New formula:** `priceFactor = max(0.1, decayRate ^ stock)` where `decayRate` is MCM-configurable (default 0.925).
+
+Price curve at default settings (1500d base, decayRate=0.925):
+
+| Stock | Factor | Price | Notes |
+|-------|--------|-------|-------|
+| 0 | 1.000 | 1500d | Empty market, full value |
+| 10 | 0.458 | 688d | Scarce -- strong caravan incentive |
+| 15 | 0.310 | 466d | Moderate supply |
+| 20 | 0.210 | 315d | Heavy supply |
+| 25 | 0.142 | 213d | Near floor |
+| 30+ | 0.1 | 150d | At floor (0.1 * 1500) |
+
+- **MCM setting:** `SlavePriceDecayRate` (float, 0.80-0.99, default 0.925). Lower = steeper curve.
+- **Technical:** Harmony postfix on `DefaultTradeItemPriceFactorModel.GetBasePriceFactor`. Only fires for `ItemCategory "b1071_slaves"` -- all other items use vanilla formula unmodified.
+- **Effect:** Meaningful price differentials between low-stock and saturated towns. Caravan trade should now be profitable. Floor 150d still beats T1-T3 ransom.
+
+### Balance — Slave cap per prosperity raised (0.015 → 0.03)
+
+**Doubled the default slave cap multiplier.** At 0.015, a 3000-prosperity town could only hold 45 slaves -- too restrictive given the higher base value and custom price curve.
+
+At 0.03:
+- **1000 prosperity** → cap 30 | **3000 prosperity** → cap 90 | **5000 prosperity** → cap 150
+- Prosperous cities can absorb more slave labor before manumission kicks in
+- Creates larger stock differentials between small and large towns
+- Historically proportionate: a Byzantine provincial capital of 50,000 (~5000 prosperity) could absorb 150 slaves
 
 ### Balance — Slave base price 300d → 1500d
 
@@ -18,8 +49,6 @@
 
 At 1500d base:
 - **Floor price:** 150d (always better than T1–T2 ransom, competitive with T3)
-- **5 slaves:** ~270d | **10 slaves:** ~180d | **15+ slaves:** ~150d (floor)
-- **Empty market:** ~700–1500d (strong caravan trade incentive)
 - **Supply EMA baseline** updated from 600 to 3000 (2 slaves' worth at new value)
 - Town treasury naturally throttles AI enslavement: at 150d/slave, poor towns can’t afford bulk purchases
 

@@ -767,12 +767,16 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveDailyDecayPercent { get; set; } = 1.0f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("Slave cap per prosperity", 0f, 0.1f, "0.0000", Order = 9, HintText = "Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.015: a 3000-prosperity town can hold 45 slaves. Set to 0 to disable the cap. Default: 0.015.")]
-        public float SlaveCapPerProsperity { get; set; } = 0.015f;
+        [SettingPropertyFloatingInteger("Slave cap per prosperity", 0f, 0.1f, "0.0000", Order = 9, HintText = "Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.03: a 3000-prosperity town can hold 90 slaves; 5000 prosperity = 150. Set to 0 to disable the cap. Default: 0.03.")]
+        public float SlaveCapPerProsperity { get; set; } = 0.03f;
 
         [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
         [SettingPropertyInteger("Slave cap minimum", 0, 100, "0", Order = 10, HintText = "Minimum slave cap regardless of prosperity. Even a low-prosperity town can hold at least this many slaves before manumission kicks in. Default: 10.")]
         public int SlaveCapMinimum { get; set; } = 10;
+
+        [SettingPropertyGroup("Slave Economy", GroupOrder = 15)]
+        [SettingPropertyFloatingInteger("Slave price decay rate", 0.80f, 0.99f, "0.000", Order = 11, HintText = "Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 150d at base value 1500). Lower values = steeper price drop. At 0.925: stock 10 = ~688d, stock 20 = ~315d, stock 30+ = floor 150d. At 0.95: stock 10 = ~928d, stock 30 = ~463d, stock 45+ = floor 150d. Default: 0.925.")]
+        public float SlavePriceDecayRate { get; set; } = 0.925f;
 
         [SettingPropertyGroup("Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]
