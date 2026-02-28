@@ -13,11 +13,23 @@
 - **Influence:** +0.5 / +1.0 / +2.0 (only if village is in investor's kingdom).
 - **Cross-clan diplomacy:** +2 relation with village owner's clan leader when investing in another clan's village.
 - **Gold sink:** Gold is destroyed (null recipient via `GiveGoldAction`), reducing world inflation.
-- **AI parity:** AI lords invest via `SettlementEntered`, picking the highest affordable tier (gold > cost × 3 gate).
+- **AI parity:** AI lords invest via `SettlementEntered`, with configurable gold safety multiplier (default ×10), random chance gate (default 30%), and random tier selection from affordable tiers.
+- **AI gold safety multiplier (MCM):** AI must have gold > tier cost × multiplier to consider that tier. Default 10 (needs 120,000d for Grand).
+- **AI investment chance (MCM):** Percentage chance to invest on each eligible village visit. Default 30%.
+- **AI random tier selection (MCM):** When enabled, AI randomly picks from affordable tiers instead of always the highest. Creates natural variation — rich lords won't always Grand.
 - **Conditions:** Village must be non-hostile, in Normal state (not looted/raided), no active investment by same hero.
 - **Save/load safe:** State persisted as two dictionaries via `SyncData`. Mid-campaign install is safe.
 - **Mod removal safe:** Only hearth accumulated persists (within normal range); relation/influence/power are vanilla-native.
 - **22 MCM settings** under "Village Investment" group: all tier costs, durations, bonuses, power cap, cross-clan relation, AI toggle.
+- **3 AI tuning MCM settings:** gold safety multiplier, investment chance %, random tier toggle — balances AI spending rate.
+
+### Bugfix — Multi-click exploit in investment submenu
+
+**Fixed: clicking an investment tier multiple times in the submenu applied bonuses repeatedly.** The tier condition delegate only checked gold affordability, not whether an active investment already existed. Result: repeat clicks deducted gold and granted relation/power/influence each time, while only the last hearth entry persisted (dictionary overwrite). Added two guards:
+
+- **`InvestTierCondition`**: now checks for an active investment at the current village before enabling any tier option. All options disabled with tooltip if cooldown is active.
+- **`ApplyInvestment`**: defense-in-depth guard returns early if the hero already has an active investment at that settlement (protects both player and AI paths).
+- **Post-invest redirect**: after investing, player returns to the village menu instead of staying in the investment submenu, providing immediate visual feedback of the cooldown state.
 
 | File | Status |
 |------|--------|

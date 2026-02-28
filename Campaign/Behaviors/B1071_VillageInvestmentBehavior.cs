@@ -165,14 +165,25 @@ namespace Byzantium1071.Campaign.Behaviors
             string investKey = MakeKey(settlement, hero);
             if (_investDaysRemaining.ContainsKey(investKey)) return;
 
-            // Pick highest affordable tier with conservative gold gate (gold > cost × 3).
-            int gold = hero.Gold;
-            int tier = 0; // 0=none, 1=modest, 2=generous, 3=grand
-            if (gold > Settings.VillageInvestCostGrand * 3) tier = 3;
-            else if (gold > Settings.VillageInvestCostGenerous * 3) tier = 2;
-            else if (gold > Settings.VillageInvestCostModest * 3) tier = 1;
+            // Random chance gate — only a percentage of eligible visits result in investment.
+            if (MBRandom.RandomInt(100) >= Settings.VillageInvestAiChance) return;
 
-            if (tier == 0) return;
+            // Build list of affordable tiers using configurable gold safety multiplier.
+            int gold = hero.Gold;
+            int mult = Settings.VillageInvestAiGoldMultiplier;
+            var affordableTiers = new List<int>(3);
+            if (gold > Settings.VillageInvestCostModest * mult) affordableTiers.Add(1);
+            if (gold > Settings.VillageInvestCostGenerous * mult) affordableTiers.Add(2);
+            if (gold > Settings.VillageInvestCostGrand * mult) affordableTiers.Add(3);
+
+            if (affordableTiers.Count == 0) return;
+
+            // Pick tier: random selection from affordable tiers, or highest if random-tier is disabled.
+            int tier;
+            if (Settings.VillageInvestAiRandomTier)
+                tier = affordableTiers[MBRandom.RandomInt(affordableTiers.Count)];
+            else
+                tier = affordableTiers[affordableTiers.Count - 1]; // last = highest
 
             ApplyInvestment(settlement, hero, tier, isPlayer: false);
         }
@@ -221,11 +232,14 @@ namespace Byzantium1071.Campaign.Behaviors
             // Safety: verify affordability again.
             if (investor.Gold < cost) return;
 
+            // Guard: prevent duplicate investment (defense-in-depth against multi-click).
+            string key = MakeKey(settlement, investor);
+            if (_investDaysRemaining.ContainsKey(key)) return;
+
             // ── Deduct gold (gold sink — null recipient = money destroyed) ────────
             GiveGoldAction.ApplyBetweenCharacters(investor, null, cost, disableNotification: true);
 
             // ── Record investment state ───────────────────────────────────────────
-            string key = MakeKey(settlement, investor);
             _investDaysRemaining[key] = duration;
             _investHearthBonus[key] = hearthBonus;
 
@@ -436,6 +450,21 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private bool InvestTierCondition(MenuCallbackArgs args, int tier)
         {
+            // ── Guard: block ALL tier options if an active investment exists ──
+            Settlement? current = Settlement.CurrentSettlement;
+            if (current != null && Hero.MainHero != null)
+            {
+                string activeKey = MakeKey(current, Hero.MainHero);
+                if (_investDaysRemaining.TryGetValue(activeKey, out float remaining) && remaining > 0f)
+                {
+                    args.IsEnabled = false;
+                    args.optionLeaveType = GameMenuOption.LeaveType.Trade;
+                    args.Tooltip = new TextObject(
+                        $"Active investment — {(int)Math.Ceiling(remaining)} days remaining.");
+                    return true;
+                }
+            }
+
             int cost;
             int duration;
             float hearthBonus;
@@ -501,7 +530,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (s == null || Hero.MainHero == null) return;
 
             ApplyInvestment(s, Hero.MainHero, tier, isPlayer: true);
-            GameMenu.SwitchToMenu("b1071_village_invest_menu");
+            // Return to village menu — shows updated cooldown on the entry option.
+            GameMenu.SwitchToMenu("village");
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────────

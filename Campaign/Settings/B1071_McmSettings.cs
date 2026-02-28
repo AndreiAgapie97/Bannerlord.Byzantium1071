@@ -1043,5 +1043,17 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
         [SettingPropertyBool("AI village investment", Order = 21, HintText = "When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true.")]
         public bool VillageInvestAiEnabled { get; set; } = true;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("AI gold safety multiplier", 2, 20, "0", Order = 22, HintText = "AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher = more conservative AI spending (e.g., 10 means a lord needs 120,000d to pick Grand). Default: 10.")]
+        public int VillageInvestAiGoldMultiplier { get; set; } = 10;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "Percentage chance that an AI lord will invest when entering an eligible village (after all other checks pass). Lower values reduce overall AI investment frequency. Default: 30.")]
+        public int VillageInvestAiChance { get; set; } = 30;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyBool("AI random tier selection", Order = 24, HintText = "When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Creates more natural variation — rich lords won't always pick Grand. Default: true.")]
+        public bool VillageInvestAiRandomTier { get; set; } = true;
     }
 }
