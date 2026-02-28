@@ -953,5 +953,95 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyBool("Open castle access (early game)", Order = 15, HintText = "Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true.")]
         public bool CastleOpenAccess { get; set; } = true;
+
+        // ─── Village Investment (Patronage) ───
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyBool("Enable village investment", Order = 0, HintText = "Master toggle. Enables the village investment (patronage) system — spend gold at villages for hearth growth, notable relations, influence, and notable power. AI lords also invest in their own villages. Default: true.")]
+        public bool EnableVillageInvestment { get; set; } = true;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Modest investment cost", 500, 10000, "0", Order = 1, HintText = "Gold cost for a Modest investment. Smallest tier with proportionally smaller bonuses. Default: 2000.")]
+        public int VillageInvestCostModest { get; set; } = 2000;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Generous investment cost", 1000, 25000, "0", Order = 2, HintText = "Gold cost for a Generous investment. Middle tier with balanced bonuses. Default: 5000.")]
+        public int VillageInvestCostGenerous { get; set; } = 5000;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Grand investment cost", 2000, 50000, "0", Order = 3, HintText = "Gold cost for a Grand investment. Highest tier with the strongest bonuses and longest duration. Default: 12000.")]
+        public int VillageInvestCostGrand { get; set; } = 12000;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Modest duration (days)", 5, 120, "0", Order = 4, HintText = "How many days the Modest investment hearth bonus lasts. Also serves as the cooldown — no re-investment until expired. Default: 20.")]
+        public int VillageInvestDurationModest { get; set; } = 20;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Generous duration (days)", 10, 180, "0", Order = 5, HintText = "How many days the Generous investment hearth bonus lasts. Also serves as the cooldown. Default: 30.")]
+        public int VillageInvestDurationGenerous { get; set; } = 30;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Grand duration (days)", 15, 240, "0", Order = 6, HintText = "How many days the Grand investment hearth bonus lasts. Also serves as the cooldown. Default: 45.")]
+        public int VillageInvestDurationGrand { get; set; } = 45;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Modest hearth bonus/day", 0.05f, 5f, "0.00", Order = 7, HintText = "Daily hearth growth bonus from a Modest investment. Visible in village tooltip as 'Patronage'. Default: 0.3.")]
+        public float VillageInvestHearthModest { get; set; } = 0.3f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Generous hearth bonus/day", 0.1f, 5f, "0.00", Order = 8, HintText = "Daily hearth growth bonus from a Generous investment. Default: 0.6.")]
+        public float VillageInvestHearthGenerous { get; set; } = 0.6f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Grand hearth bonus/day", 0.2f, 10f, "0.00", Order = 9, HintText = "Daily hearth growth bonus from a Grand investment. Default: 1.0.")]
+        public float VillageInvestHearthGrand { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Modest relation gain", 0, 20, "0", Order = 10, HintText = "Relation gained with each village notable from a Modest investment. Default: 3.")]
+        public int VillageInvestRelationModest { get; set; } = 3;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Generous relation gain", 0, 30, "0", Order = 11, HintText = "Relation gained with each village notable from a Generous investment. Default: 6.")]
+        public int VillageInvestRelationGenerous { get; set; } = 6;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Grand relation gain", 0, 50, "0", Order = 12, HintText = "Relation gained with each village notable from a Grand investment. Default: 10.")]
+        public int VillageInvestRelationGrand { get; set; } = 10;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 10f, "0.0", Order = 13, HintText = "Influence gained from a Modest investment (only if village is in your kingdom). Default: 0.5.")]
+        public float VillageInvestInfluenceModest { get; set; } = 0.5f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 20f, "0.0", Order = 14, HintText = "Influence gained from a Generous investment (only if village is in your kingdom). Default: 1.0.")]
+        public float VillageInvestInfluenceGenerous { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 30f, "0.0", Order = 15, HintText = "Influence gained from a Grand investment (only if village is in your kingdom). Default: 2.0.")]
+        public float VillageInvestInfluenceGrand { get; set; } = 2.0f;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Modest power gain", 0, 50, "0", Order = 16, HintText = "Power added to each village notable from a Modest investment. Higher power = higher-tier volunteers. Default: 5.")]
+        public int VillageInvestPowerModest { get; set; } = 5;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Generous power gain", 0, 75, "0", Order = 17, HintText = "Power added to each village notable from a Generous investment. Default: 10.")]
+        public int VillageInvestPowerGenerous { get; set; } = 10;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Grand power gain", 0, 100, "0", Order = 18, HintText = "Power added to each village notable from a Grand investment. Default: 20.")]
+        public int VillageInvestPowerGrand { get; set; } = 20;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Notable power cap", 50, 500, "0", Order = 19, HintText = "Maximum notable power allowed via investment. Investment power bonus is skipped if notable already at or above this level. Prevents absurdly high volunteer tiers. Default: 200.")]
+        public int VillageInvestPowerCap { get; set; } = 200;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "Relation gained with the village owner's clan leader when investing in another clan's village. Creates a diplomatic investment path. Default: 2.")]
+        public int VillageInvestCrossClanRelation { get; set; } = 2;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyBool("AI village investment", Order = 21, HintText = "When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true.")]
+        public bool VillageInvestAiEnabled { get; set; } = true;
     }
 }

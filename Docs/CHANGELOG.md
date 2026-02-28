@@ -1,6 +1,32 @@
 # Campaign++ — Changelog
 
-## [0.1.8.6] — 2026-02-28
+## [0.1.8.7] — 2026-02-28
+
+### Feature — Village Investment (Patronage)
+
+**New gold-sink system: invest in villages for hearth growth, notable relations, influence, and power.** Three tiers of patronage (Modest / Generous / Grand) with increasing cost and bonuses. Duration doubles as cooldown — no re-investment until patronage expires. AI lords invest in their own faction's villages with the same tiers and bonuses.
+
+- **Three tiers:** Modest (2,000d / 20 days), Generous (5,000d / 30 days), Grand (12,000d / 45 days).
+- **Hearth bonus:** +0.3 / +0.6 / +1.0 hearth/day for the investment duration (via Harmony postfix, visible in hearth tooltip as "Patronage").
+- **Notable relation:** +3 / +6 / +10 per notable in the village (immediate).
+- **Notable power:** +5 / +10 / +20 per notable (capped at 200 to prevent absurd volunteer tiers).
+- **Influence:** +0.5 / +1.0 / +2.0 (only if village is in investor's kingdom).
+- **Cross-clan diplomacy:** +2 relation with village owner's clan leader when investing in another clan's village.
+- **Gold sink:** Gold is destroyed (null recipient via `GiveGoldAction`), reducing world inflation.
+- **AI parity:** AI lords invest via `SettlementEntered`, picking the highest affordable tier (gold > cost × 3 gate).
+- **Conditions:** Village must be non-hostile, in Normal state (not looted/raided), no active investment by same hero.
+- **Save/load safe:** State persisted as two dictionaries via `SyncData`. Mid-campaign install is safe.
+- **Mod removal safe:** Only hearth accumulated persists (within normal range); relation/influence/power are vanilla-native.
+- **22 MCM settings** under "Village Investment" group: all tier costs, durations, bonuses, power cap, cross-clan relation, AI toggle.
+
+| File | Status |
+|------|--------|
+| `B1071_VillageInvestmentBehavior.cs` | **NEW** — main behavior: menus, AI logic, investment application, daily tick expiry |
+| `B1071_VillageInvestmentHearthPatch.cs` | **NEW** — Harmony Postfix on `CalculateHearthChange` adds "Patronage" line |
+| `B1071_McmSettings.cs` | Modified — 22 new settings (Village Investment group, GroupOrder 23) |
+| `SubModule.cs` | Modified — behavior registration + singleton cleanup |
+
+## [0.1.8.6] — 2026-02-27
 
 ### Feature — Market price search in Search tab
 
