@@ -6,6 +6,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -1324,6 +1325,14 @@ namespace Byzantium1071.Campaign.Behaviors
                         continue;
                     }
 
+                    // Skip peace with a faction we are actively besieging — don't
+                    // waste siege progress by suing for peace mid-operation.
+                    if (IsKingdomBesiegingFaction(kingdom, enemy))
+                    {
+                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: we are besieging their settlement.");
+                        continue;
+                    }
+
                     activeWarCount++;
 
                     var diplomacyModel = TaleWorlds.CampaignSystem.Campaign.Current?.Models?.DiplomacyModel;
@@ -1398,6 +1407,29 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (attackerParty?.MapFaction == attacker)
                         return true;
                 }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="attacker"/> has any war-party
+        /// currently besieging a settlement belonging to <paramref name="defender"/>.
+        /// Mirror of <see cref="B1071_ExhaustionDiplomacyHelpers.IsKingdomBesiegingFaction"/>
+        /// but accessible from the behavior for the forced-peace path.
+        /// </summary>
+        private static bool IsKingdomBesiegingFaction(Kingdom attacker, IFaction defender)
+        {
+            if (attacker == null || defender == null) return false;
+
+            foreach (WarPartyComponent wpc in attacker.WarPartyComponents)
+            {
+                MobileParty? party = wpc.MobileParty;
+                if (party == null) continue;
+
+                Settlement? besieged = party.BesiegedSettlement;
+                if (besieged != null && besieged.MapFaction == defender)
+                    return true;
             }
 
             return false;

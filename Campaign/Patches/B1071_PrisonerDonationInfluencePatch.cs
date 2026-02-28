@@ -49,14 +49,30 @@ namespace Byzantium1071.Campaign.Patches
                 // Block influence when factions don't match (neutral/allied castle deposit).
                 if (partyFaction != settlementFaction)
                 {
+                    // Diagnostic: log full ownership chain so we can debug
+                    // unexpected faction mismatches reported by the player.
+                    Clan? ownerClan = donatedSettlement.OwnerClan;
+                    string ownerClanName = ownerClan?.Name?.ToString() ?? "null";
+                    string ownerClanKingdom = ownerClan?.Kingdom?.Name?.ToString() ?? "null";
+                    Clan? partyClan = donatingParty.ActualClan;
+                    string partyClanName = partyClan?.Name?.ToString() ?? "null";
+                    string partyClanKingdom = partyClan?.Kingdom?.Name?.ToString() ?? "null";
+                    bool isMerc = partyClan?.IsUnderMercenaryService ?? false;
+
                     B1071_VerboseLog.Log("CastleRecruitment",
                         $"Blocked influence for prisoner donation: {donatingParty.Name} " +
-                        $"(faction: {partyFaction.Name}) donated to {donatedSettlement.Name} " +
-                        $"(faction: {settlementFaction.Name}) — cross-faction, no influence.");
+                        $"(clan: {partyClanName}, kingdom: {partyClanKingdom}, merc: {isMerc}, " +
+                        $"MapFaction: {partyFaction.Name}) donated to {donatedSettlement.Name} " +
+                        $"(ownerClan: {ownerClanName}, ownerKingdom: {ownerClanKingdom}, " +
+                        $"MapFaction: {settlementFaction.Name}) — cross-faction, no influence.");
                     return false; // Skip vanilla's influence grant
                 }
 
                 // Same faction — vanilla influence grant proceeds normally.
+                B1071_VerboseLog.Log("CastleRecruitment",
+                    $"Allowed influence for prisoner donation: {donatingParty.Name} " +
+                    $"(faction: {partyFaction.Name}) donated to {donatedSettlement.Name} " +
+                    $"(faction: {settlementFaction.Name}) — same faction.");
                 return true;
             }
             catch (Exception ex)

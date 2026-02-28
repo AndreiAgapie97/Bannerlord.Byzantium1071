@@ -5,6 +5,9 @@ using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Election;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Patches
@@ -128,6 +131,28 @@ namespace Byzantium1071.Campaign.Patches
             // Scale linearly: 0 at threshold, full strength at 0% manpower.
             float depletion = (threshold - avgRatio) / threshold;
             return depletion * Math.Max(0f, s.ManpowerDiplomacyPressureStrength);
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="attacker"/> has any war-party
+        /// currently besieging a settlement belonging to <paramref name="defender"/>.
+        /// Used to suppress peace bonuses during active offensive operations.
+        /// </summary>
+        internal static bool IsKingdomBesiegingFaction(Kingdom attacker, IFaction defender)
+        {
+            if (attacker == null || defender == null) return false;
+
+            foreach (WarPartyComponent wpc in attacker.WarPartyComponents)
+            {
+                MobileParty? party = wpc.MobileParty;
+                if (party == null) continue;
+
+                Settlement? besieged = party.BesiegedSettlement;
+                if (besieged != null && besieged.MapFaction == defender)
+                    return true;
+            }
+
+            return false;
         }
 
         internal static void RecordTelemetry(string reason)
@@ -259,6 +284,22 @@ namespace Byzantium1071.Campaign.Patches
 
             if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(__instance.Kingdom, clan))
                 return;
+
+            // ─── Siege-awareness guard ───
+            // If this kingdom has armies actively besieging the peace target,
+            // suppress all mod-added peace bonuses. Vanilla's own scoring still
+            // applies — we just don't amplify it while a siege is in progress.
+            if (B1071_ExhaustionDiplomacyHelpers.IsKingdomBesiegingFaction(
+                    __instance.Kingdom, __instance.FactionToMakePeaceWith))
+            {
+                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
+                    TaleWorlds.Library.Debug.Print(
+                        $"[Byzantium1071][Diplomacy][Debug] MakePeace support suppressed for {__instance.Kingdom.Name} vs " +
+                        $"{__instance.FactionToMakePeaceWith.Name}: active siege in progress.");
+                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry(
+                    $"MakePeace support suppressed: {__instance.Kingdom.Name} besieging {__instance.FactionToMakePeaceWith.Name}.");
+                return;
+            }
 
             // Manpower-diplomacy pressure (runs independently of war exhaustion system).
             if (possibleOutcome is MakePeaceKingdomDecision.MakePeaceDecisionOutcome mpOutcome)

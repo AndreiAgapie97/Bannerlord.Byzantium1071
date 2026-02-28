@@ -3,7 +3,7 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/BUTR/Bannerlord.XmlSchemas/master/SubModule.xsd" >
   <Id value="Byzantium1071" />
   <Name value="Campaign++" />
-  <Version value="v0.1.8.7" />
+  <Version value="v0.1.9.0" />
   <DefaultModule value="false" />
   <ModuleCategory value="Singleplayer"/>
   <ModuleType value="Community" />

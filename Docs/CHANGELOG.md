@@ -1,5 +1,25 @@
 # Campaign++ — Changelog
 
+## [0.1.9.0] — 2026-02-28
+
+### Fix — Siege-Aware Peace Guard
+
+**Prevents kingdoms from making peace while actively besieging the target faction.** Both the mod's exhaustion/manpower-based peace support bonuses and the forced-peace mechanism now check for active siege operations before applying.
+
+- **DetermineSupport guard:** When a kingdom has any war-party besieging a settlement belonging to the peace target, all mod-added peace bonuses (exhaustion, manpower depletion) are fully suppressed. Vanilla's own peace scoring still applies — the mod simply stops amplifying it during active sieges.
+- **Forced-peace guard:** The forced-peace candidate selection now skips factions that the kingdom is actively besieging, preferring to end wars where no offensive operations are underway.
+- **API used:** `Kingdom.WarPartyComponents` → `MobileParty.BesiegedSettlement` → `Settlement.MapFaction` check. Fast O(n) over war-parties per kingdom.
+- **No persisted state:** Pure runtime check against vanilla's existing siege data. Fully save/load safe, mod-removal safe, mid-campaign install safe.
+- **Always active:** No MCM toggle — strategically, making peace while besieging is always undesirable.
+- **Verbose logging:** Suppressed peace support events logged with `[Diplomacy][Debug]` tag, telemetry recorded for diagnostics.
+
+| File | Status |
+|------|--------|
+| `B1071_ExhaustionDiplomacyPatch.cs` | Modified — siege guard in `MakePeaceDecisionExhaustionSupportPatch`, new `IsKingdomBesiegingFaction` helper |
+| `B1071_ManpowerBehavior.cs` | Modified — siege guard in forced-peace candidate loop, new `IsKingdomBesiegingFaction` private method |
+
+---
+
 ## [0.1.8.9] — 2026-02-28
 
 ### Feature — Town Investment (Civic Patronage)
