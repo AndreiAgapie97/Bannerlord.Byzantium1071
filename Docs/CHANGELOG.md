@@ -1,5 +1,34 @@
 # Campaign++ — Changelog
 
+## [0.1.8.9] — 2026-02-28
+
+### Feature — Town Investment (Civic Patronage)
+
+**New gold-sink system: invest in towns for daily prosperity growth, notable relations, influence, and power.** Three tiers of civic patronage (Modest / Generous / Grand) with higher costs than village patronage, reflecting towns' greater economic value. AI lords invest in their own faction's towns with the same tiers and bonuses.
+
+- **Three tiers:** Modest (5,000d / 20 days), Generous (15,000d / 40 days), Grand (40,000d / 60 days).
+- **Prosperity bonus:** +0.5 / +1.0 / +2.0 prosperity/day for the investment duration (via Harmony postfix, visible in prosperity tooltip as "Civic Patronage").
+- **Notable relation:** +3 / +6 / +10 per notable in the town (immediate).
+- **Notable power:** +5 / +10 / +20 per notable (capped at 200).
+- **Influence:** +2.0 / +5.0 / +10.0 (only if town is in investor's kingdom).
+- **Cross-clan diplomacy:** +2 relation with town owner's clan leader when investing in another clan's town.
+- **Gold sink:** Gold is destroyed (null recipient via `GiveGoldAction`), reducing world inflation.
+- **Siege check:** Cannot invest while town is under siege (player menu hidden, AI blocked).
+- **AI parity:** AI lords invest via `SettlementEntered`, with configurable gold safety multiplier (default ×15), random chance gate (default 30%), random tier selection, hero cooldown (default 5 days), and prosperity ceiling (default 5,000).
+- **Verbose logging:** Investment applications, daily expiration, and prosperity bonus calculations all logged to rgl_log.
+- **Save/load safe:** State persisted as two dictionaries via `SyncData`. Mid-campaign install is safe.
+- **Mod removal safe:** Only prosperity accumulated persists (within normal range); relation/influence/power are vanilla-native.
+- **28 MCM settings** under "Town Investment" group (GroupOrder 24).
+
+| File | Status |
+|------|--------|
+| `B1071_TownInvestmentBehavior.cs` | **NEW** — main behavior: menus, AI logic, investment application, daily tick expiry |
+| `B1071_TownInvestmentProsperityPatch.cs` | **NEW** — Harmony Postfix on `CalculateProsperityChange` adds "Civic Patronage" line |
+| `B1071_McmSettings.cs` | Modified — 28 new settings (Town Investment group, GroupOrder 24) |
+| `SubModule.cs` | Modified — behavior registration + singleton cleanup |
+
+---
+
 ## [0.1.8.8] — 2026-02-28
 
 ### Bugfix — Cross-faction prisoner donation influence exploit

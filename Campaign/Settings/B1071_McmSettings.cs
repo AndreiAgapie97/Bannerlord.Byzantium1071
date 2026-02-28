@@ -1067,5 +1067,119 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
         [SettingPropertyBool("Notify when AI invests in your villages", Order = 27, HintText = "Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true.")]
         public bool VillageInvestNotifyPlayer { get; set; } = true;
+
+        // ─── Town Investment (Civic Patronage) ───
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyBool("Enable town investment", Order = 0, HintText = "Master toggle. Enables the town investment (civic patronage) system — spend gold at non-hostile towns for a daily prosperity bonus, notable relations, influence, and notable power. AI lords also invest in their own towns. Default: true.")]
+        public bool EnableTownInvestment { get; set; } = true;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Modest investment cost", 1000, 25000, "0", Order = 1, HintText = "Gold cost for a Modest town investment. Default: 5000.")]
+        public int TownInvestCostModest { get; set; } = 5000;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Generous investment cost", 3000, 50000, "0", Order = 2, HintText = "Gold cost for a Generous town investment. Default: 15000.")]
+        public int TownInvestCostGenerous { get; set; } = 15000;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Grand investment cost", 5000, 100000, "0", Order = 3, HintText = "Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000.")]
+        public int TownInvestCostGrand { get; set; } = 40000;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Modest duration (days)", 5, 120, "0", Order = 4, HintText = "How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20.")]
+        public int TownInvestDurationModest { get; set; } = 20;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Generous duration (days)", 10, 180, "0", Order = 5, HintText = "How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40.")]
+        public int TownInvestDurationGenerous { get; set; } = 40;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Grand duration (days)", 15, 240, "0", Order = 6, HintText = "How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60.")]
+        public int TownInvestDurationGrand { get; set; } = 60;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Modest prosperity bonus/day", 0.1f, 5f, "0.00", Order = 7, HintText = "Daily prosperity growth bonus from a Modest town investment. Visible in the town tooltip as 'Civic Patronage'. Default: 0.5.")]
+        public float TownInvestProsperityModest { get; set; } = 0.5f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Generous prosperity bonus/day", 0.2f, 10f, "0.00", Order = 8, HintText = "Daily prosperity growth bonus from a Generous town investment. Default: 1.0.")]
+        public float TownInvestProsperityGenerous { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Grand prosperity bonus/day", 0.5f, 15f, "0.00", Order = 9, HintText = "Daily prosperity growth bonus from a Grand town investment. Default: 2.0.")]
+        public float TownInvestProsperityGrand { get; set; } = 2.0f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Modest relation gain", 0, 20, "0", Order = 10, HintText = "Relation gained with each town notable from a Modest investment. Default: 3.")]
+        public int TownInvestRelationModest { get; set; } = 3;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Generous relation gain", 0, 30, "0", Order = 11, HintText = "Relation gained with each town notable from a Generous investment. Default: 6.")]
+        public int TownInvestRelationGenerous { get; set; } = 6;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Grand relation gain", 0, 50, "0", Order = 12, HintText = "Relation gained with each town notable from a Grand investment. Default: 10.")]
+        public int TownInvestRelationGrand { get; set; } = 10;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 10f, "0.0", Order = 13, HintText = "Influence gained from a Modest town investment (only if town is in your kingdom). Default: 2.0.")]
+        public float TownInvestInfluenceModest { get; set; } = 2.0f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 25f, "0.0", Order = 14, HintText = "Influence gained from a Generous town investment (only if town is in your kingdom). Default: 5.0.")]
+        public float TownInvestInfluenceGenerous { get; set; } = 5.0f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 40f, "0.0", Order = 15, HintText = "Influence gained from a Grand town investment (only if town is in your kingdom). Default: 10.0.")]
+        public float TownInvestInfluenceGrand { get; set; } = 10.0f;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Modest power gain", 0, 50, "0", Order = 16, HintText = "Power added to each town notable from a Modest investment. Default: 5.")]
+        public int TownInvestPowerModest { get; set; } = 5;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Generous power gain", 0, 75, "0", Order = 17, HintText = "Power added to each town notable from a Generous investment. Default: 10.")]
+        public int TownInvestPowerGenerous { get; set; } = 10;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Grand power gain", 0, 100, "0", Order = 18, HintText = "Power added to each town notable from a Grand investment. Default: 20.")]
+        public int TownInvestPowerGrand { get; set; } = 20;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Notable power cap", 50, 500, "0", Order = 19, HintText = "Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200.")]
+        public int TownInvestPowerCap { get; set; } = 200;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2.")]
+        public int TownInvestCrossClanRelation { get; set; } = 2;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyBool("AI town investment", Order = 21, HintText = "When enabled, AI lords invest in their own faction's towns when visiting them. Uses the same tier costs and provides the same bonuses. Default: true.")]
+        public bool TownInvestAiEnabled { get; set; } = true;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("AI gold safety multiplier", 2, 30, "0", Order = 22, HintText = "AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15.")]
+        public int TownInvestAiGoldMultiplier { get; set; } = 15;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "Percentage chance that an AI lord will invest when entering an eligible town. Default: 30.")]
+        public int TownInvestAiChance { get; set; } = 30;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyBool("AI random tier selection", Order = 24, HintText = "When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true.")]
+        public bool TownInvestAiRandomTier { get; set; } = true;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5.")]
+        public int TownInvestAiHeroCooldownDays { get; set; } = 5;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyInteger("AI prosperity ceiling", 0, 15000, "0", Order = 26, HintText = "AI will not invest in towns with prosperity at or above this value, focusing patronage on less prosperous towns. Set to 0 to disable. Default: 5000.")]
+        public int TownInvestAiProsperityCeiling { get; set; } = 5000;
+
+        [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
+        [SettingPropertyBool("Notify when AI invests in your towns", Order = 27, HintText = "Shows a message when an AI lord invests in a town you own. Default: true.")]
+        public bool TownInvestNotifyPlayer { get; set; } = true;
     }
 }
