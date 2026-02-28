@@ -1,5 +1,22 @@
 # Campaign++ — Changelog
 
+## [0.1.8.8] — 2026-02-28
+
+### Bugfix — Cross-faction prisoner donation influence exploit
+
+**Fixed: depositing prisoners at a neutral or allied castle granted influence to the depositor, even when the castle belonged to a different faction.** For mercenaries, this influence converted directly to gold via the mercenary contract, creating a gold-from-nothing exploit.
+
+- **Root cause:** Vanilla's `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` awards influence for ALL prisoner donations. It only skips when both the donating party AND the settlement owner are the player's own clan — it never checks faction match.
+- **Fix:** New Harmony Prefix (`B1071_PrisonerDonationInfluencePatch`) on `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement`. Blocks the vanilla influence grant when the donating party's `MapFaction` does not match the settlement's `MapFaction`. Same-faction donations work exactly as before.
+- **Affects:** Player AND AI equally. AI lords rarely trigger this path (they deposit at their own faction's castles), but the rule is symmetric.
+- **Fail-open:** If the patch encounters an error, vanilla behavior is preserved.
+
+| File | Status |
+|------|--------|
+| `B1071_PrisonerDonationInfluencePatch.cs` | **NEW** — Harmony Prefix blocking cross-faction influence |
+
+---
+
 ## [0.1.8.7] — 2026-02-28
 
 ### Feature — Village Investment (Patronage)
