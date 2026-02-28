@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 5;
+        internal const int LATEST_PROFILE_VERSION = 6;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -130,8 +130,23 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.8.5 slave base value 1500→300d, cap/prosperity 0.03→0.02 for balanced economics. ";
             }
 
+            // ── Profile v6: v0.1.9.0 investment influence 5× buff ──
+            if (SettingsProfileVersion < 6)
+            {
+                // Influence from patronage was too small to feel impactful.
+                // 5× multiplier: Grand village 2→10, Grand town 10→50.
+                VillageInvestInfluenceModest = 2.5f;
+                VillageInvestInfluenceGenerous = 5.0f;
+                VillageInvestInfluenceGrand = 10.0f;
+                TownInvestInfluenceModest = 10.0f;
+                TownInvestInfluenceGenerous = 25.0f;
+                TownInvestInfluenceGrand = 50.0f;
+
+                migrated += "v0.1.9.0 investment influence 5× (village 0.5/1/2→2.5/5/10, town 2/5/10→10/25/50). ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 6) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 7) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
@@ -1009,16 +1024,16 @@ namespace Byzantium1071.Campaign.Settings
         public int VillageInvestRelationGrand { get; set; } = 10;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
-        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 10f, "0.0", Order = 13, HintText = "Influence gained from a Modest investment (only if village is in your kingdom). Default: 0.5.")]
-        public float VillageInvestInfluenceModest { get; set; } = 0.5f;
+        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 10f, "0.0", Order = 13, HintText = "Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5.")]
+        public float VillageInvestInfluenceModest { get; set; } = 2.5f;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
-        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 20f, "0.0", Order = 14, HintText = "Influence gained from a Generous investment (only if village is in your kingdom). Default: 1.0.")]
-        public float VillageInvestInfluenceGenerous { get; set; } = 1.0f;
+        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 20f, "0.0", Order = 14, HintText = "Influence gained from a Generous investment (only if village is in your kingdom). Default: 5.")]
+        public float VillageInvestInfluenceGenerous { get; set; } = 5.0f;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
-        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 30f, "0.0", Order = 15, HintText = "Influence gained from a Grand investment (only if village is in your kingdom). Default: 2.0.")]
-        public float VillageInvestInfluenceGrand { get; set; } = 2.0f;
+        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 30f, "0.0", Order = 15, HintText = "Influence gained from a Grand investment (only if village is in your kingdom). Default: 10.")]
+        public float VillageInvestInfluenceGrand { get; set; } = 10.0f;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
         [SettingPropertyInteger("Modest power gain", 0, 50, "0", Order = 16, HintText = "Power added to each village notable from a Modest investment. Higher power = higher-tier volunteers. Default: 5.")]
@@ -1123,16 +1138,16 @@ namespace Byzantium1071.Campaign.Settings
         public int TownInvestRelationGrand { get; set; } = 10;
 
         [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 10f, "0.0", Order = 13, HintText = "Influence gained from a Modest town investment (only if town is in your kingdom). Default: 2.0.")]
-        public float TownInvestInfluenceModest { get; set; } = 2.0f;
+        [SettingPropertyFloatingInteger("Modest influence gain", 0f, 25f, "0.0", Order = 13, HintText = "Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10.")]
+        public float TownInvestInfluenceModest { get; set; } = 10.0f;
 
         [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 25f, "0.0", Order = 14, HintText = "Influence gained from a Generous town investment (only if town is in your kingdom). Default: 5.0.")]
-        public float TownInvestInfluenceGenerous { get; set; } = 5.0f;
+        [SettingPropertyFloatingInteger("Generous influence gain", 0f, 50f, "0.0", Order = 14, HintText = "Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25.")]
+        public float TownInvestInfluenceGenerous { get; set; } = 25.0f;
 
         [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 40f, "0.0", Order = 15, HintText = "Influence gained from a Grand town investment (only if town is in your kingdom). Default: 10.0.")]
-        public float TownInvestInfluenceGrand { get; set; } = 10.0f;
+        [SettingPropertyFloatingInteger("Grand influence gain", 0f, 100f, "0.0", Order = 15, HintText = "Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50.")]
+        public float TownInvestInfluenceGrand { get; set; } = 50.0f;
 
         [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
         [SettingPropertyInteger("Modest power gain", 0, 50, "0", Order = 16, HintText = "Power added to each town notable from a Modest investment. Default: 5.")]
