@@ -17,11 +17,14 @@
 - **AI gold safety multiplier (MCM):** AI must have gold > tier cost × multiplier to consider that tier. Default 10 (needs 120,000d for Grand).
 - **AI investment chance (MCM):** Percentage chance to invest on each eligible village visit. Default 30%.
 - **AI random tier selection (MCM):** When enabled, AI randomly picks from affordable tiers instead of always the highest. Creates natural variation — rich lords won't always Grand.
+- **AI hero cooldown (MCM):** Minimum in-game days between any two investments by the same AI lord across all villages. Prevents carpet-bombing every village on a travel route. Default: 5 days.
+- **AI hearth ceiling (MCM):** AI skips villages with hearth at or above this value, focusing patronage on poorer villages that need it most. Set to 0 to disable. Default: 400.
+- **Player notification:** When an AI lord invests in one of your villages, a subtle blue message appears (e.g., "🏠 Lucon made a grand investment in Atrion."). Toggleable via MCM.
 - **Conditions:** Village must be non-hostile, in Normal state (not looted/raided), no active investment by same hero.
 - **Save/load safe:** State persisted as two dictionaries via `SyncData`. Mid-campaign install is safe.
 - **Mod removal safe:** Only hearth accumulated persists (within normal range); relation/influence/power are vanilla-native.
 - **22 MCM settings** under "Village Investment" group: all tier costs, durations, bonuses, power cap, cross-clan relation, AI toggle.
-- **3 AI tuning MCM settings:** gold safety multiplier, investment chance %, random tier toggle — balances AI spending rate.
+- **6 AI tuning MCM settings:** gold safety multiplier, investment chance %, random tier toggle, hero cooldown, hearth ceiling, player notification toggle.
 
 ### Bugfix — Multi-click exploit in investment submenu
 

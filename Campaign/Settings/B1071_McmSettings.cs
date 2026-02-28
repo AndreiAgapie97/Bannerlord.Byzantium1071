@@ -1045,15 +1045,27 @@ namespace Byzantium1071.Campaign.Settings
         public bool VillageInvestAiEnabled { get; set; } = true;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
-        [SettingPropertyInteger("AI gold safety multiplier", 2, 20, "0", Order = 22, HintText = "AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher = more conservative AI spending (e.g., 10 means a lord needs 120,000d to pick Grand). Default: 10.")]
-        public int VillageInvestAiGoldMultiplier { get; set; } = 10;
+        [SettingPropertyInteger("AI gold safety multiplier", 2, 20, "0", Order = 22, HintText = "AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher = more conservative AI spending (e.g., 5 means a lord needs 60,000d to pick Grand). Default: 5.")]
+        public int VillageInvestAiGoldMultiplier { get; set; } = 5;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
-        [SettingPropertyInteger("AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "Percentage chance that an AI lord will invest when entering an eligible village (after all other checks pass). Lower values reduce overall AI investment frequency. Default: 30.")]
-        public int VillageInvestAiChance { get; set; } = 30;
+        [SettingPropertyInteger("AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "Percentage chance that an AI lord will invest when entering an eligible village (after all other checks pass). Lower values reduce overall AI investment frequency. Default: 40.")]
+        public int VillageInvestAiChance { get; set; } = 40;
 
         [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
         [SettingPropertyBool("AI random tier selection", Order = 24, HintText = "When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Creates more natural variation — rich lords won't always pick Grand. Default: true.")]
         public bool VillageInvestAiRandomTier { get; set; } = true;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "Minimum in-game days between any two investments by the same AI lord (across all villages). Prevents carpet-bombing every village on a travel route. Set to 0 to disable. Default: 3.")]
+        public int VillageInvestAiHeroCooldownDays { get; set; } = 3;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyInteger("AI hearth ceiling", 0, 2000, "0", Order = 26, HintText = "AI will not invest in villages with hearth at or above this value, focusing patronage on poorer villages that need it most. Set to 0 to disable (invest anywhere). Default: 600.")]
+        public int VillageInvestAiHearthCeiling { get; set; } = 600;
+
+        [SettingPropertyGroup("Village Investment", GroupOrder = 23)]
+        [SettingPropertyBool("Notify when AI invests in your villages", Order = 27, HintText = "Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true.")]
+        public bool VillageInvestNotifyPlayer { get; set; } = true;
     }
 }

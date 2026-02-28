@@ -42,8 +42,12 @@ namespace Byzantium1071.Campaign.Behaviors
     ///
     /// AI PARITY:
     ///   AI lords invest in their own faction's villages via SettlementEntered event,
-    ///   using the same tier costs and bonuses. AI picks highest affordable tier with
-    ///   a conservative gold gate (gold &gt; cost × 3).
+    ///   using the same tier costs and bonuses.  Throttled by:
+    ///     - Configurable gold safety multiplier (default ×10)
+    ///     - Random chance gate (default 30%)
+    ///     - Random tier selection from affordable tiers
+    ///     - Per-hero global cooldown (default 5 days between any investment)
+    ///     - Hearth ceiling (skip wealthy villages above threshold)
     /// </summary>
     public sealed class B1071_VillageInvestmentBehavior : CampaignBehaviorBase
     {
@@ -56,6 +60,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         // Key = same → daily hearth bonus amount for that investment.
         private Dictionary<string, float> _investHearthBonus = new();
+
+        // Key = "{hero.StringId}" → campaign day of hero's last investment (any village).
+        // Non-serialized — resets on load, which is fine (conservative: first visit post-load is allowed).
+        private readonly Dictionary<string, float> _heroLastInvestDay = new();
 
         // ── CampaignBehaviorBase ──────────────────────────────────────────────────
 
@@ -165,6 +173,18 @@ namespace Byzantium1071.Campaign.Behaviors
             string investKey = MakeKey(settlement, hero);
             if (_investDaysRemaining.ContainsKey(investKey)) return;
 
+            // Per-hero global cooldown — prevent carpet-bombing every village on a route.
+            float now = (float)CampaignTime.Now.ToDays;
+            int heroCooldownDays = Settings.VillageInvestAiHeroCooldownDays;
+            if (heroCooldownDays > 0 && _heroLastInvestDay.TryGetValue(hero.StringId, out float lastDay))
+            {
+                if (now - lastDay < heroCooldownDays) return;
+            }
+
+            // Hearth priority — skip wealthy villages so AI focuses on those in need.
+            int hearthCeiling = Settings.VillageInvestAiHearthCeiling;
+            if (hearthCeiling > 0 && village.Hearth >= hearthCeiling) return;
+
             // Random chance gate — only a percentage of eligible visits result in investment.
             if (MBRandom.RandomInt(100) >= Settings.VillageInvestAiChance) return;
 
@@ -186,6 +206,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 tier = affordableTiers[affordableTiers.Count - 1]; // last = highest
 
             ApplyInvestment(settlement, hero, tier, isPlayer: false);
+
+            // Record this hero's last investment day for global cooldown.
+            _heroLastInvestDay[hero.StringId] = (float)CampaignTime.Now.ToDays;
         }
 
         // ── Core investment logic (shared by player and AI) ───────────────────────
@@ -302,6 +325,19 @@ namespace Byzantium1071.Campaign.Behaviors
                     msg += $", +{influence:0.#} influence";
                 msg += ".";
                 InformationManager.DisplayMessage(new InformationMessage(msg, new Color(0.35f, 0.75f, 0.35f)));
+            }
+            else if (Settings.VillageInvestNotifyPlayer)
+            {
+                // Notify player when an AI lord invests in one of the player's villages.
+                Clan? playerClan = Clan.PlayerClan;
+                if (playerClan != null && settlement.OwnerClan == playerClan)
+                {
+                    string lordName = investor.Name?.ToString() ?? "A lord";
+                    string tierLabel = tier == 1 ? "modest" : tier == 2 ? "generous" : "grand";
+                    string vName = settlement.Name?.ToString() ?? "your village";
+                    string note = $"\ud83c\udfe0 {lordName} made a {tierLabel} investment in {vName}.";
+                    InformationManager.DisplayMessage(new InformationMessage(note, new Color(0.55f, 0.75f, 0.9f)));
+                }
             }
 
             B1071_VerboseLog.Log("VillageInvestment",
