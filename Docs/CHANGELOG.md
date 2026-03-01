@@ -1,5 +1,35 @@
 # Campaign++ — Changelog
 
+## [0.1.10.0] — 2026-02-28
+
+### Feature — Clan Survival (Kingdom Destruction Rescue)
+
+**Prevents clan annihilation when their kingdom is destroyed.** In vanilla, when a kingdom falls, every member clan is destroyed and all their heroes are killed. This system intercepts that destruction chain and rescues eligible clans, letting them survive as independent factions before seeking mercenary service.
+
+- **Rescue mechanic:** Harmony prefixes on `DestroyClanAction.Apply` and `DestroyClanAction.ApplyByClanLeaderDeath` intercept the destruction before heroes are killed. Eligible clans (with living adult lords) are rescued; clans with no surviving heroes are still destroyed normally.
+- **Heir promotion:** If the clan leader is dead (e.g., kingdom-leader-death path), the system promotes an heir via `ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader`. If no valid heir exists, vanilla destruction proceeds.
+- **Fief transfer:** Before rescue, any settlements owned by the clan are transferred to a suitable heir clan (via vanilla's `FactionHelper.ChooseHeirClanForFiefs` + `ChangeOwnerOfSettlementAction.ApplyByDestroyClan`).
+- **War clearing:** All active wars are ended via `MakePeaceAction.Apply` — rescued clans start independent, not inheriting enemies.
+- **Kingdom detachment:** The clan's `_kingdom` field is nulled via reflection (the property setter is internal) since `ChangeKingdomAction` can't be used during a kingdom destruction sequence.
+- **Grace period:** Rescued clans remain independent for a configurable period (default 30 days), during which heroes patrol near their home settlement. Tracked via `Dictionary<string, float>` (clan StringId → rescue day).
+- **Mercenary placement:** After the grace period, the behavior evaluates all surviving kingdoms and selects the best one for mercenary service. Scoring mirrors vanilla's `GetScoreOfKingdomToGetClan` with an amplified culture match bonus (default 3× for same culture vs 1× for mismatch).
+- **Natural vassal integration:** Once under mercenary service, vanilla's own barter/defection systems handle potential vassal promotion — no custom code needed.
+- **Player clan excluded:** The player's clan is never intercepted (vanilla handles player-death separately).
+- **Failed rebellion excluded:** `DestroyClanAction.ApplyByFailedRebellion` is not patched — rebellion failures are legitimate destructions.
+- **Save/load safe:** Tracked clans persisted via `SyncData` using clan StringIds. On load, IDs are resolved back to clan objects; missing clans are cleaned up automatically.
+- **Mod removal safe:** Rescued clans have `_isEliminated = false` (never set to true) and exist as normal independent factions. Without the mod, they simply remain independent indefinitely.
+- **3 MCM settings** under "Clan Survival" group (GroupOrder 25): enable toggle, grace period days, culture match weight.
+- **Settings profile v8:** Migration enables the system with defaults (30-day grace, 2.0 culture weight).
+
+| File | Status |
+|------|--------|
+| `B1071_ClanSurvivalPatch.cs` | **NEW** — Harmony prefixes on `DestroyClanAction.Apply` and `ApplyByClanLeaderDeath`; shared `TryRescueClan`/`PerformRescue` logic |
+| `B1071_ClanSurvivalBehavior.cs` | **NEW** — CampaignBehaviorBase: tracks rescued clans, daily tick grace period processing, culture-weighted mercenary placement scoring |
+| `B1071_McmSettings.cs` | Modified — 3 new settings (Clan Survival group, GroupOrder 25), migration profile v8 |
+| `SubModule.cs` | Modified — behavior registration + singleton cleanup |
+
+---
+
 ## [0.1.9.0] — 2026-02-28
 
 ### Fix — Siege-Aware Peace Guard

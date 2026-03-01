@@ -22,7 +22,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 6;
+        internal const int LATEST_PROFILE_VERSION = 8;
 
         [SettingPropertyGroup("Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -145,8 +145,32 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.9.0 investment influence 5× (village 0.5/1/2→2.5/5/10, town 2/5/10→10/25/50). ";
             }
 
+            // ── Profile v7: v0.1.9.0 war exhaustion decay + crisis band rebalance ──
+            if (SettingsProfileVersion < 7)
+            {
+                // Decay was too slow (0.65/day) — kingdoms stuck in Crisis for 50+ days.
+                // Crisis band was too low (65) — 7/9 kingdoms locked out of war.
+                ExhaustionDailyDecay = 1.0f;
+                PressureBandCrisisStart = 85f;
+
+                migrated += "v0.1.9.0 exhaustion decay 0.65→1.0/day, crisis band 65→85 (fewer frozen kingdoms, faster recovery). ";
+            }
+
+            // ── Profile v8: v0.1.10.0 clan survival system ──
+            if (SettingsProfileVersion < 8)
+            {
+                // New system: prevent clan annihilation when kingdoms are destroyed.
+                // Rescued clans become independent for a grace period, then seek
+                // mercenary service with culture-weighted kingdom selection.
+                EnableClanSurvival = true;
+                ClanSurvivalGracePeriodDays = 30;
+                ClanSurvivalCultureWeight = 2.0f;
+
+                migrated += "v0.1.10.0 clan survival enabled (30-day grace, culture weight 2.0). ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 7) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 9) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
@@ -580,7 +604,7 @@ namespace Byzantium1071.Campaign.Settings
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Daily decay", 0.1f, 5f, "0.0", Order = 1, HintText = "How much exhaustion decays per day toward 0.")]
-        public float ExhaustionDailyDecay { get; set; } = 0.65f;
+        public float ExhaustionDailyDecay { get; set; } = 1.0f;
 
         [SettingPropertyGroup("War Exhaustion", GroupOrder = 12)]
         [SettingPropertyFloatingInteger("Regen penalty divisor", 50f, 500f, "0", Order = 2, HintText = "Regen is multiplied by (1 - exhaustion/divisor). Higher = softer penalty. E.g., 200 means 100 exhaustion halves regen.")]
@@ -717,8 +741,8 @@ namespace Byzantium1071.Campaign.Settings
         public float PressureBandRisingStart { get; set; } = 35f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyFloatingInteger("Crisis band start", 1f, 200f, "0.0", Order = 22, HintText = "Exhaustion level at which kingdom enters Crisis band (war declarations blocked, strong peace pressure).")]
-        public float PressureBandCrisisStart { get; set; } = 65f;
+        [SettingPropertyFloatingInteger("Crisis band start", 1f, 200f, "0.0", Order = 22, HintText = "Exhaustion level at which kingdom enters Crisis band (war declarations blocked, strong peace pressure). Default: 85.")]
+        public float PressureBandCrisisStart { get; set; } = 85f;
 
         [SettingPropertyGroup("Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyFloatingInteger("Band hysteresis", 0f, 30f, "0.0", Order = 23, HintText = "Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation.")]
@@ -1196,5 +1220,19 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("Town Investment", GroupOrder = 24)]
         [SettingPropertyBool("Notify when AI invests in your towns", Order = 27, HintText = "Shows a message when an AI lord invests in a town you own. Default: true.")]
         public bool TownInvestNotifyPlayer { get; set; } = true;
+
+        // ─── Clan Survival ───
+
+        [SettingPropertyGroup("Clan Survival", GroupOrder = 25)]
+        [SettingPropertyBool("Enable clan survival", Order = 0, HintText = "Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true.")]
+        public bool EnableClanSurvival { get; set; } = true;
+
+        [SettingPropertyGroup("Clan Survival", GroupOrder = 25)]
+        [SettingPropertyInteger("Grace period (days)", 1, 120, "0", Order = 1, HintText = "Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30.")]
+        public int ClanSurvivalGracePeriodDays { get; set; } = 30;
+
+        [SettingPropertyGroup("Clan Survival", GroupOrder = 25)]
+        [SettingPropertyFloatingInteger("Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0.")]
+        public float ClanSurvivalCultureWeight { get; set; } = 2.0f;
     }
 }

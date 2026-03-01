@@ -140,6 +140,7 @@ namespace Byzantium1071
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
             B1071_TownInvestmentBehavior.Instance = null;
+            B1071_ClanSurvivalBehavior.Instance = null;
             B1071_DevastationBehavior.ResetDynamicPatchFlag();
             B1071_OverlayController.Reset();
 
@@ -163,6 +164,7 @@ namespace Byzantium1071
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
             B1071_TownInvestmentBehavior.Instance = null;
+            B1071_ClanSurvivalBehavior.Instance = null;
             B1071_OverlayController.Reset();
             _exceptionCounts.Clear();
         }
@@ -200,6 +202,7 @@ namespace Byzantium1071
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CastleRecruitmentBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_VillageInvestmentBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_TownInvestmentBehavior());
+                starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ClanSurvivalBehavior());
                 // Volunteer model is now a Harmony Postfix (B1071_ManpowerVolunteerPatch)
                 // instead of AddModel, for compatibility with mods that replace VolunteerModel.
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerMilitiaModel());
