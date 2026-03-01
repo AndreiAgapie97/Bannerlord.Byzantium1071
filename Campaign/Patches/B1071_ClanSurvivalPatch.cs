@@ -18,27 +18,32 @@ namespace Byzantium1071.Campaign.Patches
     ///
     /// Vanilla has TWO distinct kingdom destruction paths:
     ///
-    ///   Path A — "Lost all settlements": Vanilla calls <c>Kingdom.DeactivateKingdom()</c>
-    ///     which sets <c>IsEliminated = true</c>. Clans remain alive as independent factions
-    ///     but inherit the kingdom's wars. Vanilla does NOT call <c>DestroyClanAction</c>
-    ///     or <c>DestroyKingdomAction</c> in this path.
+    ///   Path A — "Lost all settlements": Vanilla calls
+    ///     <c>ChangeKingdomAction.ApplyInternal(clan, null, LeaveByKingdomDestruction)</c>
+    ///     for EACH clan to remove them from the kingdom, THEN calls
+    ///     <c>Kingdom.DeactivateKingdom()</c> on the now-empty kingdom.
+    ///     Clans become independent factions and inherit all of the kingdom's wars.
     ///
     ///   Path B — "Leader death": <c>DestroyKingdomAction.ApplyInternal</c> calls
     ///     <c>DeactivateKingdom()</c>, then iterates clans and calls
-    ///     <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> to destroy each clan
-    ///     (killing heroes, removing from campaign, etc.).
+    ///     <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> to destroy each clan.
     ///
     /// Patch architecture:
-    ///   1. <c>Kingdom.DeactivateKingdom</c> postfix (PRIMARY) — fires on BOTH paths.
-    ///      Immediately rescues all eligible clans: clears inherited wars, detaches
-    ///      from kingdom, registers for grace period tracking.
+    ///   1. <c>CampaignEvents.OnClanChangedKingdomEvent</c> handler (PRIMARY) — in the
+    ///      behavior class. Fires for each clan when vanilla removes it from a dying
+    ///      kingdom. Immediately clears inherited wars and registers for grace period.
+    ///      Handles Path A completely.
     ///
     ///   2. <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> prefixes (SAFETY NET) —
-    ///      only fires in Path B. If the clan was already rescued by the postfix,
-    ///      skips vanilla destruction. If not yet rescued, rescues it now.
+    ///      handles Path B. If the clan was already rescued by the event handler,
+    ///      skips vanilla destruction. If not yet rescued, rescues it.
     ///
     ///   3. <c>ChangeKingdomAction.ApplyInternal</c> prefix (GRACE GUARD) — blocks
     ///      rescued clans from joining kingdoms during the configurable grace period.
+    ///
+    ///   4. <c>Kingdom.DeactivateKingdom</c> postfix (DIAGNOSTIC) — logs for debugging.
+    ///      In Path A, clans are already gone by this point. In Path B, the ClanDestroy
+    ///      prefix handles clans. This is purely observational.
     /// </summary>
     internal static class B1071_ClanSurvivalPatch
     {
@@ -219,9 +224,11 @@ namespace Byzantium1071.Campaign.Patches
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  PRIMARY PATCH: Kingdom.DeactivateKingdom postfix
-    //  Fires on ALL kingdom destruction paths (settlement loss AND
-    //  leader death). This is where the actual rescue happens.
+    //  DIAGNOSTIC: Kingdom.DeactivateKingdom postfix
+    //  Logs the state when a kingdom is eliminated. In Path A, clans
+    //  have already been removed and rescued by the event handler.
+    //  In Path B, DestroyKingdomAction handles clans next.
+    //  This postfix is purely for logging — no rescue logic here.
     // ═══════════════════════════════════════════════════════════════
     [HarmonyPatch(typeof(Kingdom), "DeactivateKingdom")]
     internal static class B1071_ClanSurvivalDeactivatePatch
@@ -231,56 +238,31 @@ namespace Byzantium1071.Campaign.Patches
         {
             try
             {
-                if (!B1071_ClanSurvivalPatch.Settings.EnableClanSurvival) return;
-                if (__instance == null || !__instance.IsEliminated) return;
+                if (__instance == null) return;
 
                 string kingdomName = __instance.Name?.ToString() ?? __instance.StringId;
                 var clans = __instance.Clans?.ToList();
-                if (clans == null || clans.Count == 0)
+                int clanCount = clans?.Count ?? 0;
+                int rescuedCount = B1071_ClanSurvivalPatch._alreadyRescued.Count;
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                    $"{kingdomName} eliminated. Remaining clans: {clanCount}, " +
+                    $"already rescued by event handler: {rescuedCount}.");
+
+                if (clanCount > 0)
                 {
+                    // This can happen in Path B — DestroyKingdomAction calls
+                    // DeactivateKingdom first, then destroys clans. The prefix
+                    // safety net on DestroyClanAction will handle them.
                     Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
-                        $"{kingdomName} eliminated but has no clans to rescue.");
-                    return;
+                        $"{kingdomName} still has {clanCount} clan(s): " +
+                        $"{string.Join(", ", clans.Select(c => c.Name?.ToString() ?? c.StringId))}. " +
+                        $"These will be handled by DestroyClanAction safety net (Path B).");
                 }
-
-                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
-                    $"{kingdomName} eliminated. Processing {clans.Count} clan(s)...");
-
-                B1071_ClanSurvivalPatch._alreadyRescued.Clear();
-                int rescued = 0;
-                int skipped = 0;
-
-                foreach (Clan clan in clans)
-                {
-                    try
-                    {
-                        if (B1071_ClanSurvivalPatch.IsClanEligibleForRescue(
-                                clan, __instance, "DeactivateKingdom"))
-                        {
-                            B1071_ClanSurvivalPatch.PerformRescue(
-                                clan, __instance, "DeactivateKingdom");
-                            rescued++;
-                        }
-                        else
-                        {
-                            skipped++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
-                            $"Error processing {clan?.Name}: {ex.Message}");
-                        skipped++;
-                    }
-                }
-
-                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
-                    $"{kingdomName}: {rescued} rescued, {skipped} skipped.");
             }
             catch (Exception ex)
             {
-                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
-                    $"Fatal error: {ex}");
+                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] Error: {ex.Message}");
             }
         }
     }
@@ -363,6 +345,8 @@ namespace Byzantium1071.Campaign.Patches
     //  GRACE PERIOD GUARD: ChangeKingdomAction prefix
     //  Blocks rescued clans from joining kingdoms during the grace
     //  period. Our own mercenary placement uses a bypass flag.
+    //
+    //  Also provides diagnostic logging for kingdom departures.
     // ═══════════════════════════════════════════════════════════════
     [HarmonyPatch]
     internal static class B1071_ClanSurvivalGracePeriodPatch
@@ -372,7 +356,7 @@ namespace Byzantium1071.Campaign.Patches
         {
             var type = typeof(ChangeKingdomAction);
 
-            // Try ApplyInternal first — single chokepoint for all kingdom changes
+            // ApplyInternal is the single chokepoint for all kingdom changes
             var applyInternal = AccessTools.Method(type, "ApplyInternal");
             if (applyInternal != null)
             {
@@ -404,21 +388,14 @@ namespace Byzantium1071.Campaign.Patches
                 Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: WARNING — no ChangeKingdomAction methods found!");
         }
 
+        /// <summary>
+        /// Blocks rescued clans from joining kingdoms during grace period.
+        /// Leave actions (newKingdom == null) are always allowed through —
+        /// the event handler in the behavior handles rescue after departure.
+        /// </summary>
         [HarmonyPrefix]
-        static bool Prefix(MethodBase __originalMethod, object[] __args)
+        static bool Prefix(Clan clan, Kingdom newKingdom, MethodBase __originalMethod)
         {
-            Clan? clan = null;
-            Kingdom? newKingdom = null;
-
-            if (__args != null)
-            {
-                foreach (object arg in __args)
-                {
-                    if (clan == null && arg is Clan c) clan = c;
-                    if (newKingdom == null && arg is Kingdom k) newKingdom = k;
-                }
-            }
-
             if (clan == null) return true;
             if (newKingdom == null) return true;     // Leave action — allow
 

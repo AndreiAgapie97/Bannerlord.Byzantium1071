@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
 using Helpers;
 using TaleWorlds.CampaignSystem;
@@ -11,30 +12,39 @@ using TaleWorlds.Library;
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
-    /// Manages the lifecycle of clans rescued from kingdom destruction:
+    /// Manages the lifecycle of clans rescued from kingdom destruction.
     ///
-    ///   1. A rescued clan is registered by <see cref="B1071_ClanSurvivalPatch"/>
-    ///      with a timestamp. The clan is now an independent faction (Kingdom == null).
+    /// PRIMARY RESCUE POINT: Listens to <c>CampaignEvents.OnClanChangedKingdomEvent</c>.
+    /// When vanilla removes clans from a dying kingdom (Path A — settlement loss),
+    /// it calls <c>ChangeKingdomAction.ApplyInternal</c> with detail
+    /// <c>LeaveByKingdomDestruction</c> for each clan BEFORE calling
+    /// <c>Kingdom.DeactivateKingdom()</c>. Our event handler fires after each clan
+    /// leaves, immediately clears inherited wars and registers for grace period.
     ///
-    ///   2. During a configurable grace period (default 30 days), the clan remains
-    ///      independent — its heroes patrol near their home settlement.
-    ///
-    ///   3. After the grace period expires, the behavior evaluates all surviving
-    ///      kingdoms and selects the best mercenary contract, with a strong culture
-    ///      preference. The clan then joins that kingdom as a mercenary via
-    ///      <see cref="ChangeKingdomAction.ApplyByJoinFactionAsMercenary"/>.
-    ///
-    ///   4. Once under mercenary service, the vanilla barter / defection systems
+    /// Lifecycle:
+    ///   1. Kingdom loses last settlement → vanilla removes clans one by one
+    ///      via <c>ChangeKingdomAction(detail: LeaveByKingdomDestruction)</c>.
+    ///   2. Our <c>OnClanChangedKingdom</c> event handler intercepts each departure,
+    ///      clears inherited wars, and registers the clan for grace period tracking.
+    ///   3. During the grace period (default 30 days), the clan remains independent.
+    ///      The Harmony prefix on <c>ChangeKingdomAction.ApplyInternal</c> blocks
+    ///      any join attempts during this period.
+    ///   4. After grace period expires, this behavior evaluates all surviving
+    ///      kingdoms and places the clan as a mercenary with culture preference.
+    ///   5. Once under mercenary service, vanilla barter / defection systems
     ///      naturally handle potential vassal promotion.
     ///
+    /// Safety nets:
+    ///   - <c>DestroyClanAction</c> prefixes catch Path B (leader death) destruction.
+    ///   - <c>DeactivateKingdom</c> postfix logs any clans missed by the event handler.
+    ///
     /// Persistence:
-    ///   Dictionary&lt;string, float&gt; keyed by Clan.StringId, value = rescue
-    ///   CampaignTime.NumTicks converted to float. Survives save/load via SyncData.
+    ///   Dictionary&lt;string, float&gt; keyed by Clan.StringId, value = rescue day.
+    ///   Survives save/load via SyncData.
     ///
     /// Mod removal safety:
-    ///   Rescued clans are never destroyed and _isEliminated is never set to true.
-    ///   Without this behavior, they remain as independent clans forever — vanilla
-    ///   will only re-evaluate them on leader death (natural causes, old age, etc).
+    ///   Rescued clans are never destroyed. Without this behavior, they remain as
+    ///   independent clans forever — vanilla handles them on leader death.
     /// </summary>
     public sealed class B1071_ClanSurvivalBehavior : CampaignBehaviorBase
     {
@@ -83,6 +93,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -96,6 +107,132 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             Instance = this;
+        }
+
+        // ── PRIMARY RESCUE: ClanChangedKingdom event ────────────────────
+        //
+        //  This fires AFTER vanilla removes each clan from a dying kingdom
+        //  (ChangeKingdomAction.ApplyInternal with LeaveByKingdomDestruction).
+        //  At this point:
+        //    - clan.Kingdom is already null (clan has left)
+        //    - clan inherited the dying kingdom's wars
+        //    - Kingdom.DeactivateKingdom() has NOT been called yet
+        //    - Other clans of the same kingdom may not have left yet
+        //
+        //  We immediately clear inherited wars and register for grace period.
+
+        private void OnClanChangedKingdom(
+            Clan clan,
+            Kingdom oldKingdom,
+            Kingdom newKingdom,
+            ChangeKingdomAction.ChangeKingdomActionDetail detail,
+            bool showNotification)
+        {
+            try
+            {
+                if (!Settings.EnableClanSurvival) return;
+
+                // Only handle "kingdom lost all settlements" departures
+                if (detail != ChangeKingdomAction.ChangeKingdomActionDetail.LeaveByKingdomDestruction)
+                    return;
+
+                if (clan == null || clan.IsEliminated) return;
+                if (clan == Clan.PlayerClan) return;
+                if (clan.IsBanditFaction) return;
+
+                string clanName = clan.Name?.ToString() ?? clan.StringId;
+                string kingdomName = oldKingdom?.Name?.ToString() ?? "unknown";
+                int heroCount = clan.Heroes.Count(h => h.IsAlive);
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][Event] " +
+                    $"Detected {clanName} leaving dying {kingdomName} " +
+                    $"(detail: LeaveByKingdomDestruction, heroes: {heroCount}).");
+
+                // Eligibility: must have living adult lord/hero
+                var livingAdults = clan.Heroes
+                    .Where(h => h.IsAlive && !h.IsChild && (h.IsLord || h.IsMinorFactionHero))
+                    .ToList();
+
+                if (livingAdults.Count == 0)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
+                        $"no living adult lords/heroes.");
+                    return;
+                }
+
+                // If leader is dead, try heir promotion
+                if (clan.Leader == null || !clan.Leader.IsAlive)
+                {
+                    var heirs = clan.GetHeirApparents();
+                    if (heirs.Count == 0)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
+                            $"leader dead, no heir apparents.");
+                        return;
+                    }
+                    try
+                    {
+                        ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
+                            $"heir promotion threw: {ex.Message}");
+                        return;
+                    }
+                    if (clan.Leader == null || !clan.Leader.IsAlive)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
+                            $"heir promotion failed.");
+                        return;
+                    }
+                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] {clanName} heir promoted to {clan.Leader.Name}.");
+                }
+
+                // ── Clear inherited wars ──
+                int warsCleared = 0;
+                try
+                {
+                    foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
+                    {
+                        if (clan != enemy &&
+                            !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
+                                .IsAtConstantWar(clan, enemy))
+                        {
+                            try
+                            {
+                                MakePeaceAction.Apply(clan, enemy);
+                                warsCleared++;
+                            }
+                            catch { /* best effort — some wars may resist */ }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] War clearing error for {clanName}: {ex.Message}");
+                }
+
+                // ── Register for grace period ──
+                RegisterRescuedClan(clan);
+
+                // Mark as rescued in shared state (prevents double-processing by safety nets)
+                B1071_ClanSurvivalPatch._alreadyRescued.Add(clan.StringId);
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][Event] RESCUED {clanName}: " +
+                    $"cleared {warsCleared} inherited war(s), " +
+                    $"grace period {Settings.ClanSurvivalGracePeriodDays} days, " +
+                    $"leader: {clan.Leader?.Name}, heroes: {livingAdults.Count}.");
+
+                B1071_VerboseLog.Log("ClanSurvival",
+                    $"Rescued {clanName} ({livingAdults.Count} heroes, leader: {clan.Leader?.Name}) " +
+                    $"from destruction of {kingdomName}. Cleared {warsCleared} war(s). " +
+                    $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][Event] Fatal error: {ex}");
+            }
         }
 
         // ── Daily Tick: process grace periods and placement ──────────────
