@@ -173,19 +173,19 @@ namespace Byzantium1071.Campaign.UI
         internal static string Header2 => _header2;
         internal static string Header3 => _header3;
         internal static string Header4 => _header4;
-        internal static string TabCurrentText => FormatTabText("Current", _activeTab == B1071LedgerTab.Current);
-        internal static string TabNearbyText => FormatTabText("Nearby", _activeTab == B1071LedgerTab.NearbyPools);
-        internal static string TabCastlesText => FormatTabText("Castles", _activeTab == B1071LedgerTab.Castles);
-        internal static string TabTownsText => FormatTabText("Towns", _activeTab == B1071LedgerTab.Towns);
-        internal static string TabVillagesText => FormatTabText("Villages", _activeTab == B1071LedgerTab.Villages);
-        internal static string TabFactionsText => FormatTabText("Factions", _activeTab == B1071LedgerTab.Factions);
-        internal static string TabArmiesText => FormatTabText("Armies", _activeTab == B1071LedgerTab.Armies);
-        internal static string TabWarsText => FormatTabText("Wars", _activeTab == B1071LedgerTab.Wars);
-        internal static string TabRebellionText => FormatTabText("Rebellion", _activeTab == B1071LedgerTab.Rebellion);
-        internal static string TabPrisonersText => FormatTabText("Prisoners", _activeTab == B1071LedgerTab.Prisoners);
-        internal static string TabClanInstabilityText => FormatTabText("Clans", _activeTab == B1071LedgerTab.ClanInstability);
-        internal static string TabCharactersText => FormatTabText("Characters", _activeTab == B1071LedgerTab.Characters);
-        internal static string TabSearchText => FormatTabText("Search", _activeTab == B1071LedgerTab.Search);
+        internal static string TabCurrentText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_current}Current").ToString(), _activeTab == B1071LedgerTab.Current);
+        internal static string TabNearbyText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_nearby}Nearby").ToString(), _activeTab == B1071LedgerTab.NearbyPools);
+        internal static string TabCastlesText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_castles}Castles").ToString(), _activeTab == B1071LedgerTab.Castles);
+        internal static string TabTownsText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_towns}Towns").ToString(), _activeTab == B1071LedgerTab.Towns);
+        internal static string TabVillagesText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_villages}Villages").ToString(), _activeTab == B1071LedgerTab.Villages);
+        internal static string TabFactionsText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_factions}Factions").ToString(), _activeTab == B1071LedgerTab.Factions);
+        internal static string TabArmiesText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_armies}Armies").ToString(), _activeTab == B1071LedgerTab.Armies);
+        internal static string TabWarsText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_wars}Wars").ToString(), _activeTab == B1071LedgerTab.Wars);
+        internal static string TabRebellionText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_rebellion}Rebellion").ToString(), _activeTab == B1071LedgerTab.Rebellion);
+        internal static string TabPrisonersText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_prisoners}Prisoners").ToString(), _activeTab == B1071LedgerTab.Prisoners);
+        internal static string TabClanInstabilityText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_clans}Clans").ToString(), _activeTab == B1071LedgerTab.ClanInstability);
+        internal static string TabCharactersText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_characters}Characters").ToString(), _activeTab == B1071LedgerTab.Characters);
+        internal static string TabSearchText => FormatTabText(new TaleWorlds.Localization.TextObject("{=b1071_tab_search}Search").ToString(), _activeTab == B1071LedgerTab.Search);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -422,7 +422,7 @@ namespace Byzantium1071.Campaign.UI
             _currentText = text;
             _viewDirty = true;
             if (!_panelModeActive)
-                MBInformationManager.ShowHint("Campaign++ Overlay\n" + text);
+                MBInformationManager.ShowHint(new TaleWorlds.Localization.TextObject("{=b1071_overlay_title}Campaign++ Overlay").ToString() + "\n" + text);
         }
 
         private static InputKey GetConfiguredHotkey()
@@ -482,7 +482,7 @@ namespace Byzantium1071.Campaign.UI
                 _lastText = string.Empty;
                 _currentText = BuildOverlayText();
                 if (!_panelModeActive)
-                    MBInformationManager.ShowHint("Campaign++ Overlay\n" + _currentText);
+                    MBInformationManager.ShowHint(new TaleWorlds.Localization.TextObject("{=b1071_overlay_title}Campaign++ Overlay").ToString() + "\n" + _currentText);
             }
             else
             {

@@ -11,7 +11,7 @@
 <Items>
   <Item
     id="b1071_slave"
-    name="{=!}Slaves"
+    name="{=b1071_item_slaves}Slaves"
     mesh="bd_barrel_a"
     item_category="b1071_slaves"
     value="300"

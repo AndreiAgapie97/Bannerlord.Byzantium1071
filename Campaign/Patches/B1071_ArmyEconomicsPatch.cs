@@ -166,8 +166,8 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultPartyWageModel), nameof(DefaultPartyWageModel.GetTroopRecruitmentCost))]
     public static class B1071_HireCostPatch
     {
-        private static readonly TextObject _label = new TextObject("B1071 Tier Economics");
-        private static readonly TextObject _cancelLabel = new TextObject("B1071 Normalises Occupation");
+        private static readonly TextObject _label = new TextObject("{=b1071_lbl_tier_econ}B1071 Tier Economics");
+        private static readonly TextObject _cancelLabel = new TextObject("{=b1071_lbl_norm_occ}B1071 Normalises Occupation");
 
         // [preset 0-3][tier_index 0-5]  — AddFactor values
         // tier_index = Math.Clamp(troop.Tier - 1, 0, 5)
@@ -298,7 +298,7 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultPartyWageModel), nameof(DefaultPartyWageModel.GetTotalWage))]
     public static class B1071_GarrisonWagePatch
     {
-        private static readonly TextObject _label = new TextObject("B1071 Garrison Discount");
+        private static readonly TextObject _label = new TextObject("{=b1071_lbl_garrison_discount}B1071 Garrison Discount");
 
         public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
         {

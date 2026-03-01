@@ -329,15 +329,23 @@ namespace Byzantium1071.Campaign.Behaviors
             // ── Player notifications ──────────────────────────────────────────────
             if (isPlayer)
             {
-                string tierName = tier == 1 ? "Modest" : tier == 2 ? "Generous" : "Grand";
+                string tierName = tier == 1 ? new TextObject("{=b1071_tier_modest}Modest").ToString()
+                    : tier == 2 ? new TextObject("{=b1071_tier_generous}Generous").ToString()
+                    : new TextObject("{=b1071_tier_grand}Grand").ToString();
                 string townName = settlement.Name?.ToString() ?? "the town";
-                string msg = $"\ud83c\udfdb {tierName} investment in {townName}: " +
-                             $"-{cost}d, +{prosperityBonus:0.#} prosperity/day for {duration} days";
+                string msg = new TextObject("{=b1071_ti_player_msg}🏛 {TIER} investment in {TOWN}: -{COST}d, +{PROS} prosperity/day for {DAYS} days")
+                    .SetTextVariable("TIER", tierName)
+                    .SetTextVariable("TOWN", townName)
+                    .SetTextVariable("COST", cost)
+                    .SetTextVariable("PROS", prosperityBonus.ToString("0.#"))
+                    .SetTextVariable("DAYS", duration)
+                    .ToString();
                 if (relation > 0 && settlement.Notables.Count > 0)
-                    msg += $", +{relation} relation";
+                    msg += new TextObject("{=b1071_ti_plus_relation}, +{REL} relation").SetTextVariable("REL", relation).ToString();
                 if (influence > 0f && investor.Clan?.Kingdom != null
                     && settlement.MapFaction == investor.Clan?.Kingdom)
-                    msg += $", +{influence:0.#} influence";
+                    msg += new TextObject("{=b1071_ti_plus_influence}, +{INF} influence")
+                        .SetTextVariable("INF", influence.ToString("0.#")).ToString();
                 msg += ".";
                 InformationManager.DisplayMessage(new InformationMessage(msg, new Color(0.35f, 0.65f, 0.85f)));
             }
@@ -348,9 +356,15 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (playerClan != null && settlement.OwnerClan == playerClan)
                 {
                     string lordName = investor.Name?.ToString() ?? "A lord";
-                    string tierLabel = tier == 1 ? "modest" : tier == 2 ? "generous" : "grand";
+                    string tierLabel = tier == 1 ? new TextObject("{=b1071_tier_modest_l}modest").ToString()
+                        : tier == 2 ? new TextObject("{=b1071_tier_generous_l}generous").ToString()
+                        : new TextObject("{=b1071_tier_grand_l}grand").ToString();
                     string tName = settlement.Name?.ToString() ?? "your town";
-                    string note = $"\ud83c\udfdb {lordName} made a {tierLabel} investment in {tName}.";
+                    string note = new TextObject("{=b1071_ti_ai_note}🏛 {LORD} made a {TIER} investment in {TOWN}.")
+                        .SetTextVariable("LORD", lordName)
+                        .SetTextVariable("TIER", tierLabel)
+                        .SetTextVariable("TOWN", tName)
+                        .ToString();
                     InformationManager.DisplayMessage(new InformationMessage(note, new Color(0.55f, 0.75f, 0.9f)));
                 }
             }
@@ -413,7 +427,7 @@ namespace Byzantium1071.Campaign.Behaviors
             starter.AddGameMenuOption(
                 "b1071_town_invest_menu",
                 "b1071_town_invest_leave",
-                "Leave",
+                "{=b1071_ui_leave}Leave",
                 args =>
                 {
                     args.optionLeaveType = GameMenuOption.LeaveType.Leave;
@@ -451,10 +465,9 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                    $"\ud83c\udfdb Invest in town  (active — {(int)Math.Ceiling(daysLeft)} days remaining)");
-                args.Tooltip = new TextObject(
-                    "You already have an active investment in this town. " +
-                    "You can invest again once the current patronage expires.");
+                    new TextObject("{=b1071_ti_enter_active}🏛 Invest in town  (active — {DAYS} days remaining)")
+                        .SetTextVariable("DAYS", (int)Math.Ceiling(daysLeft)));
+                args.Tooltip = new TextObject("{=b1071_ti_tip_active}You already have an active investment in this town. You can invest again once the current patronage expires.");
                 return true;
             }
 
@@ -463,15 +476,16 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                    $"\ud83c\udfdb Invest in town  (need {Settings.TownInvestCostModest}\u2b2e)");
-                args.Tooltip = new TextObject(
-                    $"You need at least {Settings.TownInvestCostModest} denars for a Modest investment.");
+                    new TextObject("{=b1071_ti_enter_need}🏛 Invest in town  (need {COST}⬮)")
+                        .SetTextVariable("COST", Settings.TownInvestCostModest));
+                args.Tooltip = new TextObject("{=b1071_ti_tip_need}You need at least {COST} denars for a Modest investment.")
+                    .SetTextVariable("COST", Settings.TownInvestCostModest);
                 return true;
             }
 
             args.IsEnabled = true;
             MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                "\ud83c\udfdb Invest in town");
+                new TextObject("{=b1071_ti_enter}🏛 Invest in town"));
             return true;
         }
 
@@ -487,13 +501,12 @@ namespace Byzantium1071.Campaign.Behaviors
             float prosperity = s.Town.Prosperity;
             string ownerName = s.OwnerClan?.Name?.ToString() ?? "unowned";
 
-            string body =
-                $"\ud83c\udfdb  Civic Patronage — {townName}\n\n" +
-                $"Prosperity: {prosperity:F0}   |   Notables: {notableCount}   |   Owner: {ownerName}\n\n" +
-                "Choose an investment tier. Higher tiers cost more but provide " +
-                "stronger prosperity growth, notable relations, influence, and power bonuses.\n\n" +
-                "Investment duration also serves as cooldown — no re-investment " +
-                "until the current patronage expires.";
+            string body = new TextObject("{=b1071_ti_body}🏛  Civic Patronage — {TOWN}\n\nProsperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires.")
+                .SetTextVariable("TOWN", townName)
+                .SetTextVariable("PROSP", prosperity.ToString("F0"))
+                .SetTextVariable("NOTABLES", notableCount)
+                .SetTextVariable("OWNER", ownerName)
+                .ToString();
             MBTextManager.SetTextVariable("B1071_TOWN_INVEST_BODY", body);
         }
 
@@ -510,8 +523,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     args.IsEnabled = false;
                     args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-                    args.Tooltip = new TextObject(
-                        $"Active investment — {(int)Math.Ceiling(remaining)} days remaining.");
+                    args.Tooltip = new TextObject("{=b1071_ti_tip_days}Active investment — {DAYS} days remaining.")
+                        .SetTextVariable("DAYS", (int)Math.Ceiling(remaining));
                     return true;
                 }
             }
@@ -529,21 +542,21 @@ namespace Byzantium1071.Campaign.Behaviors
                     duration = Settings.TownInvestDurationModest;
                     prosperityBonus = Settings.TownInvestProsperityModest;
                     relation = Settings.TownInvestRelationModest;
-                    tierName = "Modest gift";
+                    tierName = new TextObject("{=b1071_ti_tier_modest}Modest gift").ToString();
                     break;
                 case 2:
                     cost = Settings.TownInvestCostGenerous;
                     duration = Settings.TownInvestDurationGenerous;
                     prosperityBonus = Settings.TownInvestProsperityGenerous;
                     relation = Settings.TownInvestRelationGenerous;
-                    tierName = "Generous patronage";
+                    tierName = new TextObject("{=b1071_ti_tier_generous}Generous patronage").ToString();
                     break;
                 case 3:
                     cost = Settings.TownInvestCostGrand;
                     duration = Settings.TownInvestDurationGrand;
                     prosperityBonus = Settings.TownInvestProsperityGrand;
                     relation = Settings.TownInvestRelationGrand;
-                    tierName = "Grand investment";
+                    tierName = new TextObject("{=b1071_ti_tier_grand}Grand investment").ToString();
                     break;
                 default:
                     return false;
@@ -562,7 +575,8 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable(textVar, label);
-                args.Tooltip = new TextObject($"You need {cost} denars for this investment.");
+                args.Tooltip = new TextObject("{=b1071_ti_tip_need_exact}You need {COST} denars for this investment.")
+                    .SetTextVariable("COST", cost);
             }
             else
             {

@@ -1,0 +1,648 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base>
+  <tags>
+    <tag language="English" />
+  </tags>
+  <strings>
+    <string id="b1071_cr_consignment_ai" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share)." />
+    <string id="b1071_cr_consignment_enslave" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share)." />
+    <string id="b1071_cr_consignment_garrison" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share)." />
+    <string id="b1071_cr_deposit_label" text="⚔️ Deposit prisoners ({COUNT} available, {FEE}% holding fee)" />
+    <string id="b1071_cr_deposited_msg" text="⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%)." />
+    <string id="b1071_cr_elite_header" text="Elite Troops (Culture Pool)" />
+    <string id="b1071_cr_manpower_block" text="Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left." />
+    <string id="b1071_cr_no_elite" text="No elite troops available. Pool regenerates daily from castle manpower." />
+    <string id="b1071_cr_no_pending" text="No prisoners pending." />
+    <string id="b1071_cr_no_ready" text="No prisoners ready for recruitment." />
+    <string id="b1071_cr_no_screen" text="Castle recruitment: no active screen." />
+    <string id="b1071_cr_open_fail" text="Castle recruit screen failed to open: {ERR}" />
+    <string id="b1071_cr_pending_header" text="Pending (Training)" />
+    <string id="b1071_cr_ready_header" text="Ready to Recruit (Prisoners)" />
+    <string id="b1071_cr_recruit_available" text="🏰 Recruit troops ({READY} available)" />
+    <string id="b1071_cr_recruit_available_pending" text="🏰 Recruit troops ({READY} available, {PENDING} pending)" />
+    <string id="b1071_cr_recruit_msg" text="🏰 [{SOURCE}] Recruited {TROOP} at {CASTLE} for {GOLD}g" />
+    <string id="b1071_cr_recruit_none" text="🏰 Recruit troops (none available)" />
+    <string id="b1071_cr_recruit_pending" text="🏰 Recruit troops ({PENDING} pending)" />
+    <string id="b1071_cr_tip_no_prisoners" text="You have no prisoners to deposit." />
+    <string id="b1071_cr_tip_none" text="No troops or prisoners available yet. Elite troops regenerate daily from the castle's manpower pool." />
+    <string id="b1071_cr_tip_prison_full" text="The castle's prison is full." />
+    <string id="b1071_cr_title" text="Castle Recruitment" />
+    <string id="b1071_cr_status_elite" text="Elite" />
+    <string id="b1071_cr_status_elite_discount" text="Elite (50%)" />
+    <string id="b1071_cr_status_ready" text="Ready" />
+    <string id="b1071_cr_status_ready_free" text="Ready (Free)" />
+    <string id="b1071_cr_status_days_remaining" text="{DAYS} day{PLURAL} remaining" />
+    <string id="b1071_cr_hint_recruit_sameclan" text="Recruit one {TROOP} (same clan — 50% cost: {COST} gold)" />
+    <string id="b1071_cr_hint_recruit_for_gold" text="Recruit one {TROOP} for {COST} gold" />
+    <string id="b1071_cr_hint_recruit_clan_waiver" text="Recruit one {TROOP} (clan waivers — free)" />
+    <string id="b1071_cr_hint_not_enough_gold" text="Not enough gold (need {COST})" />
+    <string id="b1071_cr_hint_not_ready" text="Not yet ready — {STATUS}" />
+    <string id="b1071_dev_frontier" text="Frontier Devastation" />
+    <string id="b1071_dev_hinterlands" text="Devastated Hinterlands" />
+    <string id="b1071_dev_villages" text="Devastated Villages" />
+    <string id="b1071_frontier_rev" text="Frontier Revenue" />
+    <string id="b1071_gov_strain" text="Governance Strain" />
+    <string id="b1071_item_slaves" text="Slaves" />
+    <string id="b1071_itemcat_slaves" text="Slaves{@Plural}groups of slaves{\@}" />
+    <string id="b1071_lbl_garrison_discount" text="B1071 Garrison Discount" />
+    <string id="b1071_lbl_norm_occ" text="B1071 Normalises Occupation" />
+    <string id="b1071_lbl_tier_armor" text="B1071 Tier Armor" />
+    <string id="b1071_lbl_tier_econ" text="B1071 Tier Economics" />
+    <string id="B1071_Militia" text="Manpower availability" />
+    <string id="b1071_mod_name" text="Campaign++" />
+    <string id="b1071_mp_active" text="[Byzantium1071] Manpower active." />
+    <string id="b1071_mp_debug_pool" text="[Manpower] {WHERE}: {CUR}/{MAX}" />
+    <string id="b1071_mp_raid_cap" text="[B1071] Raid at {VILLAGE}: daily raid cap reached, no manpower drain." />
+    <string id="b1071_mp_raid_not_completed" text="[B1071] Raid not completed at {VILLAGE}: no manpower drain." />
+    <string id="b1071_overlay_title" text="Campaign++ Overlay" />
+    <string id="b1071_panel_text" text="Campaign++ Overlay\n[Press M to toggle]" />
+    <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market." />
+    <string id="b1071_slave_body_hightier" text="\nPrisoners T{NEXTTIER}+ (not enslaveable): {COUNT}  → take to castle or ransom\n" />
+    <string id="b1071_slave_daily_msg" text="⛓ {SETTLEMENT}: {COUNT} slave{PLURAL} in market. Daily: +{PROS} prosperity, +{CONS} construction." />
+    <string id="b1071_slave_enslave_kept" text="({COUNT} T{TIER}+ kept — take to castle or ransom)" />
+    <string id="b1071_slave_enslave_skipped" text="({COUNT} T{TIER}+ prisoner{PLURAL} kept)" />
+    <string id="b1071_slave_enslave_text" text="Enslave prisoners  ({COUNT} T1–{MAXTIER} → +{COUNT} Slave goods){SKIPPED}" />
+    <string id="b1071_slave_enslave_tip" text="Converts all non-hero prisoners at Tier {MAXTIER} or below to Slave trade goods (1:1). Heroes and T{NEXTTIER}+ prisoners cannot be enslaved — take them to a castle for recruitment conversion or ransom at the tavern. Sell Slave goods via the town Trade screen. While Slave goods remain in the market, the town gains daily manpower, prosperity, and construction bonuses." />
+    <string id="b1071_slave_enslaved_msg" text="⛓ Enslaved {COUNT} T1–{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market." />
+    <string id="b1071_slave_enter_none" text="⛓ Enslave prisoners  (0 eligible — {TOTAL} T{TIER}+)" />
+    <string id="b1071_slave_enter_ok" text="⛓ Enslave prisoners  ({COUNT} T1–{MAXTIER} eligible{SKIPPED})" />
+    <string id="b1071_slave_enter_tip" text="Only Tier 1–{MAXTIER} prisoners can be enslaved. Take T{NEXTTIER}+ to a castle for recruitment conversion or ransom at the tavern." />
+    <string id="b1071_slave_food" text="Slave Upkeep" />
+    <string id="b1071_slave_labor" text="Slave Labor" />
+    <string id="b1071_slave_manumit_msg" text="⚔ {SETTLEMENT}: {FREED} slave{PLURAL} manumitted (cap {CAP}). +{FREED} MP to town pool." />
+    <string id="b1071_slave_raid_msg" text="⛓ +{COUNT} Slave{PLURAL} ({HEARTHS} hearths / {DIV} = {COUNT})." />
+    <string id="b1071_slave_skipped_note" text=", {SKIPPED} T{TIER}+ kept" />
+    <string id="b1071_slaves_cat" text="Slaves" />
+    <string id="b1071_tab_armies" text="Armies" />
+    <string id="b1071_tab_castles" text="Castles" />
+    <string id="b1071_tab_characters" text="Characters" />
+    <string id="b1071_tab_clans" text="Clans" />
+    <string id="b1071_tab_current" text="Current" />
+    <string id="b1071_tab_factions" text="Factions" />
+    <string id="b1071_tab_nearby" text="Nearby" />
+    <string id="b1071_tab_prisoners" text="Prisoners" />
+    <string id="b1071_tab_rebellion" text="Rebellion" />
+    <string id="b1071_tab_search" text="Search" />
+    <string id="b1071_tab_towns" text="Towns" />
+    <string id="b1071_tab_villages" text="Villages" />
+    <string id="b1071_tab_wars" text="Wars" />
+    <string id="b1071_ti_ai_note" text="🏛 {LORD} made a {TIER} investment in {TOWN}." />
+    <string id="b1071_ti_body" text="🏛  Civic Patronage — {TOWN}\n\nProsperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires." />
+    <string id="b1071_ti_civic" text="Civic Patronage" />
+    <string id="b1071_ti_enter" text="🏛 Invest in town" />
+    <string id="b1071_ti_enter_active" text="🏛 Invest in town  (active — {DAYS} days remaining)" />
+    <string id="b1071_ti_enter_need" text="🏛 Invest in town  (need {COST}⬮)" />
+    <string id="b1071_ti_player_msg" text="🏛 {TIER} investment in {TOWN}: -{COST}d, +{PROS} prosperity/day for {DAYS} days" />
+    <string id="b1071_ti_plus_influence" text=", +{INF} influence" />
+    <string id="b1071_ti_plus_relation" text=", +{REL} relation" />
+    <string id="b1071_ti_tier_generous" text="Generous patronage" />
+    <string id="b1071_ti_tier_grand" text="Grand investment" />
+    <string id="b1071_ti_tier_modest" text="Modest gift" />
+    <string id="b1071_ti_tip_active" text="You already have an active investment in this town. You can invest again once the current patronage expires." />
+    <string id="b1071_ti_tip_days" text="Active investment — {DAYS} days remaining." />
+    <string id="b1071_ti_tip_need" text="You need at least {COST} denars for a Modest investment." />
+    <string id="b1071_ti_tip_need_exact" text="You need {COST} denars for this investment." />
+    <string id="b1071_tier_generous" text="Generous" />
+    <string id="b1071_tier_generous_l" text="generous" />
+    <string id="b1071_tier_grand" text="Grand" />
+    <string id="b1071_tier_grand_l" text="grand" />
+    <string id="b1071_tier_modest" text="Modest" />
+    <string id="b1071_tier_modest_l" text="modest" />
+    <string id="b1071_toggle_text" text="Press M" />
+    <string id="b1071_ui_close" text="X" />
+    <string id="b1071_ui_count" text="Count" />
+    <string id="b1071_ui_gold" text="Gold:" />
+    <string id="b1071_ui_gold_cost" text="Gold Cost" />
+    <string id="b1071_ui_leave" text="Leave" />
+    <string id="b1071_ui_manpower" text="Manpower:" />
+    <string id="b1071_ui_mp_donehint" text="Manpower: {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
+    <string id="b1071_ui_recruit" text="Recruit" />
+    <string id="b1071_ui_status" text="Status" />
+    <string id="b1071_ui_tier" text="Tier" />
+    <string id="b1071_ui_troop" text="Troop" />
+    <string id="b1071_ui_unknown" text="Unknown" />
+    <string id="b1071_ui_na" text="N/A" />
+    <string id="b1071_vi_ai_note" text="🏠 {LORD} made a {TIER} investment in {VILLAGE}." />
+    <string id="b1071_vi_body" text="🏠  Village Patronage — {VILLAGE}\n\nHearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires." />
+    <string id="b1071_vi_enter" text="🏠 Invest in village" />
+    <string id="b1071_vi_enter_active" text="🏠 Invest in village  (active — {DAYS} days remaining)" />
+    <string id="b1071_vi_enter_need" text="🏠 Invest in village  (need {COST}⬮)" />
+    <string id="b1071_vi_patronage" text="Patronage" />
+    <string id="b1071_vi_player_msg" text="🏠 {TIER} investment in {VILLAGE}: -{COST}d, +{HEARTH} hearth/day for {DAYS} days" />
+    <string id="b1071_vi_plus_influence" text=", +{INF} influence" />
+    <string id="b1071_vi_plus_relation" text=", +{REL} relation" />
+    <string id="b1071_vi_tier_generous" text="Generous patronage" />
+    <string id="b1071_vi_tier_grand" text="Grand investment" />
+    <string id="b1071_vi_tier_modest" text="Modest gift" />
+    <string id="b1071_vi_tip_active" text="You already have an active investment in this village. You can invest again once the current patronage expires." />
+    <string id="b1071_vi_tip_days" text="Active investment — {DAYS} days remaining." />
+    <string id="b1071_vi_tip_need" text="You need at least {COST} denars for a Modest investment." />
+    <string id="b1071_vi_tip_need_exact" text="You need {COST} denars for this investment." />
+    <string id="b1071_mcm_g_0364835c5c" text="Regen Modifiers" />
+    <string id="b1071_mcm_g_0a3a606283" text="Combat Realism" />
+    <string id="b1071_mcm_g_0af8e19a6e" text="Regen" />
+    <string id="b1071_mcm_g_0de4cb7610" text="War Exhaustion" />
+    <string id="b1071_mcm_g_17babae4fd" text="Delayed Recovery" />
+    <string id="b1071_mcm_g_1ec44dbc2c" text="Developer Tools" />
+    <string id="b1071_mcm_g_228c70bfc5" text="Legacy" />
+    <string id="b1071_mcm_g_239cdae2ee" text="Diplomacy (War Exhaustion)" />
+    <string id="b1071_mcm_g_35a44ecbe7" text="Pool Sizes" />
+    <string id="b1071_mcm_g_380e537acd" text="Overlay" />
+    <string id="b1071_mcm_g_42f6940752" text="Slave Economy" />
+    <string id="b1071_mcm_g_462cca2189" text="Town Investment" />
+    <string id="b1071_mcm_g_5d88ab11a0" text="Tooltips" />
+    <string id="b1071_mcm_g_71a953b560" text="Provincial Governance" />
+    <string id="b1071_mcm_g_874e6c48a5" text="Pool Scaling" />
+    <string id="b1071_mcm_g_a6a3fdff6f" text="War Effects" />
+    <string id="b1071_mcm_g_ad34418d5d" text="Bounded Stochasticity" />
+    <string id="b1071_mcm_g_b39b70fe83" text="Minor Faction Economy" />
+    <string id="b1071_mcm_g_bac0aa28ca" text="Clan Survival" />
+    <string id="b1071_mcm_g_c30a4b4773" text="Frontier Devastation" />
+    <string id="b1071_mcm_g_d7fe51f7ee" text="Immersion Modifiers" />
+    <string id="b1071_mcm_g_d8242acd7d" text="Recruitment Cost" />
+    <string id="b1071_mcm_g_e3ddf5f6af" text="Village Investment" />
+    <string id="b1071_mcm_g_e850019718" text="Castle Recruitment" />
+    <string id="b1071_mcm_g_f4d4d922ce" text="Alerts &amp; Militia" />
+    <string id="b1071_mcm_g_fcb9366bda" text="Army Economics" />
+    <string id="b1071_mcm_h_004483500d" text="Pool multiplier at full security (100). E.g., 120 = safe settlement gets 120% bonus." />
+    <string id="b1071_mcm_h_018c2990f0" text="Do not force peace with an enemy currently besieging one of your owned towns/castles." />
+    <string id="b1071_mcm_h_027d8a0996" text="Legacy setting kept for save/config compatibility. Not used by current overlay UI." />
+    <string id="b1071_mcm_h_032b2ade51" text="Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 3." />
+    <string id="b1071_mcm_h_03fd97c1a6" text="Village raids accumulate persistent devastation (0-100) that decays slowly. Devastated villages suffer reduced hearth growth, and their bound town/castle suffers prosperity, food, and security penalties." />
+    <string id="b1071_mcm_h_0553e33580" text="Adds compact instrumentation rows to the Current ledger tab for balancing/debugging." />
+    <string id="b1071_mcm_h_05edab757c" text="Absolute minimum manpower regenerated per day (towns and fallback)." />
+    <string id="b1071_mcm_h_0898044ab8" text="Enables the standalone Campaign++ overlay on campaign map." />
+    <string id="b1071_mcm_h_09a161266e" text="Minimum in-game days between any two investments by the same AI lord (across all villages). Prevents carpet-bombing every village on a travel route. Set to 0 to disable. Default: 3." />
+    <string id="b1071_mcm_h_0a2e5891f0" text="When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true." />
+    <string id="b1071_mcm_h_0a6c3b2038" text="Maximum flat bonus manpower/day added when pool is at 0%. Scales linearly to 0 as pool approaches the depleted threshold. E.g., 2 = at 0% pool get +2/day bonus, at 7.5% get +1, at 15% get +0. Default: 2." />
+    <string id="b1071_mcm_h_0c2dad9845" text="Gold cost to recruit a Tier 6+ prisoner. Default: 5000." />
+    <string id="b1071_mcm_h_0d54aab5c3" text="Minimum daily town regen as a percent of max pool (at 0 prosperity)." />
+    <string id="b1071_mcm_h_0df00598bc" text="Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates)." />
+    <string id="b1071_mcm_h_0e9a090b7c" text="Gold cost for a Modest investment. Smallest tier with proportionally smaller bonuses. Default: 2000." />
+    <string id="b1071_mcm_h_0f079f126d" text="Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50." />
+    <string id="b1071_mcm_h_0faf392cd0" text="How strongly regen slows between soft-cap start and full pool. 0 disables slowdown effect." />
+    <string id="b1071_mcm_h_1257dd959e" text="Relation gained with each village notable from a Grand investment. Default: 10." />
+    <string id="b1071_mcm_h_1306d0d841" text="Tier-exponential scaling for troop wages. 0=Vanilla | 1=Light (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Moderate (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Severe (T3+70%, T4+150%, T5+250%, T6+400%). Heroes/companions and CaravanGuards are excluded. Applies to AI and player equally." />
+    <string id="b1071_mcm_h_135ecd103e" text="Minimum elite troops regenerated per castle per day (at zero prosperity). Default: 1." />
+    <string id="b1071_mcm_h_144e546603" text="Castle-specific regen floor. Represents peasant levies from bound villages and the castle's tiny civilian community. This trickle is organic (not drawn from towns). Default: 1." />
+    <string id="b1071_mcm_h_14cc7f2c2a" text="Power added to each town notable from a Modest investment. Default: 5." />
+    <string id="b1071_mcm_h_1617c104c4" text="When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models limited Crown frontier investment — historically, devastated provinces took decades to recover." />
+    <string id="b1071_mcm_h_17185a822b" text="Regen is multiplied by (1 - exhaustion/divisor). Higher = softer penalty. E.g., 200 means 100 exhaustion halves regen." />
+    <string id="b1071_mcm_h_178311e876" text="Average settlement manpower fill below which peace pressure kicks in. E.g., 40 = pressure starts when average pool is below 40%." />
+    <string id="b1071_mcm_h_188e1f2b0d" text="At or above this exhaustion score, forced peace checks become active." />
+    <string id="b1071_mcm_h_195a5e5291" text="Daily devastation decay while the village is in Normal state. Frozen during Looted/BeingRaided. Default: 0.5 (a single raid takes 50 days to fully heal)." />
+    <string id="b1071_mcm_h_195f70e560" text="Maximum random spread applied to daily regen output. E.g., 8 means ±8% around the computed regen value." />
+    <string id="b1071_mcm_h_199bdb1fc0" text="Maximum stacked delayed-recovery penalty." />
+    <string id="b1071_mcm_h_1bda097a56" text="Relation gained with each town notable from a Modest investment. Default: 3." />
+    <string id="b1071_mcm_h_1d661266c0" text="Legacy reserved setting. Currently not used by active tooltip path." />
+    <string id="b1071_mcm_h_1e5bd1e5ec" text="Regen multiplier when security is 0. E.g., 80 = insecure settlement regens at 80%." />
+    <string id="b1071_mcm_h_2133bd3ab2" text="Per-point peace support bias when kingdom is in Rising pressure band." />
+    <string id="b1071_mcm_h_21aee6a595" text="Each village hearth × this = flat bonus to max pool. E.g., 0.10 means 1000 hearth village adds 100 max manpower." />
+    <string id="b1071_mcm_h_223a8f48ff" text="Regen multiplier when well-fed. E.g., 100 = normal regen rate." />
+    <string id="b1071_mcm_h_224d10e499" text="How many days the Generous investment hearth bonus lasts. Also serves as the cooldown. Default: 30." />
+    <string id="b1071_mcm_h_227046f19d" text="Minimum pool size after tiny-pool scaling." />
+    <string id="b1071_mcm_h_240832abdc" text="While under siege, regen is multiplied by this percent." />
+    <string id="b1071_mcm_h_2447492b04" text="Shows slave economy and manpower messages in the game UI for player actions. Disable for normal play." />
+    <string id="b1071_mcm_h_24a34913b8" text="Exhaustion gained per battle casualty." />
+    <string id="b1071_mcm_h_24c88a4fff" text="How long siege-related recovery penalties persist." />
+    <string id="b1071_mcm_h_252273c0d1" text="Security penalty per day applied to the bound town/castle at avg bound village devastation 100. Default: 1.5." />
+    <string id="b1071_mcm_h_25ebdb5741" text="Base manpower pool for towns before economic scaling." />
+    <string id="b1071_mcm_h_26252463e6" text="Manpower cost % when recruiting from matching culture. 75 = troops cost 75% of normal manpower (25% discount)." />
+    <string id="b1071_mcm_h_26939354d2" text="Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, T4+ become recruitable after a waiting period) and the castle recruitment menu." />
+    <string id="b1071_mcm_h_2860da12d7" text="Regen multiplier when loyalty is 0. E.g., 50 = disloyal population halves regen." />
+    <string id="b1071_mcm_h_29e86259f4" text="[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility." />
+    <string id="b1071_mcm_h_2ae9834ed8" text="Replaces hard exhaustion thresholds with graded Low/Rising/Crisis bands and hysteresis. Produces smoother diplomatic transitions." />
+    <string id="b1071_mcm_h_2c8792addb" text="Maximum total penalty applied to war declaration support in band mode. Replaces the hard -10000 override." />
+    <string id="b1071_mcm_h_2d7ade5704" text="Depleted pools retain a higher percentage during conquest. Prevents ping-pong border castles from being permanently zeroed by repeated ownership changes." />
+    <string id="b1071_mcm_h_2ea055b805" text="At or above this exhaustion, AI kingdoms are prevented from starting new wars." />
+    <string id="b1071_mcm_h_2f283ad2f0" text="Adds small bounded randomness to volunteer production and post-shock recovery. Makes campaigns less predictable without wild swings." />
+    <string id="b1071_mcm_h_2fbb35aab0" text="How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20." />
+    <string id="b1071_mcm_h_2fd7a46334" text="Daily hearth growth bonus from a Generous investment. Default: 0.6." />
+    <string id="b1071_mcm_h_327da3bcb4" text="When a kingdom's average settlement manpower falls below the threshold, AI clans gain extra support for peace outcomes (independent of war exhaustion)." />
+    <string id="b1071_mcm_h_3322cd490c" text="How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40." />
+    <string id="b1071_mcm_h_33ec8d74f9" text="Capturing an enemy noble (lord/lady) inflicts additional war exhaustion on the victim's kingdom." />
+    <string id="b1071_mcm_h_34207cd11c" text="Gold cost to recruit a Tier 4 prisoner. Follows the tier-exponential philosophy: elite troops are expensive to turn. Default: 1200." />
+    <string id="b1071_mcm_h_347278d092" text="Regen multiplier at full loyalty. E.g., 100 = loyal population regens at normal rate." />
+    <string id="b1071_mcm_h_34918fd17b" text="Near full manpower, regen progressively slows down instead of staying linear." />
+    <string id="b1071_mcm_h_3574df9fb7" text="Master switch: logs ALL mod activity (manpower, slaves, diplomacy, patches) to the Bannerlord rgl_log file. Superset of every other debug toggle. Performance cost — disable for normal play." />
+    <string id="b1071_mcm_h_37467179fe" text="Exhaustion gained by defending kingdom after siege aftermath." />
+    <string id="b1071_mcm_h_3748411212" text="Relation gained with each town notable from a Generous investment. Default: 6." />
+    <string id="b1071_mcm_h_38b327e9b4" text="Max total manpower drained by completed village raids from the same pool in one day (% of max pool)." />
+    <string id="b1071_mcm_h_3ad968ac32" text="[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility." />
+    <string id="b1071_mcm_h_3bbd39e2a1" text="How long conquest-related recovery penalties persist." />
+    <string id="b1071_mcm_h_3bfadfa418" text="Percentage chance that an AI lord will invest when entering an eligible village (after all other checks pass). Lower values reduce overall AI investment frequency. Default: 40." />
+    <string id="b1071_mcm_h_3ca63948d3" text="Militia growth scales with manpower ratio. Depleted pools produce less militia." />
+    <string id="b1071_mcm_h_3f887810a5" text="How much exhaustion decays per day toward 0." />
+    <string id="b1071_mcm_h_42ba018519" text="Retain % when pool is below the depleted threshold. Scales linearly between this and ConquestPoolRetainPercent based on fill ratio. Default: 85." />
+    <string id="b1071_mcm_h_4560cc4881" text="Additional support bias toward peace for each war above the pressure start count." />
+    <string id="b1071_mcm_h_45f4d61ea9" text="Relation gained with each village notable from a Modest investment. Default: 3." />
+    <string id="b1071_mcm_h_461324d854" text="At or above this exhaustion, AI support strongly favors peace outcomes." />
+    <string id="b1071_mcm_h_47b6467374" text="Press the chosen key on campaign map to show/hide the overlay." />
+    <string id="b1071_mcm_h_4abeac5152" text="Pool fill ratio below which recovery penalty is halved. Default: 25." />
+    <string id="b1071_mcm_h_4b83dd87b8" text="Prosperity value at which pool reaches max scale. Typical towns: 2000-8000+, castles: 500-3500." />
+    <string id="b1071_mcm_h_4db22db8e2" text="Prosperity penalty per day applied to the bound town/castle at avg bound village devastation 100. Default: 2.0." />
+    <string id="b1071_mcm_h_4e294753dd" text="Logs detailed reasons for forced-peace and war-gate decisions." />
+    <string id="b1071_mcm_h_4e8aece026" text="Master toggle. Enables the village investment (patronage) system — spend gold at villages for hearth growth, notable relations, influence, and notable power. AI lords also invest in their own villages. Default: true." />
+    <string id="b1071_mcm_h_4ed533a03f" text="Maximum total bonus applied to peace decision support in band mode. Replaces the hard +200 override." />
+    <string id="b1071_mcm_h_54fe9937da" text="Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=-6%, T3=-12%, T4=-18%, T5=-24%, T6=-30%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check." />
+    <string id="b1071_mcm_h_5582afc84b" text="Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true." />
+    <string id="b1071_mcm_h_5807af4ea7" text="How long raid-related recovery penalties persist." />
+    <string id="b1071_mcm_h_5921a54d23" text="Governor Steward skill boosts regen; Leadership boosts max pool." />
+    <string id="b1071_mcm_h_597ebd8ce7" text="Base regen penalty applied after ownership change." />
+    <string id="b1071_mcm_h_59fa404ca0" text="AI will not invest in villages with hearth at or above this value, focusing patronage on poorer villages that need it most. Set to 0 to disable (invest anywhere). Default: 600." />
+    <string id="b1071_mcm_h_5b6d82c72e" text="Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.02: a 3000-prosperity town can hold 60 slaves; 5000 prosperity = 100. Set to 0 to disable the cap. Default: 0.02." />
+    <string id="b1071_mcm_h_5c9008c96e" text="Unified enslavement tier cap (player + AI parity). Prisoners at or below this tier can be enslaved: (1) player 'Enslave prisoners' at towns, (2) AI auto-enslave at towns, (3) castle auto-enslave to nearest market. Prisoners above this tier must be taken to castles for recruitment conversion or ransomed. Default: 3 (T1-T3 enslaved, T4+ recruitable)." />
+    <string id="b1071_mcm_h_5f1a43fa3a" text="Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2." />
+    <string id="b1071_mcm_h_609f90a07a" text="Daily prosperity growth bonus from a Grand town investment. Default: 2.0." />
+    <string id="b1071_mcm_h_61ca3b3220" text="Maximum peace-support bonus added when average manpower is at 0%. Scales linearly down to 0 as manpower approaches the threshold. Default: 100." />
+    <string id="b1071_mcm_h_6232e0decd" text="Devastation added to a village when its loot event completes. Two raids within the decay window stack. Default: 25." />
+    <string id="b1071_mcm_h_658adecfe9" text="How much governance strain decays per day toward 0. Lower = longer-lasting effects. Default: 0.3 (a +10 raid strain takes ~33 days to fully decay)." />
+    <string id="b1071_mcm_h_6649631595" text="Pool multiplier when security is 0. E.g., 80 = insecure settlement has 80% of prosperity-scaled pool." />
+    <string id="b1071_mcm_h_677f9e4dfd" text="Maximum governance strain a settlement can accumulate. Default: 100." />
+    <string id="b1071_mcm_h_6794267e25" text="Maximum daily town regen as a percent of max pool (at full prosperity)." />
+    <string id="b1071_mcm_h_689a90d3cf" text="Maximum exhaustion a kingdom can accumulate." />
+    <string id="b1071_mcm_h_690a92479b" text="When enabled, AI lord parties visiting their own faction's castles recruit from both the elite pool and converted prisoners, paying gold per troop (same as player). No daily cap — lords fill to party limit. Default: true." />
+    <string id="b1071_mcm_h_6912a82175" text="Power added to each village notable from a Modest investment. Higher power = higher-tier volunteers. Default: 5." />
+    <string id="b1071_mcm_h_695ffbe967" text="Percentage of the slave population lost per day (deaths, escapes, manumission). Without decay, slave populations grow forever. At 1%: 100 slaves lose 1/day. At 2%: 100 slaves lose 2/day. Creates equilibrium where inflow must match decay. Set to 0 to disable. Default: 1.0." />
+    <string id="b1071_mcm_h_6a63d6fa8c" text="Regen multiplier at full security. E.g., 120 = safe settlement regens at 120%." />
+    <string id="b1071_mcm_h_6c599f6b5e" text="Maximum random spread applied to volunteer production probability. E.g., 10 means ±10% around the base value." />
+    <string id="b1071_mcm_h_6c749ac497" text="Food supply penalty per devastated village at devastation 100. Summed across all bound villages. E.g., 3 villages at dev 50 = 3 × 0.5 × 1.5 = 2.25 food/day lost. Default: 1.5." />
+    <string id="b1071_mcm_h_6d68aece7c" text="Minimum number of days between automatic peaces for the same kingdom." />
+    <string id="b1071_mcm_h_6e3d6b6390" text="Daily hearth growth bonus from a Grand investment. Default: 1.0." />
+    <string id="b1071_mcm_h_6e6bea98d1" text="Steward skill is divided by this, then divided by 100 to get additional regen %. E.g., 100000 means 200 Steward adds +0.002 regen pct (0.2% of pool/day)." />
+    <string id="b1071_mcm_h_6e9c83a214" text="Daily hearth growth bonus from a Modest investment. Visible in village tooltip as 'Patronage'. Default: 0.3." />
+    <string id="b1071_mcm_h_6fff08965f" text="Militia growth multiplier when manpower is at 100%." />
+    <string id="b1071_mcm_h_701e8b031f" text="% of current pool retained when settlement changes hands (at full pool). Scales higher for depleted pools if dynamic conquest protection is enabled." />
+    <string id="b1071_mcm_h_711f8c66da" text="Regen multiplier when kingdom is at peace. E.g., 125 = 25% bonus." />
+    <string id="b1071_mcm_h_78ed283563" text="Power added to each village notable from a Grand investment. Default: 20." />
+    <string id="b1071_mcm_h_79029fed66" text="During a raid, 1 slave is added per this many village hearths, per loot event (same cadence as grain/clay appearing in the raid log). E.g., 300 = a 300-hearth village gives 1 slave per event; 600 hearths = 2. Villages below this threshold give 0 slaves per event. Default: 300 (historically balanced)." />
+    <string id="b1071_mcm_h_797670870d" text="When enabled, recruiting a prisoner from a castle also drains the castle's manpower pool (same cost formula as normal recruitment). Creates a double gate: gold + manpower. Default: true." />
+    <string id="b1071_mcm_h_79aa44b7de" text="Scales all daily town bonuses generated by slaves in the market (manpower, prosperity, construction). Higher = more effective slaves. Gold from selling slaves comes from the normal trade price in items.xml. Default: 1.5." />
+    <string id="b1071_mcm_h_7b689b45f6" text="% of current pool drained when a bound village raid is fully completed." />
+    <string id="b1071_mcm_h_7bd40a9ca1" text="Lowers forced-peace exhaustion threshold per extra major war." />
+    <string id="b1071_mcm_h_7e2c5e03bf" text="Exhaustion gained by losing kingdom when a settlement changes hands." />
+    <string id="b1071_mcm_h_7f1364e2e4" text="Regen multiplier during winter. E.g., 75 = regen at 75% rate." />
+    <string id="b1071_mcm_h_814090cdae" text="Forced peace only triggers when active wars exceed this number." />
+    <string id="b1071_mcm_h_848f031442" text="Base manpower pool for castles before economic scaling." />
+    <string id="b1071_mcm_h_84904d0932" text="Relation gained with the village owner's clan leader when investing in another clan's village. Creates a diplomatic investment path. Default: 2." />
+    <string id="b1071_mcm_h_856a2b5f99" text="How many days the Grand investment hearth bonus lasts. Also serves as the cooldown. Default: 45." />
+    <string id="b1071_mcm_h_8671ad36bf" text="After any peace between two kingdoms, block re-declaration for this many days. Only active when truce enforcement is enabled." />
+    <string id="b1071_mcm_h_88f5ff1208" text="Construction progress per slave per day (same scale as vanilla daily rate ~130-180). Visible as 'Slave Labor +XX' in the construction tooltip. At default effectiveness (1.5\u00d7): 0.5 \u00d7 1.5 = 0.75/slave. E.g., 100 slaves = 75 progress/day (capped). Default: 0.5." />
+    <string id="b1071_mcm_h_894831a9bf" text="Base regen penalty applied after siege aftermath." />
+    <string id="b1071_mcm_h_8a9832e2bb" text="Pool % at full prosperity. E.g., 100 = thriving settlement has 100% of base pool." />
+    <string id="b1071_mcm_h_8b83bc3e79" text="Power added to each town notable from a Generous investment. Default: 10." />
+    <string id="b1071_mcm_h_8c1640482e" text="Pool fill ratio where soft-cap slowdown starts. Example: 0.75 means slowdown begins at 75% full." />
+    <string id="b1071_mcm_h_8c178760ed" text="Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10." />
+    <string id="b1071_mcm_h_8c81642f23" text="Base manpower cost for a tier-1 recruit." />
+    <string id="b1071_mcm_h_8cc407e3bb" text="Gold cost for a Modest town investment. Default: 5000." />
+    <string id="b1071_mcm_h_8d83d2815d" text="When enabled, castle regen above the local trickle floor is transferred from the nearest same-faction town (not created from nothing). If the supply town is depleted, the castle starves. Historically, castle garrisons were rotated from towns by the strategos. Disabling reverts to legacy behavior where castles regen independently." />
+    <string id="b1071_mcm_h_8ef8ae9d41" text="Higher values reduce the impact of village hearth sum on regen." />
+    <string id="b1071_mcm_h_8f1443b071" text="If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI." />
+    <string id="b1071_mcm_h_91c0056873" text="Maximum notable power allowed via investment. Investment power bonus is skipped if notable already at or above this level. Prevents absurdly high volunteer tiers. Default: 200." />
+    <string id="b1071_mcm_h_931c412f86" text="Master toggle. Enables the town investment (civic patronage) system — spend gold at non-hostile towns for a daily prosperity bonus, notable relations, influence, and notable power. AI lords also invest in their own towns. Default: true." />
+    <string id="b1071_mcm_h_936c4cc5a4" text="Pool % when prosperity is 0. E.g., 30 = ruined settlement has 30% of base pool." />
+    <string id="b1071_mcm_h_953c597a7f" text="Prosperity penalty per day when strain is at the cap. Default: 1.0." />
+    <string id="b1071_mcm_h_96e954acef" text="0=M, 1=N, 2=K, 3=F9, 4=F10, 5=F11, 6=F12. Default: 0 (M)." />
+    <string id="b1071_mcm_h_96fcca8a85" text="Maximum construction bonus per day from slave labour. Vanilla daily construction is ~130-180 for a typical town. Default: 150 (200 slaves at default settings max out the cap \u2014 roughly doubling build speed at peak)." />
+    <string id="b1071_mcm_h_9710c9677c" text="Daily regen percent for non-town/non-castle settlements." />
+    <string id="b1071_mcm_h_97d3107072" text="Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000." />
+    <string id="b1071_mcm_h_9a06e7e9d0" text="Shows a warning when your settlements' manpower drops below the threshold." />
+    <string id="b1071_mcm_h_9a09a59097" text="When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Creates more natural variation — rich lords won't always pick Grand. Default: true." />
+    <string id="b1071_mcm_h_9bc260b917" text="Higher-tier troop casualties drain more manpower than low-tier ones (veterans are harder to replace). T1×1.0, T2×1.1, T3×1.25, T4×1.5, T5×1.75, T6×2.0." />
+    <string id="b1071_mcm_h_9bd627c7ee" text="Pools regen faster when your kingdom is at peace with all factions." />
+    <string id="b1071_mcm_h_9caf3079b3" text="Base regen penalty applied after a completed raid." />
+    <string id="b1071_mcm_h_9e3d1d7cc2" text="Fallback pool size for settlements that are not town or castle." />
+    <string id="b1071_mcm_h_a122e143ec" text="Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update." />
+    <string id="b1071_mcm_h_a12501eade" text="Influence gained from a Grand investment (only if village is in your kingdom). Default: 10." />
+    <string id="b1071_mcm_h_a25f48c2d5" text="Gold cost for a Generous investment. Middle tier with balanced bonuses. Default: 5000." />
+    <string id="b1071_mcm_h_a3c2806b96" text="Percentage chance that an AI lord will invest when entering an eligible town. Default: 30." />
+    <string id="b1071_mcm_h_a45f13eae8" text="How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60." />
+    <string id="b1071_mcm_h_a4d717ad4f" text="Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5." />
+    <string id="b1071_mcm_h_a5d4a7f7a2" text="Support penalty applied to declaring-war outcomes per exhaustion point." />
+    <string id="b1071_mcm_h_a707cf84b3" text="% of max pool retained after choosing Show Mercy." />
+    <string id="b1071_mcm_h_a76b9720dc" text="How many days the Modest investment hearth bonus lasts. Also serves as the cooldown — no re-investment until expired. Default: 20." />
+    <string id="b1071_mcm_h_a90f680bc3" text="When enabled, AI lords invest in their own faction's towns when visiting them. Uses the same tier costs and provides the same bonuses. Default: true." />
+    <string id="b1071_mcm_h_a947183ed6" text="Gold cost for a Generous town investment. Default: 15000." />
+    <string id="b1071_mcm_h_aba304d75f" text="Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25." />
+    <string id="b1071_mcm_h_ad2cde5ab4" text="Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation." />
+    <string id="b1071_mcm_h_ad9b011697" text="When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true." />
+    <string id="b1071_mcm_h_adb939cb85" text="Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 21." />
+    <string id="b1071_mcm_h_b00260dc2c" text="Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true." />
+    <string id="b1071_mcm_h_b13ff83c9c" text="Gold cost for a Grand investment. Highest tier with the strongest bonuses and longest duration. Default: 12000." />
+    <string id="b1071_mcm_h_b170010cab" text="Spring/summer boosts regen, winter penalizes it." />
+    <string id="b1071_mcm_h_b2d942d050" text="Pool % below which a crisis alert is shown." />
+    <string id="b1071_mcm_h_b378426501" text="If tiny pools are enabled, poolSize = max(minTinyPool, poolSize / divisor)." />
+    <string id="b1071_mcm_h_b406de84cb" text="Daily prosperity growth bonus from a Generous town investment. Default: 1.0." />
+    <string id="b1071_mcm_h_b41e07e2b2" text="Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30." />
+    <string id="b1071_mcm_h_b58ccac776" text="Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full)." />
+    <string id="b1071_mcm_h_b5c09f9d63" text="Relation gained with each town notable from a Grand investment. Default: 10." />
+    <string id="b1071_mcm_h_b68162ad3f" text="Maximum number of culture-based elite troops (T4-T6) a castle can hold at once. The pool regenerates daily from the castle's manpower. Default: 20." />
+    <string id="b1071_mcm_h_b886264e27" text="Minimum daily castle regen as a percent of max pool (at 0 prosperity)." />
+    <string id="b1071_mcm_h_bc6ded176f" text="Pool fill ratio below which dynamic conquest protection kicks in. Default: 25." />
+    <string id="b1071_mcm_h_bd88202b9e" text="Exhaustion gained by defending kingdom when a village is raided." />
+    <string id="b1071_mcm_h_bf3252de8a" text="Maximum additional regen percent from hearth contribution." />
+    <string id="b1071_mcm_h_bfe8e7545f" text="Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 1." />
+    <string id="b1071_mcm_h_c12c656b6c" text="Food stock value at which food modifier reaches maximum. Typical: 20-40." />
+    <string id="b1071_mcm_h_c31a7c497b" text="Exhaustion level at which kingdom enters Crisis band (war declarations blocked, strong peace pressure). Default: 85." />
+    <string id="b1071_mcm_h_c3dadc496c" text="% of max pool retained after choosing Pillage." />
+    <string id="b1071_mcm_h_c4e1a056bd" text="Garrison party total wage as a percentage of what the same troops would cost in a field party. 60 = garrison pays 60% (40% discount). 100 = no discount. Default: 60." />
+    <string id="b1071_mcm_h_c5e730055f" text="Scales down all pool sizes by the divisor below." />
+    <string id="b1071_mcm_h_c6dedb0344" text="Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true." />
+    <string id="b1071_mcm_h_c7d953daef" text="Each battle casualty drains this × 1 manpower from the party's home pool." />
+    <string id="b1071_mcm_h_c80a8ee7a4" text="When pool is below the depleted threshold, recovery penalty effectiveness is halved. Prevents penalties from crushing already-ruined settlements that have nothing left to penalize." />
+    <string id="b1071_mcm_h_c8401bec75" text="AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15." />
+    <string id="b1071_mcm_h_c94d349fda" text="Recruiting in matching-culture settlements costs less manpower." />
+    <string id="b1071_mcm_h_c9e3a77db5" text="Wars, raids, sieges, and conquests accumulate governance strain on settlements. High strain reduces loyalty, security, and prosperity — modelling the administrative cost of prolonged conflict." />
+    <string id="b1071_mcm_h_caa2e78237" text="Tracks per-kingdom exhaustion from battles, raids, and sieges. Reduces regen when high." />
+    <string id="b1071_mcm_h_cb45a13cfa" text="Pool fill ratio below which emergency regen activates. E.g., 15 = emergency regen when pool is below 15% full. Default: 15." />
+    <string id="b1071_mcm_h_cc2ccba57e" text="% of max pool retained after choosing Devastate." />
+    <string id="b1071_mcm_h_cc5a5907b4" text="Logs AI manpower consumption bands to the Bannerlord logs." />
+    <string id="b1071_mcm_h_cd690629c1" text="Vertical offset from the top of the screen for the overlay root panel. Increase this if game menus overlap the tab row." />
+    <string id="b1071_mcm_h_ce0768a787" text="AI will not invest in towns with prosperity at or above this value, focusing patronage on less prosperous towns. Set to 0 to disable. Default: 5000." />
+    <string id="b1071_mcm_h_d02ecd83aa" text="How many ledger rows are shown per page." />
+    <string id="b1071_mcm_h_d033534700" text="Regen multiplier during spring and summer campaign seasons." />
+    <string id="b1071_mcm_h_d0cf43fb36" text="Militia growth multiplier when manpower is at 0%." />
+    <string id="b1071_mcm_h_d100d3bf03" text="Forced peace cannot end a war younger than this many days." />
+    <string id="b1071_mcm_h_d27db42a6e" text="Maximum daily castle regen as a percent of max pool (at full prosperity)." />
+    <string id="b1071_mcm_h_d28710141a" text="Security penalty per day when strain is at the cap. Default: 2.0." />
+    <string id="b1071_mcm_h_d4b0e5607e" text="Exhaustion level at which kingdom enters Rising pressure band (elevated peace bias, softer war penalties)." />
+    <string id="b1071_mcm_h_d575f112f8" text="Regen multiplier when starving (food stocks = 0). E.g., 50 = starving halves regen." />
+    <string id="b1071_mcm_h_d652d27c59" text="When active kingdom wars reach this count, extra peace pressure is applied." />
+    <string id="b1071_mcm_h_d6bcee76e1" text="Exhaustion added to a kingdom each time one of its nobles is captured in battle. Default: 3." />
+    <string id="b1071_mcm_h_d6f193ca5c" text="Minimum slave cap regardless of prosperity. Even a low-prosperity town can hold at least this many slaves before manumission kicks in. Default: 10." />
+    <string id="b1071_mcm_h_d7f430128a" text="After peace is made, block both kingdoms from declaring war again for the truce duration below. Disable if using AI Influence or another mod that controls its own war-declaration timing." />
+    <string id="b1071_mcm_h_d8a7641342" text="Leadership skill / this value multiplies max pool. E.g., 500 means 200 Leadership adds +40% to max." />
+    <string id="b1071_mcm_h_d8ddfd5d47" text="AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher = more conservative AI spending (e.g., 5 means a lord needs 60,000d to pick Grand). Default: 5." />
+    <string id="b1071_mcm_h_da702b4ddd" text="Grants non-bandit minor factions a daily 'Frontier Revenue' stipend to prevent bankruptcy under tier-exponential wages. Mercenary clans receive less than unaligned factions (since mercs get contract pay)." />
+    <string id="b1071_mcm_h_daa36c235a" text="If exhaustion is critically high, AI kingdoms will automatically end one war per cooldown period. Disable if using AI Influence or another mod that manages its own peace-forcing logic." />
+    <string id="b1071_mcm_h_db628d773f" text="Per-point peace support bias when kingdom is in Low pressure band." />
+    <string id="b1071_mcm_h_dcd4a0a12f" text="Commission the castle owner receives when another clan's prisoners are processed (enslaved or recruited). The depositing lord gets the remainder. Example: 30% fee on a 1,200g recruitment → owner gets 360g, depositor gets 840g. Default: 30." />
+    <string id="b1071_mcm_h_dd5c7e7a01" text="Master toggle for raid/siege/battle/conquest manpower consequences." />
+    <string id="b1071_mcm_h_dd7f9145ca" text="Support bonus applied to make-peace outcomes per exhaustion point." />
+    <string id="b1071_mcm_h_ddd08bc714" text="Daily prosperity growth bonus from a Modest town investment. Visible in the town tooltip as 'Civic Patronage'. Default: 0.5." />
+    <string id="b1071_mcm_h_de483c5153" text="Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 30d at base value 300). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~245d, stock 30 = ~164d, stock 50 = ~109d, stock 80 = ~60d. At 0.96: stock 30 = ~88d, stock 50 = ~39d (floor). Default: 0.98." />
+    <string id="b1071_mcm_h_df9b5fe7fe" text="Required for consistent player recruitment manpower consumption in current event flow. Keep enabled unless explicitly troubleshooting compatibility." />
+    <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontal offset from the left edge for the overlay root panel." />
+    <string id="b1071_mcm_h_e1a2720769" text="Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+5%, T3=+10%, T4=+15%, T5=+20%, T6=+25% flat bonus to survival chance on top of Medicine-based base rate." />
+    <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
+    <string id="b1071_mcm_h_e5ffddeee0" text="How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0." />
+    <string id="b1071_mcm_h_e66eeb63a3" text="Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 7." />
+    <string id="b1071_mcm_h_e85b2eeed7" text="Garrison parties pay a reduced wage relative to field troops. Historically accurate: garrison soldiers often received lower pay, supplemented by shelter and rations. Applies on top of vanilla perk and building discounts." />
+    <string id="b1071_mcm_h_ec969a4c7a" text="Relation gained with each village notable from a Generous investment. Default: 6." />
+    <string id="b1071_mcm_h_ed62e6a96f" text="Exhaustion gained by attacking kingdom after siege aftermath." />
+    <string id="b1071_mcm_h_ed699503e0" text="Scales how much depleted manpower amplifies exhaustion gains. At 1.0, a kingdom at 0% average manpower gets 2× exhaustion from each event; at 50% manpower it gets 1.5×. 0 = disabled." />
+    <string id="b1071_mcm_h_ef3ca5597c" text="Loyalty penalty per day when strain is at the cap. Scales linearly from 0 at strain 0. Default: 3.0." />
+    <string id="b1071_mcm_h_f08918416e" text="Influence gained from a Generous investment (only if village is in your kingdom). Default: 5." />
+    <string id="b1071_mcm_h_f0da9b0ffe" text="Power added to each village notable from a Generous investment. Default: 10." />
+    <string id="b1071_mcm_h_f125f53327" text="War exhaustion directly affects AI kingdom war/peace decisions (DetermineSupport patches). Disable if using a dedicated AI diplomacy mod such as AI Influence to avoid double war-fatigue stacking." />
+    <string id="b1071_mcm_h_f1a941999e" text="Tier-exponential scaling for recruitment gold and upgrade gold. 0=Vanilla | 1=Light (+0/+15/+35/+65/+100/+150% T1-T6) | 2=Moderate (+10/+30/+75/+150/+250/+400%) | 3=Severe (+25/+75/+175/+350/+600/+1000%). Upgrade cost cascades automatically from hire cost (no double-stacking). Applies to AI and player equally. CaravanGuard/Mercenary/Gangster hire premiums are normalised to match regular soldiers at the same tier." />
+    <string id="b1071_mcm_h_f209421fdf" text="0=Current, 1=Nearby, 2=Castles, 3=Towns, 4=Villages, 5=Factions, 6=Armies, 7=Wars, 8=Rebellion, 9=Prisoners, 10=Clans, 11=Characters, 12=Search." />
+    <string id="b1071_mcm_h_f30fdd300a" text="Hearth growth penalty per day applied directly to the village at devastation 100. Default: 2.0." />
+    <string id="b1071_mcm_h_f3f8c898fa" text="Daily income per clan tier for minor factions that are currently under mercenary contract. Lower than unaligned factions because they receive contract pay from their employer kingdom. Default: 250." />
+    <string id="b1071_mcm_h_f6c1c42513" text="Master toggle. Enables: (1) village-raid slave acquisition, (2) prisoner enslavement at the town 'Enslave prisoners' menu, (3) daily town bonuses while Slave goods are present in the town's civilian market." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 14." />
+    <string id="b1071_mcm_h_f786952c1d" text="Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200." />
+    <string id="b1071_mcm_h_f7c27f4ab3" text="Gold cost to recruit a Tier 5 prisoner. Default: 2500." />
+    <string id="b1071_mcm_h_f7e2549a92" text="War exhaustion gains are amplified when a kingdom's average settlement manpower is depleted. Reflects the feedback loop: empty pools mean losses are felt more acutely." />
+    <string id="b1071_mcm_h_f83ad71f92" text="Shows a message when an AI lord invests in a town you own. Default: true." />
+    <string id="b1071_mcm_h_fa1ea63b89" text="Floor for the combined daily prosperity penalty from Governance Strain + Devastated Hinterlands. Prevents runaway settlement death spirals when both systems stack. Default: -8.0." />
+    <string id="b1071_mcm_h_fa9bb5beb0" text="Daily income per clan tier for minor factions NOT under any mercenary contract. Higher than mercenary stipend because they have no employer subsidising them. Default: 400." />
+    <string id="b1071_mcm_h_fdddba79d9" text="Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5\u00d7): 0.0067 \u00d7 1.5 \u2248 0.01/slave. E.g., 100 slaves \u2192 ~1 prosperity/day. Default: 0.0067." />
+    <string id="b1071_mcm_h_ff8b7b8002" text="Applies temporary recovery penalties after raid/siege/conquest events, decaying over time." />
+    <string id="b1071_mcm_h_ff96994b56" text="Appends manpower info to settlement property tooltips in campaign UI." />
+    <string id="b1071_mcm_h_ffe4431637" text="Minimum daily regen percent of max pool after stacked stress penalties." />
+    <string id="b1071_mcm_t_00b53638d4" text="Peace support bonus / point" />
+    <string id="b1071_mcm_t_0227ae84b9" text="Mercenary stipend per tier (denars/day)" />
+    <string id="b1071_mcm_t_02d5165b74" text="Hearth normalizer" />
+    <string id="b1071_mcm_t_04ca6fac7d" text="Modest relation gain" />
+    <string id="b1071_mcm_t_0571c47e15" text="AI hero cooldown (days)" />
+    <string id="b1071_mcm_t_05f30d5d66" text="Show pool identifier (legacy)" />
+    <string id="b1071_mcm_t_079a9c37e5" text="Security regen max %" />
+    <string id="b1071_mcm_t_07fe02dcb6" text="Enable culture discount" />
+    <string id="b1071_mcm_t_08123e4064" text="Rising band start" />
+    <string id="b1071_mcm_t_09d80db435" text="Town regen max %" />
+    <string id="b1071_mcm_t_0a9b801539" text="Enable castle recruitment" />
+    <string id="b1071_mcm_t_0b65af384e" text="Raid recovery penalty %" />
+    <string id="b1071_mcm_t_0bf74d7558" text="Siege recovery penalty %" />
+    <string id="b1071_mcm_t_0c1c235e2e" text="Max security penalty (bound town)" />
+    <string id="b1071_mcm_t_0c1fa8c3c0" text="Modest influence gain" />
+    <string id="b1071_mcm_t_0c4f845fa2" text="Daily slave decay (%)" />
+    <string id="b1071_mcm_t_0e9795924e" text="Manpower depletion amplifier" />
+    <string id="b1071_mcm_t_1132bc1f96" text="Enable governor bonus" />
+    <string id="b1071_mcm_t_12279242a5" text="Enable tier survivability" />
+    <string id="b1071_mcm_t_1228e2a3ec" text="Raid daily cap %" />
+    <string id="b1071_mcm_t_1856ee4e8b" text="Construction bonus per slave per day" />
+    <string id="b1071_mcm_t_18656d2617" text="Ledger rows per page" />
+    <string id="b1071_mcm_t_19ba31d2d7" text="Max food penalty per village" />
+    <string id="b1071_mcm_t_1aae7fd944" text="Castle max manpower" />
+    <string id="b1071_mcm_t_1ab8b237ca" text="Other settlement max manpower" />
+    <string id="b1071_mcm_t_1f6f98db53" text="Recovery penalty max %" />
+    <string id="b1071_mcm_t_22c56db061" text="Enable town investment" />
+    <string id="b1071_mcm_t_2443dcece8" text="Garrison wage % of field" />
+    <string id="b1071_mcm_t_24551006f0" text="Peace dividend regen %" />
+    <string id="b1071_mcm_t_24e0e77468" text="AI hearth ceiling" />
+    <string id="b1071_mcm_t_2507cf8802" text="Generous investment cost" />
+    <string id="b1071_mcm_t_25c6c1ebe1" text="Show telemetry in Current tab" />
+    <string id="b1071_mcm_t_262a11be2f" text="Grand prosperity bonus/day" />
+    <string id="b1071_mcm_t_2809d10e0b" text="Loyalty regen min %" />
+    <string id="b1071_mcm_t_28e890fbbc" text="Generous influence gain" />
+    <string id="b1071_mcm_t_28ee03f1f7" text="T6+ recruitment wait (days)" />
+    <string id="b1071_mcm_t_28f61ff98c" text="Enable experimental map-hover fallback (legacy)" />
+    <string id="b1071_mcm_t_28f7f149d6" text="[Legacy] Construction bonus duration (days)" />
+    <string id="b1071_mcm_t_2b08d5ee3a" text="Depleted regen bonus at 0%" />
+    <string id="b1071_mcm_t_2b22513037" text="Hearths per slave (raid)" />
+    <string id="b1071_mcm_t_2b34b50117" text="Max security penalty at full strain" />
+    <string id="b1071_mcm_t_2dd7c36498" text="Culture match weight" />
+    <string id="b1071_mcm_t_2e953ae0a0" text="Peace support bonus cap" />
+    <string id="b1071_mcm_t_329e2f2547" text="Enable dynamic conquest protection" />
+    <string id="b1071_mcm_t_32fd0ff77f" text="Enable player recruit manpower hook" />
+    <string id="b1071_mcm_t_333ebd3f63" text="Devastation per raid" />
+    <string id="b1071_mcm_t_334b3b9871" text="Enable village investment" />
+    <string id="b1071_mcm_t_33dc1f57bd" text="Food regen max %" />
+    <string id="b1071_mcm_t_34983f6734" text="Winter regen %" />
+    <string id="b1071_mcm_t_352660b343" text="Generous prosperity bonus/day" />
+    <string id="b1071_mcm_t_35befd4d96" text="AI investment chance (%)" />
+    <string id="b1071_mcm_t_35dbc459b5" text="Food regen min %" />
+    <string id="b1071_mcm_t_36c35ecdc1" text="Enable telemetry debug logs" />
+    <string id="b1071_mcm_t_3a8a2610f7" text="Auto-enslave tier max" />
+    <string id="b1071_mcm_t_3b187bb881" text="Modest hearth bonus/day" />
+    <string id="b1071_mcm_t_3d3839675a" text="Elite regen manpower cost" />
+    <string id="b1071_mcm_t_3f48d9a16f" text="Castle holding fee %" />
+    <string id="b1071_mcm_t_403ad38693" text="Prosperity min scale %" />
+    <string id="b1071_mcm_t_41c5ad1112" text="Enable verbose mod log" />
+    <string id="b1071_mcm_t_428cb3c3b0" text="Settings profile version (do not change)" />
+    <string id="b1071_mcm_t_42fc632309" text="Enable castle supply chain" />
+    <string id="b1071_mcm_t_444e840dbf" text="Enable delayed recovery" />
+    <string id="b1071_mcm_t_445bb3f645" text="Enable pressure bands" />
+    <string id="b1071_mcm_t_44d1d0efcc" text="Slave price decay rate" />
+    <string id="b1071_mcm_t_462413e577" text="Modest prosperity bonus/day" />
+    <string id="b1071_mcm_t_46a692c30e" text="Castle regen min %" />
+    <string id="b1071_mcm_t_46ca60a1ea" text="Log AI manpower consumption" />
+    <string id="b1071_mcm_t_472ffe7942" text="Max hearth penalty (per village)" />
+    <string id="b1071_mcm_t_494eb521fc" text="Modest duration (days)" />
+    <string id="b1071_mcm_t_4a04f07333" text="Extra peace bias per major war" />
+    <string id="b1071_mcm_t_4be2b0417a" text="T5 recruitment gold cost" />
+    <string id="b1071_mcm_t_4c7d821a43" text="Slave cap minimum" />
+    <string id="b1071_mcm_t_4f19f2d927" text="Enable truce enforcement" />
+    <string id="b1071_mcm_t_506fc29e2e" text="Grand investment cost" />
+    <string id="b1071_mcm_t_56004bcc8c" text="Enable manpower depletion amplifier" />
+    <string id="b1071_mcm_t_56177f3ec4" text="Enable depleted emergency regen" />
+    <string id="b1071_mcm_t_56b5b0c27f" text="Elite regen min per day" />
+    <string id="b1071_mcm_t_56d0eeb399" text="AI prosperity ceiling" />
+    <string id="b1071_mcm_t_570599aae0" text="Recovery tick variance %" />
+    <string id="b1071_mcm_t_5792cfbaa6" text="Raid drain %" />
+    <string id="b1071_mcm_t_585dbed5dc" text="Notify when AI invests in your towns" />
+    <string id="b1071_mcm_t_589ebea8c2" text="AI random tier selection" />
+    <string id="b1071_mcm_t_5b3610505f" text="Spring/summer regen %" />
+    <string id="b1071_mcm_t_5bd2214ca4" text="Town max manpower" />
+    <string id="b1071_mcm_t_5c1505e977" text="Enable regen soft-cap" />
+    <string id="b1071_mcm_t_5cfb5dd866" text="Enable frontier devastation" />
+    <string id="b1071_mcm_t_6167980909" text="Notable power cap" />
+    <string id="b1071_mcm_t_62895ca392" text="Open castle access (early game)" />
+    <string id="b1071_mcm_t_64645f566a" text="Siege exhaustion (defender)" />
+    <string id="b1071_mcm_t_6555ffe583" text="Enable hotkey toggle" />
+    <string id="b1071_mcm_t_65a39833e0" text="AI gold safety multiplier" />
+    <string id="b1071_mcm_t_66058d06ad" text="Max prosperity penalty (bound town)" />
+    <string id="b1071_mcm_t_66419f08dc" text="Conquest pool retain %" />
+    <string id="b1071_mcm_t_6728a5b42a" text="Peace pressure threshold" />
+    <string id="b1071_mcm_t_6b4928cc6d" text="Hotkey (0-6)" />
+    <string id="b1071_mcm_t_6bb762576a" text="Hearth bonus max %" />
+    <string id="b1071_mcm_t_6c51d7cddf" text="Enable forced peace at crisis" />
+    <string id="b1071_mcm_t_6e9d852a3c" text="Battle exhaustion per casualty" />
+    <string id="b1071_mcm_t_7186800480" text="Enforce player parity" />
+    <string id="b1071_mcm_t_71b56d10d6" text="Town regen min %" />
+    <string id="b1071_mcm_t_72dcadfd98" text="Security bonus min %" />
+    <string id="b1071_mcm_t_744b667ef5" text="Generous duration (days)" />
+    <string id="b1071_mcm_t_757eae2c05" text="Daily wage preset" />
+    <string id="b1071_mcm_t_76efdb170a" text="Ignore if enemy besieges core fief" />
+    <string id="b1071_mcm_t_77fa17ad36" text="Conquest recovery penalty %" />
+    <string id="b1071_mcm_t_787f0e11f0" text="Loyalty regen max %" />
+    <string id="b1071_mcm_t_7981ec30da" text="Crisis band start" />
+    <string id="b1071_mcm_t_7b1d5f8991" text="War support penalty / point" />
+    <string id="b1071_mcm_t_7b2ae89092" text="Siege regen multiplier %" />
+    <string id="b1071_mcm_t_7b53a2a11a" text="Siege pillage retain %" />
+    <string id="b1071_mcm_t_7bd13609c8" text="Security bonus max %" />
+    <string id="b1071_mcm_t_7c3e73056d" text="AI town investment" />
+    <string id="b1071_mcm_t_7e7bd75b71" text="Min war days before forced peace" />
+    <string id="b1071_mcm_t_7f42dd96f9" text="Conquest exhaustion gain" />
+    <string id="b1071_mcm_t_8000699f51" text="Forced peace threshold reduction/war" />
+    <string id="b1071_mcm_t_819da19a70" text="T5 recruitment wait (days)" />
+    <string id="b1071_mcm_t_81cbe070ea" text="War support penalty cap" />
+    <string id="b1071_mcm_t_81e6a5ec72" text="Minimum daily regen" />
+    <string id="b1071_mcm_t_830629701e" text="Daily decay" />
+    <string id="b1071_mcm_t_83760a2182" text="Hearth multiplier" />
+    <string id="b1071_mcm_t_84057ad838" text="Max prosperity penalty at full strain" />
+    <string id="b1071_mcm_t_858f16f4b9" text="Governor leadership pool divisor" />
+    <string id="b1071_mcm_t_85cb75e37c" text="Max exhaustion score" />
+    <string id="b1071_mcm_t_865bc5b488" text="Raid recovery days" />
+    <string id="b1071_mcm_t_86be943e40" text="Enable noble-capture exhaustion" />
+    <string id="b1071_mcm_t_874b76065f" text="Enable recruitment variance" />
+    <string id="b1071_mcm_t_8834e326bf" text="AI recruits from castle" />
+    <string id="b1071_mcm_t_8869538595" text="Militia min scale % at 0% MP" />
+    <string id="b1071_mcm_t_8a01f287e0" text="Food stocks normalizer" />
+    <string id="b1071_mcm_t_8a5f068061" text="Stress floor %" />
+    <string id="b1071_mcm_t_8c4c2be8dc" text="Grace period (days)" />
+    <string id="b1071_mcm_t_8d5c55ac69" text="Reduce penalty when depleted" />
+    <string id="b1071_mcm_t_9065705d19" text="[Legacy] Cost multiplier %" />
+    <string id="b1071_mcm_t_918a9b57d5" text="Strain decay per day" />
+    <string id="b1071_mcm_t_9313e7c659" text="Castle minimum daily regen" />
+    <string id="b1071_mcm_t_9314ade9c2" text="Grand duration (days)" />
+    <string id="b1071_mcm_t_9364507e22" text="Manpower diplomacy pressure strength" />
+    <string id="b1071_mcm_t_950bb85407" text="Enable minor faction income boost" />
+    <string id="b1071_mcm_t_95b0692672" text="Culture cost %" />
+    <string id="b1071_mcm_t_9756c85392" text="Modest investment cost" />
+    <string id="b1071_mcm_t_9aa639407c" text="Siege mercy retain %" />
+    <string id="b1071_mcm_t_9b391ff669" text="Cross-clan relation gain" />
+    <string id="b1071_mcm_t_9c2eafe6c2" text="Enable diplomacy debug logs" />
+    <string id="b1071_mcm_t_9c30340076" text="Governor steward regen divisor" />
+    <string id="b1071_mcm_t_9e446c836a" text="Modest power gain" />
+    <string id="b1071_mcm_t_9e88be7901" text="No-new-war threshold" />
+    <string id="b1071_mcm_t_9f315112a8" text="Peace bias (Low band)" />
+    <string id="b1071_mcm_t_a04dd62ba7" text="Ledger default tab (0-12)" />
+    <string id="b1071_mcm_t_a052e9fa87" text="Regen penalty divisor" />
+    <string id="b1071_mcm_t_a323f17518" text="Enable slave economy" />
+    <string id="b1071_mcm_t_a37290a213" text="Regen cap % of pool/day" />
+    <string id="b1071_mcm_t_a6a089949c" text="Enable settlement manpower tooltips" />
+    <string id="b1071_mcm_t_a6ec313b64" text="Peace bias (Rising band)" />
+    <string id="b1071_mcm_t_a7e8775853" text="Enable manpower diplomacy pressure" />
+    <string id="b1071_mcm_t_a881ce40fb" text="Prosperity normalizer" />
+    <string id="b1071_mcm_t_a8e2b11c9d" text="Militia max scale % at 100% MP" />
+    <string id="b1071_mcm_t_a9c0f01a99" text="Alert threshold %" />
+    <string id="b1071_mcm_t_ab323edceb" text="Soft-cap strength" />
+    <string id="b1071_mcm_t_ac29f05777" text="Prosperity max scale %" />
+    <string id="b1071_mcm_t_ac67678bec" text="Enable garrison wage discount" />
+    <string id="b1071_mcm_t_acf0cc8b7b" text="Recovery depleted threshold %" />
+    <string id="b1071_mcm_t_ad875bbbf1" text="Generous power gain" />
+    <string id="b1071_mcm_t_adda36db0f" text="Other settlement regen %" />
+    <string id="b1071_mcm_t_ae56c925c7" text="Overlay left offset (px)" />
+    <string id="b1071_mcm_t_afac8de41d" text="Slave cap per prosperity" />
+    <string id="b1071_mcm_t_b15e918b15" text="Tiny pool divisor" />
+    <string id="b1071_mcm_t_b1e09cac5a" text="Enable war exhaustion" />
+    <string id="b1071_mcm_t_b2d4cf52fb" text="Base manpower cost" />
+    <string id="b1071_mcm_t_b30e9966cb" text="Depleted threshold %" />
+    <string id="b1071_mcm_t_b324e36f0f" text="Enable seasonal regen" />
+    <string id="b1071_mcm_t_b36bdd7507" text="Hire &amp; upgrade cost preset" />
+    <string id="b1071_mcm_t_b418b27d7b" text="Max combined prosperity penalty" />
+    <string id="b1071_mcm_t_b496502413" text="Conquest depleted retain %" />
+    <string id="b1071_mcm_t_b63e6d84dc" text="Grand hearth bonus/day" />
+    <string id="b1071_mcm_t_b65353e8df" text="Strain cap" />
+    <string id="b1071_mcm_t_b782030066" text="Generous hearth bonus/day" />
+    <string id="b1071_mcm_t_b811d0a952" text="Use tiny pools for testing" />
+    <string id="b1071_mcm_t_bcb2514534" text="Grand relation gain" />
+    <string id="b1071_mcm_t_bea3703fd9" text="Castle regen max %" />
+    <string id="b1071_mcm_t_bf735341f9" text="Prosperity per slave per day" />
+    <string id="b1071_mcm_t_bf7e85e8ac" text="Unaligned stipend per tier (denars/day)" />
+    <string id="b1071_mcm_t_c1b73707f8" text="Elite regen max per day" />
+    <string id="b1071_mcm_t_c5dd282201" text="Forced peace threshold" />
+    <string id="b1071_mcm_t_c610e0927b" text="Notify when AI invests in your villages" />
+    <string id="b1071_mcm_t_c7bb316b1f" text="Castle recruitment drains manpower" />
+    <string id="b1071_mcm_t_c85415fda1" text="Volunteer variance %" />
+    <string id="b1071_mcm_t_c8bd54e660" text="Tiny pool minimum" />
+    <string id="b1071_mcm_t_cb256e4d73" text="Enable in-game overlay" />
+    <string id="b1071_mcm_t_cc05aa7ccf" text="Battle casualty drain multiplier" />
+    <string id="b1071_mcm_t_cc4b978d9a" text="Enable manpower alerts" />
+    <string id="b1071_mcm_t_cdaad00e82" text="Enable tier-weighted casualty drain" />
+    <string id="b1071_mcm_t_cfb114a657" text="Soft-cap start ratio" />
+    <string id="b1071_mcm_t_d12ea29baa" text="T4 recruitment wait (days)" />
+    <string id="b1071_mcm_t_d1a68860bf" text="T6+ recruitment gold cost" />
+    <string id="b1071_mcm_t_d2267d06a9" text="Show settlement name (legacy)" />
+    <string id="b1071_mcm_t_d4930f0014" text="Major-war pressure starts at" />
+    <string id="b1071_mcm_t_d74548c067" text="Grand influence gain" />
+    <string id="b1071_mcm_t_d80a433159" text="Construction bonus cap (progress/day)" />
+    <string id="b1071_mcm_t_d8c28d3d5b" text="Generous relation gain" />
+    <string id="b1071_mcm_t_daeb06377b" text="AI village investment" />
+    <string id="b1071_mcm_t_dba1bed6ad" text="Enable militia-manpower link" />
+    <string id="b1071_mcm_t_dd53dd11fb" text="Overlay top offset (px)" />
+    <string id="b1071_mcm_t_dda253d25a" text="Forced peace cooldown (days)" />
+    <string id="b1071_mcm_t_e01075c9d2" text="Enable clan survival" />
+    <string id="b1071_mcm_t_e668bee792" text="Enable tier armor simulation" />
+    <string id="b1071_mcm_t_e8105464cc" text="Enable governance strain" />
+    <string id="b1071_mcm_t_e92571fa60" text="[Legacy] Tiers per +1 cost step" />
+    <string id="b1071_mcm_t_ea4106815b" text="Enable peace dividend" />
+    <string id="b1071_mcm_t_ea75746b26" text="Food consumption per slave per day" />
+    <string id="b1071_mcm_t_ebad6bd7be" text="Tooltip refresh (ms) (legacy)" />
+    <string id="b1071_mcm_t_ebe451ab15" text="Enable war effects" />
+    <string id="b1071_mcm_t_ebfb4c1b63" text="Slave effectiveness multiplier" />
+    <string id="b1071_mcm_t_ec59978b74" text="T4 recruitment gold cost" />
+    <string id="b1071_mcm_t_ecaba1be4a" text="Enable diplomacy pressure" />
+    <string id="b1071_mcm_t_ecf600bf07" text="Siege recovery days" />
+    <string id="b1071_mcm_t_ecfae14356" text="Siege devastate retain %" />
+    <string id="b1071_mcm_t_ed856ce644" text="Max loyalty penalty at full strain" />
+    <string id="b1071_mcm_t_edef9d0046" text="Manpower diplomacy threshold %" />
+    <string id="b1071_mcm_t_f1cc63afd5" text="Elite pool max per castle" />
+    <string id="b1071_mcm_t_f28da20721" text="Raid exhaustion gain" />
+    <string id="b1071_mcm_t_f48dfebb8d" text="Band hysteresis" />
+    <string id="b1071_mcm_t_f69ee0bff4" text="Devastation decay per day" />
+    <string id="b1071_mcm_t_f6c68bc2d6" text="Forced peace max active wars" />
+    <string id="b1071_mcm_t_f6f0c3c0d2" text="Security regen min %" />
+    <string id="b1071_mcm_t_f756638832" text="Grand power gain" />
+    <string id="b1071_mcm_t_fa86f80031" text="Noble capture exhaustion gain" />
+    <string id="b1071_mcm_t_fc99ee9c3a" text="Show player debug messages" />
+    <string id="b1071_mcm_t_fd751aece2" text="Forced peace truce days" />
+    <string id="b1071_mcm_t_fd9f47f48c" text="Conquest depleted threshold %" />
+    <string id="b1071_mcm_t_ff01c1d5b8" text="Conquest recovery days" />
+    <string id="b1071_mcm_t_ff6f4a1b79" text="Siege exhaustion (attacker)" />
+  </strings>
+</base>

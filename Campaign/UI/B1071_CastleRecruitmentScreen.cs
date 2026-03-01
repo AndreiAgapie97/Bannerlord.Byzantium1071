@@ -37,7 +37,9 @@ namespace Byzantium1071.Campaign.UI
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"Castle recruit screen failed to open: {ex.Message}",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_open_fail}Castle recruit screen failed to open: {ERR}")
+                        .SetTextVariable("ERR", ex.Message)
+                        .ToString(),
                     Colors.Red));
                 Cleanup();
             }
@@ -83,7 +85,7 @@ namespace Byzantium1071.Campaign.UI
             if (screen == null)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "Castle recruitment: no active screen.", Colors.Red));
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_no_screen}Castle recruitment: no active screen.").ToString(), Colors.Red));
                 return;
             }
 

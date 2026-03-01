@@ -5,6 +5,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Core.ViewModelCollection.Information;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -30,7 +31,29 @@ namespace Byzantium1071.Campaign.UI
         private bool _canRecruit;
         private bool _isReady;
         private string _statusText = string.Empty;
+        private string _recruitText = string.Empty;
         private HintViewModel? _recruitHint;
+
+        private static TextObject T(string id, string fallback)
+        {
+            return new TextObject($"{{={id}}}{fallback}");
+        }
+
+        private static TextObject TV(string id, string fallback, params (string Name, string Value)[] vars)
+        {
+            var text = T(id, fallback);
+            foreach (var (name, value) in vars)
+            {
+                text.SetTextVariable(name, value);
+            }
+
+            return text;
+        }
+
+        private static string L(string id, string fallback)
+        {
+            return T(id, fallback).ToString();
+        }
 
         /// <summary>
         /// Constructor for ELITE pool troops (no days tracking).
@@ -49,24 +72,31 @@ namespace Byzantium1071.Campaign.UI
             _isElite = isElite;
 
             _visual = new CharacterImageIdentifierVM(CharacterCode.CreateFrom(character));
-            _name = character.Name?.ToString() ?? "Unknown";
+            _name = character.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
             _tier = character.Tier.ToString();
             _goldCost = goldCost.ToString();
             _count = count.ToString();
             _isReady = true;
+            _recruitText = L("b1071_ui_recruit", "Recruit");
 
             // B-3: Same-clan lords pay 50% (family discount) — match backend TryRecruitElite logic.
             bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
             int effectiveCost = isSameClan ? goldCost / 2 : goldCost;
             _canRecruit = Hero.MainHero.Gold >= effectiveCost;
-            _statusText = isSameClan ? "Elite (50%)" : "Elite";
+            _statusText = isSameClan
+                ? L("b1071_cr_status_elite_discount", "Elite (50%)")
+                : L("b1071_cr_status_elite", "Elite");
 
             _recruitHint = _canRecruit
-                ? new HintViewModel(new TaleWorlds.Localization.TextObject(
+                ? new HintViewModel(
                     isSameClan
-                        ? $"Recruit one {_name} (same clan — 50% cost: {effectiveCost} gold)"
-                        : $"Recruit one {_name} for {goldCost} gold"))
-                : new HintViewModel(new TaleWorlds.Localization.TextObject($"Not enough gold (need {effectiveCost})"));
+                        ? TV("b1071_cr_hint_recruit_sameclan", "Recruit one {TROOP} (same clan — 50% cost: {COST} gold)",
+                            ("TROOP", _name),
+                            ("COST", effectiveCost.ToString()))
+                        : TV("b1071_cr_hint_recruit_for_gold", "Recruit one {TROOP} for {COST} gold",
+                            ("TROOP", _name),
+                            ("COST", goldCost.ToString())))
+                : new HintViewModel(TV("b1071_cr_hint_not_enough_gold", "Not enough gold (need {COST})", ("COST", effectiveCost.ToString())));
         }
 
         /// <summary>
@@ -88,11 +118,12 @@ namespace Byzantium1071.Campaign.UI
             _isElite = false;
 
             _visual = new CharacterImageIdentifierVM(CharacterCode.CreateFrom(character));
-            _name = character.Name?.ToString() ?? "Unknown";
+            _name = character.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
             _tier = character.Tier.ToString();
             _goldCost = goldCost.ToString();
             _count = count.ToString();
             _isReady = isReady;
+            _recruitText = L("b1071_ui_recruit", "Recruit");
 
             // Compute effective cost for hint text (used by both ready and pending branches).
             int hintEffectiveCost = goldCost;
@@ -102,22 +133,33 @@ namespace Byzantium1071.Campaign.UI
                 var behavior = B1071_CastleRecruitmentBehavior.Instance;
                 hintEffectiveCost = behavior?.GetPlayerEffectivePrisonerCost(castle, character) ?? goldCost;
                 _canRecruit = Hero.MainHero.Gold >= hintEffectiveCost;
-                _statusText = hintEffectiveCost == 0 ? "Ready (Free)" : "Ready";
+                _statusText = hintEffectiveCost == 0
+                    ? L("b1071_cr_status_ready_free", "Ready (Free)")
+                    : L("b1071_cr_status_ready", "Ready");
             }
             else
             {
                 _canRecruit = false;
                 int remaining = daysRequired - daysHeld;
-                _statusText = remaining > 0 ? $"{remaining} day{(remaining != 1 ? "s" : "")} remaining" : "Ready";
+                _statusText = remaining > 0
+                    ? TV("b1071_cr_status_days_remaining", "{DAYS} day{PLURAL} remaining",
+                        ("DAYS", remaining.ToString()),
+                        ("PLURAL", remaining == 1 ? string.Empty : "s")).ToString()
+                    : L("b1071_cr_status_ready", "Ready");
             }
 
             _recruitHint = _canRecruit
-                ? new HintViewModel(new TaleWorlds.Localization.TextObject(
+                ? new HintViewModel(
                     hintEffectiveCost == 0
-                        ? $"Recruit one {_name} (clan waivers \u2014 free)"
-                        : $"Recruit one {_name} for {hintEffectiveCost} gold"))
-                : new HintViewModel(new TaleWorlds.Localization.TextObject(
-                    !isReady ? $"Not yet ready \u2014 {_statusText}" : $"Not enough gold (need {hintEffectiveCost})"));
+                        ? TV("b1071_cr_hint_recruit_clan_waiver", "Recruit one {TROOP} (clan waivers — free)",
+                            ("TROOP", _name))
+                        : TV("b1071_cr_hint_recruit_for_gold", "Recruit one {TROOP} for {COST} gold",
+                            ("TROOP", _name),
+                            ("COST", hintEffectiveCost.ToString())))
+                : new HintViewModel(
+                    !isReady
+                        ? TV("b1071_cr_hint_not_ready", "Not yet ready — {STATUS}", ("STATUS", _statusText))
+                        : TV("b1071_cr_hint_not_enough_gold", "Not enough gold (need {COST})", ("COST", hintEffectiveCost.ToString())));
         }
 
         public CharacterObject Character => _character;
@@ -178,6 +220,13 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _statusText;
             set { if (_statusText != value) { _statusText = value; OnPropertyChangedWithValue(value, nameof(StatusText)); } }
+        }
+
+        [DataSourceProperty]
+        public string RecruitText
+        {
+            get => _recruitText;
+            set { if (_recruitText != value) { _recruitText = value; OnPropertyChangedWithValue(value, nameof(RecruitText)); } }
         }
 
         [DataSourceProperty]

@@ -5,6 +5,6 @@
   so that GameTexts.FindText lookups resolve to proper text instead of "Unassigned".
 -->
 <strings>
-  <string id="str_item_category.b1071_slaves"
-          text="{=!}Slaves{@Plural}groups of slaves{\@}" />
+    <string id="str_item_category.b1071_slaves"
+      text="{=b1071_itemcat_slaves}Slaves{@Plural}groups of slaves{\@}" />
 </strings>

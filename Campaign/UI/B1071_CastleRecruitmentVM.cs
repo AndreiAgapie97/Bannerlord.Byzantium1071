@@ -4,6 +4,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -23,6 +24,19 @@ namespace Byzantium1071.Campaign.UI
         private string _titleText = string.Empty;
         private string _goldText = string.Empty;
         private string _manpowerText = string.Empty;
+        private string _goldLabelText = string.Empty;
+        private string _manpowerLabelText = string.Empty;
+        private string _eliteHeaderText = string.Empty;
+        private string _readyHeaderText = string.Empty;
+        private string _pendingHeaderText = string.Empty;
+        private string _troopColumnText = string.Empty;
+        private string _tierColumnText = string.Empty;
+        private string _countColumnText = string.Empty;
+        private string _goldCostColumnText = string.Empty;
+        private string _statusColumnText = string.Empty;
+        private string _noEliteText = string.Empty;
+        private string _noReadyText = string.Empty;
+        private string _noPendingText = string.Empty;
         private MBBindingList<B1071_CastleRecruitTroopVM> _eliteTroops;
         private MBBindingList<B1071_CastleRecruitTroopVM> _availableTroops;
         private MBBindingList<B1071_CastleRecruitTroopVM> _pendingTroops;
@@ -41,7 +55,30 @@ namespace Byzantium1071.Campaign.UI
             _availableTroops = new MBBindingList<B1071_CastleRecruitTroopVM>();
             _pendingTroops = new MBBindingList<B1071_CastleRecruitTroopVM>();
 
+            RefreshLocalizedLabels();
             RefreshLists();
+        }
+
+        private static string L(string id, string fallback)
+        {
+            return new TextObject($"{{={id}}}{fallback}").ToString();
+        }
+
+        private void RefreshLocalizedLabels()
+        {
+            GoldLabelText = L("b1071_ui_gold", "Gold:");
+            ManpowerLabelText = L("b1071_ui_manpower", "Manpower:");
+            EliteHeaderText = L("b1071_cr_elite_header", "Elite Troops (Culture Pool)");
+            ReadyHeaderText = L("b1071_cr_ready_header", "Ready to Recruit (Prisoners)");
+            PendingHeaderText = L("b1071_cr_pending_header", "Pending (Training)");
+            TroopColumnText = L("b1071_ui_troop", "Troop");
+            TierColumnText = L("b1071_ui_tier", "Tier");
+            CountColumnText = L("b1071_ui_count", "Count");
+            GoldCostColumnText = L("b1071_ui_gold_cost", "Gold Cost");
+            StatusColumnText = L("b1071_ui_status", "Status");
+            NoEliteText = L("b1071_cr_no_elite", "No elite troops available. Pool regenerates daily from castle manpower.");
+            NoReadyText = L("b1071_cr_no_ready", "No prisoners ready for recruitment.");
+            NoPendingText = L("b1071_cr_no_pending", "No prisoners pending.");
         }
 
         /// <summary>
@@ -57,7 +94,7 @@ namespace Byzantium1071.Campaign.UI
             if (behavior == null) return;
 
             // Title
-            TitleText = $"Castle Recruitment \u2014 {_castle.Name}";
+            TitleText = $"{L("b1071_cr_title", "Castle Recruitment")} \u2014 {_castle.Name}";
 
             // Gold
             GoldText = $"{Hero.MainHero.Gold:N0}";
@@ -71,7 +108,7 @@ namespace Byzantium1071.Campaign.UI
             }
             else
             {
-                ManpowerText = "N/A";
+                ManpowerText = L("b1071_ui_na", "N/A");
             }
 
             // Elite pool troops (culture-based T4-T6)
@@ -146,6 +183,97 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _manpowerText;
             set { if (_manpowerText != value) { _manpowerText = value; OnPropertyChangedWithValue(value, nameof(ManpowerText)); } }
+        }
+
+        [DataSourceProperty]
+        public string GoldLabelText
+        {
+            get => _goldLabelText;
+            set { if (_goldLabelText != value) { _goldLabelText = value; OnPropertyChangedWithValue(value, nameof(GoldLabelText)); } }
+        }
+
+        [DataSourceProperty]
+        public string ManpowerLabelText
+        {
+            get => _manpowerLabelText;
+            set { if (_manpowerLabelText != value) { _manpowerLabelText = value; OnPropertyChangedWithValue(value, nameof(ManpowerLabelText)); } }
+        }
+
+        [DataSourceProperty]
+        public string EliteHeaderText
+        {
+            get => _eliteHeaderText;
+            set { if (_eliteHeaderText != value) { _eliteHeaderText = value; OnPropertyChangedWithValue(value, nameof(EliteHeaderText)); } }
+        }
+
+        [DataSourceProperty]
+        public string ReadyHeaderText
+        {
+            get => _readyHeaderText;
+            set { if (_readyHeaderText != value) { _readyHeaderText = value; OnPropertyChangedWithValue(value, nameof(ReadyHeaderText)); } }
+        }
+
+        [DataSourceProperty]
+        public string PendingHeaderText
+        {
+            get => _pendingHeaderText;
+            set { if (_pendingHeaderText != value) { _pendingHeaderText = value; OnPropertyChangedWithValue(value, nameof(PendingHeaderText)); } }
+        }
+
+        [DataSourceProperty]
+        public string TroopColumnText
+        {
+            get => _troopColumnText;
+            set { if (_troopColumnText != value) { _troopColumnText = value; OnPropertyChangedWithValue(value, nameof(TroopColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string TierColumnText
+        {
+            get => _tierColumnText;
+            set { if (_tierColumnText != value) { _tierColumnText = value; OnPropertyChangedWithValue(value, nameof(TierColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string CountColumnText
+        {
+            get => _countColumnText;
+            set { if (_countColumnText != value) { _countColumnText = value; OnPropertyChangedWithValue(value, nameof(CountColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string GoldCostColumnText
+        {
+            get => _goldCostColumnText;
+            set { if (_goldCostColumnText != value) { _goldCostColumnText = value; OnPropertyChangedWithValue(value, nameof(GoldCostColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string StatusColumnText
+        {
+            get => _statusColumnText;
+            set { if (_statusColumnText != value) { _statusColumnText = value; OnPropertyChangedWithValue(value, nameof(StatusColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string NoEliteText
+        {
+            get => _noEliteText;
+            set { if (_noEliteText != value) { _noEliteText = value; OnPropertyChangedWithValue(value, nameof(NoEliteText)); } }
+        }
+
+        [DataSourceProperty]
+        public string NoReadyText
+        {
+            get => _noReadyText;
+            set { if (_noReadyText != value) { _noReadyText = value; OnPropertyChangedWithValue(value, nameof(NoReadyText)); } }
+        }
+
+        [DataSourceProperty]
+        public string NoPendingText
+        {
+            get => _noPendingText;
+            set { if (_noPendingText != value) { _noPendingText = value; OnPropertyChangedWithValue(value, nameof(NoPendingText)); } }
         }
 
         [DataSourceProperty]

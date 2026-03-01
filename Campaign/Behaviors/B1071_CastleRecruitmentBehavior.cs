@@ -400,8 +400,14 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerEnslavementGold}g " +
-                    $"({playerEnslavementCount} prisoner{(playerEnslavementCount != 1 ? "s" : "")} enslaved at {nearestTown.Name}, your {sharePercent}% depositor share).",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_enslave}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share).")
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
+                        .SetTextVariable("GOLD", playerEnslavementGold)
+                        .SetTextVariable("COUNT", playerEnslavementCount)
+                        .SetTextVariable("PLURAL", playerEnslavementCount != 1 ? "s" : string.Empty)
+                        .SetTextVariable("TOWN", nearestTown.Name?.ToString() ?? "Town")
+                        .SetTextVariable("SHARE", sharePercent)
+                        .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
             }
         }
@@ -681,8 +687,13 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerRecruitConsignmentGold}g " +
-                    $"({playerRecruitConsignmentCount} of your prisoner{(playerRecruitConsignmentCount != 1 ? "s" : "")} recruited by AI lords, your {sharePercent}% depositor share).",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_ai}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share).")
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
+                        .SetTextVariable("GOLD", playerRecruitConsignmentGold)
+                        .SetTextVariable("COUNT", playerRecruitConsignmentCount)
+                        .SetTextVariable("PLURAL", playerRecruitConsignmentCount != 1 ? "s" : string.Empty)
+                        .SetTextVariable("SHARE", sharePercent)
+                        .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
             }
         }
@@ -808,8 +819,13 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u2694\ufe0f Consignment from {settlement.Name}: +{playerGarrisonConsignmentGold}g " +
-                    $"({playerGarrisonConsignmentCount} prisoner{(playerGarrisonConsignmentCount != 1 ? "s" : "")} absorbed into garrison, your {sharePercent}% depositor share).",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_garrison}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share).")
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
+                        .SetTextVariable("GOLD", playerGarrisonConsignmentGold)
+                        .SetTextVariable("COUNT", playerGarrisonConsignmentCount)
+                        .SetTextVariable("PLURAL", playerGarrisonConsignmentCount != 1 ? "s" : string.Empty)
+                        .SetTextVariable("SHARE", sharePercent)
+                        .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
             }
         }
@@ -1097,7 +1113,12 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 string poolName = pool?.Name?.ToString() ?? "castle";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"Manpower: cannot recruit {troop.Name} \u2014 {poolName} needs {costPer}, only {available} left.",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left.")
+                        .SetTextVariable("TROOP", troop.Name?.ToString() ?? "troop")
+                        .SetTextVariable("POOL", poolName)
+                        .SetTextVariable("COST", costPer)
+                        .SetTextVariable("LEFT", available)
+                        .ToString(),
                     Colors.Yellow));
                 return false;
             }
@@ -1109,7 +1130,12 @@ namespace Byzantium1071.Campaign.Behaviors
             if (Settings.ShowPlayerDebugMessages)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\ud83c\udff0 [{source}] Recruited {troop.Name} at {castle.Name} for {goldCost}g",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_msg}🏰 [{SOURCE}] Recruited {TROOP} at {CASTLE} for {GOLD}g")
+                        .SetTextVariable("SOURCE", source)
+                        .SetTextVariable("TROOP", troop.Name?.ToString() ?? "troop")
+                        .SetTextVariable("CASTLE", castle.Name?.ToString() ?? "castle")
+                        .SetTextVariable("GOLD", goldCost)
+                        .ToString(),
                     new Color(0.2f, 0.8f, 0.4f)));
             }
         }
@@ -1192,13 +1218,20 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string label;
             if (totalReady > 0 && pendingPrisoners > 0)
-                label = $"\ud83c\udff0 Recruit troops ({totalReady} available, {pendingPrisoners} pending)";
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available_pending}🏰 Recruit troops ({READY} available, {PENDING} pending)")
+                    .SetTextVariable("READY", totalReady)
+                    .SetTextVariable("PENDING", pendingPrisoners)
+                    .ToString();
             else if (totalReady > 0)
-                label = $"\ud83c\udff0 Recruit troops ({totalReady} available)";
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available}🏰 Recruit troops ({READY} available)")
+                    .SetTextVariable("READY", totalReady)
+                    .ToString();
             else if (pendingPrisoners > 0)
-                label = $"\ud83c\udff0 Recruit troops ({pendingPrisoners} pending)";
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_pending}🏰 Recruit troops ({PENDING} pending)")
+                    .SetTextVariable("PENDING", pendingPrisoners)
+                    .ToString();
             else
-                label = "\ud83c\udff0 Recruit troops (none available)";
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_none}🏰 Recruit troops (none available)").ToString();
 
             TaleWorlds.Localization.MBTextManager.SetTextVariable("B1071_CASTLE_RECRUIT_TEXT", label);
 
@@ -1206,7 +1239,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (totalReady == 0 && pendingPrisoners == 0)
             {
                 args.IsEnabled = false;
-                args.Tooltip = new TaleWorlds.Localization.TextObject("No troops or prisoners available yet. Elite troops regenerate daily from the castle's manpower pool.");
+                args.Tooltip = new TaleWorlds.Localization.TextObject("{=b1071_cr_tip_none}No troops or prisoners available yet. Elite troops regenerate daily from the castle's manpower pool.");
             }
 
             return true;
@@ -1252,7 +1285,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (prisonerCount <= 0)
             {
                 args.IsEnabled = false;
-                args.Tooltip = new TaleWorlds.Localization.TextObject("You have no prisoners to deposit.");
+                args.Tooltip = new TaleWorlds.Localization.TextObject("{=b1071_cr_tip_no_prisoners}You have no prisoners to deposit.");
             }
             else
             {
@@ -1265,13 +1298,16 @@ namespace Byzantium1071.Campaign.Behaviors
             if (prisonCap > 0 && prisonOccupied >= prisonCap)
             {
                 args.IsEnabled = false;
-                args.Tooltip = new TaleWorlds.Localization.TextObject("The castle's prison is full.");
+                args.Tooltip = new TaleWorlds.Localization.TextObject("{=b1071_cr_tip_prison_full}The castle's prison is full.");
             }
 
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
 
             int feePercent = Settings.CastleHoldingFeePercent;
-            string label = $"\u2694\ufe0f Deposit prisoners ({prisonerCount} available, {feePercent}% holding fee)";
+            string label = new TaleWorlds.Localization.TextObject("{=b1071_cr_deposit_label}⚔️ Deposit prisoners ({COUNT} available, {FEE}% holding fee)")
+                .SetTextVariable("COUNT", prisonerCount)
+                .SetTextVariable("FEE", feePercent)
+                .ToString();
             TaleWorlds.Localization.MBTextManager.SetTextVariable("B1071_CASTLE_DEPOSIT_TEXT", label);
 
             return true;
@@ -1333,8 +1369,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 int feePercent = Settings.CastleHoldingFeePercent;
                 int depositorPercent = 100 - feePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"\u2694\ufe0f Deposited {totalDeposited} prisoner{(totalDeposited > 1 ? "s" : "")} at {settlement.Name}. " +
-                    $"You receive {depositorPercent}% of processing income (holding fee: {feePercent}%).",
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_deposited_msg}⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%).")
+                        .SetTextVariable("COUNT", totalDeposited)
+                        .SetTextVariable("PLURAL", totalDeposited > 1 ? "s" : string.Empty)
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "castle")
+                        .SetTextVariable("SHARE", depositorPercent)
+                        .SetTextVariable("FEE", feePercent)
+                        .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
             }
         }

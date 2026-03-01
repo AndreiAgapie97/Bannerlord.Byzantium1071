@@ -75,7 +75,7 @@
                                     Brush="Encyclopedia.SubPage.History.Text"
                                     Brush.FontSize="16" Brush.FontColor="#D4B870FF"
                                     Brush.TextHorizontalAlignment="Left"
-                                    Text="Gold: " />
+                                    Text="@GoldLabelText" />
                         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                                     Brush="Encyclopedia.SubPage.History.Text"
                                     Brush.FontSize="16" Brush.FontColor="#FFD700FF"
@@ -92,7 +92,7 @@
                                     Brush="Encyclopedia.SubPage.History.Text"
                                     Brush.FontSize="16" Brush.FontColor="#D4B870FF"
                                     Brush.TextHorizontalAlignment="Left"
-                                    Text="Manpower: " />
+                                    Text="@ManpowerLabelText" />
                         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                                     Brush="Encyclopedia.SubPage.History.Text"
                                     Brush.FontSize="16" Brush.FontColor="#88CC88FF"
@@ -114,7 +114,7 @@
                             Brush="Encyclopedia.SubPage.Element.Name.Text"
                             Brush.FontSize="17" Brush.FontColor="#99BBFFFF"
                             Brush.TextHorizontalAlignment="Left"
-                            Text="Elite Troops (Culture Pool)"
+                            Text="@EliteHeaderText"
                             IsVisible="@HasEliteTroops" />
 
                 <!-- Column headers for Elite section -->
@@ -128,25 +128,25 @@
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Left"
-                                Text="Troop" />
+                                Text="@TroopColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Tier" />
+                                Text="@TierColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Count" />
+                                Text="@CountColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="100"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Gold Cost" />
+                                Text="@GoldCostColumnText" />
                     <!-- Spacer for Recruit button column -->
                     <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                             SuggestedWidth="80" SuggestedHeight="1" />
@@ -231,7 +231,7 @@
                                                     Brush.FontSize="13" Brush.FontColor="#99BBFFFF"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
-                                                    Text="Recruit" />
+                                                    Text="@RecruitText" />
                                       </Children>
                                     </ButtonWidget>
                                   </Children>
@@ -252,7 +252,7 @@
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"
                             Brush.TextVerticalAlignment="Center"
-                            Text="No elite troops available. Pool regenerates daily from castle manpower."
+                            Text="@NoEliteText"
                             IsVisible="@HasNoEliteTroops" />
 
                 <!-- Divider between Elite and Ready sections -->
@@ -266,7 +266,7 @@
                             Brush="Encyclopedia.SubPage.Element.Name.Text"
                             Brush.FontSize="17" Brush.FontColor="#88DD88FF"
                             Brush.TextHorizontalAlignment="Left"
-                            Text="Ready to Recruit (Prisoners)"
+                            Text="@ReadyHeaderText"
                             IsVisible="@HasAvailableTroops" />
 
                 <!-- Column headers for Ready section -->
@@ -280,25 +280,25 @@
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Left"
-                                Text="Troop" />
+                                Text="@TroopColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Tier" />
+                                Text="@TierColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Count" />
+                                Text="@CountColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="100"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Gold Cost" />
+                                Text="@GoldCostColumnText" />
                     <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                             SuggestedWidth="80" SuggestedHeight="1" />
                   </Children>
@@ -382,7 +382,7 @@
                                                     Brush.FontSize="13" Brush.FontColor="#88DD88FF"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
-                                                    Text="Recruit" />
+                                                    Text="@RecruitText" />
                                       </Children>
                                     </ButtonWidget>
                                   </Children>
@@ -403,7 +403,7 @@
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"
                             Brush.TextVerticalAlignment="Center"
-                            Text="No prisoners ready for recruitment."
+                            Text="@NoReadyText"
                             IsVisible="@HasNoAvailableTroops" />
 
                 <!-- Divider between sections -->
@@ -417,7 +417,7 @@
                             Brush="Encyclopedia.SubPage.Element.Name.Text"
                             Brush.FontSize="17" Brush.FontColor="#DDCC88FF"
                             Brush.TextHorizontalAlignment="Left"
-                            Text="Pending (Training)"
+                            Text="@PendingHeaderText"
                             IsVisible="@HasPendingTroops" />
 
                 <!-- Column headers for Pending section -->
@@ -431,24 +431,24 @@
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Left"
-                                Text="Troop" />
+                                Text="@TroopColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Tier" />
+                                Text="@TierColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Center"
-                                Text="Count" />
+                                Text="@CountColumnText" />
                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 Brush="Encyclopedia.SubPage.History.Text"
                                 Brush.FontSize="13" Brush.FontColor="#9F947DFF"
                                 Brush.TextHorizontalAlignment="Right"
-                                Text="Status" />
+                                Text="@StatusColumnText" />
                   </Children>
                 </ListPanel>
 
@@ -532,7 +532,7 @@
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"
                             Brush.TextVerticalAlignment="Center"
-                            Text="No prisoners pending."
+                            Text="@NoPendingText"
                             IsVisible="@HasNoPendingTroops" />
 
               </Children>

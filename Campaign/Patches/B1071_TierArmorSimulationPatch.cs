@@ -107,7 +107,7 @@ namespace Byzantium1071.Campaign.Patches
         })]
     public static class B1071_TierArmorSimulationPatch
     {
-        private static readonly TextObject _label = new TextObject("B1071 Tier Armor");
+        private static readonly TextObject _label = new TextObject("{=b1071_lbl_tier_armor}B1071 Tier Armor");
 
         // Postfix: inject struckTroop by parameter name (matches game method signature).
         // ref __result receives the ExplainedNumber returned by SimulateHit.

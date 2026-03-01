@@ -121,8 +121,11 @@ namespace Byzantium1071.Campaign.Patches
                 string troopName = blockedTroop?.Name?.ToString() ?? "troop";
                 if (vm.DoneHint != null)
                 {
-                    vm.DoneHint.HintText = new TextObject("{=!}" +
-                        $"Manpower: {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.");
+                    vm.DoneHint.HintText = new TextObject("{=b1071_ui_mp_donehint}Manpower: {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left.")
+                        .SetTextVariable("POOL", poolName)
+                        .SetTextVariable("NEEDED", neededCost)
+                        .SetTextVariable("TROOP", troopName)
+                        .SetTextVariable("LEFT", availableBefore);
                 }
             }
         }

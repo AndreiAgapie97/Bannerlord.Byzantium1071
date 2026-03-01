@@ -415,7 +415,7 @@ namespace Byzantium1071.Campaign.Behaviors
             B1071_VerboseLog.Log("Session", $"ManpowerBehavior launched. Pools seeded={_seeded}, tracked={_manpowerByPoolId.Count}, exhaustion entries={_warExhaustion.Count}.");
 
             if (Hero.MainHero != null)
-                InformationManager.DisplayMessage(new InformationMessage("[Byzantium1071] Manpower active."));
+                InformationManager.DisplayMessage(new InformationMessage(new TaleWorlds.Localization.TextObject("{=b1071_mp_active}[Byzantium1071] Manpower active.").ToString()));
         }
 
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
@@ -431,7 +431,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 ? $"{settlement.Name}"
                 : $"{settlement.Name} (pool: {pool.Name})";
 
-            InformationManager.DisplayMessage(new InformationMessage($"[Manpower] {where}: {cur}/{max}"));
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TaleWorlds.Localization.TextObject("{=b1071_mp_debug_pool}[Manpower] {WHERE}: {CUR}/{MAX}")
+                    .SetTextVariable("WHERE", where)
+                    .SetTextVariable("CUR", cur)
+                    .SetTextVariable("MAX", max)
+                    .ToString()));
         }
 
         // Guards against double-deduction: OnUnitRecruitedEvent fires for ALL recruitments
@@ -2275,7 +2280,10 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!raidCompletionConfirmed)
             {
                 if (Settings.ShowPlayerDebugMessages)
-                    InformationManager.DisplayMessage(new InformationMessage($"[B1071] Raid not completed at {village.Name}: no manpower drain."));
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TaleWorlds.Localization.TextObject("{=b1071_mp_raid_not_completed}[B1071] Raid not completed at {VILLAGE}: no manpower drain.")
+                            .SetTextVariable("VILLAGE", village.Name?.ToString() ?? "village")
+                            .ToString()));
                 return;
             }
 
@@ -2314,7 +2322,10 @@ namespace Byzantium1071.Campaign.Behaviors
             if (drain <= 0)
             {
                 if (Settings.ShowPlayerDebugMessages)
-                    InformationManager.DisplayMessage(new InformationMessage($"[B1071] Raid at {village.Name}: daily raid cap reached, no manpower drain."));
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TaleWorlds.Localization.TextObject("{=b1071_mp_raid_cap}[B1071] Raid at {VILLAGE}: daily raid cap reached, no manpower drain.")
+                            .SetTextVariable("VILLAGE", village.Name?.ToString() ?? "village")
+                            .ToString()));
                 return;
             }
 
