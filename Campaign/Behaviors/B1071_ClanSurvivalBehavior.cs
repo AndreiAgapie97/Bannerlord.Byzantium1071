@@ -98,6 +98,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             Instance = this;
+            B1071_ClanSurvivalPatch._alreadyRescued.Clear();
         }
 
         // ── PRIMARY RESCUE: ClanChangedKingdom event ────────────────────

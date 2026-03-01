@@ -296,16 +296,23 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (clan == null) return false;
 
+                var behavior = B1071_ClanSurvivalBehavior.Instance;
+
                 // Already rescued by DeactivateKingdom postfix?
                 if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId))
                 {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' already rescued " +
-                        $"by DeactivateKingdom postfix — skipping vanilla destruction.");
-                    return true; // Skip vanilla
+                    if (behavior != null && behavior.IsTracked(clan))
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' already rescued " +
+                            $"and tracked — skipping vanilla destruction.");
+                        return true; // Skip vanilla
+                    }
+
+                    // Stale marker from an earlier rescue lifecycle; do not treat as authoritative.
+                    B1071_ClanSurvivalPatch._alreadyRescued.Remove(clan.StringId);
                 }
 
                 // Already rescued and tracked (e.g. from a previous event)?
-                var behavior = B1071_ClanSurvivalBehavior.Instance;
                 if (behavior != null && behavior.IsTracked(clan))
                 {
                     Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is tracked " +
