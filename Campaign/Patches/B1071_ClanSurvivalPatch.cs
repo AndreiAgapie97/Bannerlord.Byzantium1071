@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
-using Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -31,17 +29,14 @@ namespace Byzantium1071.Campaign.Patches
     /// Patch architecture:
     ///   1. <c>CampaignEvents.OnClanChangedKingdomEvent</c> handler (PRIMARY) — in the
     ///      behavior class. Fires for each clan when vanilla removes it from a dying
-    ///      kingdom. Immediately clears inherited wars and registers for grace period.
-    ///      Handles Path A completely.
+    ///      kingdom. Immediately clears inherited wars and registers for tracking.
+    ///      Handles Path A completely. Daily tick keeps clearing wars while independent.
     ///
     ///   2. <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> prefixes (SAFETY NET) —
     ///      handles Path B. If the clan was already rescued by the event handler,
     ///      skips vanilla destruction. If not yet rescued, rescues it.
     ///
-    ///   3. <c>ChangeKingdomAction.ApplyInternal</c> prefix (GRACE GUARD) — blocks
-    ///      rescued clans from joining kingdoms during the configurable grace period.
-    ///
-    ///   4. <c>Kingdom.DeactivateKingdom</c> postfix (DIAGNOSTIC) — logs for debugging.
+    ///   3. <c>Kingdom.DeactivateKingdom</c> postfix (DIAGNOSTIC) — logs for debugging.
     ///      In Path A, clans are already gone by this point. In Path B, the ClanDestroy
     ///      prefix handles clans. This is purely observational.
     /// </summary>
@@ -199,27 +194,25 @@ namespace Byzantium1071.Campaign.Patches
                 Debug.Print($"[Byzantium1071][ClanSurvival] War clearing error for {clanName}: {ex.Message}");
             }
 
-            // ── Step 3: Register for grace period ──
+            // ── Step 3: Register for tracking (daily war clearing) ──
             try
             {
                 B1071_ClanSurvivalBehavior.Instance?.RegisterRescuedClan(clan);
             }
             catch (Exception ex)
             {
-                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period registration error for {clanName}: {ex.Message}");
+                Debug.Print($"[Byzantium1071][ClanSurvival] Registration error for {clanName}: {ex.Message}");
             }
 
             // Mark as rescued
             _alreadyRescued.Add(clan.StringId);
 
             Debug.Print($"[Byzantium1071][ClanSurvival] Rescue complete: {clanName} " +
-                $"({heroCount} heroes) from {kingdomName} (path: {callPath}). " +
-                $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
+                $"({heroCount} heroes) from {kingdomName} (path: {callPath}).");
 
             B1071_VerboseLog.Log("ClanSurvival",
                 $"Rescued {clanName} ({heroCount} heroes, leader: {clan.Leader?.Name}) " +
-                $"from destruction of {kingdomName} (path: {callPath}). " +
-                $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
+                $"from destruction of {kingdomName} (path: {callPath}).");
         }
     }
 
@@ -311,11 +304,11 @@ namespace Byzantium1071.Campaign.Patches
                     return true; // Skip vanilla
                 }
 
-                // Already rescued and in grace period (e.g. from a previous event)?
+                // Already rescued and tracked (e.g. from a previous event)?
                 var behavior = B1071_ClanSurvivalBehavior.Instance;
-                if (behavior != null && behavior.IsInGracePeriod(clan))
+                if (behavior != null && behavior.IsTracked(clan))
                 {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is in grace period " +
+                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is tracked " +
                         $"— skipping vanilla destruction.");
                     return true; // Skip vanilla
                 }
@@ -341,73 +334,4 @@ namespace Byzantium1071.Campaign.Patches
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  GRACE PERIOD GUARD: ChangeKingdomAction prefix
-    //  Blocks rescued clans from joining kingdoms during the grace
-    //  period. Our own mercenary placement uses a bypass flag.
-    //
-    //  Also provides diagnostic logging for kingdom departures.
-    // ═══════════════════════════════════════════════════════════════
-    [HarmonyPatch]
-    internal static class B1071_ClanSurvivalGracePeriodPatch
-    {
-        [HarmonyTargetMethods]
-        static IEnumerable<MethodBase> TargetMethods()
-        {
-            var type = typeof(ChangeKingdomAction);
-
-            // ApplyInternal is the single chokepoint for all kingdom changes
-            var applyInternal = AccessTools.Method(type, "ApplyInternal");
-            if (applyInternal != null)
-            {
-                Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: patching ChangeKingdomAction.ApplyInternal");
-                yield return applyInternal;
-                yield break;
-            }
-
-            // Fallback: patch known public methods individually
-            Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: ApplyInternal not found, trying public methods");
-            int found = 0;
-            foreach (string methodName in new[]
-            {
-                "ApplyByJoinToKingdom",
-                "ApplyByJoinFactionAsMercenary",
-                "ApplyByJoinAsVassal"
-            })
-            {
-                var method = AccessTools.Method(type, methodName);
-                if (method != null)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival] Grace guard: patching {methodName}");
-                    found++;
-                    yield return method;
-                }
-            }
-
-            if (found == 0)
-                Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: WARNING — no ChangeKingdomAction methods found!");
-        }
-
-        /// <summary>
-        /// Blocks rescued clans from joining kingdoms during grace period.
-        /// Leave actions (newKingdom == null) are always allowed through —
-        /// the event handler in the behavior handles rescue after departure.
-        /// </summary>
-        [HarmonyPrefix]
-        static bool Prefix(Clan clan, Kingdom newKingdom, MethodBase __originalMethod)
-        {
-            if (clan == null) return true;
-            if (newKingdom == null) return true;     // Leave action — allow
-
-            var behavior = B1071_ClanSurvivalBehavior.Instance;
-            if (behavior == null) return true;
-            if (behavior._bypassGraceGuard) return true;
-
-            if (!behavior.IsInGracePeriod(clan)) return true;
-
-            Debug.Print($"[Byzantium1071][ClanSurvival] Grace period guard: BLOCKED {clan.Name} " +
-                $"from joining {newKingdom.Name} (via {__originalMethod.Name}).");
-            return false;
-        }
-    }
 }

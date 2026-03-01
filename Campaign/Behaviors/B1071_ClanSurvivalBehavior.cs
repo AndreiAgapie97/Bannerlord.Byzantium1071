@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
-using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Behaviors
@@ -19,20 +17,19 @@ namespace Byzantium1071.Campaign.Behaviors
     /// it calls <c>ChangeKingdomAction.ApplyInternal</c> with detail
     /// <c>LeaveByKingdomDestruction</c> for each clan BEFORE calling
     /// <c>Kingdom.DeactivateKingdom()</c>. Our event handler fires after each clan
-    /// leaves, immediately clears inherited wars and registers for grace period.
+    /// leaves, immediately clears inherited wars and registers for tracking.
     ///
     /// Lifecycle:
     ///   1. Kingdom loses last settlement → vanilla removes clans one by one
     ///      via <c>ChangeKingdomAction(detail: LeaveByKingdomDestruction)</c>.
     ///   2. Our <c>OnClanChangedKingdom</c> event handler intercepts each departure,
-    ///      clears inherited wars, and registers the clan for grace period tracking.
-    ///   3. During the grace period (default 30 days), the clan remains independent.
-    ///      The Harmony prefix on <c>ChangeKingdomAction.ApplyInternal</c> blocks
-    ///      any join attempts during this period.
-    ///   4. After grace period expires, this behavior evaluates all surviving
-    ///      kingdoms and places the clan as a mercenary with culture preference.
-    ///   5. Once under mercenary service, vanilla barter / defection systems
-    ///      naturally handle potential vassal promotion.
+    ///      clears inherited wars, and registers the clan for tracking.
+    ///   3. While the clan is independent (Kingdom == null), the daily tick
+    ///      continuously clears any new wars that accumulate. Kingdomless clans
+    ///      should be at peace with everyone.
+    ///   4. Vanilla handles recruitment naturally — clans join kingdoms as vassals
+    ///      or mercenaries via vanilla barter / AI defection systems.
+    ///   5. Once the clan joins a kingdom, tracking stops.
     ///
     /// Safety nets:
     ///   - <c>DestroyClanAction</c> prefixes catch Path B (leader death) destruction.
@@ -56,9 +53,6 @@ namespace Byzantium1071.Campaign.Behaviors
         // Key = Clan.StringId, Value = rescue day (CampaignTime.CurrentTime at time of rescue).
         private Dictionary<string, float> _rescuedClans = new();
 
-        // When true, our own placement code is in progress — skip any grace period guards.
-        internal bool _bypassGraceGuard;
-
         // ── Public API (called by patch) ─────────────────────────────────
 
         /// <summary>
@@ -71,19 +65,16 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
-        /// Returns true if the specified clan is in its post-rescue grace period
-        /// and should not join any kingdom yet.
+        /// Returns true if the specified clan is currently tracked as rescued.
         /// </summary>
-        public bool IsInGracePeriod(Clan clan)
+        public bool IsTracked(Clan clan)
         {
             if (clan == null) return false;
-            if (!_rescuedClans.TryGetValue(clan.StringId, out float rescueDay)) return false;
-            float elapsed = (float)CampaignTime.Now.ToDays - rescueDay;
-            return elapsed < Settings.ClanSurvivalGracePeriodDays;
+            return _rescuedClans.ContainsKey(clan.StringId);
         }
 
         /// <summary>
-        /// Returns the number of clans currently tracked (rescued and awaiting placement).
+        /// Returns the number of clans currently tracked (rescued, awaiting kingdom join).
         /// </summary>
         public int TrackedClanCount => _rescuedClans.Count;
 
@@ -213,7 +204,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     Debug.Print($"[Byzantium1071][ClanSurvival][Event] War clearing error for {clanName}: {ex.Message}");
                 }
 
-                // ── Register for grace period ──
+                // ── Register for tracking (daily war clearing until they join a kingdom) ──
                 RegisterRescuedClan(clan);
 
                 // Mark as rescued in shared state (prevents double-processing by safety nets)
@@ -221,13 +212,13 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 Debug.Print($"[Byzantium1071][ClanSurvival][Event] RESCUED {clanName}: " +
                     $"cleared {warsCleared} inherited war(s), " +
-                    $"grace period {Settings.ClanSurvivalGracePeriodDays} days, " +
-                    $"leader: {clan.Leader?.Name}, heroes: {livingAdults.Count}.");
+                    $"leader: {clan.Leader?.Name}, heroes: {livingAdults.Count}. " +
+                    $"Tracking until they join a kingdom.");
 
                 B1071_VerboseLog.Log("ClanSurvival",
                     $"Rescued {clanName} ({livingAdults.Count} heroes, leader: {clan.Leader?.Name}) " +
                     $"from destruction of {kingdomName}. Cleared {warsCleared} war(s). " +
-                    $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
+                    $"Tracking until kingdom join.");
             }
             catch (Exception ex)
             {
@@ -235,7 +226,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
-        // ── Daily Tick: process grace periods and placement ──────────────
+        // ── Daily Tick: clear wars for independent rescued clans ─────────
 
         private void OnDailyTick()
         {
@@ -244,7 +235,6 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (!Settings.EnableClanSurvival) return;
                 if (_rescuedClans.Count == 0) return;
 
-                float gracePeriodDays = Settings.ClanSurvivalGracePeriodDays;
                 float currentDay = (float)CampaignTime.Now.ToDays;
 
                 // Iterate a snapshot to allow modification during iteration
@@ -257,93 +247,71 @@ namespace Byzantium1071.Campaign.Behaviors
                     Clan? clan = Clan.FindFirst(c => c.StringId == clanId);
                     if (clan == null)
                     {
-                        // Clan no longer exists in campaign — remove tracking
                         _rescuedClans.Remove(clanId);
                         B1071_VerboseLog.Log("ClanSurvival",
-                            $"Removed tracking for {clanId}: clan no longer exists in campaign.");
+                            $"Removed tracking for {clanId}: clan no longer exists.");
                         continue;
                     }
 
-                    // If clan was eliminated by another path (e.g. leader died of old age), stop tracking
                     if (clan.IsEliminated)
                     {
                         _rescuedClans.Remove(clanId);
                         B1071_VerboseLog.Log("ClanSurvival",
-                            $"Stopped tracking {clan.Name}: clan was eliminated via another path.");
+                            $"Stopped tracking {clan.Name}: eliminated.");
                         continue;
                     }
 
-                    // If clan already joined a kingdom during the grace period,
-                    // force it back to independent. Vanilla AI can recruit clans
-                    // very quickly — we need to enforce the grace period.
+                    // Clan joined a kingdom — stop tracking, they're vanilla's problem now
                     if (clan.Kingdom != null)
                     {
-                        if (elapsedDays < gracePeriodDays)
-                        {
-                            // Still in grace period — eject from kingdom
-                            Kingdom joinedKingdom = clan.Kingdom;
-                            try
-                            {
-                                clan.Kingdom = null;
-
-                                // Clear any wars inherited from the brief kingdom membership
-                                foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
-                                {
-                                    if (clan != enemy &&
-                                        !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
-                                            .IsAtConstantWar(clan, enemy))
-                                    {
-                                        try { MakePeaceAction.Apply(clan, enemy); }
-                                        catch { /* best effort */ }
-                                    }
-                                }
-
-                                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period enforced: " +
-                                    $"ejected {clan.Name} from {joinedKingdom.Name} " +
-                                    $"(day {(int)elapsedDays}/{(int)gracePeriodDays}).");
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period enforcement " +
-                                    $"error for {clan.Name}: {ex.Message}");
-                            }
-                            continue;
-                        }
-                        else
-                        {
-                            // Grace period expired and clan already found a kingdom — done
-                            _rescuedClans.Remove(clanId);
-                            B1071_VerboseLog.Log("ClanSurvival",
-                                $"Stopped tracking {clan.Name}: already joined {clan.Kingdom.Name}" +
-                                $" ({(clan.IsUnderMercenaryService ? "mercenary" : "vassal")}).");
-                            continue;
-                        }
-                    }
-
-                    // Still in grace period?
-                    if (elapsedDays < gracePeriodDays)
-                    {
-                        // Log only on day 1, midpoint, and last day before placement
-                        if (elapsedDays < 1.5f ||
-                            Math.Abs(elapsedDays - gracePeriodDays / 2f) < 1f ||
-                            gracePeriodDays - elapsedDays < 1.5f)
-                        {
-                            B1071_VerboseLog.Log("ClanSurvival",
-                                $"{clan.Name} independence day {(int)elapsedDays}/{(int)gracePeriodDays}. " +
-                                $"Leader: {clan.Leader?.Name}, Heroes alive: {clan.Heroes.Count(h => h.IsAlive)}.");
-                        }
+                        _rescuedClans.Remove(clanId);
+                        string role = clan.IsUnderMercenaryService ? "mercenary" : "vassal";
+                        Debug.Print($"[Byzantium1071][ClanSurvival] {clan.Name} joined " +
+                            $"{clan.Kingdom.Name} as {role} after {(int)elapsedDays} day(s). Done.");
+                        B1071_VerboseLog.Log("ClanSurvival",
+                            $"{clan.Name} joined {clan.Kingdom.Name} as {role} " +
+                            $"after {(int)elapsedDays} day(s) of independence.");
                         continue;
                     }
 
-                    // ── Grace period expired — attempt placement ──
-                    _bypassGraceGuard = true;
+                    // ── Still independent: clear any wars that accumulated ──
+                    // Kingdomless clans should be at peace with everyone.
                     try
                     {
-                        TryPlaceClanAsMercenary(clan);
+                        int warsCleared = 0;
+                        foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
+                        {
+                            if (clan != enemy &&
+                                !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
+                                    .IsAtConstantWar(clan, enemy))
+                            {
+                                try
+                                {
+                                    MakePeaceAction.Apply(clan, enemy);
+                                    warsCleared++;
+                                }
+                                catch { /* best effort */ }
+                            }
+                        }
+
+                        if (warsCleared > 0)
+                        {
+                            Debug.Print($"[Byzantium1071][ClanSurvival] Cleared {warsCleared} " +
+                                $"stale war(s) for independent {clan.Name} (day {(int)elapsedDays}).");
+                        }
                     }
-                    finally
+                    catch (Exception ex)
                     {
-                        _bypassGraceGuard = false;
+                        Debug.Print($"[Byzantium1071][ClanSurvival] War clearing error " +
+                            $"for {clan.Name}: {ex.Message}");
+                    }
+
+                    // Periodic status log (day 1 and every 10 days)
+                    if (elapsedDays < 1.5f || (int)elapsedDays % 10 == 0)
+                    {
+                        B1071_VerboseLog.Log("ClanSurvival",
+                            $"{clan.Name} independent day {(int)elapsedDays}. " +
+                            $"Leader: {clan.Leader?.Name}, Heroes: {clan.Heroes.Count(h => h.IsAlive)}.");
                     }
                 }
             }
@@ -351,136 +319,6 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival] DailyTick error: {ex}");
             }
-        }
-
-        // ── Mercenary Placement ──────────────────────────────────────────
-
-        /// <summary>
-        /// Evaluates all surviving kingdoms and places the clan as a mercenary
-        /// in the best-scoring one. 
-        ///
-        /// Scoring factors (mirrors vanilla <c>GetScoreOfKingdomToGetClan</c>
-        /// with an amplified culture match bonus):
-        ///   - Relation between ruling clan and the rescued clan
-        ///   - Culture match (weighted by ClanSurvivalCultureWeight MCM setting)
-        ///   - Military strength of the clan (commander limit + troop strength)
-        ///   - Power ratio to enemies (kingdoms under pressure want help more)
-        ///   - Leader reliability
-        /// </summary>
-        private void TryPlaceClanAsMercenary(Clan clan)
-        {
-            try
-            {
-                if (clan.Leader == null || !clan.Leader.IsAlive)
-                {
-                    B1071_VerboseLog.Log("ClanSurvival",
-                        $"{clan.Name}: leader dead at placement time. Removing from tracking.");
-                    _rescuedClans.Remove(clan.StringId);
-                    return;
-                }
-
-                float cultureWeight = Settings.ClanSurvivalCultureWeight;
-                Kingdom? bestKingdom = null;
-                float bestScore = float.MinValue;
-
-                foreach (Kingdom kingdom in Kingdom.All)
-                {
-                    if (kingdom.IsEliminated) continue;
-                    if (kingdom.Clans.Count == 0) continue;
-                    if (kingdom.RulingClan == null) continue;
-
-                    // Don't join a kingdom that's at war with the clan
-                    if (FactionManager.IsAtWarAgainstFaction(clan, kingdom)) continue;
-
-                    // Score: base vanilla formula with amplified culture weight
-                    float score = ScoreKingdomForClan(kingdom, clan, cultureWeight);
-
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        bestKingdom = kingdom;
-                    }
-                }
-
-                if (bestKingdom == null)
-                {
-                    // No eligible kingdom found — keep trying next day
-                    B1071_VerboseLog.Log("ClanSurvival",
-                        $"{clan.Name}: no eligible kingdom for mercenary service. Will retry tomorrow.");
-                    return;
-                }
-
-                // Determine mercenary award multiplier.
-                // Vanilla uses MinorFactionsModel.GetMercenaryAwardFactorToJoinKingdom for minor
-                // factions. For major clans becoming mercenaries, we use a reasonable default (50).
-                int awardMultiplier = 50;
-                try
-                {
-                    awardMultiplier = TaleWorlds.CampaignSystem.Campaign.Current.Models.MinorFactionsModel
-                        .GetMercenaryAwardFactorToJoinKingdom(clan, bestKingdom);
-                    awardMultiplier = Math.Max(20, Math.Min(100, awardMultiplier));
-                }
-                catch
-                {
-                    awardMultiplier = 50; // fallback
-                }
-
-                // Mercenary contracts typically last ~30 days
-                CampaignTime stayUntil = CampaignTime.DaysFromNow(30f);
-
-                // Join as mercenary
-                ChangeKingdomAction.ApplyByJoinFactionAsMercenary(
-                    clan, bestKingdom, stayUntil, awardMultiplier, showNotification: true);
-
-                _rescuedClans.Remove(clan.StringId);
-
-                string cultureParity = clan.Culture == bestKingdom.Culture
-                    ? "same culture" : "different culture";
-
-                B1071_VerboseLog.Log("ClanSurvival",
-                    $"{clan.Name} joined {bestKingdom.Name} as mercenary " +
-                    $"({cultureParity}, score: {bestScore:F0}, award: {awardMultiplier}x). " +
-                    $"Contract valid for ~30 days.");
-
-                Debug.Print($"[Byzantium1071][ClanSurvival] Placement complete: {clan.Name} → " +
-                    $"{bestKingdom.Name} (mercenary, {cultureParity}).");
-            }
-            catch (Exception ex)
-            {
-                Debug.Print($"[Byzantium1071][ClanSurvival] Placement error for {clan.Name}: {ex}");
-            }
-        }
-
-        /// <summary>
-        /// Scores how attractive a kingdom is for a rescued clan to join as mercenary.
-        /// Modeled after vanilla <c>DefaultDiplomacyModel.GetScoreOfKingdomToGetClan</c>
-        /// but with a configurable culture match weight.
-        /// </summary>
-        private static float ScoreKingdomForClan(Kingdom kingdom, Clan clan, float cultureWeight)
-        {
-            // Relation factor (0.33 to 2.0)
-            int relation = FactionManager.GetRelationBetweenClans(kingdom.RulingClan, clan);
-            float relationFactor = MathF.Min(2f, MathF.Max(0.33f, 1f + 0.02f * relation));
-
-            // Culture factor: vanilla uses 1.0 (mismatch) or 2.0 (match).
-            // We amplify the match bonus with the MCM cultureWeight setting.
-            float cultureFactor = kingdom.Culture == clan.Culture
-                ? 1f + cultureWeight  // e.g. 1 + 2.0 = 3.0 for same culture
-                : 1f;                 // no bonus for mismatch
-
-            // Military value of the clan
-            int commanderLimit = clan.CommanderLimit;
-            float militaryValue = (clan.CurrentTotalStrength + 150f * commanderLimit) * 20f;
-
-            // Power ratio adjustment (kingdoms under pressure value clans more)
-            float powerRatio = FactionHelper.GetPowerRatioToEnemies(kingdom);
-            float pressureFactor = 1f / MathF.Max(0.4f, MathF.Min(2.5f, MathF.Sqrt(powerRatio)));
-            militaryValue *= pressureFactor;
-
-            // Leader reliability factor
-            float reliability = HeroHelper.CalculateReliabilityConstant(clan.Leader);
-
-            return militaryValue * relationFactor * cultureFactor * reliability;
         }
     }
 }
