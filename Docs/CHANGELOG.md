@@ -1,6 +1,6 @@
 # Campaign++ — Changelog
 
-## [0.1.10.0] — 2026-02-28
+## [0.2.0.1] — 2026-03-01
 
 ### Feature — Clan Survival (Kingdom Destruction Rescue)
 
@@ -8,16 +8,17 @@
 
 - **Rescue mechanic:** Harmony prefixes on `DestroyClanAction.Apply` and `DestroyClanAction.ApplyByClanLeaderDeath` intercept the destruction before heroes are killed. Eligible clans (with living adult lords) are rescued; clans with no surviving heroes are still destroyed normally.
 - **Heir promotion:** If the clan leader is dead (e.g., kingdom-leader-death path), the system promotes an heir via `ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader`. If no valid heir exists, vanilla destruction proceeds.
-- **Fief transfer:** Before rescue, any settlements owned by the clan are transferred to a suitable heir clan (via vanilla's `FactionHelper.ChooseHeirClanForFiefs` + `ChangeOwnerOfSettlementAction.ApplyByDestroyClan`).
-- **War clearing:** All active wars are ended via `MakePeaceAction.Apply` — rescued clans start independent, not inheriting enemies.
-- **Kingdom detachment:** The clan's `_kingdom` field is nulled via reflection (the property setter is internal) since `ChangeKingdomAction` can't be used during a kingdom destruction sequence.
+- **Fief transfer:** Before rescue, any settlements owned by the clan are transferred to a suitable heir clan (via vanilla's `FactionHelper.ChooseHeirClanForFiefs` + `ChangeOwnerOfSettlementAction.ApplyByDestroyClan`). Fiefs are transferred BEFORE kingdom detach so that `ChooseHeirClanForFiefs` can find sibling clans within the dying kingdom.
+- **War clearing:** All inherited wars are ended via `MakePeaceAction.Apply` AFTER kingdom detach, with a `DiplomacyModel.IsAtConstantWar` check (skips bandit/special-faction constant wars). Rescued clans start as neutral independents.
+- **Kingdom detachment:** Uses the public `Clan.Kingdom = null` setter (not reflection). This triggers `LeaveKingdomInternal()` which properly: zeroes influence, removes from kingdom tracking, disbands armies, updates banner colors, sets `LastFactionChangeTime`. The subsequent `RemoveClanInternal` call from `DestroyKingdomAction` is a safe idempotent no-op (MBList.Remove returns false).
+- **Rescues all clan types:** Both major noble clans and minor faction mercenaries in the dying kingdom are rescued. Minor factions re-enter mercenary service after the grace period.
 - **Grace period:** Rescued clans remain independent for a configurable period (default 30 days), during which heroes patrol near their home settlement. Tracked via `Dictionary<string, float>` (clan StringId → rescue day).
 - **Mercenary placement:** After the grace period, the behavior evaluates all surviving kingdoms and selects the best one for mercenary service. Scoring mirrors vanilla's `GetScoreOfKingdomToGetClan` with an amplified culture match bonus (default 3× for same culture vs 1× for mismatch).
 - **Natural vassal integration:** Once under mercenary service, vanilla's own barter/defection systems handle potential vassal promotion — no custom code needed.
 - **Player clan excluded:** The player's clan is never intercepted (vanilla handles player-death separately).
 - **Failed rebellion excluded:** `DestroyClanAction.ApplyByFailedRebellion` is not patched — rebellion failures are legitimate destructions.
 - **Save/load safe:** Tracked clans persisted via `SyncData` using clan StringIds. On load, IDs are resolved back to clan objects; missing clans are cleaned up automatically.
-- **Mod removal safe:** Rescued clans have `_isEliminated = false` (never set to true) and exist as normal independent factions. Without the mod, they simply remain independent indefinitely.
+- **Mod removal safe:** Rescued clans have `_isEliminated = false` (never set to true) and exist as normal independent factions. Without the mod, they simply remain independent indefinitely — vanilla only re-evaluates on specific triggers (leader death of old age, etc.).
 - **3 MCM settings** under "Clan Survival" group (GroupOrder 25): enable toggle, grace period days, culture match weight.
 - **Settings profile v8:** Migration enables the system with defaults (30-day grace, 2.0 culture weight).
 

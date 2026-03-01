@@ -130,7 +130,7 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.8.5 slave base value 1500→300d, cap/prosperity 0.03→0.02 for balanced economics. ";
             }
 
-            // ── Profile v6: v0.1.9.0 investment influence 5× buff ──
+            // ── Profile v6: v0.1.9.0 / v0.2.0.1 investment influence 5× buff ──
             if (SettingsProfileVersion < 6)
             {
                 // Influence from patronage was too small to feel impactful.
@@ -156,7 +156,7 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.1.9.0 exhaustion decay 0.65→1.0/day, crisis band 65→85 (fewer frozen kingdoms, faster recovery). ";
             }
 
-            // ── Profile v8: v0.1.10.0 clan survival system ──
+            // ── Profile v8: v0.2.0.1 clan survival system ──
             if (SettingsProfileVersion < 8)
             {
                 // New system: prevent clan annihilation when kingdoms are destroyed.
@@ -166,7 +166,7 @@ namespace Byzantium1071.Campaign.Settings
                 ClanSurvivalGracePeriodDays = 30;
                 ClanSurvivalCultureWeight = 2.0f;
 
-                migrated += "v0.1.10.0 clan survival enabled (30-day grace, culture weight 2.0). ";
+                migrated += "v0.2.0.1 clan survival enabled (30-day grace, culture weight 2.0). ";
             }
 
             // ── Future migrations go here ──
