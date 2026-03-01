@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using Helpers;
@@ -13,217 +14,423 @@ using TaleWorlds.Library;
 namespace Byzantium1071.Campaign.Patches
 {
     /// <summary>
-    /// Prevents clans from being destroyed when their kingdom falls.
-    /// Instead of the vanilla kill-all-heroes chain, eligible clans are rescued:
-    /// their fiefs are transferred, they leave the dying kingdom cleanly, inherited
-    /// wars are cleared, and they become independent factions with a configurable
-    /// grace period before seeking mercenary service.
+    /// Clan Survival system — rescues clans when their kingdom is destroyed.
     ///
-    /// Patch points:
-    ///   • <see cref="DestroyClanAction.Apply(Clan)"/> — non-leader-death kingdom destruction path.
-    ///   • <see cref="DestroyClanAction.ApplyByClanLeaderDeath(Clan)"/> — leader-death kingdom destruction path.
+    /// Vanilla has TWO distinct kingdom destruction paths:
     ///
-    /// Neither <c>ApplyByFailedRebellion</c> nor genuine single-clan leader-death
-    /// (where the kingdom is NOT being destroyed) are intercepted.
+    ///   Path A — "Lost all settlements": Vanilla calls <c>Kingdom.DeactivateKingdom()</c>
+    ///     which sets <c>IsEliminated = true</c>. Clans remain alive as independent factions
+    ///     but inherit the kingdom's wars. Vanilla does NOT call <c>DestroyClanAction</c>
+    ///     or <c>DestroyKingdomAction</c> in this path.
     ///
-    /// After a prefix returns false (skip), <c>DestroyKingdomAction.ApplyInternal</c>
-    /// still calls <c>Kingdom.RemoveClanInternal(clan)</c>. This is benign because
-    /// the public <c>Clan.Kingdom</c> setter already called <c>LeaveKingdomInternal()</c>
-    /// which calls <c>RemoveClanInternal</c>. MBList.Remove() is idempotent.
+    ///   Path B — "Leader death": <c>DestroyKingdomAction.ApplyInternal</c> calls
+    ///     <c>DeactivateKingdom()</c>, then iterates clans and calls
+    ///     <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> to destroy each clan
+    ///     (killing heroes, removing from campaign, etc.).
+    ///
+    /// Patch architecture:
+    ///   1. <c>Kingdom.DeactivateKingdom</c> postfix (PRIMARY) — fires on BOTH paths.
+    ///      Immediately rescues all eligible clans: clears inherited wars, detaches
+    ///      from kingdom, registers for grace period tracking.
+    ///
+    ///   2. <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> prefixes (SAFETY NET) —
+    ///      only fires in Path B. If the clan was already rescued by the postfix,
+    ///      skips vanilla destruction. If not yet rescued, rescues it now.
+    ///
+    ///   3. <c>ChangeKingdomAction.ApplyInternal</c> prefix (GRACE GUARD) — blocks
+    ///      rescued clans from joining kingdoms during the configurable grace period.
     /// </summary>
-    [HarmonyPatch]
     internal static class B1071_ClanSurvivalPatch
     {
-        private static B1071_McmSettings Settings =>
+        internal static B1071_McmSettings Settings =>
             B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
-        // ─────────────────────────────────────────────
-        //  Patch 1: DestroyClanAction.Apply (Default path)
-        //  Called by DestroyKingdomAction when isKingdomLeaderDeath = false.
-        // ─────────────────────────────────────────────
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.Apply))]
-        static bool ApplyPrefix(Clan destroyedClan)
-        {
-            return !TryRescueClan(destroyedClan, "Apply");
-        }
+        /// <summary>
+        /// Set of Clan.StringId that have already been rescued in the current
+        /// DeactivateKingdom call. Prevents double-processing when Path B's
+        /// DestroyClanAction calls arrive after the postfix already rescued.
+        /// </summary>
+        internal static readonly HashSet<string> _alreadyRescued = new();
 
-        // ─────────────────────────────────────────────
-        //  Patch 2: DestroyClanAction.ApplyByClanLeaderDeath
-        //  Called by DestroyKingdomAction when isKingdomLeaderDeath = true.
-        //  Also called by KillCharacterAction for genuine leader-death cases;
-        //  the kingdom.IsEliminated guard ensures we only rescue in the
-        //  kingdom-destruction context, not in genuine standalone leader death.
-        // ─────────────────────────────────────────────
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.ApplyByClanLeaderDeath))]
-        static bool ApplyByClanLeaderDeathPrefix(Clan destroyedClan)
-        {
-            return !TryRescueClan(destroyedClan, "ApplyByClanLeaderDeath");
-        }
+        // ── Shared eligibility check ────────────────────────────────
 
         /// <summary>
-        /// Attempts to rescue a clan from destruction. Returns true if the clan was
-        /// rescued (caller should skip vanilla destruction), false if vanilla should proceed.
+        /// Checks whether a clan is eligible for rescue. Does NOT perform the rescue.
         /// </summary>
-        private static bool TryRescueClan(Clan clan, string callPath)
+        internal static bool IsClanEligibleForRescue(Clan clan, Kingdom? kingdom, string context)
         {
-            try
+            string clanId = clan?.Name?.ToString() ?? clan?.StringId ?? "NULL";
+
+            if (!Settings.EnableClanSurvival)
             {
-                if (!Settings.EnableClanSurvival) return false;
-                if (clan == null || clan.IsEliminated) return false;
-                if (clan == Clan.PlayerClan) return false;
-                if (clan.IsBanditFaction) return false;
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': EnableClanSurvival is false");
+                return false;
+            }
 
-                // Only rescue clans that are part of a dying/dead kingdom.
-                // The kingdom.IsEliminated guard ensures we don't intercept:
-                //   - Genuine leader-death with no heirs (kingdom is still alive)
-                //   - Console-triggered single-clan destruction
-                //   - Any other non-kingdom-destruction context
-                Kingdom? kingdom = clan.Kingdom;
-                if (kingdom == null) return false;
+            if (clan == null || clan.IsEliminated)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': clan null={clan == null}, IsEliminated={clan?.IsEliminated}");
+                return false;
+            }
 
-                // DestroyKingdomAction.ApplyInternal calls DeactivateKingdom()
-                // BEFORE iterating clans, so IsEliminated is true by this point.
-                if (!kingdom.IsEliminated) return false;
+            if (clan == Clan.PlayerClan)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': is PlayerClan");
+                return false;
+            }
 
-                // Must have living adult heroes who can carry on the clan.
-                // IsLord filters out companions attached to the clan.
-                var livingAdults = clan.Heroes
-                    .Where(h => h.IsAlive && !h.IsChild && h.IsLord)
-                    .ToList();
-                if (livingAdults.Count == 0) return false;
+            if (clan.IsBanditFaction)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': IsBanditFaction=true");
+                return false;
+            }
 
-                // If the leader is dead, try to promote an heir.
-                // This happens in the kingdom-leader-death path for the ruling clan,
-                // or if the clan leader died in the same battle that caused the kingdom fall.
-                if (clan.Leader == null || !clan.Leader.IsAlive)
+            // Must have living adult heroes who can carry on the clan.
+            // Include both lords (IsLord) and minor faction heroes (IsMinorFactionHero).
+            var livingAdults = clan.Heroes
+                .Where(h => h.IsAlive && !h.IsChild && (h.IsLord || h.IsMinorFactionHero))
+                .ToList();
+            if (livingAdults.Count == 0)
+            {
+                int totalHeroes = clan.Heroes.Count;
+                int aliveHeroes = clan.Heroes.Count(h => h.IsAlive);
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': no living adult lords/heroes " +
+                    $"(total={totalHeroes}, alive={aliveHeroes}, IsMinorFaction={clan.IsMinorFaction})");
+                return false;
+            }
+
+            // If the leader is dead, try to promote an heir.
+            if (clan.Leader == null || !clan.Leader.IsAlive)
+            {
+                var heirs = clan.GetHeirApparents();
+                if (heirs.Count == 0)
                 {
-                    var heirs = clan.GetHeirApparents();
-                    if (heirs.Count == 0) return false;
-
-                    ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
-
-                    // If promotion failed (shouldn't happen, but defensive), let vanilla destroy
-                    if (clan.Leader == null || !clan.Leader.IsAlive) return false;
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': leader dead, no heir apparents");
+                    return false;
                 }
 
-                // ── RESCUE ──
-                PerformRescue(clan, kingdom, callPath);
-                return true;
+                try
+                {
+                    ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
+                }
+                catch (Exception ex)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': heir promotion threw: {ex.Message}");
+                    return false;
+                }
+
+                if (clan.Leader == null || !clan.Leader.IsAlive)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': heir promotion failed");
+                    return false;
+                }
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] '{clanId}' heir promoted to {clan.Leader.Name}");
             }
-            catch (Exception ex)
-            {
-                Debug.Print($"[Byzantium1071][ClanSurvival][ERROR] Exception in TryRescueClan for {clan?.Name}: {ex}");
-                return false; // On error, let vanilla proceed (safe fallback)
-            }
+
+            Debug.Print($"[Byzantium1071][ClanSurvival][{context}] '{clanId}' ELIGIBLE " +
+                $"({livingAdults.Count} heroes, leader: {clan.Leader?.Name})");
+            return true;
         }
 
+        // ── Shared rescue logic ─────────────────────────────────────
+
         /// <summary>
-        /// Rescues a clan from destruction. 
-        /// 
-        /// Operation order is critical:
-        ///   1. Transfer fiefs FIRST (needs clan.Kingdom != null for ChooseHeirClanForFiefs)
-        ///   2. Detach from kingdom via public setter (handles influence, armies, banner, tracking)
-        ///   3. Clear inherited wars AFTER detach (FactionsAtWarWith now returns clan's own stances)
-        ///   4. Register in behavior for grace period tracking
+        /// Rescues a clan from a dying kingdom.
         ///
-        /// After this method returns, DestroyKingdomAction calls RemoveClanInternal(clan)
-        /// which is a no-op because the setter's LeaveKingdomInternal already removed the clan.
+        /// Operation order:
+        ///   1. Detach from kingdom (clan.Kingdom = null)
+        ///   2. Clear inherited wars
+        ///   3. Register for grace period
+        ///
+        /// Fief transfer is NOT done here — when a kingdom loses all settlements
+        /// (Path A), there are no fiefs left to transfer. In Path B, vanilla's
+        /// DestroyClanAction would have handled it, but we skip vanilla entirely.
+        /// If the clan somehow still has fiefs (edge case), they become independent
+        /// clan settlements, which is acceptable.
         /// </summary>
-        private static void PerformRescue(Clan clan, Kingdom dyingKingdom, string callPath)
+        internal static void PerformRescue(Clan clan, Kingdom dyingKingdom, string callPath)
         {
             string clanName = clan.Name?.ToString() ?? clan.StringId;
             string kingdomName = dyingKingdom.Name?.ToString() ?? dyingKingdom.StringId;
             int heroCount = clan.Heroes.Count(h => h.IsAlive);
-            bool wasMercenary = clan.IsUnderMercenaryService;
 
-            // ── Step 1: Transfer fiefs ──
-            // Must happen BEFORE Kingdom=null because ChooseHeirClanForFiefs uses
-            // clan.Kingdom to search among the kingdom's surviving clans.
-            if (clan.Settlements.Any())
-            {
-                try
-                {
-                    Clan heirClan = FactionHelper.ChooseHeirClanForFiefs(clan);
-                    foreach (Settlement settlement in clan.Settlements.ToList())
-                    {
-                        if (settlement.IsTown || settlement.IsCastle)
-                        {
-                            Hero? newOwner = heirClan.Heroes
-                                .Where(x => x.IsAlive && !x.IsChild && x.IsLord)
-                                .FirstOrDefault();
-                            if (newOwner != null)
-                            {
-                                ChangeOwnerOfSettlementAction.ApplyByDestroyClan(settlement, newOwner);
-                                B1071_VerboseLog.Log("ClanSurvival",
-                                    $"Transferred {settlement.Name} to {newOwner.Name} ({heirClan.Name}).");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival] Fief transfer error for {clanName}: {ex.Message}");
-                }
-            }
+            Debug.Print($"[Byzantium1071][ClanSurvival] Rescuing {clanName} " +
+                $"({heroCount} heroes, leader: {clan.Leader?.Name}) " +
+                $"from {kingdomName} (path: {callPath}).");
 
-            // ── Step 2: Detach from the dying kingdom ──
-            // Using the public setter Clan.Kingdom, which calls SetKingdomInternal(null):
-            //   - LeaveKingdomInternal(): zeroes influence, removes from kingdom clan list,
-            //     removes heroes/fiefs/warparties from kingdom tracking, disbands armies
-            //   - UpdateBannerColorsAccordingToKingdom(): updates banner for independence
-            //   - Sets LastFactionChangeTime = CampaignTime.Now
-            //
-            // DestroyKingdomAction will also call RemoveClanInternal(clan) after us —
-            // this is safe because MBList.Remove() is idempotent (returns false if absent).
+            // ── Step 1: Detach from the dying kingdom ──
             try
             {
-                clan.Kingdom = null;
+                if (clan.Kingdom != null)
+                    clan.Kingdom = null;
             }
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival] Kingdom detach error for {clanName}: {ex.Message}");
             }
 
-            // ── Step 3: Clear inherited wars ──
-            // After Kingdom=null, the clan may have inherited war stances from the
-            // dying kingdom. Clear them all so the clan starts fresh as a neutral faction.
-            // Match vanilla's pattern: skip constant-war factions (bandits, etc.).
+            // ── Step 2: Clear inherited wars ──
             try
             {
+                int warsCleared = 0;
                 foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
                 {
                     if (clan != enemy &&
-                        !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel.IsAtConstantWar(clan, enemy))
+                        !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
+                            .IsAtConstantWar(clan, enemy))
                     {
                         try
                         {
                             MakePeaceAction.Apply(clan, enemy);
+                            warsCleared++;
                         }
-                        catch { /* best effort — some stances may not resolve cleanly */ }
+                        catch { /* best effort */ }
                     }
                 }
+                Debug.Print($"[Byzantium1071][ClanSurvival] Cleared {warsCleared} inherited war(s) for {clanName}.");
             }
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival] War clearing error for {clanName}: {ex.Message}");
             }
 
-            // ── Step 4: Register for grace period tracking ──
-            B1071_ClanSurvivalBehavior.Instance?.RegisterRescuedClan(clan);
+            // ── Step 3: Register for grace period ──
+            try
+            {
+                B1071_ClanSurvivalBehavior.Instance?.RegisterRescuedClan(clan);
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period registration error for {clanName}: {ex.Message}");
+            }
 
-            // ── Step 5: Log ──
-            string roleStr = wasMercenary ? "mercenary" : "vassal";
-            B1071_VerboseLog.Log("ClanSurvival",
-                $"Rescued {clanName} ({heroCount} heroes, leader: {clan.Leader?.Name}, " +
-                $"was {roleStr}) from destruction of {kingdomName} (path: {callPath}). " +
+            // Mark as rescued
+            _alreadyRescued.Add(clan.StringId);
+
+            Debug.Print($"[Byzantium1071][ClanSurvival] Rescue complete: {clanName} " +
+                $"({heroCount} heroes) from {kingdomName} (path: {callPath}). " +
                 $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
 
-            // Always log rescues to rgl_log regardless of verbose setting
-            Debug.Print($"[Byzantium1071][ClanSurvival] Clan rescued: {clanName} " +
-                $"({heroCount} heroes, {roleStr}) from {kingdomName}. " +
-                $"Will seek mercenary service in {Settings.ClanSurvivalGracePeriodDays} days.");
+            B1071_VerboseLog.Log("ClanSurvival",
+                $"Rescued {clanName} ({heroCount} heroes, leader: {clan.Leader?.Name}) " +
+                $"from destruction of {kingdomName} (path: {callPath}). " +
+                $"Grace period: {Settings.ClanSurvivalGracePeriodDays} days.");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PRIMARY PATCH: Kingdom.DeactivateKingdom postfix
+    //  Fires on ALL kingdom destruction paths (settlement loss AND
+    //  leader death). This is where the actual rescue happens.
+    // ═══════════════════════════════════════════════════════════════
+    [HarmonyPatch(typeof(Kingdom), "DeactivateKingdom")]
+    internal static class B1071_ClanSurvivalDeactivatePatch
+    {
+        [HarmonyPostfix]
+        static void Postfix(Kingdom __instance)
+        {
+            try
+            {
+                if (!B1071_ClanSurvivalPatch.Settings.EnableClanSurvival) return;
+                if (__instance == null || !__instance.IsEliminated) return;
+
+                string kingdomName = __instance.Name?.ToString() ?? __instance.StringId;
+                var clans = __instance.Clans?.ToList();
+                if (clans == null || clans.Count == 0)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                        $"{kingdomName} eliminated but has no clans to rescue.");
+                    return;
+                }
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                    $"{kingdomName} eliminated. Processing {clans.Count} clan(s)...");
+
+                B1071_ClanSurvivalPatch._alreadyRescued.Clear();
+                int rescued = 0;
+                int skipped = 0;
+
+                foreach (Clan clan in clans)
+                {
+                    try
+                    {
+                        if (B1071_ClanSurvivalPatch.IsClanEligibleForRescue(
+                                clan, __instance, "DeactivateKingdom"))
+                        {
+                            B1071_ClanSurvivalPatch.PerformRescue(
+                                clan, __instance, "DeactivateKingdom");
+                            rescued++;
+                        }
+                        else
+                        {
+                            skipped++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                            $"Error processing {clan?.Name}: {ex.Message}");
+                        skipped++;
+                    }
+                }
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                    $"{kingdomName}: {rescued} rescued, {skipped} skipped.");
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][DeactivateKingdom] " +
+                    $"Fatal error: {ex}");
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SAFETY NET: DestroyClanAction prefixes
+    //  Only fire in Path B (DestroyKingdomAction → DestroyClanAction).
+    //  If the DeactivateKingdom postfix already rescued the clan,
+    //  these skip vanilla destruction. Otherwise, rescue here.
+    // ═══════════════════════════════════════════════════════════════
+    [HarmonyPatch]
+    internal static class B1071_ClanSurvivalDestroyClanPatch
+    {
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.Apply))]
+        static bool ApplyPrefix(Clan destroyedClan)
+        {
+            Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyPrefix FIRED " +
+                $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
+            return !HandleDestroyClan(destroyedClan, "DestroyClanAction.Apply");
+        }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.ApplyByClanLeaderDeath))]
+        static bool ApplyByClanLeaderDeathPrefix(Clan destroyedClan)
+        {
+            Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyByClanLeaderDeathPrefix FIRED " +
+                $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
+            return !HandleDestroyClan(destroyedClan, "DestroyClanAction.ApplyByClanLeaderDeath");
+        }
+
+        /// <summary>
+        /// Returns true if the clan was rescued (skip vanilla), false to let vanilla proceed.
+        /// </summary>
+        private static bool HandleDestroyClan(Clan clan, string callPath)
+        {
+            try
+            {
+                if (clan == null) return false;
+
+                // Already rescued by DeactivateKingdom postfix?
+                if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId))
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' already rescued " +
+                        $"by DeactivateKingdom postfix — skipping vanilla destruction.");
+                    return true; // Skip vanilla
+                }
+
+                // Already rescued and in grace period (e.g. from a previous event)?
+                var behavior = B1071_ClanSurvivalBehavior.Instance;
+                if (behavior != null && behavior.IsInGracePeriod(clan))
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is in grace period " +
+                        $"— skipping vanilla destruction.");
+                    return true; // Skip vanilla
+                }
+
+                // Not yet rescued — check if from a dying kingdom
+                Kingdom? kingdom = clan.Kingdom;
+                if (kingdom == null || !kingdom.IsEliminated) return false;
+
+                // Try to rescue now
+                if (B1071_ClanSurvivalPatch.IsClanEligibleForRescue(clan, kingdom, callPath))
+                {
+                    B1071_ClanSurvivalPatch.PerformRescue(clan, kingdom, callPath);
+                    return true; // Skip vanilla
+                }
+
+                return false; // Let vanilla proceed
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] Error for {clan?.Name}: {ex}");
+                return false; // Safe fallback
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  GRACE PERIOD GUARD: ChangeKingdomAction prefix
+    //  Blocks rescued clans from joining kingdoms during the grace
+    //  period. Our own mercenary placement uses a bypass flag.
+    // ═══════════════════════════════════════════════════════════════
+    [HarmonyPatch]
+    internal static class B1071_ClanSurvivalGracePeriodPatch
+    {
+        [HarmonyTargetMethods]
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            var type = typeof(ChangeKingdomAction);
+
+            // Try ApplyInternal first — single chokepoint for all kingdom changes
+            var applyInternal = AccessTools.Method(type, "ApplyInternal");
+            if (applyInternal != null)
+            {
+                Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: patching ChangeKingdomAction.ApplyInternal");
+                yield return applyInternal;
+                yield break;
+            }
+
+            // Fallback: patch known public methods individually
+            Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: ApplyInternal not found, trying public methods");
+            int found = 0;
+            foreach (string methodName in new[]
+            {
+                "ApplyByJoinToKingdom",
+                "ApplyByJoinFactionAsMercenary",
+                "ApplyByJoinAsVassal"
+            })
+            {
+                var method = AccessTools.Method(type, methodName);
+                if (method != null)
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival] Grace guard: patching {methodName}");
+                    found++;
+                    yield return method;
+                }
+            }
+
+            if (found == 0)
+                Debug.Print("[Byzantium1071][ClanSurvival] Grace guard: WARNING — no ChangeKingdomAction methods found!");
+        }
+
+        [HarmonyPrefix]
+        static bool Prefix(MethodBase __originalMethod, object[] __args)
+        {
+            Clan? clan = null;
+            Kingdom? newKingdom = null;
+
+            if (__args != null)
+            {
+                foreach (object arg in __args)
+                {
+                    if (clan == null && arg is Clan c) clan = c;
+                    if (newKingdom == null && arg is Kingdom k) newKingdom = k;
+                }
+            }
+
+            if (clan == null) return true;
+            if (newKingdom == null) return true;     // Leave action — allow
+
+            var behavior = B1071_ClanSurvivalBehavior.Instance;
+            if (behavior == null) return true;
+            if (behavior._bypassGraceGuard) return true;
+
+            if (!behavior.IsInGracePeriod(clan)) return true;
+
+            Debug.Print($"[Byzantium1071][ClanSurvival] Grace period guard: BLOCKED {clan.Name} " +
+                $"from joining {newKingdom.Name} (via {__originalMethod.Name}).");
+            return false;
         }
     }
 }

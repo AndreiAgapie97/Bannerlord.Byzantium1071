@@ -46,6 +46,9 @@ namespace Byzantium1071.Campaign.Behaviors
         // Key = Clan.StringId, Value = rescue day (CampaignTime.CurrentTime at time of rescue).
         private Dictionary<string, float> _rescuedClans = new();
 
+        // When true, our own placement code is in progress — skip any grace period guards.
+        internal bool _bypassGraceGuard;
+
         // ── Public API (called by patch) ─────────────────────────────────
 
         /// <summary>
@@ -55,6 +58,18 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (clan == null) return;
             _rescuedClans[clan.StringId] = (float)CampaignTime.Now.ToDays;
+        }
+
+        /// <summary>
+        /// Returns true if the specified clan is in its post-rescue grace period
+        /// and should not join any kingdom yet.
+        /// </summary>
+        public bool IsInGracePeriod(Clan clan)
+        {
+            if (clan == null) return false;
+            if (!_rescuedClans.TryGetValue(clan.StringId, out float rescueDay)) return false;
+            float elapsed = (float)CampaignTime.Now.ToDays - rescueDay;
+            return elapsed < Settings.ClanSurvivalGracePeriodDays;
         }
 
         /// <summary>
@@ -121,15 +136,51 @@ namespace Byzantium1071.Campaign.Behaviors
                         continue;
                     }
 
-                    // If clan already joined a kingdom (player recruited them, or
-                    // another mod placed them), stop tracking
+                    // If clan already joined a kingdom during the grace period,
+                    // force it back to independent. Vanilla AI can recruit clans
+                    // very quickly — we need to enforce the grace period.
                     if (clan.Kingdom != null)
                     {
-                        _rescuedClans.Remove(clanId);
-                        B1071_VerboseLog.Log("ClanSurvival",
-                            $"Stopped tracking {clan.Name}: already joined {clan.Kingdom.Name}" +
-                            $" ({(clan.IsUnderMercenaryService ? "mercenary" : "vassal")}).");
-                        continue;
+                        if (elapsedDays < gracePeriodDays)
+                        {
+                            // Still in grace period — eject from kingdom
+                            Kingdom joinedKingdom = clan.Kingdom;
+                            try
+                            {
+                                clan.Kingdom = null;
+
+                                // Clear any wars inherited from the brief kingdom membership
+                                foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
+                                {
+                                    if (clan != enemy &&
+                                        !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
+                                            .IsAtConstantWar(clan, enemy))
+                                    {
+                                        try { MakePeaceAction.Apply(clan, enemy); }
+                                        catch { /* best effort */ }
+                                    }
+                                }
+
+                                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period enforced: " +
+                                    $"ejected {clan.Name} from {joinedKingdom.Name} " +
+                                    $"(day {(int)elapsedDays}/{(int)gracePeriodDays}).");
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Print($"[Byzantium1071][ClanSurvival] Grace period enforcement " +
+                                    $"error for {clan.Name}: {ex.Message}");
+                            }
+                            continue;
+                        }
+                        else
+                        {
+                            // Grace period expired and clan already found a kingdom — done
+                            _rescuedClans.Remove(clanId);
+                            B1071_VerboseLog.Log("ClanSurvival",
+                                $"Stopped tracking {clan.Name}: already joined {clan.Kingdom.Name}" +
+                                $" ({(clan.IsUnderMercenaryService ? "mercenary" : "vassal")}).");
+                            continue;
+                        }
                     }
 
                     // Still in grace period?
@@ -148,7 +199,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     }
 
                     // ── Grace period expired — attempt placement ──
-                    TryPlaceClanAsMercenary(clan);
+                    _bypassGraceGuard = true;
+                    try
+                    {
+                        TryPlaceClanAsMercenary(clan);
+                    }
+                    finally
+                    {
+                        _bypassGraceGuard = false;
+                    }
                 }
             }
             catch (Exception ex)

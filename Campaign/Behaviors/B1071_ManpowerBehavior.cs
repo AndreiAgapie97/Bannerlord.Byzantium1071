@@ -80,6 +80,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private string _telemetryLastForcedPeace = "None";
         private string _telemetryLastTruce = "None";
         private string _telemetryLastDiplomacyDecision = "None";
+        private readonly HashSet<string> _telemetryLoggedDiplomacy = new HashSet<string>();
         private string _telemetryLastRegenBreakdown = "n/a";
         private string _telemetryLastRegenPoolId = string.Empty;
         private List<string>? _exhaustionKeysScratch;
@@ -619,6 +620,17 @@ namespace Byzantium1071.Campaign.Behaviors
                     _exhaustionKeysScratch.AddRange(_warExhaustion.Keys);
                     foreach (string key in _exhaustionKeysScratch)
                     {
+                        // Clean up exhaustion entries for kingdoms that no longer exist.
+                        Kingdom? kd = Kingdom.All?.Find(x => x != null && x.StringId == key);
+                        if (kd == null || kd.IsEliminated)
+                        {
+                            _warExhaustion.Remove(key);
+                            _pressureBandByKingdom.Remove(key);
+                            _lastForcedPeaceDayByKingdom.Remove(key);
+                            B1071_VerboseLog.Log("Exhaustion", $"Removed {key}: kingdom eliminated.");
+                            continue;
+                        }
+
                         float before = _warExhaustion[key];
                         float val = before - decay;
                         if (val <= 0f)
@@ -656,10 +668,13 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableWarExhaustion) return;
             if (string.IsNullOrEmpty(kingdomId) || amount <= 0f) return;
 
+            // Don't accumulate exhaustion for kingdoms that have been destroyed.
+            Kingdom? k = Kingdom.All?.Find(x => x != null && x.StringId == kingdomId);
+            if (k == null || k.IsEliminated) return;
+
             // Manpower-depletion amplifier: when a kingdom's pools are depleted, losses hit harder.
             if (Settings.EnableManpowerDepletionAmplifier && Settings.ManpowerDepletionAmplifier > 0f)
             {
-                Kingdom? k = Kingdom.All?.Find(x => x != null && x.StringId == kingdomId);
                 if (k != null)
                 {
                     float avgRatio = GetKingdomAverageManpowerRatio(k);
@@ -729,7 +744,8 @@ namespace Byzantium1071.Campaign.Behaviors
         internal void RecordDiplomacyTelemetry(string reason)
         {
             _telemetryLastDiplomacyDecision = string.IsNullOrEmpty(reason) ? "None" : reason;
-            if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
+            if ((Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
+                && _telemetryLoggedDiplomacy.Add(_telemetryLastDiplomacyDecision))
                 Debug.Print("[Byzantium1071][Telemetry][Diplomacy] " + _telemetryLastDiplomacyDecision);
         }
 
@@ -742,6 +758,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _telemetryExhaustionDecayToday = 0f;
             _telemetryLastForcedPeace = "None";
             _telemetryLastDiplomacyDecision = "None";
+            _telemetryLoggedDiplomacy.Clear();
         }
 
         private static string TruncateTelemetry(string value, int maxLen)
