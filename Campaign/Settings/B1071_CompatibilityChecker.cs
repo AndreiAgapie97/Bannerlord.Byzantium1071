@@ -36,7 +36,6 @@ namespace Byzantium1071.Campaign.Settings
         {
             public string ModelName = string.Empty;        // "Settlement Food Model"
             public string ActiveTypeName = string.Empty;   // "BLM_TownProductionModel"
-            public bool IsSubclassOfExpected;              // true = patches still fire via base() call
             public bool IsDynamicallyHandled;              // true = B1071 has a runtime workaround
             public ConflictRisk Risk;
             public string Explanation = string.Empty;
@@ -469,7 +468,6 @@ namespace Byzantium1071.Campaign.Settings
                     {
                         ModelName = check.Name,
                         ActiveTypeName = activeType.Name,
-                        IsSubclassOfExpected = false,
                         IsDynamicallyHandled = check.IsDynamicallyHandled,
                         Risk = risk,
                         Explanation = explanation,
@@ -581,11 +579,10 @@ namespace Byzantium1071.Campaign.Settings
             var issue = _modelIssues.FirstOrDefault(i => i.ModelName == modelName);
             if (issue == null)
                 return _modelChecksRan
-                    ? L("b1071_compat_model_status_ok", "OK")
-                    : L("b1071_compat_model_status_start_campaign", "Start a campaign to check");
+                    ? L("b1071_compat_model_status_ok", "Campaign++ active")
+                    : L("b1071_compat_model_status_start_campaign", "Load campaign to verify");
 
             if (issue.IsDynamicallyHandled) return L("b1071_compat_model_status_auto_patched", "Replaced - auto-patched");
-            if (issue.IsSubclassOfExpected) return L("b1071_compat_model_status_check", "[CHECK] May need attention");
             return L("b1071_compat_model_status_issue", "[ISSUE] Features may be off");
         }
 
@@ -606,36 +603,11 @@ namespace Byzantium1071.Campaign.Settings
                 return new TextObject("{=b1071_compat_model_hint_handled}{MODEL}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed.")
                     .SetTextVariable("MODEL", modelName).ToString();
 
-            if (issue.IsSubclassOfExpected)
-                return new TextObject("{=b1071_compat_model_hint_subclass}{MODEL}: Another mod has modified this system (as an extension of the original). Campaign++ features here should still work, but check in-game if something feels off.")
-                    .SetTextVariable("MODEL", modelName).ToString();
-
             return new TextObject("{=b1071_compat_model_hint_replaced}{MODEL}: Another mod has fully replaced this system. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off.")
                 .SetTextVariable("MODEL", modelName)
                 .SetTextVariable("MODEL_LOWER", modelName.ToLower())
                 .ToString();
         }
-
-        /// <summary>
-        /// Short risk label for use in MCM group names and text property display.
-        /// </summary>
-        internal static string RiskLabel(ConflictRisk risk) => risk switch
-        {
-            ConflictRisk.Warning => L("b1071_compat_risk_warning", "REVIEW"),
-            ConflictRisk.Caution => L("b1071_compat_risk_caution", "STACKING"),
-            _                    => L("b1071_compat_risk_safe", "COMPATIBLE"),
-        };
-
-        /// <summary>
-        /// Plain-language confidence phrase for use in player-facing MCM row hints.
-        /// Replaces the raw percentage with something a non-technical player can understand.
-        /// </summary>
-        internal static string CompatibilityConfidenceText(ConflictRisk risk) => risk switch
-        {
-            ConflictRisk.Warning => L("b1071_compat_confidence_warning", "Worth checking in-game."),
-            ConflictRisk.Caution => L("b1071_compat_confidence_caution", "Very likely fine."),
-            _                    => L("b1071_compat_confidence_safe", "No known issues."),
-        };
 
         /// <summary>
         /// Short row-value text shown in the MCM text box next to each conflict row.
@@ -769,11 +741,6 @@ namespace Byzantium1071.Campaign.Settings
         }
 
         // ─── Gameplay mod detection helpers ───────────────────────────────────────────────
-
-        private static bool IsGameplayNamespace(string ns) =>
-            ns.StartsWith("TaleWorlds.CampaignSystem", StringComparison.Ordinal) ||
-            ns.StartsWith("TaleWorlds.MountAndBlade",  StringComparison.Ordinal) ||
-            ns.StartsWith("TaleWorlds.Core",           StringComparison.Ordinal);
 
         /// <summary>
         /// Returns true if the Harmony owner ID belongs to an infrastructure mod

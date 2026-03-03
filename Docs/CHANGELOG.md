@@ -69,14 +69,14 @@ Investigated contributor report of overlay not appearing after save-load. Code r
 - **One-line popup per mod:** `ModName - Compatible` / `ModName - Minor overlap in X areas - very likely fine` / `ModName - Worth checking: Area`. No technical jargon visible to the player.
 - **Startup popup:** Shown automatically at launch. Title: `Campaign++ - Playing Well With Others?`. Button: OK (dismiss) + Copy Report (copies full text to clipboard via STA thread). Toggle off via MCM: `Don't show this popup at startup`.
 - **MCM tab — Campaign++ Compatibility:** Full per-mod breakdown. Each mod gets its own group with one row per overlapping method. Row labels use player-facing names ("Town Food Supply", "Troop Recruitment Cost", etc.). Hover hints give a plain-language explanation of the overlap and confidence level.
-- **Core Game Systems section:** Tracks whether other mods have fully replaced Campaign++'s game models (food, volunteer, militia, prosperity, etc.). Detected at campaign load. Shows "OK" / "Replaced - auto-patched" / "[CHECK] May need attention" per system.
+- **Core Game Systems section:** Tracks whether other mods have fully replaced Campaign++'s game models (food, volunteer, militia, prosperity, etc.). Detected at campaign load. Shows "Campaign++ active" / "Replaced - auto-patched" / "[ISSUE] Features may be off" per system.
 - **Clipboard copy:** `System.Windows.Forms.Clipboard.SetText` via STA thread wrapper. Green in-game notification confirms copy.
 - **No hardcoded dependencies:** Removing the optional Economy Overhaul `SubModule.xml` load hint — Campaign++ no longer references any specific optional mod.
 
 ### Polish & Fixes — Compatibility System
 
 - **Lazy-patcher timing fix:** `RunHarmonyChecks()` now runs a second time at `OnSessionLaunched` (via `B1071_CompatibilityBehavior`), in addition to the initial title-screen scan. Mods that apply Harmony patches lazily on campaign load (e.g. RBM) now appear correctly in the report instead of being missed.
-- **Report status staleness indicator:** MCM Summary group now shows a "Report status" row at the top — `"OLD - load a campaign to update"` until model checks have run, then `"Up to date"`. Driven by the new `B1071_CompatibilityChecker.ModelChecksRan` property. Hover hint explains that the mod list detection is complete but Core Game Systems have not been checked yet.
+- **Report status staleness indicator:** MCM Summary group now shows a "Report status" row at the top — `"Partial — load any campaign"` until model checks have run, then `"Up to date"`. Driven by the new `B1071_CompatibilityChecker.ModelChecksRan` property. Hover hint explains that the mod list detection is complete but Core Game Systems have not been checked yet.
 - **Tip row text:** Updated to `"Load a campaign - full report pops-up"` to guide players toward triggering the full Core Game Systems check.
 
 **Compatibility file table:**

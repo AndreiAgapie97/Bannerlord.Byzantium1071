@@ -23,7 +23,10 @@ namespace Byzantium1071.Campaign
 
                 try
                 {
-                    string root = ResolveModuleLogsRoot();
+                    string? resolvedRoot = ResolveModuleLogsRoot();
+                    if (string.IsNullOrWhiteSpace(resolvedRoot))
+                        return;
+                    string root = resolvedRoot!;
 
                     Directory.CreateDirectory(root);
                     PruneOldLogs(root, keepNewest: 30);
@@ -117,7 +120,7 @@ namespace Byzantium1071.Campaign
             }
         }
 
-        private static string ResolveModuleLogsRoot()
+        private static string? ResolveModuleLogsRoot()
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             var directory = new DirectoryInfo(Path.GetDirectoryName(dllPath) ?? string.Empty);
@@ -136,9 +139,8 @@ namespace Byzantium1071.Campaign
                 directory = directory.Parent;
             }
 
-            // Fallback for uncommon layouts: place next to the assembly.
-            string fallbackBase = Path.GetDirectoryName(dllPath) ?? ".";
-            return Path.Combine(fallbackBase, "Logs");
+            // Strict mode: do not write anywhere outside module root.
+            return null;
         }
     }
 }

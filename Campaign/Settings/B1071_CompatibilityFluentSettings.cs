@@ -105,15 +105,15 @@ namespace Byzantium1071.Campaign.Settings
                         new ProxyRef<string>(
                             () => B1071_CompatibilityChecker.ModelChecksRan
                                 ? L("b1071_compat_status_up_to_date", "Up to date")
-                                : L("b1071_compat_status_old", "OLD - load a campaign to update"),
+                                : L("b1071_compat_status_old", "Partial — load any campaign"),
                             v => { }),
                         b =>
                         {
                             b.SetOrder(-1);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                                                L("b1071_compat_hint_report_status",
-                                                                    "Shows whether this report reflects your current session. 'OLD' means you are viewing the report from before a campaign was loaded — mod list detection is complete but Core Game Systems have not been checked yet. Load any campaign and the report updates automatically."));
+                                L("b1071_compat_hint_report_status",
+                                  "Shows whether this report reflects your current session. 'Partial' means the mod list scan is complete but Core Game Systems have not been checked yet — load any campaign and the report updates automatically."));
                         });
 
                     // Suppress popup toggle — the only user-editable property in this tab.
@@ -225,11 +225,10 @@ namespace Byzantium1071.Campaign.Settings
                             string displayName = B1071_CompatibilityChecker.GetPlayerFacingMethodName(conflict.MethodSignature);
 
                             // Row value: plain-language status without jargon.
-                            // Row hint: what happens + confidence + optional actions.
+                            // Row hint: what happens in-game + specific interaction explanation + optional actions.
                             string inGameEffect = B1071_CompatibilityChecker.GetInGameEffectText(conflict.MethodSignature);
-                            string confidenceText = B1071_CompatibilityChecker.CompatibilityConfidenceText(conflict.Risk);
 
-                            string hintText = $"{inGameEffect}\n{confidenceText}";
+                            string hintText = $"{inGameEffect}\n{conflict.RiskReason}";
                             if (conflict.McmHints.Count > 0)
                                 hintText += "\n" + string.Join("\n", conflict.McmHints);
 
@@ -261,6 +260,24 @@ namespace Byzantium1071.Campaign.Settings
                 builder = builder?.CreateGroup(L("b1071_compat_group_core_systems", "Core Game Systems"), g =>
                 {
                     g.SetGroupOrder(200);
+
+                    // Summary row — at-a-glance answer before the player reads all detail rows.
+                    g.AddText("model_group_status",
+                        L("b1071_compat_label_model_group_status", "Status"),
+                        new ProxyRef<string>(
+                            () => !B1071_CompatibilityChecker.ModelChecksRan
+                                ? L("b1071_compat_model_group_pending", "Load a campaign to verify")
+                                : B1071_CompatibilityChecker.HasModelIssues
+                                  ? L("b1071_compat_model_group_issues", "Issue detected — see below")
+                                  : L("b1071_compat_model_group_ok", "All systems normal"),
+                            v => { }),
+                        b =>
+                        {
+                            b.SetOrder(-1);
+                            b.SetRequireRestart(false);
+                            b.SetHintText(L("b1071_compat_hint_model_group_status",
+                                "Quick summary of the Core Game Systems scan. 'All systems normal' means no other mod has replaced anything Campaign++ relies on. If an issue is found, hover the individual rows below for details."));
+                        });
 
                     for (int i = 0; i < capturedModelNames.Count; i++)
                     {
