@@ -134,6 +134,7 @@ namespace Byzantium1071
             _harmony = null;
 
             B1071_CompatibilityFluentSettings.Unregister();
+            B1071_QuickSettingsFluentSettings.Unregister();
             B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
@@ -215,6 +216,16 @@ namespace Byzantium1071
             catch (Exception ex)
             {
                 TaleWorlds.Library.Debug.Print($"[Byzantium1071] CompatibilityFluentSettings.BuildAndRegister error: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            // Quick Settings mirror tab — one-screen access to every system toggle.
+            try
+            {
+                B1071_QuickSettingsFluentSettings.BuildAndRegister();
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] QuickSettingsFluentSettings.BuildAndRegister error: {ex.GetType().Name}: {ex.Message}");
             }
         }
 

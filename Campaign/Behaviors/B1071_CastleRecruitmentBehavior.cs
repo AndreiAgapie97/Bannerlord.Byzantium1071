@@ -400,7 +400,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_enslave}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share).")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_enslave}Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share).")
                         .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
                         .SetTextVariable("GOLD", playerEnslavementGold)
                         .SetTextVariable("COUNT", playerEnslavementCount)
@@ -687,7 +687,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_ai}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share).")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_ai}Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share).")
                         .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
                         .SetTextVariable("GOLD", playerRecruitConsignmentGold)
                         .SetTextVariable("COUNT", playerRecruitConsignmentCount)
@@ -819,7 +819,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_garrison}⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share).")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_consignment_garrison}Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share).")
                         .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
                         .SetTextVariable("GOLD", playerGarrisonConsignmentGold)
                         .SetTextVariable("COUNT", playerGarrisonConsignmentCount)
@@ -1130,7 +1130,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (Settings.ShowPlayerDebugMessages)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_msg}🏰 [{SOURCE}] Recruited {TROOP} at {CASTLE} for {GOLD}g")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_msg}[{SOURCE}] Recruited {TROOP} at {CASTLE} for {GOLD}g")
                         .SetTextVariable("SOURCE", source)
                         .SetTextVariable("TROOP", troop.Name?.ToString() ?? "troop")
                         .SetTextVariable("CASTLE", castle.Name?.ToString() ?? "castle")
@@ -1218,20 +1218,20 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string label;
             if (totalReady > 0 && pendingPrisoners > 0)
-                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available_pending}🏰 Recruit troops ({READY} available, {PENDING} pending)")
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available_pending}Recruit troops ({READY} available, {PENDING} pending)")
                     .SetTextVariable("READY", totalReady)
                     .SetTextVariable("PENDING", pendingPrisoners)
                     .ToString();
             else if (totalReady > 0)
-                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available}🏰 Recruit troops ({READY} available)")
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_available}Recruit troops ({READY} available)")
                     .SetTextVariable("READY", totalReady)
                     .ToString();
             else if (pendingPrisoners > 0)
-                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_pending}🏰 Recruit troops ({PENDING} pending)")
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_pending}Recruit troops ({PENDING} pending)")
                     .SetTextVariable("PENDING", pendingPrisoners)
                     .ToString();
             else
-                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_none}🏰 Recruit troops (none available)").ToString();
+                label = new TaleWorlds.Localization.TextObject("{=b1071_cr_recruit_none}Recruit troops (none available)").ToString();
 
             TaleWorlds.Localization.MBTextManager.SetTextVariable("B1071_CASTLE_RECRUIT_TEXT", label);
 
@@ -1304,7 +1304,7 @@ namespace Byzantium1071.Campaign.Behaviors
             args.optionLeaveType = GameMenuOption.LeaveType.Submenu;
 
             int feePercent = Settings.CastleHoldingFeePercent;
-            string label = new TaleWorlds.Localization.TextObject("{=b1071_cr_deposit_label}⚔️ Deposit prisoners ({COUNT} available, {FEE}% holding fee)")
+            string label = new TaleWorlds.Localization.TextObject("{=b1071_cr_deposit_label}Deposit prisoners ({COUNT} available, {FEE}% holding fee)")
                 .SetTextVariable("COUNT", prisonerCount)
                 .SetTextVariable("FEE", feePercent)
                 .ToString();
@@ -1369,7 +1369,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 int feePercent = Settings.CastleHoldingFeePercent;
                 int depositorPercent = 100 - feePercent;
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_deposited_msg}⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%).")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_deposited_msg}Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%).")
                         .SetTextVariable("COUNT", totalDeposited)
                         .SetTextVariable("PLURAL", totalDeposited > 1 ? "s" : string.Empty)
                         .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "castle")

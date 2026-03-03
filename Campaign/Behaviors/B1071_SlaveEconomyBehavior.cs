@@ -317,7 +317,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (mobileParty == MobileParty.MainParty)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_slave_raid_msg}⛓ +{COUNT} Slave{PLURAL} ({HEARTHS} hearths / {DIV} = {COUNT}).")
+                    new TextObject("{=b1071_slave_raid_msg}+{COUNT} Slave{PLURAL} ({HEARTHS} hearths / {DIV} = {COUNT}).")
                         .SetTextVariable("COUNT", count)
                         .SetTextVariable("PLURAL", count > 1 ? "s" : string.Empty)
                         .SetTextVariable("HEARTHS", (int)hearths)
@@ -422,7 +422,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (Settings.ShowPlayerDebugMessages && Settlement.CurrentSettlement == settlement)
                     {
                         InformationManager.DisplayMessage(new InformationMessage(
-                            new TextObject("{=b1071_slave_manumit_msg}⚔ {SETTLEMENT}: {FREED} slave{PLURAL} manumitted (cap {CAP}). +{FREED} MP to town pool.")
+                            new TextObject("{=b1071_slave_manumit_msg}{SETTLEMENT}: {FREED} slave{PLURAL} manumitted (cap {CAP}). +{FREED} MP to town pool.")
                                 .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? "Town")
                                 .SetTextVariable("FREED", freed)
                                 .SetTextVariable("PLURAL", freed != 1 ? "s" : string.Empty)
@@ -443,7 +443,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     Settings.SlaveConstructionBonusCap,
                     slaveCount * Settings.SlaveConstructionAcceleration * eff);
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_slave_daily_msg}⛓ {SETTLEMENT}: {COUNT} slave{PLURAL} in market. Daily: +{PROS} prosperity, +{CONS} construction.")
+                    new TextObject("{=b1071_slave_daily_msg}{SETTLEMENT}: {COUNT} slave{PLURAL} in market. Daily: +{PROS} prosperity, +{CONS} construction.")
                         .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? "Town")
                         .SetTextVariable("COUNT", slaveCount)
                         .SetTextVariable("PLURAL", slaveCount != 1 ? "s" : string.Empty)
@@ -594,7 +594,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         .ToString()
                     : "";
                 MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
-                    new TextObject("{=b1071_slave_enter_ok}⛓ Enslave prisoners  ({COUNT} T1–{MAXTIER} eligible{SKIPPED})")
+                    new TextObject("{=b1071_slave_enter_ok}Enslave prisoners  ({COUNT} T1–{MAXTIER} eligible{SKIPPED})")
                         .SetTextVariable("COUNT", enslavable)
                         .SetTextVariable("MAXTIER", maxTier)
                         .SetTextVariable("SKIPPED", skippedNote));
@@ -603,7 +603,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
-                    new TextObject("{=b1071_slave_enter_none}⛓ Enslave prisoners  (0 eligible — {TOTAL} T{TIER}+)")
+                    new TextObject("{=b1071_slave_enter_none}Enslave prisoners  (0 eligible — {TOTAL} T{TIER}+)")
                         .SetTextVariable("TOTAL", totalPrisoners)
                         .SetTextVariable("TIER", maxTier + 1));
                 args.Tooltip = new TextObject("{=b1071_slave_enter_tip}Only Tier 1–{MAXTIER} prisoners can be enslaved. Take T{NEXTTIER}+ to a castle for recruitment conversion or ransom at the tavern.")
@@ -635,7 +635,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     .ToString()
                 : "\n";
 
-            string body = new TextObject("{=b1071_slave_body}⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market.")
+            string body = new TextObject("{=b1071_slave_body}Slave Trade - {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market.")
                 .SetTextVariable("SETTLEMENT", settlementName)
                 .SetTextVariable("MAXTIER", maxTier)
                 .SetTextVariable("ENSLAVEABLE", enslavable)
@@ -693,7 +693,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         .ToString()
                     : "";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_slave_enslaved_msg}⛓ Enslaved {COUNT} T1–{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
+                    new TextObject("{=b1071_slave_enslaved_msg}Enslaved {COUNT} T1–{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
                         .SetTextVariable("COUNT", converted)
                         .SetTextVariable("MAXTIER", maxTier)
                         .SetTextVariable("PLURAL", converted != 1 ? "s" : string.Empty)

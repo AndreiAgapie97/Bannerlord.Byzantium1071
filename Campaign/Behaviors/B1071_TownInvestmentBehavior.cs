@@ -333,7 +333,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     : tier == 2 ? new TextObject("{=b1071_tier_generous}Generous").ToString()
                     : new TextObject("{=b1071_tier_grand}Grand").ToString();
                 string townName = settlement.Name?.ToString() ?? "the town";
-                string msg = new TextObject("{=b1071_ti_player_msg}🏛 {TIER} investment in {TOWN}: -{COST}d, +{PROS} prosperity/day for {DAYS} days")
+                string msg = new TextObject("{=b1071_ti_player_msg}{TIER} investment in {TOWN}: -{COST}d, +{PROS} prosperity/day for {DAYS} days")
                     .SetTextVariable("TIER", tierName)
                     .SetTextVariable("TOWN", townName)
                     .SetTextVariable("COST", cost)
@@ -360,7 +360,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         : tier == 2 ? new TextObject("{=b1071_tier_generous_l}generous").ToString()
                         : new TextObject("{=b1071_tier_grand_l}grand").ToString();
                     string tName = settlement.Name?.ToString() ?? "your town";
-                    string note = new TextObject("{=b1071_ti_ai_note}🏛 {LORD} made a {TIER} investment in {TOWN}.")
+                    string note = new TextObject("{=b1071_ti_ai_note}{LORD} made a {TIER} investment in {TOWN}.")
                         .SetTextVariable("LORD", lordName)
                         .SetTextVariable("TIER", tierLabel)
                         .SetTextVariable("TOWN", tName)
@@ -465,7 +465,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                    new TextObject("{=b1071_ti_enter_active}🏛 Invest in town  (active — {DAYS} days remaining)")
+                    new TextObject("{=b1071_ti_enter_active}Invest in town  (active — {DAYS} days remaining)")
                         .SetTextVariable("DAYS", (int)Math.Ceiling(daysLeft)));
                 args.Tooltip = new TextObject("{=b1071_ti_tip_active}You already have an active investment in this town. You can invest again once the current patronage expires.");
                 return true;
@@ -476,7 +476,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                    new TextObject("{=b1071_ti_enter_need}🏛 Invest in town  (need {COST}⬮)")
+                    new TextObject("{=b1071_ti_enter_need}Invest in town  (need {COST}d)")
                         .SetTextVariable("COST", Settings.TownInvestCostModest));
                 args.Tooltip = new TextObject("{=b1071_ti_tip_need}You need at least {COST} denars for a Modest investment.")
                     .SetTextVariable("COST", Settings.TownInvestCostModest);
@@ -485,7 +485,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             args.IsEnabled = true;
             MBTextManager.SetTextVariable("B1071_TOWN_INVEST_TEXT",
-                new TextObject("{=b1071_ti_enter}🏛 Invest in town"));
+                new TextObject("{=b1071_ti_enter}Invest in town"));
             return true;
         }
 
@@ -501,7 +501,7 @@ namespace Byzantium1071.Campaign.Behaviors
             float prosperity = s.Town.Prosperity;
             string ownerName = s.OwnerClan?.Name?.ToString() ?? "unowned";
 
-            string body = new TextObject("{=b1071_ti_body}🏛  Civic Patronage — {TOWN}\n\nProsperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires.")
+            string body = new TextObject("{=b1071_ti_body}Civic Patronage - {TOWN}\n\nProsperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires.")
                 .SetTextVariable("TOWN", townName)
                 .SetTextVariable("PROSP", prosperity.ToString("F0"))
                 .SetTextVariable("NOTABLES", notableCount)

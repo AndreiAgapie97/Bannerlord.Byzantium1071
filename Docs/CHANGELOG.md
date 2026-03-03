@@ -1,5 +1,51 @@
 # Campaign++ — Changelog
 
+## [0.2.6.0] — 2026-03-04
+
+### Feature — Quick Settings MCM Tab
+
+**One-screen access to every system enable/disable toggle.** A new MCM tab ("Campaign++ - Quick Settings") gathers all 21 system master toggles into 5 logical groups so players can enable or disable any system without searching through 250+ settings.
+
+- **Core Systems:** War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link
+- **Economy & Investment:** Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount
+- **Recruitment & Military:** Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival
+- **Province & Governance:** Governance Strain, Frontier Devastation, Castle Supply Chain
+- **Immersion & Modifiers:** Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts
+
+All toggles are **mirrors** of the corresponding settings in the full Campaign++ MCM tab — changing one changes the other. Uses `ProxyRef<bool>` wrappers around `B1071_McmSettings.Instance` properties.
+
+| File | Status |
+|------|--------|
+| `B1071_QuickSettingsFluentSettings.cs` | **NEW** — FluentGlobalSettings builder with 5 groups, 21 ProxyRef-backed bools |
+| `SubModule.cs` | Modified — registration at startup, unregistration on unload |
+
+### Fix — Emoji Rendering on Non-English Locales
+
+**Stripped all emoji characters from C# TextObject fallback strings.** Chinese localization contributors reported emoji rendering as broken rectangles on non-Latin locales.
+
+- Removed 🏰🏠🏛⛓⚔ prefixes from 29 TextObject strings across 4 behavior files
+- Replaced `⬮` (coin symbol) with `d` (denar) in investment body text
+- Replaced em dashes (`—`) with hyphens (`-`) in body text templates
+- **English players still see emojis** via `std_module_strings_xml.xml` localization overrides — only the C# fallbacks (used when no localization match exists) were cleaned
+
+| File | Changes |
+|------|---------|
+| `B1071_VillageInvestmentBehavior.cs` | 6 strings cleaned |
+| `B1071_TownInvestmentBehavior.cs` | 6 strings cleaned |
+| `B1071_SlaveEconomyBehavior.cs` | 7 strings cleaned |
+| `B1071_CastleRecruitmentBehavior.cs` | 10 strings cleaned |
+
+### Polish — Branding Cleanup
+
+- **README.md** updated: `# Byzantium1071` → `# Campaign++ (formerly Byzantium 1071)` with subtitle
+- **SubModule.xml** version bumped to `v0.2.6.0`
+
+### Investigation — Overlay Save-Load (No Code Change)
+
+Investigated contributor report of overlay not appearing after save-load. Code review confirmed the architecture is correct: `Tick()` runs from `OnApplicationTick`, `IsCampaignMapReady()` properly gates injection, `PanelInjectionGuard` resets on `OnGameEnd`. Likely a mod conflict on the contributor's end.
+
+---
+
 ## [0.2.5.5] — 2026-03-03
 
 ### Feature — Runtime Mod Compatibility System
