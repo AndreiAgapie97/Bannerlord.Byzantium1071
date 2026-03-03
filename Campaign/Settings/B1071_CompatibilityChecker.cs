@@ -58,6 +58,9 @@ namespace Byzantium1071.Campaign.Settings
         /// <summary>True once RunModelChecks has completed at least once this session.</summary>
         private static bool _modelChecksRan = false;
 
+        /// <summary>Exposed so the MCM tab can show a staleness indicator.</summary>
+        internal static bool ModelChecksRan => _modelChecksRan;
+
         // ─── Constants ───────────────────────────────────────────────────────────
 
         private const string B1071HarmonyId = "com.andrei.byzantium1071";

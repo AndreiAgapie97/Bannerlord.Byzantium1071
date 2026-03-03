@@ -98,6 +98,25 @@ namespace Byzantium1071.Campaign.Settings
                 {
                     g.SetGroupOrder(0);
 
+                    // Report freshness indicator — changes once a campaign is loaded.
+                    g.AddText("report_status",
+                        "Report status",
+                        new ProxyRef<string>(
+                            () => B1071_CompatibilityChecker.ModelChecksRan
+                                ? "Up to date"
+                                : "OLD - load a campaign to update",
+                            v => { }),
+                        b =>
+                        {
+                            b.SetOrder(-1);
+                            b.SetRequireRestart(false);
+                            b.SetHintText(
+                                "Shows whether this report reflects your current session. " +
+                                "'OLD' means you are viewing the report from before a campaign was loaded — " +
+                                "mod list detection is complete but Core Game Systems have not been checked yet. " +
+                                "Load any campaign and the report updates automatically.");
+                        });
+
                     // Suppress popup toggle — the only user-editable property in this tab.
                     g.AddBool("suppress_popup",
                         "Don't show this popup at startup",
