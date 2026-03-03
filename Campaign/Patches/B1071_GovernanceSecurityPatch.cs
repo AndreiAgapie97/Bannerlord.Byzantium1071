@@ -24,6 +24,8 @@ namespace Byzantium1071.Campaign.Patches
 
         private static readonly TextObject _label = new TextObject("{=b1071_gov_strain}Governance Strain");
 
+        [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Town town, ref ExplainedNumber __result)
         {
             try

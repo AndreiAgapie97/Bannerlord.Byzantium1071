@@ -38,6 +38,8 @@ namespace Byzantium1071.Campaign.Patches
         // Cached label — avoids TextObject allocation every prosperity tick.
         private static readonly TextObject _slaveLabel = new TextObject("{=b1071_slave_labor}Slave Labor");
 
+        [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         private static void Postfix(Town fortification, ref ExplainedNumber __result)
         {
             try

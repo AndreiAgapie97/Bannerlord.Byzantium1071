@@ -50,6 +50,7 @@ namespace Byzantium1071.Campaign.Patches
     public static class B1071_CastleAccessPatch_Settlement
     {
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         static void Postfix(Settlement settlement, ref AccessDetails accessDetails)
         {
             if (settlement == null || !settlement.IsCastle) return;
@@ -80,6 +81,7 @@ namespace Byzantium1071.Campaign.Patches
     public static class B1071_CastleAccessPatch_LordsHall
     {
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         static void Postfix(Settlement settlement, ref AccessDetails accessDetails)
         {
             if (settlement == null || !settlement.IsCastle) return;

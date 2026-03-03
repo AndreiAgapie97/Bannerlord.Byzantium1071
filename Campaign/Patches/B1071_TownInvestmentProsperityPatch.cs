@@ -37,6 +37,7 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _label = new TextObject("{=b1071_ti_civic}Civic Patronage");
 
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Town fortification, ref ExplainedNumber __result)
         {
             try

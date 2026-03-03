@@ -133,6 +133,8 @@ namespace Byzantium1071
             _harmony?.UnpatchAll("com.andrei.byzantium1071");
             _harmony = null;
 
+            B1071_CompatibilityFluentSettings.Unregister();
+            B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
@@ -158,6 +160,7 @@ namespace Byzantium1071
         public override void OnGameEnd(Game game)
         {
             base.OnGameEnd(game);
+            B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
@@ -189,6 +192,30 @@ namespace Byzantium1071
             {
                 TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migration error: {ex}");
             }
+
+            // Stage 1 compatibility check: scan all active Harmony patches for method overlaps.
+            // All patches from all mods are applied by this point, so results are stable.
+            // Stage 2 (model replacement check + popup) runs per campaign session in B1071_CompatibilityBehavior.
+            try
+            {
+                B1071_CompatibilityChecker.RunHarmonyChecks();
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Compat harmony check error: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            // Build and register the "Campaign++ Compatibility" MCM tab (Fluent API).
+            // Must run after RunHarmonyChecks() so conflict entries are ready, and at this
+            // point MCM's DI container is initialized (OnBeforeInitialModuleScreenSetAsRoot timing).
+            try
+            {
+                B1071_CompatibilityFluentSettings.BuildAndRegister();
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] CompatibilityFluentSettings.BuildAndRegister error: {ex.GetType().Name}: {ex.Message}");
+            }
         }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
@@ -197,6 +224,7 @@ namespace Byzantium1071
 
             if (game.GameType is TaleWorlds.CampaignSystem.Campaign && gameStarterObject is CampaignGameStarter starter)
             {
+                starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CompatibilityBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_SlaveEconomyBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceBehavior());

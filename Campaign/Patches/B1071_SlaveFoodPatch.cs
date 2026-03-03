@@ -39,6 +39,7 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _label = new TextObject("{=b1071_slave_food}Slave Upkeep");
 
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Town town, ref ExplainedNumber __result)
         {
             try

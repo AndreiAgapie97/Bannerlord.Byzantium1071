@@ -32,6 +32,7 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _label = new TextObject("{=b1071_dev_frontier}Frontier Devastation");
 
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Village village, ref ExplainedNumber __result)
         {
             try

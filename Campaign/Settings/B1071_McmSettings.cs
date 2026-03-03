@@ -1234,5 +1234,6 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0.")]
         public float ClanSurvivalCultureWeight { get; set; } = 2.0f;
+
     }
 }

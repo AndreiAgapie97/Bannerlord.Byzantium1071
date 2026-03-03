@@ -30,6 +30,7 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _label = new TextObject("{=b1071_vi_patronage}Patronage");
 
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Village village, ref ExplainedNumber __result)
         {
             try

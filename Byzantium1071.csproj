@@ -25,6 +25,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- System.Windows.Forms is used for clipboard access in the compatibility report -->
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="$(GameFolder)\bin\$(GameBinariesFolder)\Newtonsoft.Json.dll">
       <HintPath>%(Identity)</HintPath>
       <Private>False</Private>

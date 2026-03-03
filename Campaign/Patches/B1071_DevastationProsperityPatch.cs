@@ -34,6 +34,7 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _label = new TextObject("{=b1071_dev_hinterlands}Devastated Hinterlands");
 
         [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
         public static void Postfix(Town fortification, ref ExplainedNumber __result)
         {
             try
