@@ -144,15 +144,19 @@ namespace Byzantium1071.Campaign.Settings
                     g.AddText("quick_guide",
                         "Tip",
                         new ProxyRef<string>(
-                            () => "Hover rows for details",
+                            () => "Load a campaign - full report pops-up",
                             v => { }),
                         b =>
                         {
                             b.SetOrder(3);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Every row in the sections below has a plain-language explanation when you hover over it. " +
-                                "You don't need to change anything unless something in-game feels off.");
+                                "When you load a campaign, a compatibility popup appears automatically. " +
+                                "It shows the mod list (already visible above) plus Core Game Systems — " +
+                                "whether any other mod has replaced the internal calculation engines Campaign++ relies on. " +
+                                "That Core Systems section only updates after a campaign is active, " +
+                                "which is why it shows 'Start a campaign to check' until then. " +
+                                "You don't need to come back here — the popup tells you everything on campaign load.");
                         });
 
                     // Button to re-open the popup on demand.
@@ -165,8 +169,9 @@ namespace Byzantium1071.Campaign.Settings
                             b.SetOrder(4);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Opens a detailed compatibility report. " +
-                                "Load a campaign first to get the full picture including game system checks.");
+                                "Reopens the same popup that appears automatically when you load a campaign. " +
+                                "If 'Core game systems' above still reads 'Start a campaign to check', " +
+                                "load a campaign first — the popup will appear on its own and the Core Systems section will fill in.");
                         });
                 });
 
@@ -311,7 +316,7 @@ namespace Byzantium1071.Campaign.Settings
 
         // ── Clipboard helper ───────────────────────────────────────────────────────────────
 
-        private static void CopyToClipboard(string text)
+        internal static void CopyToClipboard(string text)
         {
             try
             {

@@ -1,5 +1,36 @@
 # Campaign++ — Changelog
 
+## [0.2.5.5] — 2026-03-03
+
+### Feature — Runtime Mod Compatibility System
+
+**Automatically detects every gameplay mod in your load order and reports how it interacts with Campaign++.** No hardcoded mod list — everything is inferred at runtime by scanning active Harmony patches and game model replacements the moment the game loads.
+
+- **Harmony scan:** Runs once at `OnBeforeInitialModuleScreenSetAsRoot` (all patches already applied). Iterates `Harmony.GetAllPatchedMethods()` + `Harmony.GetPatchInfo()` to find which mods share patch targets with Campaign++. Results are stable for the entire session.
+- **All mods shown:** Every non-framework Harmony owner that patches any method is listed — not just mods that conflict. If a mod is in your load order and does anything, it appears.
+- **Framework filter:** Infrastructure mods (Harmony, ButterLib, MCM, MBOptionScreen, UIExtenderEx, ModLib, BetterException, DebugMode, NativeModule, UnpatchAll, TaleWorlds core) are silently excluded. Only gameplay mods reach the list.
+- **Deduplication:** Mods that register multiple Harmony IDs (e.g. Diplomacy shipping several sub-IDs) are collapsed into one entry by friendly name.
+- **Risk scoring:** Co-patched methods are classified as Safe / Caution / Warning based on patch type combinations (bool-return prefix = Warning, transpiler = Warning, additive postfix = Caution, etc.).
+- **One-line popup per mod:** `ModName - Compatible` / `ModName - Minor overlap in X areas - very likely fine` / `ModName - Worth checking: Area`. No technical jargon visible to the player.
+- **Startup popup:** Shown automatically at launch. Title: `Campaign++ - Playing Well With Others?`. Button: OK (dismiss) + Copy Report (copies full text to clipboard via STA thread). Toggle off via MCM: `Don't show this popup at startup`.
+- **MCM tab — Campaign++ Compatibility:** Full per-mod breakdown. Each mod gets its own group with one row per overlapping method. Row labels use player-facing names ("Town Food Supply", "Troop Recruitment Cost", etc.). Hover hints give a plain-language explanation of the overlap and confidence level.
+- **Core Game Systems section:** Tracks whether other mods have fully replaced Campaign++'s game models (food, volunteer, militia, prosperity, etc.). Detected at campaign load. Shows "OK" / "Replaced - auto-patched" / "[CHECK] May need attention" per system.
+- **Clipboard copy:** `System.Windows.Forms.Clipboard.SetText` via STA thread wrapper. Green in-game notification confirms copy.
+- **No hardcoded dependencies:** Removing the optional Economy Overhaul `SubModule.xml` load hint — Campaign++ no longer references any specific optional mod.
+
+**Compatibility file table:**
+
+| File | Status |
+|------|--------|
+| `B1071_CompatibilityChecker.cs` | **NEW** — runtime scanner: Harmony scan, model scan, risk scoring, popup builder, MCM text helpers |
+| `B1071_CompatibilityFluentSettings.cs` | **NEW** — MCM tab builder: per-mod groups, per-method rows, Core Systems section, clipboard helper |
+| `B1071_CompatibilityBehavior.cs` | **NEW** — CampaignBehaviorBase: triggers model scan on campaign start, bridges checker to settings |
+| `SubModule.cs` | Modified — behavior registration, startup popup trigger |
+| `Byzantium1071.csproj` | Modified — `System.Windows.Forms` reference added |
+| `_Module/SubModule.xml` | Modified — removed optional Economy Overhaul load-order hint |
+
+---
+
 ## [0.2.0.1] — 2026-03-01
 
 ### Feature — Clan Survival (Kingdom Destruction Rescue)

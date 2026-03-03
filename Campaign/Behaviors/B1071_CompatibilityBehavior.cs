@@ -28,6 +28,11 @@ namespace Byzantium1071.Campaign.Behaviors
                 B1071_CompatibilityChecker.ResetModelChecks();
                 B1071_CompatibilityChecker.RunModelChecks();
 
+                // Re-run the Harmony scan now that all mods (including those that patch lazily
+                // on first campaign load, e.g. RBM) have had a chance to apply their patches.
+                // The title-screen scan caught mods that patch at startup; this catches the rest.
+                B1071_CompatibilityChecker.RunHarmonyChecks();
+
                 // Rebuild the fluent MCM tab so the per-session model replacement data is current.
                 // Safe to call even if the initial Build failed — it will retry.
                 B1071_CompatibilityFluentSettings.Rebuild();
@@ -38,14 +43,14 @@ namespace Byzantium1071.Campaign.Behaviors
                     string popupText = B1071_CompatibilityChecker.BuildPopupText();
 
                     InformationManager.ShowInquiry(new InquiryData(
-                        titleText: "Campaign++ \u2014 Mod Compatibility Report",
+                        titleText: "Campaign++ - Mod Compatibility Report",
                         text: popupText,
                         isAffirmativeOptionShown: true,
-                        isNegativeOptionShown: false,
+                        isNegativeOptionShown: true,
                         affirmativeText: "OK",
-                        negativeText: string.Empty,
+                        negativeText: "Copy Report",
                         affirmativeAction: null,
-                        negativeAction: null
+                        negativeAction: () => B1071_CompatibilityFluentSettings.CopyToClipboard(popupText)
                     ));
                 }
             }
