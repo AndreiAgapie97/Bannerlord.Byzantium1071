@@ -215,7 +215,7 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Captor", "Where", "By", "Noble" },
             new[] { "Risk", "Kingdom", "Status", "Clan" },
             new[] { "Dist", "Clan", "Where", "Name" },
-            new[] { "Match", "Affil", "Detail", "Name" }
+            new[] { "Dist", "Affil", "Detail", "Name" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -234,7 +234,7 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 2, 1 },  // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1)
             new[] { 3, 1, 2, 0 },  // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0)
             new[] { 3, 1, 2, 0 },  // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0)
-            new[] { 3, 1, 2, 0 }   // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Match(0)
+            new[] { 3, 1, 2, 0 }   // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Dist(0)
         };
 
         internal static string SortText => _sortTextCached;
@@ -261,7 +261,7 @@ namespace Byzantium1071.Campaign.UI
             _activeTab = tab;
             _pageIndex = 0;
             _sortColumn = 0;
-            _sortAscending = tab == B1071LedgerTab.NearbyPools;
+            _sortAscending = tab == B1071LedgerTab.NearbyPools || tab == B1071LedgerTab.Search;
             UpdateSortTextCache();
             ForceRefresh();
         }
@@ -1138,7 +1138,7 @@ namespace Byzantium1071.Campaign.UI
                                 Detail = price + "d (×" + stock + ")",
                                 HasPosition = true,
                                 DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
-                                MatchScore = price,   // Price = relevance for market rows → default sort shows highest price first
+                                MatchScore = itemScore,
                                 SortValue = price
                             });
                         }
@@ -1170,6 +1170,33 @@ namespace Byzantium1071.Campaign.UI
 
             results.Sort((a, b) =>
             {
+                if (_sortColumn == 0)
+                {
+                    bool aUnknown = !a.HasPosition || a.DistanceSq >= float.MaxValue;
+                    bool bUnknown = !b.HasPosition || b.DistanceSq >= float.MaxValue;
+
+                    // Always keep unknown-distance rows at the end.
+                    if (aUnknown != bUnknown)
+                        return aUnknown ? 1 : -1;
+
+                    int distanceCompare = 0;
+                    if (!aUnknown && !bUnknown)
+                    {
+                        distanceCompare = a.DistanceSq.CompareTo(b.DistanceSq);
+                        if (!_sortAscending) distanceCompare = -distanceCompare;
+                    }
+
+                    if (distanceCompare != 0)
+                        return distanceCompare;
+
+                    // Keep market rows useful when distances tie.
+                    int priceCompare = b.SortValue.CompareTo(a.SortValue);
+                    if (priceCompare != 0)
+                        return priceCompare;
+
+                    return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
+                }
+
                 int compare = _sortColumn switch
                 {
                     1 => string.Compare(a.Affiliation, b.Affiliation, StringComparison.Ordinal),
@@ -1183,14 +1210,7 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.MatchScore.CompareTo(b.MatchScore)
                 };
 
-                if (_sortColumn == 0)
-                {
-                    if (!_sortAscending) compare = -compare;
-                }
-                else
-                {
-                    if (_sortAscending) compare = -compare;
-                }
+                if (_sortAscending) compare = -compare;
 
                 if (compare != 0) return compare;
 
@@ -1677,6 +1697,19 @@ namespace Byzantium1071.Campaign.UI
         {
             position = default;
 
+            // Main hero position should always come from MainParty on campaign map.
+            // Using settlement fallbacks here can overstate distance (e.g., to nearest
+            // settlement) and create impossible self-distance values.
+            if (hero == Hero.MainHero)
+            {
+                MobileParty? main = MobileParty.MainParty;
+                if (main != null)
+                {
+                    position = main.GetPosition2D;
+                    return true;
+                }
+            }
+
             MobileParty? party = hero.PartyBelongedTo;
             if (party != null)
             {
@@ -1703,6 +1736,12 @@ namespace Byzantium1071.Campaign.UI
                 foreach (Hero hero in Hero.AllAliveHeroes)
                 {
                     if (hero == null)
+                        continue;
+
+                    // Characters tab is for tracked world actors around the player.
+                    // Exclude the player hero to avoid redundant self-row and
+                    // impossible "distance-to-self" display.
+                    if (hero == Hero.MainHero)
                         continue;
 
                     if (!IsTrackedCharacter(hero))
