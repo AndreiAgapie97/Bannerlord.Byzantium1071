@@ -11,6 +11,7 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Behaviors
 {
@@ -583,9 +584,13 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (band < prevBand && pct <= threshold)
                 {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"\u26A0 Manpower critical at {pool.Name} ({pct}% - {newCur}/{max})",
-                        Colors.Red));
+                    TextObject msg = new TextObject("{=b1071_mp_critical_alert}Manpower critical at {POOL} ({PCT}% - {CUR}/{MAX})")
+                        .SetTextVariable("POOL", pool.Name)
+                        .SetTextVariable("PCT", pct)
+                        .SetTextVariable("CUR", newCur)
+                        .SetTextVariable("MAX", max);
+
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Red));
                 }
 
                 _lastAlertBand[poolId] = band;
@@ -1058,8 +1063,15 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 float remainingDays = Math.Max(0f, newExpiry - now);
                 string expiryText = FormatCampaignDateTime(newExpiry);
+                TextObject msg = new TextObject("{=b1071_mp_dbg_recovery_penalty}[B1071] Recovery penalty at {POOL}: {PENALTY}% until {EXPIRY} (~{DAYS} days, {REASON}).")
+                    .SetTextVariable("POOL", pool.Name)
+                    .SetTextVariable("PENALTY", (combined * 100f).ToString("0"))
+                    .SetTextVariable("EXPIRY", expiryText)
+                    .SetTextVariable("DAYS", remainingDays.ToString("0.0"))
+                    .SetTextVariable("REASON", reason);
+
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Recovery penalty at {pool.Name}: {(combined * 100f):0}% until {expiryText} (~{remainingDays:0.0} days, {reason})."));
+                    msg.ToString()));
             }
         }
 
@@ -1561,9 +1573,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (isPlayer)
                 {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"Not enough manpower in {pool.Name}. Allowed {allowed}/{amount}."
-                    ));
+                    TextObject msg = new TextObject("{=b1071_mp_not_enough_allowed}Not enough manpower in {POOL}. Allowed {ALLOWED}/{REQUESTED}.")
+                        .SetTextVariable("POOL", pool.Name)
+                        .SetTextVariable("ALLOWED", allowed)
+                        .SetTextVariable("REQUESTED", amount);
+
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString()));
                 }
             }
 
@@ -1577,9 +1592,21 @@ namespace Byzantium1071.Campaign.Behaviors
                     ? $"{recruitmentSettlement.Name}"
                     : $"{recruitmentSettlement.Name} (pool: {pool.Name})";
 
+                TextObject msg = new TextObject("{=b1071_mp_dbg_consume}[Manpower:{CONTEXT}] {TROOP} x{AMOUNT} (tier {TIER}) @ {WHERE} | costPer={COST_PER} allowed={ALLOWED} removed={REMOVED} | pool {BEFORE}->{AFTER}/{MAX}")
+                    .SetTextVariable("CONTEXT", context)
+                    .SetTextVariable("TROOP", troop.Name)
+                    .SetTextVariable("AMOUNT", amount)
+                    .SetTextVariable("TIER", troop.Tier)
+                    .SetTextVariable("WHERE", where)
+                    .SetTextVariable("COST_PER", costPer)
+                    .SetTextVariable("ALLOWED", allowed)
+                    .SetTextVariable("REMOVED", toRemove)
+                    .SetTextVariable("BEFORE", before)
+                    .SetTextVariable("AFTER", after)
+                    .SetTextVariable("MAX", max);
+
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[Manpower:{context}] {troop.Name} x{amount} (tier {troop.Tier}) @ {where} | " +
-                    $"costPer={costPer} allowed={allowed} removed={toRemove} | pool {before}->{after}/{max}"
+                    msg.ToString()
                 ));
             }
 
@@ -2343,9 +2370,18 @@ namespace Byzantium1071.Campaign.Behaviors
                 "raid");
 
             if (Settings.ShowPlayerDebugMessages)
+            {
+                TextObject msg = new TextObject("{=b1071_mp_dbg_raid_drain}[B1071] Raid on {VILLAGE}: {POOL} pool -{DRAIN} ({CUR}->{NEW}).")
+                    .SetTextVariable("VILLAGE", village.Name)
+                    .SetTextVariable("POOL", pool.Name)
+                    .SetTextVariable("DRAIN", drain)
+                    .SetTextVariable("CUR", cur)
+                    .SetTextVariable("NEW", newVal);
+
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Raid on {village.Name}: {pool.Name} pool -{drain} ({cur}→{newVal})",
+                    msg.ToString(),
                     Colors.Red));
+            }
             // War exhaustion: raid costs the defending kingdom.
             AddWarExhaustion(pool.OwnerClan?.Kingdom?.StringId, Settings.RaidExhaustionGain);        }
 
@@ -2412,9 +2448,18 @@ namespace Byzantium1071.Campaign.Behaviors
                 "siege");
 
             if (Settings.ShowPlayerDebugMessages)
+            {
+                TextObject msg = new TextObject("{=b1071_mp_dbg_siege_aftermath}[B1071] Siege aftermath ({TYPE}) at {SETTLEMENT}: pool set to {APPLIED} ({RETAIN} retain, clamped from {NEWVAL}).")
+                    .SetTextVariable("TYPE", aftermathType.ToString())
+                    .SetTextVariable("SETTLEMENT", settlement.Name)
+                    .SetTextVariable("APPLIED", appliedVal)
+                    .SetTextVariable("RETAIN", retainPct.ToString("P0"))
+                    .SetTextVariable("NEWVAL", newVal);
+
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Siege aftermath ({aftermathType}) at {settlement.Name}: pool set to {appliedVal} ({retainPct:P0} retain, clamped from {newVal})",
+                    msg.ToString(),
                     Colors.Red));
+            }
 
             // War exhaustion: siege costs both sides.
             AddWarExhaustion(previousOwnerClan?.Kingdom?.StringId, Settings.SiegeExhaustionDefender);
@@ -2663,8 +2708,16 @@ namespace Byzantium1071.Campaign.Behaviors
                     string newName = newOwner?.Name?.ToString() ?? "None";
                     string oldKName = oldKingdom?.Name?.ToString() ?? "None";
                     string newKName = newKingdom?.Name?.ToString() ?? "None";
+                    TextObject msg = new TextObject("{=b1071_mp_dbg_internal_owner_change}[B1071] Internal ownership change at {SETTLEMENT} ({DETAIL}): {OLD_OWNER}->{NEW_OWNER} (kingdom: {OLD_KINGDOM}->{NEW_KINGDOM}). No conquest effects.")
+                        .SetTextVariable("SETTLEMENT", settlement.Name)
+                        .SetTextVariable("DETAIL", detail.ToString())
+                        .SetTextVariable("OLD_OWNER", oldName)
+                        .SetTextVariable("NEW_OWNER", newName)
+                        .SetTextVariable("OLD_KINGDOM", oldKName)
+                        .SetTextVariable("NEW_KINGDOM", newKName);
+
                     InformationManager.DisplayMessage(new InformationMessage(
-                        $"[B1071] Internal ownership change at {settlement.Name} ({detail}): {oldName}→{newName} (kingdom: {oldKName}→{newKName}). No conquest effects."));
+                        msg.ToString()));
                 }
                 return;
             }
@@ -2713,8 +2766,19 @@ namespace Byzantium1071.Campaign.Behaviors
                 string newOwnerName = newOwner?.Name?.ToString() ?? "None";
                 string oldKingdomName = oldKingdom?.Name?.ToString() ?? "?";
                 string newKingdomName = newKingdom?.Name?.ToString() ?? "?";
+                TextObject msg = new TextObject("{=b1071_mp_dbg_conquest}[B1071] Conquest at {SETTLEMENT} ({DETAIL}): {OLD_OWNER} ({OLD_KINGDOM})->{NEW_OWNER} ({NEW_KINGDOM}), pool {CUR}->{NEW} ({RETAIN} retained).")
+                    .SetTextVariable("SETTLEMENT", settlement.Name)
+                    .SetTextVariable("DETAIL", detail.ToString())
+                    .SetTextVariable("OLD_OWNER", oldOwnerName)
+                    .SetTextVariable("OLD_KINGDOM", oldKingdomName)
+                    .SetTextVariable("NEW_OWNER", newOwnerName)
+                    .SetTextVariable("NEW_KINGDOM", newKingdomName)
+                    .SetTextVariable("CUR", cur)
+                    .SetTextVariable("NEW", newVal)
+                    .SetTextVariable("RETAIN", retainPct.ToString("P0"));
+
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[B1071] Conquest at {settlement.Name} ({detail}): {oldOwnerName} ({oldKingdomName})→{newOwnerName} ({newKingdomName}), pool {cur}→{newVal} ({retainPct:P0} retained)",
+                    msg.ToString(),
                     Colors.Yellow));
             }
 

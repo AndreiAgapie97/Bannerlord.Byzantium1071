@@ -6,6 +6,7 @@ using System.Text;
 using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.Localization;
 using TLCampaign = TaleWorlds.CampaignSystem.Campaign;
 
 namespace Byzantium1071.Campaign.Settings
@@ -263,7 +264,9 @@ namespace Byzantium1071.Campaign.Settings
             int modCount = distinctMods.Count;
 
             if (modCount == 0)
-                return HasAnyHarmonyConflicts ? "Detected - check details" : "No other mods detected";
+                return HasAnyHarmonyConflicts
+                    ? L("b1071_compat_summary_detected", "Detected - check details")
+                    : L("b1071_compat_summary_none", "No other mods detected");
 
             bool hasWarning = HasWarningOrAbove;
 
@@ -271,21 +274,21 @@ namespace Byzantium1071.Campaign.Settings
             {
                 string name = distinctMods[0].Key;
                 return hasWarning
-                    ? $"{name} - check below"
-                    : $"{name} - runs fine";
+                    ? new TextObject("{=b1071_compat_summary_one_warning}{MOD} - check below").SetTextVariable("MOD", name).ToString()
+                    : new TextObject("{=b1071_compat_summary_one_safe}{MOD} - runs fine").SetTextVariable("MOD", name).ToString();
             }
             return hasWarning
-                ? $"{modCount} mods - check details"
-                : $"{modCount} mods - all compatible";
+                ? new TextObject("{=b1071_compat_summary_many_warning}{COUNT} mods - check details").SetTextVariable("COUNT", modCount).ToString()
+                : new TextObject("{=b1071_compat_summary_many_safe}{COUNT} mods - all compatible").SetTextVariable("COUNT", modCount).ToString();
         }
 
         /// <summary>
         /// Short status for the model scan row in the Summary group.
         /// </summary>
         internal static string ModelStatusSummaryText() =>
-            !_modelChecksRan ? "Start a campaign to verify"
-            : HasModelIssues  ? "Issue found - see below"
-            : "All normal";
+            !_modelChecksRan ? L("b1071_compat_model_summary_start", "Start a campaign to verify")
+            : HasModelIssues  ? L("b1071_compat_model_summary_issue", "Issue found - see below")
+            : L("b1071_compat_model_summary_ok", "All normal");
 
         // ─── Stage 1: Harmony patch scan (runs at module screen, no campaign needed) ──
 
@@ -332,7 +335,7 @@ namespace Byzantium1071.Campaign.Settings
 
                     bool b1071HasBoolPrefix = info.Prefixes.Any(p =>
                         p.owner == B1071HarmonyId &&
-                        p.GetMethod(method)?.ReturnType == typeof(bool));
+                        SafeGetReturnType(p, method) == typeof(bool));
                     bool b1071HasPostfix = info.Postfixes.Any(p => p.owner == B1071HarmonyId);
 
                     string methodSig = $"{method.DeclaringType?.Name ?? "(dynamic)"}.{method.Name}";
@@ -342,7 +345,7 @@ namespace Byzantium1071.Campaign.Settings
                         bool otherHasTranspiler = info.Transpilers.Any(p => p.owner == otherId);
                         bool otherHasBoolPrefix = info.Prefixes.Any(p =>
                             p.owner == otherId &&
-                            p.GetMethod(method)?.ReturnType == typeof(bool));
+                            SafeGetReturnType(p, method) == typeof(bool));
                         bool otherHasPostfix = info.Postfixes.Any(p => p.owner == otherId);
 
                         var typeParts = new List<string>();
@@ -358,25 +361,33 @@ namespace Byzantium1071.Campaign.Settings
                         if (otherHasTranspiler)
                         {
                             risk = ConflictRisk.Warning;
-                            reason = "The other mod rewrites this calculation at a deep level. Worth checking in-game that both mods' effects feel right.";
+                            reason = L("b1071_compat_reason_warning_transpiler", "The other mod rewrites this calculation at a deep level. Worth checking in-game that both mods' effects feel right.");
                         }
                         else if (b1071HasBoolPrefix && otherHasBoolPrefix)
                         {
                             risk = ConflictRisk.Caution;
-                            reason = "Both mods have logic that can change the outcome here. Everything likely works, but it's worth playing a few sessions to see if anything feels off.";
+                            reason = L("b1071_compat_reason_caution_prefix", "Both mods have logic that can change the outcome here. Everything likely works, but it's worth playing a few sessions to see if anything feels off.");
                         }
                         else if (b1071HasPostfix && otherHasPostfix && IsOrderSensitiveAdditiveMethod(method))
                         {
                             risk = ConflictRisk.Caution;
-                            reason = "Both mods add their own effect to the same daily calculation. The combined result is usually fine - you might just notice slightly stronger numbers than with either mod alone.";
+                            reason = L("b1071_compat_reason_caution_postfix", "Both mods add their own effect to the same daily calculation. The combined result is usually fine - you might just notice slightly stronger numbers than with either mod alone.");
                         }
                         else
                         {
                             risk = ConflictRisk.Safe;
-                            reason = "Both mods add their own contribution here independently. No conflict.";
+                            reason = L("b1071_compat_reason_safe", "Both mods add their own contribution here independently. No conflict.");
                         }
 
                         MethodMcmHints.TryGetValue(method.Name, out var hints);
+                        var localizedHints = new List<string>();
+                        if (hints != null)
+                        {
+                            for (int hintIndex = 0; hintIndex < hints.Count; hintIndex++)
+                            {
+                                localizedHints.Add(L($"b1071_compat_hint_{method.Name.ToLowerInvariant()}_{hintIndex + 1}", hints[hintIndex]));
+                            }
+                        }
 
                         _harmonyConflicts.Add(new HarmonyConflict
                         {
@@ -385,7 +396,7 @@ namespace Byzantium1071.Campaign.Settings
                             OtherPatchTypes = patchTypes,
                             Risk = risk,
                             RiskReason = reason,
-                            McmHints = hints ?? new List<string>(),
+                            McmHints = localizedHints,
                         });
                     }
                 }
@@ -424,12 +435,13 @@ namespace Byzantium1071.Campaign.Settings
 
                     var activeType = activeModel.GetType();
 
-                    // If the active model IS the expected type (or a subclass), our patches fire normally
+                    // If the active model IS the expected type (or a subclass), our patches fire normally.
+                    // Note: IsAssignableFrom covers both exact match and subclass, so if this passes,
+                    // all Harmony patches on the expected type will fire via virtual dispatch.
                     if (check.ExpectedType.IsAssignableFrom(activeType)) continue;
 
-
-                    // Non-vanilla model detected
-                    bool isSubclass = activeType.IsSubclassOf(check.ExpectedType);
+                    // Non-vanilla model detected — a completely different type hierarchy.
+                    // Harmony patches on the expected vanilla type will NOT fire.
                     ConflictRisk risk;
                     string explanation;
 
@@ -438,12 +450,6 @@ namespace Byzantium1071.Campaign.Settings
                         risk = ConflictRisk.Safe;
                         explanation = $"Replaced by '{activeType.Name}'. " +
                                       "Campaign++ dynamic patching is ACTIVE - handled at runtime. No action needed.";
-                    }
-                    else if (isSubclass)
-                    {
-                        risk = ConflictRisk.Caution;
-                        explanation = $"Replaced by '{activeType.Name}' (subclass). " +
-                                      "Patches likely still fire via base() call, but verify in-game behavior.";
                     }
                     else
                     {
@@ -457,7 +463,7 @@ namespace Byzantium1071.Campaign.Settings
                     {
                         ModelName = check.Name,
                         ActiveTypeName = activeType.Name,
-                        IsSubclassOfExpected = isSubclass,
+                        IsSubclassOfExpected = false,
                         IsDynamicallyHandled = check.IsDynamicallyHandled,
                         Risk = risk,
                         Explanation = explanation,
@@ -490,25 +496,25 @@ namespace Byzantium1071.Campaign.Settings
 
             if (modGroups.Count == 0)
             {
-                sb.AppendLine("No other gameplay mods detected. Campaign++ is running on its own.");
+                sb.AppendLine(L("b1071_compat_popup_no_mods", "No other gameplay mods detected. Campaign++ is running on its own."));
             }
             else
             {
                 sb.AppendLine(HasWarningOrAbove
-                    ? "One or more areas worth checking - see details below."
-                    : "All mods running smoothly alongside Campaign++.");
+                    ? L("b1071_compat_popup_needs_check", "One or more areas worth checking - see details below.")
+                    : L("b1071_compat_popup_all_good", "All mods running smoothly alongside Campaign++."));
             }
             sb.AppendLine();
 
             // ── One line per mod ──
             if (modGroups.Count > 0)
             {
-                sb.AppendLine("Your mods:");
+                sb.AppendLine(L("b1071_compat_popup_your_mods", "Your mods:"));
                 foreach (var group in modGroups)
                 {
                     string name   = group.Key;
                     string status = GetModPopupStatus(group.ToList());
-                    sb.AppendLine($"  {name} - {status}");
+                    sb.AppendLine($"  {name} {L("b1071_compat_popup_mod_sep", "-")} {status}");
                 }
                 sb.AppendLine();
             }
@@ -517,14 +523,14 @@ namespace Byzantium1071.Campaign.Settings
             var systemIssues = _modelIssues.Where(i => i.Risk > ConflictRisk.Safe).ToList();
             if (systemIssues.Count > 0)
             {
-                sb.AppendLine("Game system replaced by another mod:");
+                sb.AppendLine(L("b1071_compat_popup_replaced_header", "Game system replaced by another mod:"));
                 foreach (var issue in systemIssues)
                     sb.AppendLine($"  {GetModelHintText(issue.ModelName)}");
                 sb.AppendLine();
             }
 
             // ── Footer ──
-            sb.Append("Open \"Campaign++ Compatibility\" in Mod Options to adjust settings or read area details.");
+            sb.Append(L("b1071_compat_popup_footer", "Open \"Campaign++ Compatibility\" in Mod Options to adjust settings or read area details."));
             return sb.ToString();
         }
 
@@ -562,11 +568,13 @@ namespace Byzantium1071.Campaign.Settings
         {
             var issue = _modelIssues.FirstOrDefault(i => i.ModelName == modelName);
             if (issue == null)
-                return _modelChecksRan ? "OK" : "Start a campaign to check";
+                return _modelChecksRan
+                    ? L("b1071_compat_model_status_ok", "OK")
+                    : L("b1071_compat_model_status_start_campaign", "Start a campaign to check");
 
-            if (issue.IsDynamicallyHandled) return "Replaced - auto-patched";
-            if (issue.IsSubclassOfExpected) return "[CHECK] May need attention";
-            return "[ISSUE] Features may be off";
+            if (issue.IsDynamicallyHandled) return L("b1071_compat_model_status_auto_patched", "Replaced - auto-patched");
+            if (issue.IsSubclassOfExpected) return L("b1071_compat_model_status_check", "[CHECK] May need attention");
+            return L("b1071_compat_model_status_issue", "[ISSUE] Features may be off");
         }
 
         /// <summary>
@@ -577,16 +585,23 @@ namespace Byzantium1071.Campaign.Settings
             var issue = _modelIssues.FirstOrDefault(i => i.ModelName == modelName);
             if (issue == null)
                 return _modelChecksRan
-                    ? $"{modelName}: No other mod has replaced this system. Campaign++ features here are working normally."
-                    : $"{modelName}: Load a campaign and the game will check this automatically.";
+                    ? new TextObject("{=b1071_compat_model_hint_ok}{MODEL}: No other mod has replaced this system. Campaign++ features here are working normally.")
+                        .SetTextVariable("MODEL", modelName).ToString()
+                    : new TextObject("{=b1071_compat_model_hint_load}{MODEL}: Load a campaign and the game will check this automatically.")
+                        .SetTextVariable("MODEL", modelName).ToString();
 
             if (issue.IsDynamicallyHandled)
-                return $"{modelName}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed.";
+                return new TextObject("{=b1071_compat_model_hint_handled}{MODEL}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed.")
+                    .SetTextVariable("MODEL", modelName).ToString();
 
             if (issue.IsSubclassOfExpected)
-                return $"{modelName}: Another mod has modified this system (as an extension of the original). Campaign++ features here should still work, but check in-game if something feels off.";
+                return new TextObject("{=b1071_compat_model_hint_subclass}{MODEL}: Another mod has modified this system (as an extension of the original). Campaign++ features here should still work, but check in-game if something feels off.")
+                    .SetTextVariable("MODEL", modelName).ToString();
 
-            return $"{modelName}: Another mod has fully replaced this system. Some Campaign++ features that affect {modelName.ToLower()} may not be active. Check in-game if something feels off.";
+            return new TextObject("{=b1071_compat_model_hint_replaced}{MODEL}: Another mod has fully replaced this system. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off.")
+                .SetTextVariable("MODEL", modelName)
+                .SetTextVariable("MODEL_LOWER", modelName.ToLower())
+                .ToString();
         }
 
         /// <summary>
@@ -594,9 +609,9 @@ namespace Byzantium1071.Campaign.Settings
         /// </summary>
         internal static string RiskLabel(ConflictRisk risk) => risk switch
         {
-            ConflictRisk.Warning => "REVIEW",
-            ConflictRisk.Caution => "STACKING",
-            _                    => "COMPATIBLE",
+            ConflictRisk.Warning => L("b1071_compat_risk_warning", "REVIEW"),
+            ConflictRisk.Caution => L("b1071_compat_risk_caution", "STACKING"),
+            _                    => L("b1071_compat_risk_safe", "COMPATIBLE"),
         };
 
         /// <summary>
@@ -605,9 +620,9 @@ namespace Byzantium1071.Campaign.Settings
         /// </summary>
         internal static string CompatibilityConfidenceText(ConflictRisk risk) => risk switch
         {
-            ConflictRisk.Warning => "Worth checking in-game.",
-            ConflictRisk.Caution => "Very likely fine.",
-            _                    => "No known issues.",
+            ConflictRisk.Warning => L("b1071_compat_confidence_warning", "Worth checking in-game."),
+            ConflictRisk.Caution => L("b1071_compat_confidence_caution", "Very likely fine."),
+            _                    => L("b1071_compat_confidence_safe", "No known issues."),
         };
 
         /// <summary>
@@ -616,19 +631,22 @@ namespace Byzantium1071.Campaign.Settings
         /// </summary>
         internal static string PlayerRowStatusText(ConflictRisk risk) => risk switch
         {
-            ConflictRisk.Warning => "Worth a look - hover to read",
-            ConflictRisk.Caution => "Both active - hover to read",
-            _                    => "Works fine together",
+            ConflictRisk.Warning => L("b1071_compat_row_warning", "Worth a look - hover to read"),
+            ConflictRisk.Caution => L("b1071_compat_row_caution", "Both active - hover to read"),
+            _                    => L("b1071_compat_row_safe", "Works fine together"),
         };
 
         internal static string GetInGameEffectText(string methodSignature)
         {
             string methodName = methodSignature?.Split('.').LastOrDefault() ?? string.Empty;
             if (methodName.Length > 0 && MethodInGameEffects.TryGetValue(methodName, out var text))
-                return text;
+                return L($"b1071_compat_effect_{methodName.ToLowerInvariant()}", text);
 
-            return "Multiple mods alter the same gameplay calculation; final behavior may differ from either mod's standalone intent.";
+            return L("b1071_compat_effect_generic", "Multiple mods alter the same gameplay calculation; final behavior may differ from either mod's standalone intent.");
         }
+
+        private static string L(string key, string fallback) =>
+            new TextObject($"{{={key}}}{fallback}").ToString();
 
         private static bool IsOrderSensitiveAdditiveMethod(MethodBase method)
         {
@@ -640,6 +658,17 @@ namespace Byzantium1071.Campaign.Settings
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Safely resolves the return type of a Harmony Patch's method.
+        /// GetMethod can throw on edge cases (dynamically generated patches, unloaded assemblies).
+        /// Returns null on failure instead of propagating the exception up to the scan loop.
+        /// </summary>
+        private static Type? SafeGetReturnType(HarmonyLib.Patch patch, MethodBase original)
+        {
+            try { return patch.GetMethod(original)?.ReturnType; }
+            catch { return null; }
         }
 
         // ─── Display helpers ──────────────────────────────────────────────────────
@@ -723,7 +752,7 @@ namespace Byzantium1071.Campaign.Settings
         {
             string methodName = methodSignature?.Split('.').LastOrDefault() ?? string.Empty;
             if (methodName.Length > 0 && PlayerFacingNames.TryGetValue(methodName, out var label))
-                return label;
+                return L($"b1071_compat_method_{methodName.ToLowerInvariant()}", label);
             return methodName; // fallback: raw method name
         }
 
@@ -768,7 +797,7 @@ namespace Byzantium1071.Campaign.Settings
         {
             var conflicts = _harmonyConflicts.Where(c => harmonyIds.Contains(c.OtherHarmonyId)).ToList();
             if (conflicts.Count == 0 || conflicts.Max(c => c.Risk) == ConflictRisk.Safe)
-                return "Compatible";
+                return L("b1071_compat_popup_mod_compatible", "Compatible");
 
             var notable = conflicts
                 .Where(c => c.Risk > ConflictRisk.Safe)
@@ -778,12 +807,18 @@ namespace Byzantium1071.Campaign.Settings
                 .Select(c => GetPlayerFacingMethodName(c.MethodSignature))
                 .Distinct().ToList();
             bool hasWarning = notable.Any(c => c.Risk == ConflictRisk.Warning);
-            string prefix     = hasWarning ? "Worth checking" : "Minor overlap";
-            string confidence = hasWarning ? "" : " - very likely fine";
+            string prefix     = hasWarning
+                ? L("b1071_compat_popup_prefix_warning", "Worth checking")
+                : L("b1071_compat_popup_prefix_overlap", "Minor overlap");
+            string confidence = hasWarning ? "" : L("b1071_compat_popup_confidence_suffix", " - very likely fine");
 
             return areas.Count == 1
                 ? $"{prefix}: {areas[0]}{confidence}"
-                : $"{prefix} in {areas.Count} areas{confidence}";
+                : new TextObject("{=b1071_compat_popup_multi}{PREFIX} in {COUNT} areas{CONFIDENCE}")
+                    .SetTextVariable("PREFIX", prefix)
+                    .SetTextVariable("COUNT", areas.Count)
+                    .SetTextVariable("CONFIDENCE", confidence)
+                    .ToString();
         }
     }
 }

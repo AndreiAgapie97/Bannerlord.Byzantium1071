@@ -108,7 +108,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _slaveItem = MBObjectManager.Instance.GetObject<ItemObject>("b1071_slave");
             if (_slaveItem == null)
             {
-                Debug.Print("[Byzantium1071][WARN] b1071_slave item not found in MBObjectManager — slave economy will be disabled.");
+                Debug.Print("[Byzantium1071][WARN] b1071_slave item not found in MBObjectManager - slave economy will be disabled.");
             }
             else
             {
@@ -129,7 +129,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         if (catProp != null && catProp.GetSetMethod(nonPublic: true) != null)
                         {
                             catProp.GetSetMethod(nonPublic: true)!.Invoke(_slaveItem, new object[] { registeredCat });
-                            Debug.Print($"[Byzantium1071][SlaveEconomy] Reassigned ItemCategory: {currentCatId} → {registeredCat.StringId} (via property setter)");
+                            Debug.Print($"[Byzantium1071][SlaveEconomy] Reassigned ItemCategory: {currentCatId} -> {registeredCat.StringId} (via property setter)");
                         }
                         else
                         {
@@ -140,7 +140,7 @@ namespace Byzantium1071.Campaign.Behaviors
                             if (field != null)
                             {
                                 field.SetValue(_slaveItem, registeredCat);
-                                Debug.Print($"[Byzantium1071][SlaveEconomy] Reassigned ItemCategory: {currentCatId} → {registeredCat.StringId} (via backing field)");
+                                Debug.Print($"[Byzantium1071][SlaveEconomy] Reassigned ItemCategory: {currentCatId} -> {registeredCat.StringId} (via backing field)");
                             }
                             else
                             {
@@ -234,7 +234,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 town.MarketData.SetSupplyDemand(slaveCat, maxReasonableSupply, demand);
                 B1071_VerboseLog.Log("SlaveEconomy",
-                    $"Supply EMA correction {town.Name}: {supply:F0} → {maxReasonableSupply:F0} " +
+                    $"Supply EMA correction {town.Name}: {supply:F0} -> {maxReasonableSupply:F0} " +
                     $"(stock={currentSlaveCount}, inStoreValue={inStoreValue}, demand={demand:F1}).");
             }
         }
@@ -594,7 +594,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         .ToString()
                     : "";
                 MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
-                    new TextObject("{=b1071_slave_enter_ok}Enslave prisoners  ({COUNT} T1–{MAXTIER} eligible{SKIPPED})")
+                    new TextObject("{=b1071_slave_enter_ok}Enslave prisoners  ({COUNT} T1-{MAXTIER} eligible{SKIPPED})")
                         .SetTextVariable("COUNT", enslavable)
                         .SetTextVariable("MAXTIER", maxTier)
                         .SetTextVariable("SKIPPED", skippedNote));
@@ -603,10 +603,10 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_SLAVE_ENTER_TEXT",
-                    new TextObject("{=b1071_slave_enter_none}Enslave prisoners  (0 eligible — {TOTAL} T{TIER}+)")
+                    new TextObject("{=b1071_slave_enter_none}Enslave prisoners  (0 eligible - {TOTAL} T{TIER}+)")
                         .SetTextVariable("TOTAL", totalPrisoners)
                         .SetTextVariable("TIER", maxTier + 1));
-                args.Tooltip = new TextObject("{=b1071_slave_enter_tip}Only Tier 1–{MAXTIER} prisoners can be enslaved. Take T{NEXTTIER}+ to a castle for recruitment conversion or ransom at the tavern.")
+                args.Tooltip = new TextObject("{=b1071_slave_enter_tip}Only Tier 1-{MAXTIER} prisoners can be enslaved. Take T{NEXTTIER}+ to a castle for recruitment conversion or ransom at the tavern.")
                     .SetTextVariable("MAXTIER", maxTier)
                     .SetTextVariable("NEXTTIER", maxTier + 1);
             }
@@ -629,13 +629,13 @@ namespace Byzantium1071.Campaign.Behaviors
             int    inventorySlaves = GetSlaveGoodsCount();
 
             string highTierNote = highTier > 0
-                ? new TextObject("{=b1071_slave_body_hightier}\nPrisoners T{NEXTTIER}+ (not enslaveable): {COUNT}  → take to castle or ransom\n")
+                ? new TextObject("{=b1071_slave_body_hightier}\nPrisoners T{NEXTTIER}+ (not enslaveable): {COUNT}  -> take to castle or ransom\n")
                     .SetTextVariable("NEXTTIER", maxTier + 1)
                     .SetTextVariable("COUNT", highTier)
                     .ToString()
                 : "\n";
 
-            string body = new TextObject("{=b1071_slave_body}Slave Trade - {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market.")
+            string body = new TextObject("{=b1071_slave_body}Slave Trade - {SETTLEMENT}\n\nPrisoners (T1-{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market.")
                 .SetTextVariable("SETTLEMENT", settlementName)
                 .SetTextVariable("MAXTIER", maxTier)
                 .SetTextVariable("ENSLAVEABLE", enslavable)
@@ -666,11 +666,11 @@ namespace Byzantium1071.Campaign.Behaviors
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
             args.IsEnabled       = true;
             MBTextManager.SetTextVariable("B1071_ENSLAVE_TEXT",
-                new TextObject("{=b1071_slave_enslave_text}Enslave prisoners  ({COUNT} T1–{MAXTIER} → +{COUNT} Slave goods){SKIPPED}")
+                new TextObject("{=b1071_slave_enslave_text}Enslave prisoners  ({COUNT} T1-{MAXTIER} -> +{COUNT} Slave goods){SKIPPED}")
                     .SetTextVariable("COUNT", enslavable)
                     .SetTextVariable("MAXTIER", maxTier)
                     .SetTextVariable("SKIPPED", skippedNote));
-            args.Tooltip = new TextObject("{=b1071_slave_enslave_tip}Converts all non-hero prisoners at Tier {MAXTIER} or below to Slave trade goods (1:1). Heroes and T{NEXTTIER}+ prisoners cannot be enslaved — take them to a castle for recruitment conversion or ransom at the tavern. Sell Slave goods via the town Trade screen. While Slave goods remain in the market, the town gains daily manpower, prosperity, and construction bonuses.")
+            args.Tooltip = new TextObject("{=b1071_slave_enslave_tip}Converts all non-hero prisoners at Tier {MAXTIER} or below to Slave trade goods (1:1). Heroes and T{NEXTTIER}+ prisoners cannot be enslaved - take them to a castle for recruitment conversion or ransom at the tavern. Sell Slave goods via the town Trade screen. While Slave goods remain in the market, the town gains daily manpower, prosperity, and construction bonuses.")
                 .SetTextVariable("MAXTIER", maxTier)
                 .SetTextVariable("NEXTTIER", maxTier + 1);
             return true;
@@ -687,13 +687,13 @@ namespace Byzantium1071.Campaign.Behaviors
             if (converted > 0)
             {
                 string keptNote = highTierBefore > 0
-                    ? new TextObject("{=b1071_slave_enslave_kept} ({COUNT} T{TIER}+ kept — take to castle or ransom)")
+                    ? new TextObject("{=b1071_slave_enslave_kept} ({COUNT} T{TIER}+ kept - take to castle or ransom)")
                         .SetTextVariable("COUNT", highTierBefore)
                         .SetTextVariable("TIER", maxTier + 1)
                         .ToString()
                     : "";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_slave_enslaved_msg}Enslaved {COUNT} T1–{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
+                    new TextObject("{=b1071_slave_enslaved_msg}Enslaved {COUNT} T1-{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
                         .SetTextVariable("COUNT", converted)
                         .SetTextVariable("MAXTIER", maxTier)
                         .SetTextVariable("PLURAL", converted != 1 ? "s" : string.Empty)

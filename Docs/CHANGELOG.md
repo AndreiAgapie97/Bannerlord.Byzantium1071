@@ -40,6 +40,15 @@ All toggles are **mirrors** of the corresponding settings in the full Campaign++
 - **README.md** updated: `# Byzantium1071` → `# Campaign++ (formerly Byzantium 1071)` with subtitle
 - **SubModule.xml** version bumped to `v0.2.6.0`
 
+### Fix — Localization Hardening (Bannerlord-native)
+
+**Final pass completed for keyed localization compliance with no gameplay logic changes.**
+
+- Migrated remaining player-facing manpower/recruitment notifications to keyed `TextObject` entries (`{=key}`) in code paths that previously used hardcoded literals.
+- Added missing EN/ZH/FR dictionary entries for new keys and validated placeholder parity.
+- Verified full language-pack integrity after the pass: EN/FR/ZH counts aligned, no missing or extra keys, no placeholder mismatches.
+- Confirmed campaign compile/build safety after localization changes (no new errors).
+
 ### Investigation — Overlay Save-Load (No Code Change)
 
 Investigated contributor report of overlay not appearing after save-load. Code review confirmed the architecture is correct: `Tick()` runs from `OnApplicationTick`, `IsCampaignMapReady()` properly gates injection, `PanelInjectionGuard` resets on `OnGameEnd`. Likely a mod conflict on the contributor's end.

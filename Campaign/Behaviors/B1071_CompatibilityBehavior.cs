@@ -2,6 +2,7 @@ using Byzantium1071.Campaign.Settings;
 using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Behaviors
 {
@@ -43,12 +44,12 @@ namespace Byzantium1071.Campaign.Behaviors
                     string popupText = B1071_CompatibilityChecker.BuildPopupText();
 
                     InformationManager.ShowInquiry(new InquiryData(
-                        titleText: "Campaign++ - Mod Compatibility Report",
+                        titleText: new TextObject("{=b1071_compat_title}Campaign++ - Playing Well With Others?").ToString(),
                         text: popupText,
                         isAffirmativeOptionShown: true,
                         isNegativeOptionShown: true,
-                        affirmativeText: "OK",
-                        negativeText: "Copy Report",
+                        affirmativeText: new TextObject("{=b1071_compat_ok}OK").ToString(),
+                        negativeText: new TextObject("{=b1071_compat_copy_report}Copy Report").ToString(),
                         affirmativeAction: null,
                         negativeAction: () => B1071_CompatibilityFluentSettings.CopyToClipboard(popupText)
                     ));

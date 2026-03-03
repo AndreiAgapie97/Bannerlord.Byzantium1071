@@ -37,6 +37,133 @@
     <string id="b1071_cr_hint_recruit_clan_waiver" text="Recruit one {TROOP} (clan waivers — free)" />
     <string id="b1071_cr_hint_not_enough_gold" text="Not enough gold (need {COST})" />
     <string id="b1071_cr_hint_not_ready" text="Not yet ready — {STATUS}" />
+    <string id="b1071_compat_copied" text="[Campaign++] Compatibility report copied to clipboard." />
+    <string id="b1071_compat_copy_report" text="Copy Report" />
+    <string id="b1071_compat_no_campaign" text="[Campaign++] Load a campaign first to see the full compatibility report." />
+    <string id="b1071_compat_ok" text="OK" />
+    <string id="b1071_compat_title" text="Campaign++ - Playing Well With Others?" />
+    <string id="b1071_compat_popup_no_mods" text="No other gameplay mods detected. Campaign++ is running on its own." />
+    <string id="b1071_compat_popup_needs_check" text="One or more areas worth checking - see details below." />
+    <string id="b1071_compat_popup_all_good" text="All mods running smoothly alongside Campaign++." />
+    <string id="b1071_compat_popup_your_mods" text="Your mods:" />
+    <string id="b1071_compat_popup_mod_sep" text="-" />
+    <string id="b1071_compat_popup_replaced_header" text="Game system replaced by another mod:" />
+    <string id="b1071_compat_popup_footer" text="Open &quot;Campaign++ Compatibility&quot; in Mod Options to adjust settings or read area details." />
+    <string id="b1071_compat_model_status_ok" text="OK" />
+    <string id="b1071_compat_model_status_start_campaign" text="Start a campaign to check" />
+    <string id="b1071_compat_model_status_auto_patched" text="Replaced - auto-patched" />
+    <string id="b1071_compat_model_status_check" text="[CHECK] May need attention" />
+    <string id="b1071_compat_model_status_issue" text="[ISSUE] Features may be off" />
+    <string id="b1071_compat_model_hint_ok" text="{MODEL}: No other mod has replaced this system. Campaign++ features here are working normally." />
+    <string id="b1071_compat_model_hint_load" text="{MODEL}: Load a campaign and the game will check this automatically." />
+    <string id="b1071_compat_model_hint_handled" text="{MODEL}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed." />
+    <string id="b1071_compat_model_hint_subclass" text="{MODEL}: Another mod has modified this system (as an extension of the original). Campaign++ features here should still work, but check in-game if something feels off." />
+    <string id="b1071_compat_model_hint_replaced" text="{MODEL}: Another mod has fully replaced this system. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off." />
+    <string id="b1071_compat_risk_warning" text="REVIEW" />
+    <string id="b1071_compat_risk_caution" text="STACKING" />
+    <string id="b1071_compat_risk_safe" text="COMPATIBLE" />
+    <string id="b1071_compat_confidence_warning" text="Worth checking in-game." />
+    <string id="b1071_compat_confidence_caution" text="Very likely fine." />
+    <string id="b1071_compat_confidence_safe" text="No known issues." />
+    <string id="b1071_compat_row_warning" text="Worth a look - hover to read" />
+    <string id="b1071_compat_row_caution" text="Both active - hover to read" />
+    <string id="b1071_compat_row_safe" text="Works fine together" />
+    <string id="b1071_compat_effect_generic" text="Multiple mods alter the same gameplay calculation; final behavior may differ from either mod's standalone intent." />
+    <string id="b1071_compat_reason_warning_transpiler" text="The other mod rewrites this calculation at a deep level. Worth checking in-game that both mods' effects feel right." />
+    <string id="b1071_compat_reason_caution_prefix" text="Both mods have logic that can change the outcome here. Everything likely works, but it's worth playing a few sessions to see if anything feels off." />
+    <string id="b1071_compat_reason_caution_postfix" text="Both mods add their own effect to the same daily calculation. The combined result is usually fine - you might just notice slightly stronger numbers than with either mod alone." />
+    <string id="b1071_compat_reason_safe" text="Both mods add their own contribution here independently. No conflict." />
+    <string id="b1071_compat_popup_mod_compatible" text="Compatible" />
+    <string id="b1071_compat_popup_prefix_warning" text="Worth checking" />
+    <string id="b1071_compat_popup_prefix_overlap" text="Minor overlap" />
+    <string id="b1071_compat_popup_confidence_suffix" text=" - very likely fine" />
+    <string id="b1071_compat_popup_multi" text="{PREFIX} in {COUNT} areas{CONFIDENCE}" />
+    <string id="b1071_compat_summary_detected" text="Detected - check details" />
+    <string id="b1071_compat_summary_none" text="No other mods detected" />
+    <string id="b1071_compat_summary_one_warning" text="{MOD} - check below" />
+    <string id="b1071_compat_summary_one_safe" text="{MOD} - runs fine" />
+    <string id="b1071_compat_summary_many_warning" text="{COUNT} mods - check details" />
+    <string id="b1071_compat_summary_many_safe" text="{COUNT} mods - all compatible" />
+    <string id="b1071_compat_model_summary_start" text="Start a campaign to verify" />
+    <string id="b1071_compat_model_summary_issue" text="Issue found - see below" />
+    <string id="b1071_compat_model_summary_ok" text="All normal" />
+    <string id="b1071_compat_tab_title" text="Campaign++ Compatibility" />
+    <string id="b1071_compat_group_summary" text="Summary" />
+    <string id="b1071_compat_group_mod" text="Playing alongside: {MOD}" />
+    <string id="b1071_compat_group_core_systems" text="Core Game Systems" />
+    <string id="b1071_compat_label_report_status" text="Report status" />
+    <string id="b1071_compat_status_up_to_date" text="Up to date" />
+    <string id="b1071_compat_status_old" text="OLD - load a campaign to update" />
+    <string id="b1071_compat_hint_report_status" text="Shows whether this report reflects your current session. 'OLD' means you are viewing the report from before a campaign was loaded — mod list detection is complete but Core Game Systems have not been checked yet. Load any campaign and the report updates automatically." />
+    <string id="b1071_compat_label_suppress_popup" text="Don't show this popup at startup" />
+    <string id="b1071_compat_hint_suppress_popup" text="Turn this on if you don't want the compatibility report popping up every time you start a campaign. You can always read the report by clicking the button below." />
+    <string id="b1071_compat_label_overlap_summary" text="Running alongside" />
+    <string id="b1071_compat_hint_overlap_summary" text="This tells you at a glance whether Campaign++ is running smoothly alongside your other mods. &quot;Runs fine&quot; means both mods are active and their effects add up — no crashes, no missing features. &quot;Check below&quot; means one interaction is worth reviewing (hover those rows for plain-language details)." />
+    <string id="b1071_compat_label_model_summary" text="Core game systems" />
+    <string id="b1071_compat_hint_model_summary" text="Some mods replace the game's internal calculation engines entirely. This checks whether the systems Campaign++ relies on are intact. &quot;All normal&quot; means everything is working. If an issue is found, hover the rows in the section below." />
+    <string id="b1071_compat_label_tip" text="Tip" />
+    <string id="b1071_compat_tip_value" text="Load a campaign - full report pops-up" />
+    <string id="b1071_compat_hint_tip" text="When you load a campaign, a compatibility popup appears automatically. It shows the mod list (already visible above) plus Core Game Systems — whether any other mod has replaced the internal calculation engines Campaign++ relies on. That Core Systems section only updates after a campaign is active, which is why it shows 'Start a campaign to check' until then. You don't need to come back here — the popup tells you everything on campaign load." />
+    <string id="b1071_compat_button_open_full" text="Open Full Report" />
+    <string id="b1071_compat_button_open" text="Open Report" />
+    <string id="b1071_compat_hint_open_report" text="Reopens the same popup that appears automatically when you load a campaign. If 'Core game systems' above still reads 'Start a campaign to check', load a campaign first — the popup will appear on its own and the Core Systems section will fill in." />
+    <string id="b1071_compat_hint_refresh_suffix" text=" Refreshes when a campaign is started or loaded." />
+    <string id="b1071_qs_title" text="Campaign++ - Quick Settings" />
+    <string id="b1071_qs_group_core" text="Core Systems" />
+    <string id="b1071_qs_group_economy" text="Economy &amp; Investment" />
+    <string id="b1071_qs_group_recruitment" text="Recruitment &amp; Military" />
+    <string id="b1071_qs_group_province" text="Province &amp; Governance" />
+    <string id="b1071_qs_group_immersion" text="Immersion &amp; Modifiers" />
+    <string id="b1071_qs_name_war_effects" text="War Effects" />
+    <string id="b1071_qs_hint_war_effects" text="Battle casualties and siege aftermath drain settlement manpower pools. Raids deplete the bound settlement." />
+    <string id="b1071_qs_name_war_exhaustion" text="War Exhaustion" />
+    <string id="b1071_qs_hint_war_exhaustion" text="Kingdoms accumulate exhaustion from battles, raids, and sieges. High exhaustion slows regen and pushes the AI toward peace." />
+    <string id="b1071_qs_name_diplomacy_pressure" text="Diplomacy Pressure" />
+    <string id="b1071_qs_hint_diplomacy_pressure" text="War exhaustion influences AI peace/war voting. Exhausted kingdoms become more willing to accept peace." />
+    <string id="b1071_qs_name_forced_peace" text="Forced Peace at Crisis" />
+    <string id="b1071_qs_hint_forced_peace" text="When exhaustion exceeds a critical threshold the kingdom is forced to make peace with one enemy." />
+    <string id="b1071_qs_name_delayed_recovery" text="Delayed Recovery" />
+    <string id="b1071_qs_hint_delayed_recovery" text="Settlements suffer a regen penalty after raids, sieges, or conquest that decays over time." />
+    <string id="b1071_qs_name_militia_link" text="Militia Link" />
+    <string id="b1071_qs_hint_militia_link" text="Militia growth scales with the settlement's manpower ratio. Empty pools produce no militia." />
+    <string id="b1071_qs_name_slave_economy" text="Slave Economy" />
+    <string id="b1071_qs_hint_slave_economy" text="Raid villages for slaves, sell them at town markets. Slaves boost town prosperity and construction." />
+    <string id="b1071_qs_name_village_investment" text="Village Investment" />
+    <string id="b1071_qs_hint_village_investment" text="Spend gold at friendly villages for hearth growth, notable relations, influence, and power." />
+    <string id="b1071_qs_name_town_investment" text="Town Investment" />
+    <string id="b1071_qs_hint_town_investment" text="Spend gold at friendly towns for prosperity growth, notable relations, influence, and power." />
+    <string id="b1071_qs_name_minor_faction" text="Minor Faction Economy" />
+    <string id="b1071_qs_hint_minor_faction" text="Non-bandit minor factions receive a daily stipend so they don't go bankrupt." />
+    <string id="b1071_qs_name_garrison_wage" text="Garrison Wage Discount" />
+    <string id="b1071_qs_hint_garrison_wage" text="Garrison troops cost a reduced percentage of field wages (default 60%)." />
+    <string id="b1071_qs_name_castle_recruitment" text="Castle Recruitment" />
+    <string id="b1071_qs_hint_castle_recruitment" text="Castles generate elite troops from manpower and hold T4+ prisoners for conversion." />
+    <string id="b1071_qs_name_castle_access" text="Open Castle Access" />
+    <string id="b1071_qs_hint_castle_access" text="Removes the vanilla clan-tier bribe requirement for entering neutral castles." />
+    <string id="b1071_qs_name_combat_survivability" text="Combat Tier Survivability" />
+    <string id="b1071_qs_hint_combat_survivability" text="Higher-tier troops are more likely to be wounded instead of killed." />
+    <string id="b1071_qs_name_combat_armor" text="Combat Tier Armor Simulation" />
+    <string id="b1071_qs_hint_combat_armor" text="Troop armor is factored into autoresolve battle outcomes." />
+    <string id="b1071_qs_name_clan_survival" text="Clan Survival" />
+    <string id="b1071_qs_hint_clan_survival" text="Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service." />
+    <string id="b1071_qs_name_governance" text="Governance Strain" />
+    <string id="b1071_qs_hint_governance" text="Owning many distant settlements reduces loyalty, security, and prosperity of far-flung holdings." />
+    <string id="b1071_qs_name_devastation" text="Frontier Devastation" />
+    <string id="b1071_qs_hint_devastation" text="Raids cause persistent hearth, prosperity, security, and food penalties that decay slowly." />
+    <string id="b1071_qs_name_castle_supply" text="Castle Supply Chain" />
+    <string id="b1071_qs_hint_castle_supply" text="Castle regen above the local trickle is transferred from the nearest same-faction town, not created from nothing." />
+    <string id="b1071_qs_name_seasonal" text="Seasonal Regen" />
+    <string id="b1071_qs_hint_seasonal" text="Spring/summer boost manpower regen, winter reduces it." />
+    <string id="b1071_qs_name_peace_dividend" text="Peace Dividend" />
+    <string id="b1071_qs_hint_peace_dividend" text="Kingdoms at peace get a manpower regen multiplier bonus." />
+    <string id="b1071_qs_name_culture_disc" text="Culture Discount" />
+    <string id="b1071_qs_hint_culture_disc" text="Recruiting from matching-culture settlements costs less manpower." />
+    <string id="b1071_qs_name_governor" text="Governor Bonus" />
+    <string id="b1071_qs_hint_governor" text="Governors boost regen (Steward) and max pool size (Leadership)." />
+    <string id="b1071_qs_name_overlay" text="Overlay (M key)" />
+    <string id="b1071_qs_hint_overlay" text="In-game intelligence panel showing manpower, wars, factions, and more. Press M to toggle." />
+    <string id="b1071_qs_name_alerts" text="Manpower Alerts" />
+    <string id="b1071_qs_hint_alerts" text="Yellow warning messages when a settlement's manpower drops below 25%." />
     <string id="b1071_dev_frontier" text="Frontier Devastation" />
     <string id="b1071_dev_hinterlands" text="Devastated Hinterlands" />
     <string id="b1071_dev_villages" text="Devastated Villages" />
@@ -51,9 +178,19 @@
     <string id="B1071_Militia" text="Manpower availability" />
     <string id="b1071_mod_name" text="Campaign++" />
     <string id="b1071_mp_active" text="[Byzantium1071] Manpower active." />
+    <string id="b1071_mp_dbg_conquest" text="[B1071] Conquest at {SETTLEMENT} ({DETAIL}): {OLD_OWNER} ({OLD_KINGDOM})->{NEW_OWNER} ({NEW_KINGDOM}), pool {CUR}->{NEW} ({RETAIN} retained)." />
+    <string id="b1071_mp_dbg_consume" text="[Manpower:{CONTEXT}] {TROOP} x{AMOUNT} (tier {TIER}) @ {WHERE} | costPer={COST_PER} allowed={ALLOWED} removed={REMOVED} | pool {BEFORE}->{AFTER}/{MAX}" />
     <string id="b1071_mp_debug_pool" text="[Manpower] {WHERE}: {CUR}/{MAX}" />
+    <string id="b1071_mp_dbg_internal_owner_change" text="[B1071] Internal ownership change at {SETTLEMENT} ({DETAIL}): {OLD_OWNER}->{NEW_OWNER} (kingdom: {OLD_KINGDOM}->{NEW_KINGDOM}). No conquest effects." />
+    <string id="b1071_mp_dbg_raid_drain" text="[B1071] Raid on {VILLAGE}: {POOL} pool -{DRAIN} ({CUR}->{NEW})." />
+    <string id="b1071_mp_dbg_recovery_penalty" text="[B1071] Recovery penalty at {POOL}: {PENALTY}% until {EXPIRY} (~{DAYS} days, {REASON})." />
+    <string id="b1071_mp_dbg_siege_aftermath" text="[B1071] Siege aftermath ({TYPE}) at {SETTLEMENT}: pool set to {APPLIED} ({RETAIN} retain, clamped from {NEWVAL})." />
+    <string id="b1071_mp_critical_alert" text="Manpower critical at {POOL} ({PCT}% - {CUR}/{MAX})" />
+    <string id="b1071_mp_not_enough_allowed" text="Not enough manpower in {POOL}. Allowed {ALLOWED}/{REQUESTED}." />
     <string id="b1071_mp_raid_cap" text="[B1071] Raid at {VILLAGE}: daily raid cap reached, no manpower drain." />
     <string id="b1071_mp_raid_not_completed" text="[B1071] Raid not completed at {VILLAGE}: no manpower drain." />
+    <string id="b1071_ui_mp_confirm_block" text="Manpower: cannot confirm — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
+    <string id="b1071_ui_mp_recruit_all_block" text="Manpower: Recruit All blocked — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
     <string id="b1071_overlay_title" text="Campaign++ Overlay" />
     <string id="b1071_panel_text" text="Campaign++ Overlay\n[Press M to toggle]" />
     <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market." />
@@ -91,7 +228,7 @@
     <string id="b1071_ti_civic" text="Civic Patronage" />
     <string id="b1071_ti_enter" text="🏛 Invest in town" />
     <string id="b1071_ti_enter_active" text="🏛 Invest in town  (active — {DAYS} days remaining)" />
-    <string id="b1071_ti_enter_need" text="🏛 Invest in town  (need {COST}⬮)" />
+    <string id="b1071_ti_enter_need" text="🏛 Invest in town  (need {COST}d)" />
     <string id="b1071_ti_player_msg" text="🏛 {TIER} investment in {TOWN}: -{COST}d, +{PROS} prosperity/day for {DAYS} days" />
     <string id="b1071_ti_plus_influence" text=", +{INF} influence" />
     <string id="b1071_ti_plus_relation" text=", +{REL} relation" />
@@ -126,7 +263,7 @@
     <string id="b1071_vi_body" text="🏠  Village Patronage — {VILLAGE}\n\nHearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires." />
     <string id="b1071_vi_enter" text="🏠 Invest in village" />
     <string id="b1071_vi_enter_active" text="🏠 Invest in village  (active — {DAYS} days remaining)" />
-    <string id="b1071_vi_enter_need" text="🏠 Invest in village  (need {COST}⬮)" />
+    <string id="b1071_vi_enter_need" text="🏠 Invest in village  (need {COST}d)" />
     <string id="b1071_vi_patronage" text="Patronage" />
     <string id="b1071_vi_player_msg" text="🏠 {TIER} investment in {VILLAGE}: -{COST}d, +{HEARTH} hearth/day for {DAYS} days" />
     <string id="b1071_vi_plus_influence" text=", +{INF} influence" />

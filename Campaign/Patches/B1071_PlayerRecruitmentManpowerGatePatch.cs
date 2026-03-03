@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Patches
 {
@@ -40,9 +41,13 @@ namespace Byzantium1071.Campaign.Patches
                 }
 
                 string poolName = pool?.Name?.ToString() ?? "pool";
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Manpower: cannot recruit {troop.Character.Name} — {poolName} needs {costPer}, only {available} left.",
-                    Colors.Yellow));
+                TextObject msg = new TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left.")
+                    .SetTextVariable("TROOP", troop.Character.Name)
+                    .SetTextVariable("POOL", poolName)
+                    .SetTextVariable("COST", costPer)
+                    .SetTextVariable("LEFT", available);
+
+                InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
                 return false;
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] PlayerRecruitmentSingleGatePatch error: {ex}"); return true; }
@@ -97,9 +102,13 @@ namespace Byzantium1071.Campaign.Patches
 
                 string poolName = pool?.Name?.ToString() ?? "pool";
                 string troopName = blockedTroop?.Name?.ToString() ?? "troop";
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Manpower: Recruit All blocked — {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.",
-                    Colors.Yellow));
+                TextObject msg = new TextObject("{=b1071_ui_mp_recruit_all_block}Manpower: Recruit All blocked — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left.")
+                    .SetTextVariable("POOL", poolName)
+                    .SetTextVariable("NEEDED", neededCost)
+                    .SetTextVariable("TROOP", troopName)
+                    .SetTextVariable("LEFT", availableBefore);
+
+                InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
                 return false;
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] PlayerRecruitmentAllGatePatch error: {ex}"); return true; }
@@ -149,9 +158,13 @@ namespace Byzantium1071.Campaign.Patches
 
                 string poolName = pool?.Name?.ToString() ?? "pool";
                 string troopName = blockedTroop?.Name?.ToString() ?? "troop";
-                InformationManager.DisplayMessage(new InformationMessage(
-                    $"Manpower: cannot confirm — {poolName} needs {neededCost} for {troopName}, only {availableBefore} left.",
-                    Colors.Yellow));
+                TextObject msg = new TextObject("{=b1071_ui_mp_confirm_block}Manpower: cannot confirm — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left.")
+                    .SetTextVariable("POOL", poolName)
+                    .SetTextVariable("NEEDED", neededCost)
+                    .SetTextVariable("TROOP", troopName)
+                    .SetTextVariable("LEFT", availableBefore);
+
+                InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
                 return false;
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] PlayerRecruitmentOnDoneGatePatch error: {ex}"); return true; }

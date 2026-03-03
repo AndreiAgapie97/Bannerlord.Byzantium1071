@@ -275,7 +275,7 @@ namespace Byzantium1071.Campaign.Patches
         {
             Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyPrefix FIRED " +
                 $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
-            return !HandleDestroyClan(destroyedClan, "DestroyClanAction.Apply");
+            return !HandleDestroyClan(destroyedClan!, "DestroyClanAction.Apply");
         }
 
         [HarmonyPrefix]
@@ -284,7 +284,7 @@ namespace Byzantium1071.Campaign.Patches
         {
             Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyByClanLeaderDeathPrefix FIRED " +
                 $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
-            return !HandleDestroyClan(destroyedClan, "DestroyClanAction.ApplyByClanLeaderDeath");
+            return !HandleDestroyClan(destroyedClan!, "DestroyClanAction.ApplyByClanLeaderDeath");
         }
 
         /// <summary>

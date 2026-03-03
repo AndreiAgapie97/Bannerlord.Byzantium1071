@@ -356,7 +356,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             B1071_VerboseLog.Log("VillageInvestment",
                 $"{(isPlayer ? "Player" : investor.Name?.ToString() ?? "AI")} invested " +
-                $"tier {tier} ({cost}d) at {settlement.Name} — " +
+                $"tier {tier} ({cost}d) at {settlement.Name} - " +
                 $"hearth +{hearthBonus}/day for {duration}d, " +
                 $"relation +{relation}, power +{power}, influence +{influence:0.#}.");
         }
@@ -450,7 +450,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable("B1071_VILLAGE_INVEST_TEXT",
-                    new TextObject("{=b1071_vi_enter_active}Invest in village  (active — {DAYS} days remaining)")
+                    new TextObject("{=b1071_vi_enter_active}Invest in village  (active - {DAYS} days remaining)")
                         .SetTextVariable("DAYS", (int)Math.Ceiling(daysLeft)));
                 args.Tooltip = new TextObject("{=b1071_vi_tip_active}You already have an active investment in this village. You can invest again once the current patronage expires.");
                 return true;
@@ -486,7 +486,7 @@ namespace Byzantium1071.Campaign.Behaviors
             float hearth = s.Village.Hearth;
             string ownerName = s.OwnerClan?.Name?.ToString() ?? "unowned";
 
-            string body = new TextObject("{=b1071_vi_body}Village Patronage - {VILLAGE}\n\nHearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires.")
+            string body = new TextObject("{=b1071_vi_body}Village Patronage - {VILLAGE}\n\nHearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown - no re-investment until the current patronage expires.")
                 .SetTextVariable("VILLAGE", villageName)
                 .SetTextVariable("HEARTH", hearth.ToString("F0"))
                 .SetTextVariable("NOTABLES", notableCount)
@@ -508,7 +508,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     args.IsEnabled = false;
                     args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-                    args.Tooltip = new TextObject("{=b1071_vi_tip_days}Active investment — {DAYS} days remaining.")
+                    args.Tooltip = new TextObject("{=b1071_vi_tip_days}Active investment - {DAYS} days remaining.")
                         .SetTextVariable("DAYS", (int)Math.Ceiling(remaining));
                     return true;
                 }
@@ -553,10 +553,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
 
-            string label = $"{tierName}  ({cost}\u2b2e — +{hearthBonus:0.#} hearth/day, " +
+            string label = $"{tierName}  ({cost}d - +{hearthBonus:0.#} hearth/day, " +
                            $"+{relation} relation, {duration} days)";
 
-            if (Hero.MainHero.Gold < cost)
+            if (Hero.MainHero?.Gold < cost)
             {
                 args.IsEnabled = false;
                 MBTextManager.SetTextVariable(textVar, label);

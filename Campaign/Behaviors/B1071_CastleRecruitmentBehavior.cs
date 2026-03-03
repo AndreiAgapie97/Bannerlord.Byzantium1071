@@ -1113,7 +1113,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 string poolName = pool?.Name?.ToString() ?? "castle";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left.")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} - {POOL} needs {COST}, only {LEFT} left.")
                         .SetTextVariable("TROOP", troop.Name?.ToString() ?? "troop")
                         .SetTextVariable("POOL", poolName)
                         .SetTextVariable("COST", costPer)
@@ -1622,7 +1622,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
             else
             {
-                TaleWorlds.Library.Debug.Print($"[Byzantium1071][CastleRecruitment] PayHero: payingTown is null — gold created from thin air ({amount}g to {recipient.Name}). This should not happen.");
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071][CastleRecruitment] PayHero: payingTown is null - gold created from thin air ({amount}g to {recipient.Name}). This should not happen.");
                 GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount, disableNotification: true);
             }
         }

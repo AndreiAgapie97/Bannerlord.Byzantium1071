@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Patches
 {
@@ -60,9 +61,13 @@ namespace Byzantium1071.Campaign.Patches
 
                 if (isPlayer)
                 {
-                    InformationManager.DisplayMessage(new InformationMessage(
-                        $"Manpower: cannot recruit {troopName} — {poolName} needs {required}, only {available} left.",
-                        Colors.Yellow));
+                    TextObject msg = new TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left.")
+                        .SetTextVariable("TROOP", troopName)
+                        .SetTextVariable("POOL", poolName)
+                        .SetTextVariable("COST", required)
+                        .SetTextVariable("LEFT", available);
+
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
                 }
                 else if (B1071_McmSettings.Instance?.LogAiManpowerConsumption == true
                     || B1071_VerboseLog.Enabled)

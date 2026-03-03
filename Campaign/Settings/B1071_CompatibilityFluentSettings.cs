@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TLCampaign = TaleWorlds.CampaignSystem.Campaign;
 
 namespace Byzantium1071.Campaign.Settings
@@ -84,7 +85,7 @@ namespace Byzantium1071.Campaign.Settings
                 var modelNames = B1071_CompatibilityChecker.GetModelCheckNames();
 
                 ISettingsBuilder? builder = BaseSettingsBuilder
-                    .Create("b1071_compat", "Campaign++ Compatibility")
+                    .Create("b1071_compat", L("b1071_compat_tab_title", "Campaign++ Compatibility"))
                     ?.SetFolderName("Byzantium1071")
                     ?.SetFormat("json"); // persists the suppress toggle
 
@@ -94,44 +95,42 @@ namespace Byzantium1071.Campaign.Settings
                 // NOTE: SetHintText is NOT on ISettingsPropertyBuilder base — it lives on each
                 // specific sub-interface. Always call it directly on the builder param (b), never
                 // on a chained result that has been widened to ISettingsPropertyBuilder.
-                builder = builder.CreateGroup("Summary", g =>
+                builder = builder.CreateGroup(L("b1071_compat_group_summary", "Summary"), g =>
                 {
                     g.SetGroupOrder(0);
 
                     // Report freshness indicator — changes once a campaign is loaded.
                     g.AddText("report_status",
-                        "Report status",
+                        L("b1071_compat_label_report_status", "Report status"),
                         new ProxyRef<string>(
                             () => B1071_CompatibilityChecker.ModelChecksRan
-                                ? "Up to date"
-                                : "OLD - load a campaign to update",
+                                ? L("b1071_compat_status_up_to_date", "Up to date")
+                                : L("b1071_compat_status_old", "OLD - load a campaign to update"),
                             v => { }),
                         b =>
                         {
                             b.SetOrder(-1);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Shows whether this report reflects your current session. " +
-                                "'OLD' means you are viewing the report from before a campaign was loaded — " +
-                                "mod list detection is complete but Core Game Systems have not been checked yet. " +
-                                "Load any campaign and the report updates automatically.");
+                                                                L("b1071_compat_hint_report_status",
+                                                                    "Shows whether this report reflects your current session. 'OLD' means you are viewing the report from before a campaign was loaded — mod list detection is complete but Core Game Systems have not been checked yet. Load any campaign and the report updates automatically."));
                         });
 
                     // Suppress popup toggle — the only user-editable property in this tab.
                     g.AddBool("suppress_popup",
-                        "Don't show this popup at startup",
+                        L("b1071_compat_label_suppress_popup", "Don't show this popup at startup"),
                         new ProxyRef<bool>(() => _suppressCompatPopup, v => _suppressCompatPopup = v),
                         b =>
                         {
                             b.SetOrder(0);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Turn this on if you don't want the compatibility report popping up every time you start a campaign. " +
-                                "You can always read the report by clicking the button below.");
+                                L("b1071_compat_hint_suppress_popup",
+                                  "Turn this on if you don't want the compatibility report popping up every time you start a campaign. You can always read the report by clicking the button below."));
                         });
 
                     g.AddText("overlap_summary",
-                        "Running alongside",
+                        L("b1071_compat_label_overlap_summary", "Running alongside"),
                         new ProxyRef<string>(
                             () => B1071_CompatibilityChecker.OverallStatusSummaryText(),
                             v => { }),
@@ -140,13 +139,12 @@ namespace Byzantium1071.Campaign.Settings
                             b.SetOrder(1);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "This tells you at a glance whether Campaign++ is running smoothly alongside your other mods. " +
-                                "\"Runs fine\" means both mods are active and their effects add up — no crashes, no missing features. " +
-                                "\"Check below\" means one interaction is worth reviewing (hover those rows for plain-language details).");
+                                L("b1071_compat_hint_overlap_summary",
+                                  "This tells you at a glance whether Campaign++ is running smoothly alongside your other mods. \"Runs fine\" means both mods are active and their effects add up — no crashes, no missing features. \"Check below\" means one interaction is worth reviewing (hover those rows for plain-language details)."));
                         });
 
                     g.AddText("model_summary",
-                        "Core game systems",
+                        L("b1071_compat_label_model_summary", "Core game systems"),
                         new ProxyRef<string>(
                             () => B1071_CompatibilityChecker.ModelStatusSummaryText(),
                             v => { }),
@@ -155,42 +153,36 @@ namespace Byzantium1071.Campaign.Settings
                             b.SetOrder(2);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Some mods replace the game's internal calculation engines entirely. " +
-                                "This checks whether the systems Campaign++ relies on are intact. " +
-                                "\"All normal\" means everything is working. If an issue is found, hover the rows in the section below.");
+                                L("b1071_compat_hint_model_summary",
+                                  "Some mods replace the game's internal calculation engines entirely. This checks whether the systems Campaign++ relies on are intact. \"All normal\" means everything is working. If an issue is found, hover the rows in the section below."));
                         });
 
                     g.AddText("quick_guide",
-                        "Tip",
+                        L("b1071_compat_label_tip", "Tip"),
                         new ProxyRef<string>(
-                            () => "Load a campaign - full report pops-up",
+                            () => L("b1071_compat_tip_value", "Load a campaign - full report pops-up"),
                             v => { }),
                         b =>
                         {
                             b.SetOrder(3);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "When you load a campaign, a compatibility popup appears automatically. " +
-                                "It shows the mod list (already visible above) plus Core Game Systems — " +
-                                "whether any other mod has replaced the internal calculation engines Campaign++ relies on. " +
-                                "That Core Systems section only updates after a campaign is active, " +
-                                "which is why it shows 'Start a campaign to check' until then. " +
-                                "You don't need to come back here — the popup tells you everything on campaign load.");
+                                                                L("b1071_compat_hint_tip",
+                                                                    "When you load a campaign, a compatibility popup appears automatically. It shows the mod list (already visible above) plus Core Game Systems — whether any other mod has replaced the internal calculation engines Campaign++ relies on. That Core Systems section only updates after a campaign is active, which is why it shows 'Start a campaign to check' until then. You don't need to come back here — the popup tells you everything on campaign load."));
                         });
 
                     // Button to re-open the popup on demand.
                     g.AddButton("show_report",
-                        "Open Full Report",
+                        L("b1071_compat_button_open_full", "Open Full Report"),
                         new ProxyRef<Action>(() => _showReportDelegate, v => { }),
-                        "Open Report",
+                        L("b1071_compat_button_open", "Open Report"),
                         b =>
                         {
                             b.SetOrder(4);
                             b.SetRequireRestart(false);
                             b.SetHintText(
-                                "Reopens the same popup that appears automatically when you load a campaign. " +
-                                "If 'Core game systems' above still reads 'Start a campaign to check', " +
-                                "load a campaign first — the popup will appear on its own and the Core Systems section will fill in.");
+                                L("b1071_compat_hint_open_report",
+                                  "Reopens the same popup that appears automatically when you load a campaign. If 'Core game systems' above still reads 'Start a campaign to check', load a campaign first — the popup will appear on its own and the Core Systems section will fill in."));
                         });
                 });
 
@@ -211,7 +203,8 @@ namespace Byzantium1071.Campaign.Settings
                     var maxRisk = modGroup.Max(c => c.Risk);
                     // No risk label prefix in the group name — the player just sees the mod name.
                     // Risk info lives in the individual row values and their hover hints.
-                    string groupName = $"Playing alongside: {friendlyName}";
+                    string groupName = new TextObject("{=b1071_compat_group_mod}Playing alongside: {MOD}")
+                        .SetTextVariable("MOD", friendlyName).ToString();
 
                     // MCM property IDs must be alphanumeric + underscore.
                     string safeModId = Regex.Replace(modId, @"[^a-zA-Z0-9_]", "_");
@@ -265,7 +258,7 @@ namespace Byzantium1071.Campaign.Settings
                 // renders, so values reflect the current session without rebuilding property count.
                 var capturedModelNames = modelNames.ToList(); // snapshot for closure safety
 
-                builder = builder?.CreateGroup("Core Game Systems", g =>
+                builder = builder?.CreateGroup(L("b1071_compat_group_core_systems", "Core Game Systems"), g =>
                 {
                     g.SetGroupOrder(200);
 
@@ -286,7 +279,7 @@ namespace Byzantium1071.Campaign.Settings
                                 b.SetRequireRestart(false);
                                 b.SetHintText(
                                     B1071_CompatibilityChecker.GetModelHintText(modelName) +
-                                    " Refreshes when a campaign is started or loaded.");
+                                    L("b1071_compat_hint_refresh_suffix", " Refreshes when a campaign is started or loaded."));
                             });
                     }
                 });
@@ -310,19 +303,19 @@ namespace Byzantium1071.Campaign.Settings
                 if (TLCampaign.Current == null)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
-                        "[Campaign++] Load a campaign first to see the full compatibility report.",
+                        new TextObject("{=b1071_compat_no_campaign}[Campaign++] Load a campaign first to see the full compatibility report.").ToString(),
                         Colors.Yellow));
                     return;
                 }
 
                 string popupText = B1071_CompatibilityChecker.BuildPopupText();
                 InformationManager.ShowInquiry(new InquiryData(
-                    titleText: "Campaign++ - Playing Well With Others?",
+                    titleText: new TextObject("{=b1071_compat_title}Campaign++ - Playing Well With Others?").ToString(),
                     text: popupText,
                     isAffirmativeOptionShown: true,
                     isNegativeOptionShown: true,
-                    affirmativeText: "OK",
-                    negativeText: "Copy Report",
+                    affirmativeText: new TextObject("{=b1071_compat_ok}OK").ToString(),
+                    negativeText: new TextObject("{=b1071_compat_copy_report}Copy Report").ToString(),
                     affirmativeAction: null,
                     negativeAction: () => CopyToClipboard(popupText)));
             }
@@ -350,7 +343,7 @@ namespace Byzantium1071.Campaign.Settings
                 thread.Join(1000); // 1 s timeout
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    "[Campaign++] Compatibility report copied to clipboard.",
+                    new TextObject("{=b1071_compat_copied}[Campaign++] Compatibility report copied to clipboard.").ToString(),
                     Colors.Green));
             }
             catch (Exception ex)
@@ -359,5 +352,8 @@ namespace Byzantium1071.Campaign.Settings
                     $"[Byzantium1071] CompatibilityFluentSettings.CopyToClipboard error: {ex.Message}");
             }
         }
+
+        private static string L(string key, string fallback) =>
+            new TextObject($"{{={key}}}{fallback}").ToString();
     }
 }
