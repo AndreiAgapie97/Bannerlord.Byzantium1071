@@ -132,6 +132,8 @@ namespace Byzantium1071
         {
             base.OnSubModuleUnloaded();
 
+            B1071_SessionFileLog.EndSession();
+
             _harmony?.UnpatchAll("com.andrei.byzantium1071");
             _harmony = null;
 
@@ -164,6 +166,7 @@ namespace Byzantium1071
         {
             base.OnGameEnd(game);
             B1071_SessionAudit.EmitEndOfSessionSummary();
+            B1071_SessionFileLog.EndSession();
             B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
@@ -235,7 +238,10 @@ namespace Byzantium1071
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+            B1071_SessionFileLog.BeginSession();
             B1071_SessionAudit.ResetForNewSession();
+            if (!string.IsNullOrWhiteSpace(B1071_SessionFileLog.CurrentLogPath))
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Session file log: {B1071_SessionFileLog.CurrentLogPath}");
 
             if (game.GameType is TaleWorlds.CampaignSystem.Campaign && gameStarterObject is CampaignGameStarter starter)
             {

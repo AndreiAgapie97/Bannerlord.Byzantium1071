@@ -141,6 +141,13 @@ namespace Byzantium1071.Campaign
                     $"modelOverrides={modelSegment} | " +
                     $"conflicts(safe/caution/warning)={safe}/{caution}/{warning} | " +
                     $"patches={patchCounts}");
+                B1071_SessionFileLog.WriteTagged(
+                    "Compat",
+                    "Snapshot: " +
+                    $"modules={moduleSegment} | " +
+                    $"modelOverrides={modelSegment} | " +
+                    $"conflicts(safe/caution/warning)={safe}/{caution}/{warning} | " +
+                    $"patches={patchCounts}");
             }
             catch (Exception ex)
             {
@@ -170,6 +177,15 @@ namespace Byzantium1071.Campaign
 
                 Debug.Print(
                     "[Byzantium1071][Session] Summary: " +
+                    $"manpowerOps={manpowerOps} " +
+                    $"(consume={_manpowerConsumeOps},regen={_manpowerRegenOps},castleSupply={_manpowerCastleSupplyOps},blocked={_manpowerBlockedTroops}) | " +
+                    $"slavePriceRange={slaveRange} (snapshots={_slavePriceSnapshots},dailyBonus={_slaveDailyBonusEvents}) | " +
+                    $"compatFoodPatches={_compatFoodPatchesApplied} | " +
+                    $"harmony={harmony} | " +
+                    $"softFails={_softFails} [{softFailDetails}]");
+                B1071_SessionFileLog.WriteTagged(
+                    "Session",
+                    "Summary: " +
                     $"manpowerOps={manpowerOps} " +
                     $"(consume={_manpowerConsumeOps},regen={_manpowerRegenOps},castleSupply={_manpowerCastleSupplyOps},blocked={_manpowerBlockedTroops}) | " +
                     $"slavePriceRange={slaveRange} (snapshots={_slavePriceSnapshots},dailyBonus={_slaveDailyBonusEvents}) | " +

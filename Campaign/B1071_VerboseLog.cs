@@ -26,6 +26,7 @@ namespace Byzantium1071.Campaign
         {
             if (!Enabled) return;
             Debug.Print($"[Byzantium1071][{subsystem}] {message}");
+            B1071_SessionFileLog.WriteTagged(subsystem, message);
         }
     }
 }
