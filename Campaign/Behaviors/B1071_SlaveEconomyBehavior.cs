@@ -109,6 +109,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (_slaveItem == null)
             {
                 Debug.Print("[Byzantium1071][WARN] b1071_slave item not found in MBObjectManager - slave economy will be disabled.");
+                Byzantium1071.Campaign.B1071_SessionAudit.RecordSoftFail("SlaveEconomy", "slave_item_missing");
             }
             else
             {
@@ -145,6 +146,7 @@ namespace Byzantium1071.Campaign.Behaviors
                             else
                             {
                                 Debug.Print("[Byzantium1071][WARN] Could not find ItemCategory setter or backing field!");
+                                Byzantium1071.Campaign.B1071_SessionAudit.RecordSoftFail("SlaveEconomy", "item_category_rewire_missing");
                             }
                         }
 
@@ -159,6 +161,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     catch (Exception ex)
                     {
                         Debug.Print($"[Byzantium1071][ERROR] Failed to reassign ItemCategory: {ex.GetType().Name}: {ex.Message}");
+                        Byzantium1071.Campaign.B1071_SessionAudit.RecordSoftFail("SlaveEconomy", "item_category_reassign_failed");
                     }
                 }
 
@@ -252,6 +255,7 @@ namespace Byzantium1071.Campaign.Behaviors
             float supply = town.MarketData.GetSupply(slaveCat);
             float demand = town.MarketData.GetDemand(slaveCat);
             int price = town.MarketData.GetPrice(_slaveItem);
+            Byzantium1071.Campaign.B1071_SessionAudit.RecordSlavePriceSnapshot(price);
             B1071_VerboseLog.Log("SlaveEconomy",
                 $"Price snapshot {town.Name}: price={price}d, stock={slaveCount}, " +
                 $"supply={supply:F0}, demand={demand:F1}.");
@@ -361,6 +365,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // settlement pools never ran dry. Removed entirely.
 
             B1071_VerboseLog.Log("SlaveEconomy", $"Daily bonus {settlement.Name}: {slaveCount} slave(s), eff={eff:0.##} (labor only, no MP).");
+            Byzantium1071.Campaign.B1071_SessionAudit.RecordSlaveDailyBonus();
 
             // NOTE: Prosperity and Construction bonuses are applied via Harmony postfixes:
             //   B1071_SlaveProsperityPatch  → DefaultSettlementProsperityModel.CalculateProsperityChange

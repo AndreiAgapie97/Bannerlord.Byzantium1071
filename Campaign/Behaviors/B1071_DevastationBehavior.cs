@@ -161,6 +161,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (targetMethod == null)
                 {
                     Debug.Print($"[Byzantium1071] WARNING: Non-default food model {modelType.Name} has no CalculateTownFoodStocksChange — food patches disabled");
+                    Byzantium1071.Campaign.B1071_SessionAudit.RecordSoftFail("Compat", "food_model_missing_target_method");
                     return;
                 }
 
@@ -187,10 +188,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 _dynamicFoodPatchApplied = true;
                 Debug.Print($"[Byzantium1071] Non-default food model detected ({modelType.Name}), applied {applied} dynamic compat food patches");
+                Byzantium1071.Campaign.B1071_SessionAudit.RecordCompatFoodPatches(applied);
             }
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071] Failed to apply dynamic food compat patch: {ex.Message}");
+                Byzantium1071.Campaign.B1071_SessionAudit.RecordSoftFail("Compat", "dynamic_food_patch_failed");
             }
         }
 

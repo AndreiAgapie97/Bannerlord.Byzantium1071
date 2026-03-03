@@ -1,5 +1,6 @@
 using Byzantium1071.Campaign.Settings;
 using System;
+using Byzantium1071.Campaign;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -37,6 +38,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 // Rebuild the fluent MCM tab so the per-session model replacement data is current.
                 // Safe to call even if the initial Build failed — it will retry.
                 B1071_CompatibilityFluentSettings.Rebuild();
+
+                // Compact one-line startup snapshot for quick log audits.
+                B1071_SessionAudit.EmitStartupCompatibilitySnapshot();
 
                 // Show the popup unless the player has opted out via the suppress toggle in MCM.
                 if (!B1071_CompatibilityFluentSettings.SuppressPopup)

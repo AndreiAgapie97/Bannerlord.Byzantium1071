@@ -12,6 +12,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
+using Byzantium1071.Campaign;
 
 
 namespace Byzantium1071
@@ -124,6 +125,7 @@ namespace Byzantium1071
             }
 
             TaleWorlds.Library.Debug.Print($"[Byzantium1071] Harmony patches applied: {ok}, failed: {failed}");
+            B1071_SessionAudit.SetHarmonyPatchResults(ok, failed);
         }
 
         protected override void OnSubModuleUnloaded()
@@ -161,6 +163,7 @@ namespace Byzantium1071
         public override void OnGameEnd(Game game)
         {
             base.OnGameEnd(game);
+            B1071_SessionAudit.EmitEndOfSessionSummary();
             B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
@@ -232,6 +235,7 @@ namespace Byzantium1071
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+            B1071_SessionAudit.ResetForNewSession();
 
             if (game.GameType is TaleWorlds.CampaignSystem.Campaign && gameStarterObject is CampaignGameStarter starter)
             {

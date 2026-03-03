@@ -42,6 +42,12 @@ namespace Byzantium1071.Campaign.Settings
             public string Explanation = string.Empty;
         }
 
+        internal readonly record struct ModelIssueSnapshot(
+            string ModelName,
+            string ActiveTypeName,
+            ConflictRisk Risk,
+            bool IsDynamicallyHandled);
+
         private record ModelCheckEntry(
             string Name,
             Func<GameModels, object?> Getter,
@@ -559,6 +565,12 @@ namespace Byzantium1071.Campaign.Settings
         /// </summary>
         internal static IReadOnlyList<string> GetModelCheckNames() =>
             ModelChecks.Select(c => c.Name).ToList().AsReadOnly();
+
+        internal static IReadOnlyList<ModelIssueSnapshot> GetModelIssuesSnapshot() =>
+            _modelIssues
+                .Select(i => new ModelIssueSnapshot(i.ModelName, i.ActiveTypeName, i.Risk, i.IsDynamicallyHandled))
+                .ToList()
+                .AsReadOnly();
 
         /// <summary>
         /// Returns a human-readable status string for a given model check.

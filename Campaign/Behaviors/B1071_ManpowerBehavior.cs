@@ -561,6 +561,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 B1071_VerboseLog.Log("Manpower",
                     $"CastleSupply {pool.Name}: trickle={localTrickle} request={supplyRequest} " +
                     $"transfer={supplyTransfer} supply={supplySource} total=+{actualRegen}");
+                Byzantium1071.Campaign.B1071_SessionAudit.RecordManpowerCastleSupply();
             }
             else
             {
@@ -571,6 +572,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _manpowerByPoolId[poolId] = newCur;
 
             B1071_VerboseLog.Log("Manpower", $"Regen {pool.Name}: +{actualRegen} ({cur}->{newCur}/{max}).");
+            Byzantium1071.Campaign.B1071_SessionAudit.RecordManpowerRegen();
 
             // Crisis alerts for player settlements.
             if (Settings.EnableManpowerAlerts && IsPlayerSettlement(pool))
@@ -1635,6 +1637,7 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             B1071_VerboseLog.Log("Manpower", $"Consume [{context}] {troop.Name} x{amount} (tier {troop.Tier}) @ {recruitmentSettlement.Name}: pool {before}->{after}/{max}, costPer={costPer}, allowed={allowed}, removed={toRemove}.");
+            Byzantium1071.Campaign.B1071_SessionAudit.RecordManpowerConsume(toRemove);
         }
 
         private void EnsureEntry(Settlement? anySettlement)
