@@ -29,8 +29,8 @@ namespace Byzantium1071.Campaign.Patches
     /// Patch architecture:
     ///   1. <c>CampaignEvents.OnClanChangedKingdomEvent</c> handler (PRIMARY) — in the
     ///      behavior class. Fires for each clan when vanilla removes it from a dying
-    ///      kingdom. Immediately clears inherited wars and registers for tracking.
-    ///      Handles Path A completely. Daily tick keeps clearing wars while independent.
+    ///      kingdom. Registers the clan for tracking; the daily tick clears inherited
+    ///      wars. Handles Path A completely.
     ///
     ///   2. <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> prefixes (SAFETY NET) —
     ///      handles Path B. If the clan was already rescued by the event handler,
@@ -139,8 +139,7 @@ namespace Byzantium1071.Campaign.Patches
         ///
         /// Operation order:
         ///   1. Detach from kingdom (clan.Kingdom = null)
-        ///   2. Clear inherited wars
-        ///   3. Register for grace period
+        ///   2. Register for tracking (daily tick clears inherited wars)
         ///
         /// Fief transfer is NOT done here — when a kingdom loses all settlements
         /// (Path A), there are no fiefs left to transfer. In Path B, vanilla's
@@ -169,32 +168,13 @@ namespace Byzantium1071.Campaign.Patches
                 Debug.Print($"[Byzantium1071][ClanSurvival] Kingdom detach error for {clanName}: {ex.Message}");
             }
 
-            // ── Step 2: Clear inherited wars ──
-            try
-            {
-                int warsCleared = 0;
-                foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
-                {
-                    if (clan != enemy &&
-                        !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
-                            .IsAtConstantWar(clan, enemy))
-                    {
-                        try
-                        {
-                            MakePeaceAction.Apply(clan, enemy);
-                            warsCleared++;
-                        }
-                        catch { /* best effort */ }
-                    }
-                }
-                Debug.Print($"[Byzantium1071][ClanSurvival] Cleared {warsCleared} inherited war(s) for {clanName}.");
-            }
-            catch (Exception ex)
-            {
-                Debug.Print($"[Byzantium1071][ClanSurvival] War clearing error for {clanName}: {ex.Message}");
-            }
-
-            // ── Step 3: Register for tracking (daily war clearing) ──
+            // ── Step 2: Register for tracking (daily tick clears inherited wars) ──
+            //
+            // IMPORTANT: Do NOT call MakePeaceAction.Apply() here. This method is called
+            // from a DestroyClanAction Harmony prefix, which runs while DestroyKingdomAction
+            // is still active on the call stack. Calling another Campaign action here risks
+            // diplomatic state corruption (same class of bug as the event callback case).
+            // The daily tick (OnDailyTick) clears all inherited wars within 1 campaign day.
             try
             {
                 B1071_ClanSurvivalBehavior.Instance?.RegisterRescuedClan(clan);

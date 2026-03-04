@@ -17,16 +17,17 @@ namespace Byzantium1071.Campaign.Behaviors
     /// it calls <c>ChangeKingdomAction.ApplyInternal</c> with detail
     /// <c>LeaveByKingdomDestruction</c> for each clan BEFORE calling
     /// <c>Kingdom.DeactivateKingdom()</c>. Our event handler fires after each clan
-    /// leaves, immediately clears inherited wars and registers for tracking.
+    /// leaves and registers the clan for tracking. Inherited wars are NOT cleared
+    /// here (unsafe re-entrancy); the daily tick handles war clearing.
     ///
     /// Lifecycle:
     ///   1. Kingdom loses last settlement → vanilla removes clans one by one
     ///      via <c>ChangeKingdomAction(detail: LeaveByKingdomDestruction)</c>.
-    ///   2. Our <c>OnClanChangedKingdom</c> event handler intercepts each departure,
-    ///      clears inherited wars, and registers the clan for tracking.
+    ///   2. Our <c>OnClanChangedKingdom</c> event handler intercepts each departure
+    ///      and registers the clan for tracking. War clearing is deferred.
     ///   3. While the clan is independent (Kingdom == null), the daily tick
-    ///      continuously clears any new wars that accumulate. Kingdomless clans
-    ///      should be at peace with everyone.
+    ///      clears inherited wars and any new wars that accumulate. Kingdomless
+    ///      clans should be at peace with everyone.
     ///   4. Vanilla handles recruitment naturally — clans join kingdoms as vassals
     ///      or mercenaries via vanilla barter / AI defection systems.
     ///   5. Once the clan joins a kingdom, tracking stops.
@@ -111,7 +112,7 @@ namespace Byzantium1071.Campaign.Behaviors
         //    - Kingdom.DeactivateKingdom() has NOT been called yet
         //    - Other clans of the same kingdom may not have left yet
         //
-        //  We immediately clear inherited wars and register for grace period.
+        //  We register the clan for tracking; the daily tick clears inherited wars.
 
         private void OnClanChangedKingdom(
             Clan clan,
@@ -181,45 +182,51 @@ namespace Byzantium1071.Campaign.Behaviors
                     Debug.Print($"[Byzantium1071][ClanSurvival][Event] {clanName} heir promoted to {clan.Leader.Name}.");
                 }
 
-                // ── Clear inherited wars ──
-                int warsCleared = 0;
-                try
-                {
-                    foreach (IFaction enemy in clan.FactionsAtWarWith.ToList())
-                    {
-                        if (clan != enemy &&
-                            !TaleWorlds.CampaignSystem.Campaign.Current.Models.DiplomacyModel
-                                .IsAtConstantWar(clan, enemy))
-                        {
-                            try
-                            {
-                                MakePeaceAction.Apply(clan, enemy);
-                                warsCleared++;
-                            }
-                            catch { /* best effort — some wars may resist */ }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] War clearing error for {clanName}: {ex.Message}");
-                }
-
-                // ── Register for tracking (daily war clearing until they join a kingdom) ──
+                // ── Register for tracking (daily tick will clear inherited wars) ──
+                //
+                // IMPORTANT: Do NOT call MakePeaceAction.Apply() here. This event fires from
+                // within ChangeKingdomAction.ApplyInternal, and calling another Campaign action
+                // (MakePeaceAction) from inside a Campaign action's event callback is unsafe.
+                // It can leave Bannerlord's diplomatic state machine inconsistent, which manifests
+                // as save corruption when fast-forwarding with BetterTime + TimeLord.
+                // The daily tick (OnDailyTick) already clears inherited wars every campaign day,
+                // so the clan will be at peace within 1 campaign day.
+                //
+                // WHY THE 1-DAY GAP IS SAFE (wars cleared on next daily tick, not instantly):
+                //
+                //   Concern: a kingdom could recruit this clan before wars are cleared, causing
+                //   the new kingdom's leader to lose relations for "accepting a clan at war."
+                //
+                //   This does NOT happen, verified by decompiling vanilla (v1.3.15):
+                //
+                //   1. DiplomaticBartersBehavior.DailyTickClan guards against it:
+                //      AI will NOT recruit a clan that has wars misaligned with the kingdom
+                //      (unless the kingdom is 10× stronger than the war enemy).
+                //
+                //   2. ChangeKingdomAction.ApplyInternal calls
+                //      FactionHelper.AdjustFactionStancesForClanJoiningKingdom() BEFORE
+                //      setting clan.Kingdom. This iterates ALL clan stances and calls
+                //      MakePeaceAction.Apply() for any war the new kingdom doesn't share.
+                //      Wars are cleared before the clan becomes a member.
+                //
+                //   3. MakePeaceAction.ApplyInternal does NOT cause relation changes —
+                //      it only calls FactionManager.SetNeutral + fires OnMakePeace event.
+                //
+                //   Net result: even if recruitment happens before our daily tick,
+                //   vanilla's own join logic clears misaligned wars with zero relation cost.
                 RegisterRescuedClan(clan);
 
                 // Mark as rescued in shared state (prevents double-processing by safety nets)
                 B1071_ClanSurvivalPatch._alreadyRescued.Add(clan.StringId);
 
                 Debug.Print($"[Byzantium1071][ClanSurvival][Event] RESCUED {clanName}: " +
-                    $"cleared {warsCleared} inherited war(s), " +
                     $"leader: {clan.Leader?.Name}, heroes: {livingAdults.Count}. " +
-                    $"Tracking until they join a kingdom.");
+                    $"Inherited wars will be cleared on next daily tick.");
 
                 B1071_VerboseLog.Log("ClanSurvival",
                     $"Rescued {clanName} ({livingAdults.Count} heroes, leader: {clan.Leader?.Name}) " +
-                    $"from destruction of {kingdomName}. Cleared {warsCleared} war(s). " +
-                    $"Tracking until kingdom join.");
+                    $"from destruction of {kingdomName}. " +
+                    $"Tracking until kingdom join (wars cleared by daily tick).");
             }
             catch (Exception ex)
             {

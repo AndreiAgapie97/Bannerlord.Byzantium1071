@@ -74,7 +74,15 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:mcm.bannerlord.aragas.org)",
-      "Bash(dotnet build --no-restore -v quiet)"
+      "Bash(dotnet build --no-restore -v quiet)",
+      "Bash(grep -l \"SyncData\\\\|IDataStore\" c:/dev/BannerlordMods/Byzantium1071/Campaign/Behaviors/*.cs)",
+      "Bash(find \"/c/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/TimeLord\" -type f)",
+      "Bash(find \"/c/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/BetterTime\" -type f)",
+      "Bash(find \"/c/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/TimeLord\" -name \"*.dll\" -o -name \"*.cs\" -o -name \"*.xml\")",
+      "Bash(find \"/c/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/BetterTime\" -name \"*.dll\" -o -name \"*.cs\" -o -name \"*.xml\")",
+      "Bash(ilspycmd \"/c/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/BetterTime/bin/Win64_Shipping_Client/BetterTime.dll\" -p -o /c/dev/BannerlordMods/Byzantium1071/obj/decompiled/BetterTime)",
+      "Bash(ilspycmd \"c:/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/TimeLord/bin/Win64_Shipping_Client/TimeLord.dll\" -p -o \"c:/dev/BannerlordMods/Byzantium1071/obj/decompiled/TimeLord\")",
+      "Bash(ilspycmd \"c:/Program Files \\(x86\\)/Steam/steamapps/common/Mount & Blade II Bannerlord/Modules/BetterTime/bin/Win64_Shipping_Client/BetterTime.dll\" -p -o \"c:/dev/BannerlordMods/Byzantium1071/obj/decompiled/BetterTime\")"
     ]
   }
 }

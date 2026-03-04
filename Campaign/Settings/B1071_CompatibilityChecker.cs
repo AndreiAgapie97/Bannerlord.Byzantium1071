@@ -445,6 +445,12 @@ namespace Byzantium1071.Campaign.Settings
                     // all Harmony patches on the expected type will fire via virtual dispatch.
                     if (check.ExpectedType.IsAssignableFrom(activeType)) continue;
 
+                    // If the replacing type is from a native game assembly (TaleWorlds.*, SandBox,
+                    // StoryMode, etc.), it is NOT a third-party mod replacement — it is the vanilla
+                    // game itself or a core framework. Skip it silently to avoid false positives.
+                    string? activeAssembly = activeType.Assembly?.GetName()?.Name;
+                    if (IsNativeAssembly(activeAssembly)) continue;
+
                     // Non-vanilla model detected — a completely different type hierarchy.
                     // Harmony patches on the expected vanilla type will NOT fire.
                     ConflictRisk risk;
@@ -741,6 +747,21 @@ namespace Byzantium1071.Campaign.Settings
         }
 
         // ─── Gameplay mod detection helpers ───────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns true if the assembly name belongs to the native Bannerlord game (TaleWorlds.*,
+        /// SandBox, SandBoxCore, StoryMode, CustomBattle). Used in model checks to distinguish
+        /// vanilla game model replacements from third-party mod replacements.
+        /// </summary>
+        private static bool IsNativeAssembly(string? assemblyName)
+        {
+            if (string.IsNullOrEmpty(assemblyName)) return false;
+            return assemblyName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("SandBoxCore", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("StoryMode", StringComparison.OrdinalIgnoreCase) ||
+                   assemblyName.Equals("CustomBattle", StringComparison.OrdinalIgnoreCase);
+        }
 
         /// <summary>
         /// Returns true if the Harmony owner ID belongs to an infrastructure mod
