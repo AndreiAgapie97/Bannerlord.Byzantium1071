@@ -12,10 +12,12 @@
 
 ### Fix — Compatibility False Positives for Native Game Model Types
 
-**Core vanilla/SandBox model replacements are no longer reported as "another mod replaced this system."**
+**Core vanilla/SandBox/DLC model replacements are no longer reported as "another mod replaced this system."**
 
 - Added native-assembly gating in model checks via `IsNativeAssembly(...)`.
-- `RunModelChecks()` now skips warning generation when active model types come from `TaleWorlds*`, `SandBox`, `SandBoxCore`, `StoryMode`, or `CustomBattle` assemblies.
+- `RunModelChecks()` now skips warning generation when active model types come from `TaleWorlds*`, `SandBox*`, `StoryMode*`, `CustomBattle*`, `NavalDLC*`, `BirthAndDeath*`, `Multiplayer*`, or `Native*` assemblies.
+- Root cause: the official Naval DLC replaces `SettlementProsperityModel`, `SettlementSecurityModel`, `BuildingConstructionModel`, and `ClanFinanceModel` with thin decorator types (`NavalDLC*`) that delegate to the vanilla `Default*` model via `BaseModel`. Our Harmony patches on the `Default*` type still fire through this delegation chain, so these are safe to suppress.
+- Hardened native assembly detection to accept prefixed assembly names (e.g., `SandBox.ViewModelCollection`) so vanilla/core/DLC model types are never misreported as third-party replacements.
 
 ### Fix — Compatibility Report Lists Non-Harmony Gameplay Mods
 
@@ -25,6 +27,19 @@
 - Loaded third-party gameplay modules are now included even if they only use runtime APIs (no Harmony owner ID).
 - Native modules (`Native`, `SandBox`, `SandBoxCore`, `StoryMode`, `CustomBattle`), framework modules (Harmony/ButterLib/MCM/UIExtender/BLSE), and Campaign++ itself remain excluded.
 - Prevents false omission of mods like BetterTime from the popup while keeping per-mod overlap/risk logic unchanged.
+
+### UX — Time Mod Status Normalization
+
+- Removed the TimeLord/BetterTime special-caution override from the compatibility popup.
+- Time acceleration mods now show standard compatibility status (same rules as other mods) unless a concrete Harmony/model conflict is detected.
+
+### UX — Suppress BLSE / LauncherEx from Compatibility Popup
+
+**BLSE and LauncherEx no longer appear as entries in "Your mods" in the compatibility popup.**
+
+- Added `blse` and `launcherex` to `IsFrameworkId()` in `B1071_CompatibilityChecker`.
+- Both tools register Harmony IDs that were being picked up by the Harmony patch scan and shown as "Compatible" entries — harmless but noise for BLSE users.
+- They now join ButterLib, MCM, UIExtender, and 0Harmony on the infrastructure allowlist and are silently excluded.
 
 ### Versioning
 
