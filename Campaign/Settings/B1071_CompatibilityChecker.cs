@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -405,6 +406,11 @@ namespace Byzantium1071.Campaign.Settings
                         });
                     }
                 }
+
+                // Include loaded gameplay modules even if they do not use Harmony patches.
+                // This keeps the popup accurate for mods like BetterTime that mainly use
+                // runtime speed controls rather than patching gameplay methods.
+                CollectLoadedGameplayModules();
             }
             catch (Exception ex)
             {
@@ -684,6 +690,12 @@ namespace Byzantium1071.Campaign.Settings
         internal static string FriendlyModName(string harmonyId)
         {
             if (string.IsNullOrEmpty(harmonyId)) return harmonyId;
+
+            // Synthetic entry added from loaded module list (not a Harmony owner id).
+            const string modulePrefix = "module:";
+            if (harmonyId.StartsWith(modulePrefix, StringComparison.OrdinalIgnoreCase))
+                return harmonyId.Substring(modulePrefix.Length);
+
             if (KnownModNames.TryGetValue(harmonyId, out var known)) return known;
 
             // Strip leading "com.", "net.", "org." then strip author segment (first remaining dot-part)
@@ -706,6 +718,92 @@ namespace Byzantium1071.Campaign.Settings
             var words = s.Split(new[] { '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
             return string.Join(" ", words.Select(w =>
                 w.Length == 0 ? w : char.ToUpper(w[0]) + w.Substring(1)));
+        }
+
+        /// <summary>
+        /// Adds loaded third-party gameplay modules to the owner set so mods without Harmony
+        /// patches still appear in the compatibility popup.
+        /// </summary>
+        private static void CollectLoadedGameplayModules()
+        {
+            try
+            {
+                Type? helperType = Type.GetType("TaleWorlds.ModuleManager.ModuleHelper, TaleWorlds.ModuleManager", throwOnError: false);
+                MethodInfo? getModules = helperType?.GetMethod("GetModules", BindingFlags.Public | BindingFlags.Static);
+                if (getModules == null) return;
+
+                object? raw = getModules.Invoke(null, null);
+                if (raw is not IEnumerable modules) return;
+
+                foreach (object module in modules)
+                {
+                    string? moduleName = GetStringProp(module, "Name");
+                    string? moduleId = GetStringProp(module, "Id")
+                                     ?? GetStringProp(module, "ModuleId")
+                                     ?? GetStringProp(module, "Name");
+
+                    if (string.IsNullOrWhiteSpace(moduleName)) continue;
+                    if (string.IsNullOrWhiteSpace(moduleId)) continue;
+                    if (IsNativeOrFrameworkModule(moduleName!, moduleId!)) continue;
+
+                    // Keep module-origin entries distinct from Harmony owner ids.
+                    _allGameplayOwners.Add($"module:{moduleName}");
+                }
+            }
+            catch
+            {
+                // Non-fatal: popup still works from Harmony owner scan.
+            }
+        }
+
+        private static string? GetStringProp(object instance, string prop)
+        {
+            try
+            {
+                object? val = instance.GetType().GetProperty(prop, BindingFlags.Public | BindingFlags.Instance)?.GetValue(instance);
+                return val?.ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsNativeOrFrameworkModule(string moduleName, string moduleId)
+        {
+            if (string.IsNullOrWhiteSpace(moduleName) || string.IsNullOrWhiteSpace(moduleId))
+                return true;
+
+            string name = moduleName.Trim();
+            string id = moduleId.Trim();
+
+            // Never list this mod itself in "Your mods".
+            if (name.Equals("Byzantium1071", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("Campaign++", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("Byzantium1071", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Native game modules.
+            if (name.Equals("Native", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("SandBox Core", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("StoryMode", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("CustomBattle", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("Native", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("SandBoxCore", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("StoryMode", StringComparison.OrdinalIgnoreCase) ||
+                id.Equals("CustomBattle", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Common framework/infrastructure modules.
+            string n = name.ToLowerInvariant();
+            string i = id.ToLowerInvariant();
+            return n.Contains("harmony") || i.Contains("harmony") ||
+                   n.Contains("butterlib") || i.Contains("butterlib") ||
+                   n.Contains("mcm") || i.Contains("mcm") ||
+                   n.Contains("uiextender") || i.Contains("uiextender") ||
+                   n.Contains("blse") || i.Contains("blse");
         }
 
         /// <summary>

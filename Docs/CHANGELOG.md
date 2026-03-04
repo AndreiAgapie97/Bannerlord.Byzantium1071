@@ -1,5 +1,35 @@
 # Campaign++ — Changelog
 
+## [0.2.6.1] — 2026-03-04
+
+### Fix — Save Integrity with TimeLord + BetterTime + Campaign++
+
+**Eliminated unsafe nested Campaign action calls during clan rescue to prevent long fast-forward save corruption.**
+
+- Removed inline `MakePeaceAction.Apply()` calls from `OnClanChangedKingdom` (Path A) and `PerformRescue` (Path B).
+- War cleanup now runs only from top-level `DailyTickEvent` in `B1071_ClanSurvivalBehavior.OnDailyTick()`.
+- Preserved full rescue behavior: rescued clans are still registered immediately, tracked, persisted, and cleaned when eliminated or when joining kingdoms.
+
+### Fix — Compatibility False Positives for Native Game Model Types
+
+**Core vanilla/SandBox model replacements are no longer reported as "another mod replaced this system."**
+
+- Added native-assembly gating in model checks via `IsNativeAssembly(...)`.
+- `RunModelChecks()` now skips warning generation when active model types come from `TaleWorlds*`, `SandBox`, `SandBoxCore`, `StoryMode`, or `CustomBattle` assemblies.
+
+### Fix — Compatibility Report Lists Non-Harmony Gameplay Mods
+
+**Gameplay mods without Harmony patches now appear in "Your mods" as Compatible.**
+
+- Added module-level detection via `TaleWorlds.ModuleManager.ModuleHelper.GetModules()` inside compatibility scan.
+- Loaded third-party gameplay modules are now included even if they only use runtime APIs (no Harmony owner ID).
+- Native modules (`Native`, `SandBox`, `SandBoxCore`, `StoryMode`, `CustomBattle`), framework modules (Harmony/ButterLib/MCM/UIExtender/BLSE), and Campaign++ itself remain excluded.
+- Prevents false omission of mods like BetterTime from the popup while keeping per-mod overlap/risk logic unchanged.
+
+### Versioning
+
+- `_Module/SubModule.xml` version bumped to `v0.2.6.1`.
+
 ## [0.2.6.0] — 2026-03-04
 
 ### Feature — Quick Settings MCM Tab
