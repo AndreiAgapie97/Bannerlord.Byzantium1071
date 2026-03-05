@@ -365,11 +365,7 @@ FodyWeavers.xsd
 # Other files to ignore
 Docs/AUDIT_v0.1.7.5.md
 .claude/
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/tasks.json
-!.vscode/launch.json
+.vscode/
 
 # Accidental PowerShell placeholder artifact
 $null
