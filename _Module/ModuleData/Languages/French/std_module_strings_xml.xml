@@ -781,5 +781,202 @@
     <string id="b1071_mcm_t_fd9f47f48c" text="Seuil de conquête épuisé %" />
     <string id="b1071_mcm_t_ff01c1d5b8" text="Jours de récupération de conquête" />
     <string id="b1071_mcm_t_ff6f4a1b79" text="Épuisement de siège (attaquant)" />
+    <string id="b1071_mcm_display_name" text="Campaign++" />
+    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ v{VERSION} : les paramètres d'équilibrage ont été mis à jour vers les nouvelles valeurs par défaut. Personnalisez-les dans MCM si vous le souhaitez. ({DETAILS})" />
+    <string id="b1071_qs_name_truce_enforcement" text="Application de la trêve" />
+    <string id="b1071_qs_hint_truce_enforcement" text="Après une paix, empêche les deux royaumes de redéclarer la guerre pendant la durée de trêve configurée. Désactivez ceci si vous utilisez AI Influence ou un autre mod qui gère son propre timing de déclaration de guerre." />
+    <string id="b1071_overlay_search_placeholder" text="Saisir une recherche…" />
+    <string id="b1071_overlay_search_button" text="Rechercher" />
+    <string id="b1071_overlay_loading" text="Chargement..." />
+    <string id="b1071_overlay_page" text="Page {CURRENT}/{TOTAL}" />
+    <string id="b1071_overlay_err_behavior_unavailable" text="Comportement de main-d'œuvre indisponible." />
+    <string id="b1071_overlay_current_no_selection" text="Actuel - aucune colonie sélectionnée." />
+    <string id="b1071_overlay_title_current" text="Colonie actuelle" />
+    <string id="b1071_overlay_col_settlement" text="Colonie" />
+    <string id="b1071_overlay_col_manpower" text="Main-d'œuvre" />
+    <string id="b1071_overlay_col_regen_day" text="Régén./jour" />
+    <string id="b1071_overlay_col_pool" text="Réserve" />
+    <string id="b1071_overlay_current_hint_click" text="Cliquez gauche sur une colonie pour afficher ses détails." />
+    <string id="b1071_overlay_totals_selected" text="Sélection" />
+    <string id="b1071_overlay_type_town" text="Ville" />
+    <string id="b1071_overlay_type_castle" text="Château" />
+    <string id="b1071_overlay_type_village" text="Village" />
+    <string id="b1071_overlay_type_settlement" text="Colonie" />
+    <string id="b1071_overlay_regen_per_day" text="+{VALUE}/j" />
+    <string id="b1071_overlay_diag_regen" text="Régén. -{PENALTY}% ({DAYS} jours)" />
+    <string id="b1071_overlay_diag_war_pressure" text="Pression de guerre : {LEVEL}" />
+    <string id="b1071_overlay_pressure_rising" text="En hausse" />
+    <string id="b1071_overlay_pressure_crisis" text="Crise" />
+    <string id="b1071_overlay_diag_regen_dbg" text="DbgRégén" />
+    <string id="b1071_overlay_party" text="Groupe" />
+    <string id="b1071_overlay_status_prisoner_at" text="PRISONNIER @ {LOCATION}" />
+    <string id="b1071_overlay_army" text="Armée" />
+    <string id="b1071_overlay_status_army" text="Armée : {NAME}" />
+    <string id="b1071_overlay_status_at" text="À {NAME}" />
+    <string id="b1071_overlay_status_near" text="Près de {NAME}" />
+    <string id="b1071_overlay_status_unknown" text="Position inconnue" />
+    <string id="b1071_overlay_title_search" text="Renseignement de recherche" />
+    <string id="b1071_overlay_col_entity" text="Entité" />
+    <string id="b1071_overlay_col_affiliation" text="Affiliation" />
+    <string id="b1071_overlay_col_details" text="Détails" />
+    <string id="b1071_overlay_col_distance" text="Distance" />
+    <string id="b1071_overlay_search_prompt" text="Entrez une requête (ex. Andronikos, Grain)" />
+    <string id="b1071_overlay_search_scope" text="Héros, colonies, armées, prix du marché" />
+    <string id="b1071_overlay_totals_results" text="Résultats" />
+    <string id="b1071_overlay_totals_query" text="Requête" />
+    <string id="b1071_overlay_wanderer" text="Vagabond" />
+    <string id="b1071_overlay_type_hero" text="Héros" />
+    <string id="b1071_overlay_type_hero_prisoner" text="Héros*" />
+    <string id="b1071_overlay_independent" text="Indépendant" />
+    <string id="b1071_overlay_neutral" text="Neutre" />
+    <string id="b1071_overlay_detail_mp" text="MO {VALUE} ({PCT}%)" />
+    <string id="b1071_overlay_type_army" text="Armée" />
+    <string id="b1071_overlay_detail_cmd" text="Cmd : {NAME} ({SIZE})" />
+    <string id="b1071_overlay_type_clan" text="Clan" />
+    <string id="b1071_overlay_detail_clan" text="Fiefs {FIEFS} • Or {GOLD} • Rel {REL}" />
+    <string id="b1071_overlay_type_kingdom" text="Royaume" />
+    <string id="b1071_overlay_ruler" text="Souverain : {NAME}" />
+    <string id="b1071_overlay_detail_wars" text="Guerres {COUNT} • Épuis. {EXH}" />
+    <string id="b1071_overlay_type_market" text="Marché" />
+    <string id="b1071_overlay_detail_market" text="{PRICE}d (×{STOCK})" />
+    <string id="b1071_overlay_no_matches" text="Aucun résultat" />
+    <string id="b1071_overlay_try_broader" text="Essayez un terme plus large" />
+    <string id="b1071_overlay_title_search_count" text="Renseignement de recherche  ({COUNT} résultats)" />
+    <string id="b1071_overlay_dungeon" text="Donjon" />
+    <string id="b1071_overlay_on_map" text="Sur la carte" />
+    <string id="b1071_overlay_empty_prisoners" text="Registre des prisonniers&#10;Aucun noble emprisonné trouvé." />
+    <string id="b1071_overlay_title_prisoners" text="Registre mondial des prisonniers  ({COUNT} nobles)" />
+    <string id="b1071_overlay_col_noble" text="Noble" />
+    <string id="b1071_overlay_col_captor" text="Capteur" />
+    <string id="b1071_overlay_col_by" text="Par" />
+    <string id="b1071_overlay_col_where" text="Où" />
+    <string id="b1071_overlay_totals_total_nobles" text="Total nobles" />
+    <string id="b1071_overlay_totals_captor_factions" text="Factions captives : {COUNT}" />
+    <string id="b1071_overlay_vassal" text="Vassal" />
+    <string id="b1071_overlay_rich" text="Riche" />
+    <string id="b1071_overlay_poor" text="Pauvre" />
+    <string id="b1071_overlay_statuscode" text="{ALLEGIANCE}/{WEALTH}/Fiefs {COUNT}" />
+    <string id="b1071_overlay_empty_clans_no_player" text="Registre des clans&#10;Aucun clan joueur." />
+    <string id="b1071_overlay_defect" text="Défection" />
+    <string id="b1071_overlay_recruit" text="Recruter" />
+    <string id="b1071_overlay_empty_clans" text="Registre des clans&#10;Aucun clan trouvé." />
+    <string id="b1071_overlay_title_clans" text="Registre des clans  ({COUNT} clans)" />
+    <string id="b1071_overlay_col_clan" text="Clan" />
+    <string id="b1071_overlay_col_kingdom" text="Royaume" />
+    <string id="b1071_overlay_col_vassal_wealth_fiefs" text="Vassal/Richesse/Fiefs" />
+    <string id="b1071_overlay_col_risk" text="Risque" />
+    <string id="b1071_overlay_risk_prefix" text="R" />
+    <string id="b1071_overlay_empty_characters" text="Registre des personnages&#10;Aucun personnage suivi." />
+    <string id="b1071_overlay_title_characters" text="Registre des personnages  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_name" text="Nom" />
+    <string id="b1071_overlay_col_location" text="Position" />
+    <string id="b1071_overlay_totals_total" text="Total" />
+    <string id="b1071_overlay_totals_known_location" text="Position connue" />
+    <string id="b1071_overlay_empty_nearby_pools" text="Réserves proches&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_nearby" text="Réserves proches  ({COUNT} entrées)" />
+    <string id="b1071_overlay_title_castle_ledger" text="Registre des châteaux" />
+    <string id="b1071_overlay_title_town_ledger" text="Registre des villes" />
+    <string id="b1071_overlay_col_prosperity" text="Prospérité" />
+    <string id="b1071_overlay_empty_villages" text="Registre des villages&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_villages" text="Registre des villages  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_village" text="Village" />
+    <string id="b1071_overlay_col_hearth" text="Foyers" />
+    <string id="b1071_overlay_col_faction" text="Faction" />
+    <string id="b1071_overlay_col_bound_to" text="Lié à" />
+    <string id="b1071_overlay_empty_factions" text="Registre des factions&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_factions" text="Registre des factions  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_money" text="Argent" />
+    <string id="b1071_overlay_ttr_now" text="Maintenant" />
+    <string id="b1071_overlay_ttr_stable" text="Stable" />
+    <string id="b1071_overlay_ttr_cap" text="999+j" />
+    <string id="b1071_overlay_days_short" text="{DAYS}j" />
+    <string id="b1071_overlay_empty_rebellion" text="Risque de rébellion&#10;Aucune ville trouvée." />
+    <string id="b1071_overlay_title_rebellion" text="Risque de rébellion  ({COUNT} villes)" />
+    <string id="b1071_overlay_col_town_owner" text="Ville / Propriétaire" />
+    <string id="b1071_overlay_totals_avg_risk" text="Risque moy." />
+    <string id="b1071_overlay_totals_urgent" text="&lt;=30j : {COUNT}" />
+    <string id="b1071_overlay_totals_mismatch" text="Décalage : {COUNT}" />
+    <string id="b1071_overlay_risk_off" text="Désactivé" />
+    <string id="b1071_overlay_risk_low" text="Faible" />
+    <string id="b1071_overlay_risk_gated" text="Verrouillé" />
+    <string id="b1071_overlay_risk_high" text="Élevé" />
+    <string id="b1071_overlay_exhaustion_fresh" text="Reposé" />
+    <string id="b1071_overlay_exhaustion_strained" text="Sous tension ({N})" />
+    <string id="b1071_overlay_exhaustion_tired" text="Fatigué ({N})" />
+    <string id="b1071_overlay_exhaustion_exhausted" text="Épuisé ({N})" />
+    <string id="b1071_overlay_exhaustion_crisis" text="Crise ({N})" />
+    <string id="b1071_overlay_warstate_neutral" text="Neutre" />
+    <string id="b1071_overlay_warstate_peace" text="Paix {LEVEL}" />
+    <string id="b1071_overlay_warstate_war" text="Guerre {LEVEL}" />
+    <string id="b1071_overlay_empty_wars" text="Registre des guerres&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_wars" text="Registre des guerres  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_war_pair" text="Paire en guerre" />
+    <string id="b1071_overlay_col_exhaustion" text="Épuisement" />
+    <string id="b1071_overlay_col_peace_bias" text="Tendance à la paix" />
+    <string id="b1071_overlay_truce_days_left" text="{DAYS}j restants" />
+    <string id="b1071_overlay_truce" text="Trêve" />
+    <string id="b1071_overlay_truces_header" text="── Trêves ──" />
+    <string id="b1071_overlay_empty_armies" text="Registre des armées&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_armies" text="Registre des armées  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_power" text="Puissance" />
+    <string id="b1071_overlay_col_troops" text="Troupes" />
+    <string id="b1071_overlay_sort_default" text="Tri ↓" />
+    <string id="b1071_overlay_empty_with_title" text="{TITLE}&#10;Aucune entrée trouvée." />
+    <string id="b1071_overlay_title_entries" text="{TITLE}  ({COUNT} entrées)" />
+    <string id="b1071_overlay_col_lsf" text="L/S/N" />
+    <string id="b1071_overlay_col_ttr" text="TRR" />
+    <string id="b1071_overlay_band_value" text="{BAND} ({VALUE})" />
+    <string id="b1071_overlay_level_extreme" text="Extrême" />
+    <string id="b1071_overlay_level_high" text="Élevé" />
+    <string id="b1071_overlay_level_medium" text="Moyen" />
+    <string id="b1071_overlay_level_low" text="Faible" />
+    <string id="b1071_overlay_level_light" text="Léger" />
+    <string id="b1071_overlay_food_unknown" text="N?" />
+    <string id="b1071_overlay_food_up" text="N↑{VALUE}" />
+    <string id="b1071_overlay_food_down" text="N↓{VALUE}" />
+    <string id="b1071_overlay_food_flat" text="N={VALUE}" />
+    <string id="b1071_overlay_exhaustion_tag_crisis" text="Cr" />
+    <string id="b1071_overlay_exhaustion_tag_rising" text="Mo" />
+    <string id="b1071_overlay_exhaustion_tag_low" text="Fa" />
+    <string id="b1071_overlay_exhaustion_tag_fresh" text="Fr" />
+    <string id="b1071_overlay_exhaustion_tag_strained" text="St" />
+    <string id="b1071_overlay_exhaustion_tag_tired" text="Fa" />
+    <string id="b1071_overlay_exhaustion_tag_exhausted" text="Ep" />
+    <string id="b1071_compat_method_calculatetownfoodstockschange" text="Approvisionnement alimentaire des villes" />
+    <string id="b1071_compat_method_calculatehearthchange" text="Croissance des foyers de village" />
+    <string id="b1071_compat_method_calculateprosperitychange" text="Prospérité des villes" />
+    <string id="b1071_compat_method_calculatesecuritychange" text="Sécurité des villes" />
+    <string id="b1071_compat_method_calculateloyaltychange" text="Loyauté des villes" />
+    <string id="b1071_compat_method_calculatedailyconstructionpower" text="Vitesse de construction" />
+    <string id="b1071_compat_method_canmainheroentersettlement" text="Accès aux châteaux" />
+    <string id="b1071_compat_method_canmainheroenterlordshall" text="Accès à la salle du seigneur" />
+    <string id="b1071_compat_method_getcharacterwage" text="Solde individuelle des troupes" />
+    <string id="b1071_compat_method_gettotalwage" text="Solde totale du groupe" />
+    <string id="b1071_compat_method_gettrooprecruitmentcost" text="Coût de recrutement des troupes" />
+    <string id="b1071_compat_method_determinesupport" text="Vote IA guerre/paix" />
+    <string id="b1071_compat_method_getdailyvolunteerproductionprobability" text="Taux d'apparition des volontaires" />
+    <string id="b1071_compat_method_getmaximumdailyautorecruitmentcount" text="Plafond d'auto-recrutement quotidien" />
+    <string id="b1071_compat_method_applyinternal" text="Application du recrutement" />
+    <string id="b1071_compat_method_getsurvivalchance" text="Chance de survie des troupes" />
+    <string id="b1071_compat_method_simulatehit" text="Simulation des coups de bataille" />
+    <string id="b1071_compat_method_calculateclanincomeinternal" text="Revenu quotidien des clans" />
+    <string id="b1071_compat_effect_calculatetownfoodstockschange" text="Les deux mods modifient la quantité de nourriture disponible dans vos villes chaque jour." />
+    <string id="b1071_compat_effect_calculatehearthchange" text="Les deux mods influencent la vitesse de croissance ou de déclin des villages." />
+    <string id="b1071_compat_effect_calculateprosperitychange" text="Les deux mods influencent la prospérité des villes chaque jour." />
+    <string id="b1071_compat_effect_calculatesecuritychange" text="Les deux mods influencent la sécurité des villes chaque jour." />
+    <string id="b1071_compat_effect_calculateloyaltychange" text="Les deux mods influencent la loyauté des villes chaque jour." />
+    <string id="b1071_compat_effect_calculatedailyconstructionpower" text="Les deux mods influencent la vitesse de construction des bâtiments." />
+    <string id="b1071_compat_effect_canmainheroentersettlement" text="Les deux mods influencent l'accès aux châteaux. La règle d'un seul mod s'applique à la fois." />
+    <string id="b1071_compat_effect_canmainheroenterlordshall" text="Les deux mods influencent l'accès à la salle du seigneur. La règle d'un seul mod s'applique à la fois." />
+    <string id="b1071_compat_effect_getcharacterwage" text="Les deux mods modifient la solde journalière de chaque troupe." />
+    <string id="b1071_compat_effect_gettotalwage" text="Les deux mods modifient votre coût total d'entretien d'armée." />
+    <string id="b1071_compat_effect_gettrooprecruitmentcost" text="Les deux mods modifient le coût de recrutement des troupes." />
+    <string id="b1071_compat_effect_determinesupport" text="Les deux mods influencent quand les clans IA choisissent la guerre ou la paix." />
+    <string id="b1071_compat_effect_getdailyvolunteerproductionprobability" text="Les deux mods influencent la fréquence d'apparition des volontaires dans les villages." />
+    <string id="b1071_compat_effect_getmaximumdailyautorecruitmentcount" text="Les deux mods influencent le nombre maximal de troupes auto-recrutées par jour." />
+    <string id="b1071_compat_effect_applyinternal" text="Les deux mods interagissent avec la manière dont les nouvelles recrues sont traitées." />
+    <string id="b1071_compat_effect_getsurvivalchance" text="Les deux mods influencent la probabilité de survie des troupes en bataille." />
+    <string id="b1071_compat_effect_simulatehit" text="Les deux mods influencent le calcul interne des impacts en bataille." />
+    <string id="b1071_compat_effect_calculateclanincomeinternal" text="Les deux mods influencent le revenu quotidien des clans." />
   </strings>
 </base>

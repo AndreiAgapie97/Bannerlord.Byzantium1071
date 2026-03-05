@@ -67,20 +67,24 @@ namespace Byzantium1071.Campaign.Settings
                         1, () => s.EnableWarExhaustion, v => s.EnableWarExhaustion = v);
 
                     AddToggle(g, "qs_diplomacy_pressure", L("b1071_qs_name_diplomacy_pressure", "Diplomacy Pressure"),
-                        L("b1071_qs_hint_diplomacy_pressure", "War exhaustion influences AI peace/war voting. Exhausted kingdoms become more willing to accept peace."),
+                        L("b1071_qs_hint_diplomacy_pressure", "War exhaustion influences AI peace/war voting. Exhausted kingdoms become more willing to accept peace. Disable if using AI Influence or another mod that controls its own war-declaration timing."),
                         2, () => s.EnableExhaustionDiplomacyPressure, v => s.EnableExhaustionDiplomacyPressure = v);
 
                     AddToggle(g, "qs_forced_peace", L("b1071_qs_name_forced_peace", "Forced Peace at Crisis"),
-                        L("b1071_qs_hint_forced_peace", "When exhaustion exceeds a critical threshold the kingdom is forced to make peace with one enemy."),
+                        L("b1071_qs_hint_forced_peace", "When exhaustion exceeds a critical threshold the kingdom is forced to make peace with one enemy. Disable if using AI Influence or another mod that controls its own war-declaration timing."),
                         3, () => s.EnableForcedPeaceAtCrisis, v => s.EnableForcedPeaceAtCrisis = v);
+
+                    AddToggle(g, "qs_truce_enforcement", L("b1071_qs_name_truce_enforcement", "Truce Enforcement"),
+                        L("b1071_qs_hint_truce_enforcement", "After peace is made, block both kingdoms from declaring war again for the configured truce duration. Disable if using AI Influence or another mod that controls its own war-declaration timing."),
+                        4, () => s.EnableTruceEnforcement, v => s.EnableTruceEnforcement = v);
 
                     AddToggle(g, "qs_delayed_recovery", L("b1071_qs_name_delayed_recovery", "Delayed Recovery"),
                         L("b1071_qs_hint_delayed_recovery", "Settlements suffer a regen penalty after raids, sieges, or conquest that decays over time."),
-                        4, () => s.EnableDelayedRecovery, v => s.EnableDelayedRecovery = v);
+                        5, () => s.EnableDelayedRecovery, v => s.EnableDelayedRecovery = v);
 
                     AddToggle(g, "qs_militia_link", L("b1071_qs_name_militia_link", "Militia Link"),
                         L("b1071_qs_hint_militia_link", "Militia growth scales with the settlement's manpower ratio. Empty pools produce no militia."),
-                        5, () => s.EnableMilitiaLink, v => s.EnableMilitiaLink = v);
+                        6, () => s.EnableMilitiaLink, v => s.EnableMilitiaLink = v);
                 });
 
                 // ── Economy & Investment ───────────────────────────────────────────

@@ -91,10 +91,10 @@ namespace Byzantium1071.Campaign.UI
             "<Children>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.85\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.5\" Color=\"#000000FF\"/>" +
-            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" DefaultSearchText=\"Type to search…\" IsAutoFocused=\"true\"/>" +
+            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" DefaultSearchText=\"@B1071SearchPlaceholder\" IsAutoFocused=\"true\"/>" +
             "</Children>" +
             "</Widget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"Search\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071SearchButtonText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
             // === DIVIDER ===
@@ -188,6 +188,8 @@ namespace Byzantium1071.Campaign.UI
         private string _tabInstabilityText = new TaleWorlds.Localization.TextObject("{=b1071_tab_clans}Clans").ToString();
         private string _tabCharactersText = new TaleWorlds.Localization.TextObject("{=b1071_tab_characters}Characters").ToString();
         private string _tabSearchText = new TaleWorlds.Localization.TextObject("{=b1071_tab_search}Search").ToString();
+        private string _searchPlaceholder = new TaleWorlds.Localization.TextObject("{=b1071_overlay_search_placeholder}Type to search…").ToString();
+        private string _searchButtonText = new TaleWorlds.Localization.TextObject("{=b1071_overlay_search_button}Search").ToString();
         private bool _tabCurrentSelected;
         private bool _tabNearbySelected;
         private bool _tabCastlesSelected;
@@ -204,9 +206,9 @@ namespace Byzantium1071.Campaign.UI
         private string _searchQuery = string.Empty;
         private bool _searchControlsVisible;
         private bool _isSyncingFromController;
-        private string _sortText = "Sort ↓";
-        private string _pageText = "Page 1/1";
-        private string _titleText = "Loading...";
+        private string _sortText = new TaleWorlds.Localization.TextObject("{=b1071_overlay_sort_default}Sort ↓").ToString();
+        private string _pageText = new TaleWorlds.Localization.TextObject("{=b1071_overlay_page}Page {CURRENT}/{TOTAL}").SetTextVariable("CURRENT", 1).SetTextVariable("TOTAL", 1).ToString();
+        private string _titleText = new TaleWorlds.Localization.TextObject("{=b1071_overlay_loading}Loading...").ToString();
         private string _totals1 = string.Empty;
         private string _totals2 = string.Empty;
         private string _totals3 = string.Empty;
@@ -457,6 +459,20 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string B1071SearchPlaceholder
+        {
+            get => _searchPlaceholder;
+            set => SetField(ref _searchPlaceholder, value, nameof(B1071SearchPlaceholder));
+        }
+
+        [DataSourceProperty]
+        public string B1071SearchButtonText
+        {
+            get => _searchButtonText;
+            set => SetField(ref _searchButtonText, value, nameof(B1071SearchButtonText));
+        }
+
+        [DataSourceProperty]
         public bool B1071TabSearchSelected
         {
             get => _tabSearchSelected;
@@ -582,7 +598,7 @@ namespace Byzantium1071.Campaign.UI
         {
             B1071_OverlayController.ToggleExpanded();
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
-            B1071ToggleText = "Press M";
+            B1071ToggleText = new TaleWorlds.Localization.TextObject("{=b1071_toggle_text}Press M").ToString();
 
             OnPropertyChangedWithValue(B1071PanelExpanded, nameof(B1071PanelExpanded));
             OnPropertyChangedWithValue(B1071ToggleText, nameof(B1071ToggleText));
@@ -742,7 +758,7 @@ namespace Byzantium1071.Campaign.UI
             B1071PanelLeftOffset = B1071_OverlayController.PanelLeftOffset;
             B1071PanelTopOffset = B1071_OverlayController.PanelTopOffset;
             B1071PanelText = B1071_OverlayController.CurrentText;
-            B1071ToggleText = "Press M";
+            B1071ToggleText = new TaleWorlds.Localization.TextObject("{=b1071_toggle_text}Press M").ToString();
             B1071TabCurrentText = B1071_OverlayController.TabCurrentText;
             B1071TabNearbyText = B1071_OverlayController.TabNearbyText;
             B1071TabCastlesText = B1071_OverlayController.TabCastlesText;

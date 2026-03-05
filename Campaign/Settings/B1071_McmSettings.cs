@@ -2,6 +2,7 @@
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
 using System;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Settings
 {
@@ -13,7 +14,7 @@ namespace Byzantium1071.Campaign.Settings
         internal static B1071_McmSettings Defaults => _defaults ??= new();
 
         public override string Id => "Byzantium1071";
-        public override string DisplayName => "Campaign++";
+        public override string DisplayName => new TextObject("{=b1071_mcm_display_name}Campaign++").ToString();
         public override string FolderName => "Byzantium1071";
         public override string FormatType => "json";
 
@@ -175,7 +176,10 @@ namespace Byzantium1071.Campaign.Settings
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
             TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migrated to profile v{LATEST_PROFILE_VERSION}: {migrated}");
-            return $"Campaign++ v{LATEST_PROFILE_VERSION}: Balance settings updated to new defaults. Customize in MCM if desired. ({migrated.Trim()})";
+            return new TextObject("{=b1071_mcm_profile_migrated_msg}Campaign++ v{VERSION}: Balance settings updated to new defaults. Customize in MCM if desired. ({DETAILS})")
+                .SetTextVariable("VERSION", LATEST_PROFILE_VERSION)
+                .SetTextVariable("DETAILS", migrated.Trim())
+                .ToString();
         }
 
         [SettingPropertyGroup("{=b1071_mcm_g_35a44ecbe7}Pool Sizes", GroupOrder = 0)]
