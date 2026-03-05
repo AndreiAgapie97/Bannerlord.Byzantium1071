@@ -1,21 +1,86 @@
-MIT License
+Byzantium1071 / Campaign++ Non-Commercial Source-Available License
+Version 1.1
 
 Copyright (c) 2026 Andrei-Daniel Agapie
+All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1) Definitions
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+"Software" means this repository, including source code, assets, binaries, and
+documentation.
+
+"You" means any individual or entity using, copying, modifying, or
+redistributing the Software.
+
+"Commercial Use" means any use intended for commercial advantage or monetary
+compensation, including (without limitation): selling, licensing for a fee,
+paywalling, subscription access, ad-revenue sharing, donation-gated access,
+Patreon/Ko-fi/boosty gated builds, paid server packs, or bundling in paid
+products/services.
+
+2) Grant of rights (non-commercial, private use only)
+
+Subject to full compliance with this license, You may:
+
+- use the Software for personal and non-commercial purposes,
+- study and modify the Software for personal and non-commercial purposes,
+
+The rights above are for private use only. No publication or redistribution
+rights are granted unless expressly stated in Section 3.
+
+3) Publication / redistribution by permission only
+
+You may NOT publish, redistribute, mirror, or otherwise make the Software (or
+any derivative work) available to third parties without prior written
+permission from the copyright holder.
+
+If written permission is granted, You must:
+
+- keep this full license text and copyright notice,
+- give clear, visible attribution to the original author (Andrei-Daniel Agapie),
+- clearly mark your changes and modification date,
+- distribute under this same license only,
+- include a link to the original repository (if publicly available).
+
+4) Strict prohibitions
+
+You may NOT, without prior written permission from the copyright holder:
+
+- use the Software commercially,
+- sell, sublicense, rent, lease, or monetize the Software,
+- sell or monetize derivatives based in whole or part on this Software,
+- publish or redistribute this Software (modified or unmodified),
+- publish or redistribute derivative works based on this Software,
+- remove or obscure authorship, notices, or attribution,
+- relicense under MIT, GPL, or any other license that permits commercial use,
+- represent this Software (or derivatives) as your original work.
+
+5) Commercial licensing
+
+Commercial use requires a separate written commercial license from the
+copyright holder.
+
+6) Enforcement and termination
+
+Any violation of this license immediately terminates all rights granted to You.
+Upon termination, You must stop using and distributing the Software and remove
+all distributed copies under your control where legally required.
+
+7) No warranty
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+8) Limitation of liability
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+
+9) Governing terms
+
+This license constitutes the complete agreement for non-commercial use of the
+Software unless superseded by a separate written agreement signed by the
+copyright holder.

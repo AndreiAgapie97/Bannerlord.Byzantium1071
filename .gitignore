@@ -361,5 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-Docs/AUDIT_v0.1.7.5.md
 
+# Other files to ignore
+Docs/AUDIT_v0.1.7.5.md
+.claude/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Accidental PowerShell placeholder artifact
+$null
