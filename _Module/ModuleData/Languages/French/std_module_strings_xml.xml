@@ -783,7 +783,7 @@
     <string id="b1071_mcm_t_ff01c1d5b8" text="Jours de récupération de conquête" />
     <string id="b1071_mcm_t_ff6f4a1b79" text="Épuisement de siège (attaquant)" />
     <string id="b1071_mcm_display_name" text="Campaign++" />
-    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ v{VERSION} : les paramètres d'équilibrage ont été mis à jour vers les nouvelles valeurs par défaut. Personnalisez-les dans MCM si vous le souhaitez. ({DETAILS})" />
+    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ a mis à jour certains paramètres d'équilibrage vers leurs nouvelles valeurs par défaut. Vérifiez-les dans le MCM si nécessaire." />
     <string id="b1071_qs_name_truce_enforcement" text="Application de la trêve" />
     <string id="b1071_qs_hint_truce_enforcement" text="Après une paix, empêche les deux royaumes de redéclarer la guerre pendant la durée de trêve configurée. Désactivez ceci si vous utilisez AI Influence ou un autre mod qui gère son propre timing de déclaration de guerre." />
     <string id="b1071_overlay_search_placeholder" text="Saisir une recherche…" />

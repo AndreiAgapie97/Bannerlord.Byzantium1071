@@ -1,5 +1,6 @@
 ﻿using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
+using MCM.Abstractions;
 using MCM.Abstractions.Base.Global;
 using System;
 using TaleWorlds.Localization;
@@ -23,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 8;
+        internal const int LATEST_PROFILE_VERSION = 9;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -170,15 +171,37 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "v0.2.0.1 clan survival enabled (30-day grace, culture weight 2.0). ";
             }
 
+            // ── Profile v9: v0.2.7.2 diplomacy minimum-war safeguards ──
+            if (SettingsProfileVersion < 9)
+            {
+                // New diplomacy safeguards introduced in v0.2.7.2.
+                // Existing users need the new controls persisted automatically so
+                // the release defaults survive beyond the first post-update launch.
+                EarlyWarPeacePenaltyStrength = 300f;
+                EnableMultiFrontWarRelief = true;
+                EmergencyMinWarDays = 15;
+                EmergencyManpowerThresholdPercent = 25;
+                EmergencyWarCountThreshold = 2;
+
+                migrated += "v0.2.7.2 early-war peace penalty and multi-front war relief defaults applied. ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 9) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 10) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
+            try
+            {
+                BaseSettingsProvider.Instance?.SaveSettings(this);
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migration save error: {ex.GetType().Name}: {ex.Message}");
+            }
+
             TaleWorlds.Library.Debug.Print($"[Byzantium1071] Settings migrated to profile v{LATEST_PROFILE_VERSION}: {migrated}");
-            return new TextObject("{=b1071_mcm_profile_migrated_msg}Campaign++ v{VERSION}: Balance settings updated to new defaults. Customize in MCM if desired. ({DETAILS})")
-                .SetTextVariable("VERSION", LATEST_PROFILE_VERSION)
-                .SetTextVariable("DETAILS", migrated.Trim())
+            return new TextObject("{=b1071_mcm_profile_migrated_msg}Campaign++ updated some balance settings to new defaults. Review them in MCM if needed.")
                 .ToString();
         }
 

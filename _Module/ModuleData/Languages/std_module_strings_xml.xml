@@ -783,7 +783,7 @@
     <string id="b1071_mcm_t_ff01c1d5b8" text="Conquest recovery days" />
     <string id="b1071_mcm_t_ff6f4a1b79" text="Siege exhaustion (attacker)" />
     <string id="b1071_mcm_display_name" text="Campaign++" />
-    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ v{VERSION}: Balance settings updated to new defaults. Customize in MCM if desired. ({DETAILS})" />
+    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ updated some balance settings to new defaults. Review them in MCM if needed." />
     <string id="b1071_qs_name_truce_enforcement" text="Truce Enforcement" />
     <string id="b1071_qs_hint_truce_enforcement" text="After peace is made, block both kingdoms from declaring war again for the configured truce duration. Disable if using AI Influence or another mod that controls its own war-declaration timing." />
     <string id="b1071_overlay_search_placeholder" text="Type to search…" />

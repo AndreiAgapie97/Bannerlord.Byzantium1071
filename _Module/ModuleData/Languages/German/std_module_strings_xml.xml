@@ -783,7 +783,7 @@
     <string id="b1071_mcm_t_ff01c1d5b8" text="Eroberungs-Erholungstage" />
     <string id="b1071_mcm_t_ff6f4a1b79" text="Belagerungserschöpfung (Angreifer)" />
     <string id="b1071_mcm_display_name" text="Kampagne++" />
-    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ v{VERSION}: Balance-Einstellungen wurden auf neue Standardwerte aktualisiert. Passen Sie sie bei Bedarf im MCM an. ({DETAILS})" />
+    <string id="b1071_mcm_profile_migrated_msg" text="Campaign++ hat einige Balance-Einstellungen auf neue Standardwerte aktualisiert. Prüfe sie bei Bedarf im MCM." />
     <string id="b1071_qs_name_truce_enforcement" text="Waffenstillstand erzwingen" />
     <string id="b1071_qs_hint_truce_enforcement" text="Nach einem Frieden wird beiden Königreichen für die konfigurierte Waffenstillstandsdauer eine erneute Kriegserklärung blockiert. Deaktivieren, wenn du AI Influence oder einen anderen Mod nutzt, der eigenes Timing für Kriegserklärungen steuert." />
     <string id="b1071_overlay_search_placeholder" text="Zum Suchen tippen…" />
