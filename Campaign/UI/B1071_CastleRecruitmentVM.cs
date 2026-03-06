@@ -37,6 +37,7 @@ namespace Byzantium1071.Campaign.UI
         private string _noEliteText = string.Empty;
         private string _noReadyText = string.Empty;
         private string _noPendingText = string.Empty;
+        private string _recruitAllText = string.Empty;
         private MBBindingList<B1071_CastleRecruitTroopVM> _eliteTroops;
         private MBBindingList<B1071_CastleRecruitTroopVM> _availableTroops;
         private MBBindingList<B1071_CastleRecruitTroopVM> _pendingTroops;
@@ -79,6 +80,7 @@ namespace Byzantium1071.Campaign.UI
             NoEliteText = L("b1071_cr_no_elite", "No elite troops available. Pool regenerates daily from castle manpower.");
             NoReadyText = L("b1071_cr_no_ready", "No prisoners ready for recruitment.");
             NoPendingText = L("b1071_cr_no_pending", "No prisoners pending.");
+            RecruitAllText = L("b1071_cr_recruit_all", "Recruit All");
         }
 
         /// <summary>
@@ -277,6 +279,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string RecruitAllText
+        {
+            get => _recruitAllText;
+            set { if (_recruitAllText != value) { _recruitAllText = value; OnPropertyChangedWithValue(value, nameof(RecruitAllText)); } }
+        }
+
+        [DataSourceProperty]
         public MBBindingList<B1071_CastleRecruitTroopVM> EliteTroops
         {
             get => _eliteTroops;
@@ -344,6 +353,77 @@ namespace Byzantium1071.Campaign.UI
         public void ExecuteClose()
         {
             _onClose?.Invoke();
+        }
+
+        /// <summary>
+        /// Recruits all affordable elite troops from the pool in one action.
+        /// Loops through all elite troop types and recruits every available unit.
+        /// </summary>
+        public void ExecuteRecruitAllElites()
+        {
+            try
+            {
+                var behavior = B1071_CastleRecruitmentBehavior.Instance;
+                if (behavior == null) return;
+
+                bool anyRecruited = false;
+                // Snapshot the current elite list to avoid collection modification during iteration
+                var snapshot = new System.Collections.Generic.List<(CharacterObject troop, int count)>();
+                foreach (var vm in _eliteTroops)
+                    snapshot.Add((vm.Character, vm.NumericCount));
+
+                foreach (var (troop, count) in snapshot)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (!behavior.TryRecruitElite(_castle, troop))
+                            break;   // out of gold or manpower — stop recruiting this troop type
+                        anyRecruited = true;
+                    }
+                }
+
+                if (anyRecruited)
+                    RefreshLists();
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log("CastleRecruitment", $"ExecuteRecruitAllElites error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Recruits all affordable ready prisoners in one action.
+        /// Loops through all ready prisoner types and recruits every available unit.
+        /// </summary>
+        public void ExecuteRecruitAllReady()
+        {
+            try
+            {
+                var behavior = B1071_CastleRecruitmentBehavior.Instance;
+                if (behavior == null) return;
+
+                bool anyRecruited = false;
+                var snapshot = new System.Collections.Generic.List<(CharacterObject troop, int count)>();
+                foreach (var vm in _availableTroops)
+                    snapshot.Add((vm.Character, vm.NumericCount));
+
+                foreach (var (troop, count) in snapshot)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (!behavior.TryRecruitPrisoner(_castle, troop))
+                            break;
+                        anyRecruited = true;
+                    }
+                }
+
+                if (anyRecruited)
+                    RefreshLists();
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log("CastleRecruitment", $"ExecuteRecruitAllReady error: {ex.Message}");
+            }
         }
     }
 }

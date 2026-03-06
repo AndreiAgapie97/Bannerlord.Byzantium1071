@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Behaviors
@@ -86,6 +88,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
+            CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -100,6 +103,104 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             Instance = this;
             B1071_ClanSurvivalPatch._alreadyRescued.Clear();
+
+            // ── Startup scan: rescue homeless rebel clans ────────────────
+            //
+            // Vanilla's RebellionsCampaignBehavior.DailyTickClan kills heroes of
+            // rebel clans that have IsRebelClan=true and Settlements.Count==0.
+            // If the mod is installed mid-campaign, or the session is loaded from
+            // a save where a rebel clan already lost its settlement, our
+            // OnSettlementOwnerChanged never fires. By the time the first daily
+            // tick runs, vanilla has already killed the heroes.
+            //
+            // This scan runs once at session start and normalizes (IsRebelClan→false,
+            // IsMinorFaction→true) all homeless rebel clans with living heroes,
+            // preventing vanilla's DailyTickClan from killing them.
+            try
+            {
+                if (Settings.EnableClanSurvival)
+                {
+                    ScanAndRescueHomelessRebelClans();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival] Startup scan error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Scans all clans for homeless rebel clans with living heroes and rescues them.
+        /// Called once at session start to cover mid-campaign install and save/load gaps.
+        /// </summary>
+        private void ScanAndRescueHomelessRebelClans()
+        {
+            int rescued = 0;
+            foreach (Clan clan in Clan.All.ToList())
+            {
+                if (clan == null || clan.IsEliminated) continue;
+                if (clan == Clan.PlayerClan) continue;
+                if (clan.IsBanditFaction) continue;
+                if (!IsRebelClanOrigin(clan)) continue;
+
+                // Already tracked from a previous session's save data
+                if (IsTracked(clan)) continue;
+
+                // Only care about homeless rebels (lost all settlements)
+                if (clan.Settlements != null && clan.Settlements.Any()) continue;
+
+                // If still in a kingdom they are an unlanded vassal — not in danger.
+                // A rebel-origin clan whose rebellion succeeded may own fiefs and later
+                // lose them; their StringId still contains "rebel_clan" but they must
+                // not be normalized here.
+                if (clan.Kingdom != null) continue;
+
+                // Must have living adult heroes
+                var livingAdults = clan.Heroes
+                    .Where(h => h.IsAlive && !h.IsChild && (h.IsLord || h.IsMinorFactionHero))
+                    .ToList();
+                if (livingAdults.Count == 0) continue;
+
+                string clanName = clan.Name?.ToString() ?? clan.StringId;
+                Debug.Print($"[Byzantium1071][ClanSurvival][StartupScan] " +
+                    $"Found homeless rebel clan '{clanName}' with {livingAdults.Count} " +
+                    $"living heroes. Normalizing and rescuing...");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"[StartupScan] Homeless rebel '{clanName}' ({livingAdults.Count} heroes). Rescuing.");
+
+                // Promote heir if leader is dead
+                if (clan.Leader == null || !clan.Leader.IsAlive)
+                {
+                    try
+                    {
+                        ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][StartupScan] " +
+                            $"Heir promotion failed for {clanName}: {ex.Message}");
+                        continue;
+                    }
+                    if (clan.Leader == null || !clan.Leader.IsAlive) continue;
+                }
+
+                NormalizeRebelClan(clan, "StartupScan");
+                RegisterRescuedClan(clan);
+                B1071_ClanSurvivalPatch._alreadyRescued.Add(clan.StringId);
+                rescued++;
+
+                B1071_VerboseLog.Log("ClanSurvival",
+                    $"Startup rescue: {clanName} ({livingAdults.Count} heroes, " +
+                    $"leader: {clan.Leader?.Name}). Normalized as independent minor faction.");
+            }
+
+            if (rescued > 0)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][StartupScan] " +
+                    $"Rescued {rescued} homeless rebel clan(s) at session start.");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"[StartupScan] Rescued {rescued} homeless rebel clan(s).");
+            }
         }
 
         // ── PRIMARY RESCUE: ClanChangedKingdom event ────────────────────
@@ -140,6 +241,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 Debug.Print($"[Byzantium1071][ClanSurvival][Event] " +
                     $"Detected {clanName} leaving dying {kingdomName} " +
                     $"(detail: LeaveByKingdomDestruction, heroes: {heroCount}).");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"Detected {clanName} leaving dying {kingdomName} (heroes: {heroCount})");
 
                 // Eligibility: must have living adult lord/hero
                 var livingAdults = clan.Heroes
@@ -150,6 +253,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
                         $"no living adult lords/heroes.");
+                    B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                        $"SKIP {clanName}: no living adult lords/heroes");
                     return;
                 }
 
@@ -161,6 +266,8 @@ namespace Byzantium1071.Campaign.Behaviors
                     {
                         Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
                             $"leader dead, no heir apparents.");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"SKIP {clanName}: leader dead, no heir apparents");
                         return;
                     }
                     try
@@ -171,6 +278,8 @@ namespace Byzantium1071.Campaign.Behaviors
                     {
                         Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
                             $"heir promotion threw: {ex.Message}");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"ERROR SKIP {clanName}: heir promotion threw: {ex.Message}");
                         return;
                     }
                     if (clan.Leader == null || !clan.Leader.IsAlive)
@@ -180,6 +289,8 @@ namespace Byzantium1071.Campaign.Behaviors
                         return;
                     }
                     Debug.Print($"[Byzantium1071][ClanSurvival][Event] {clanName} heir promoted to {clan.Leader.Name}.");
+                    B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                        $"{clanName} heir promoted to {clan.Leader.Name}");
                 }
 
                 // ── Register for tracking (daily tick will clear inherited wars) ──
@@ -231,6 +342,233 @@ namespace Byzantium1071.Campaign.Behaviors
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival][Event] Fatal error: {ex}");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"FATAL ERROR in OnClanChangedKingdom: {ex.Message}");
+            }
+        }
+
+        // ── REBEL RESCUE: Settlement ownership change event ─────────────
+        //
+        //  When a settlement changes hands (siege, barter, rebellion resolution),
+        //  we check if the PREVIOUS owner's clan is a rebel clan that just lost
+        //  its last settlement. If so, we rescue the clan rather than letting
+        //  vanilla destroy it.
+        //
+        //  Why this event: Rebel clans don't go through the normal kingdom
+        //  destruction pipeline. They have Kingdom == null and are not covered
+        //  by Path A (OnClanChangedKingdom) or the kingdom-check in HandleDestroyClan.
+        //  By listening here, we proactively rescue rebel clans before vanilla's
+        //  daily-tick RebellionsCampaignBehavior calls DestroyClanAction on them.
+        //
+        //  SAFETY: No MakePeaceAction or other Campaign actions are called inline.
+        //  We only register the clan for tracking. The daily tick clears wars.
+        //  This avoids the TimeLord/BetterTime re-entrancy bug (see v0.2.6.1).
+
+        private void OnSettlementOwnerChanged(
+            Settlement settlement,
+            bool openToClaim,
+            Hero newOwner,
+            Hero oldOwner,
+            Hero capturerHero,
+            ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
+        {
+            try
+            {
+                if (!Settings.EnableClanSurvival) return;
+                if (oldOwner?.Clan == null) return;
+
+                Clan clan = oldOwner.Clan;
+
+                // Only interested in rebel-origin clans
+                if (!IsRebelClanOrigin(clan)) return;
+
+                // Already rescued?
+                if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId)) return;
+                if (IsTracked(clan)) return;
+
+                // Still has settlements? Not yet homeless.
+                if (clan.Settlements != null && clan.Settlements.Count() > 0) return;
+
+                // If the clan is still a member of a kingdom it is merely an unlanded vassal —
+                // vanilla handles unlanded lords naturally (kingdom grants new fiefs over time).
+                // Rebel-origin clans whose rebellion SUCCEEDED receive a fief and may later lose
+                // it in a siege; their StringId still contains "rebel_clan" but they are full
+                // vassals and must not be normalized or tracked by us.
+                if (clan.Kingdom != null) return;
+
+                string clanName = clan.Name?.ToString() ?? clan.StringId;
+                string settlementName = settlement?.Name?.ToString() ?? "unknown";
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][RebelRescue] " +
+                    $"Rebel clan {clanName} lost last settlement ({settlementName}). " +
+                    $"Checking rescue eligibility...");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"Rebel clan {clanName} lost last settlement ({settlementName}). " +
+                    $"Checking rescue eligibility...");
+
+                // Eligibility: must have living adult lord/hero
+                if (!B1071_ClanSurvivalPatch.IsClanEligibleForRescue(clan, null, "RebelRescue"))
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][RebelRescue] " +
+                        $"SKIP {clanName}: failed eligibility checks.");
+                    B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                        $"Rebel rescue SKIP {clanName}: failed eligibility checks.");
+                    return;
+                }
+
+                // ── Normalize rebel state ──
+                NormalizeRebelClan(clan, "RebelRescue");
+
+                // ── Register for tracking (daily tick will clear any wars) ──
+                //
+                // IMPORTANT: Do NOT call MakePeaceAction.Apply() here. This event fires
+                // from within ChangeOwnerOfSettlementAction, and calling another Campaign
+                // action inline is unsafe (TimeLord/BetterTime re-entrancy — see v0.2.6.1).
+                RegisterRescuedClan(clan);
+                B1071_ClanSurvivalPatch._alreadyRescued.Add(clan.StringId);
+
+                int heroCount = clan.Heroes.Count(h => h.IsAlive);
+                Debug.Print($"[Byzantium1071][ClanSurvival][RebelRescue] RESCUED {clanName}: " +
+                    $"leader: {clan.Leader?.Name}, heroes: {heroCount}. " +
+                    $"Wars will be cleared on next daily tick.");
+
+                B1071_VerboseLog.Log("ClanSurvival",
+                    $"Rescued rebel clan {clanName} ({heroCount} heroes, leader: {clan.Leader?.Name}) " +
+                    $"after losing last settlement ({settlementName}). " +
+                    $"IsMinorFaction set to true for frontier revenue. " +
+                    $"Tracking until kingdom join (wars cleared by daily tick).");
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][RebelRescue] Fatal error: {ex}");
+            }
+        }
+
+        // ── Rebel clan helpers ───────────────────────────────────────────
+
+        /// <summary>
+        /// Returns true if the clan is a rebel-origin clan, either freshly spawned
+        /// (IsRebelClan == true) or a normalized former-rebel whose StringId still
+        /// contains the rebel marker.
+        /// </summary>
+        internal static bool IsRebelClanOrigin(Clan clan)
+        {
+            if (clan == null) return false;
+            if (clan.IsRebelClan) return true;
+            // Vanilla rebel clans have StringId like "town_A5_rebel_clan"
+            if (clan.StringId != null && clan.StringId.Contains("rebel_clan")) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Normalizes a rebel clan for independent survival:
+        ///   1. Sets IsRebelClan = false (public setter)
+        ///   2. Sets IsMinorFaction = true (private setter, via reflection) — enables
+        ///      frontier revenue eligibility
+        ///   3. Removes from vanilla's _rebelClansAndDaysPassedAfterCreation tracking
+        ///      (via reflection on RebellionsCampaignBehavior)
+        /// </summary>
+        internal static void NormalizeRebelClan(Clan clan, string context)
+        {
+            string clanName = clan.Name?.ToString() ?? clan.StringId;
+
+            // 1. Clear rebel flag
+            try
+            {
+                bool wasRebel = clan.IsRebelClan;
+                clan.IsRebelClan = false;
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"{clanName}: IsRebelClan {wasRebel} → false");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"{clanName}: IsRebelClan {wasRebel} → false");
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"Failed to clear IsRebelClan for {clanName}: {ex.Message}");
+            }
+
+            // 2. Set IsMinorFaction = true (private setter — requires reflection)
+            //    This enables frontier revenue via B1071_MinorFactionIncomePatch
+            try
+            {
+                bool wasMF = clan.IsMinorFaction;
+                PropertyInfo? prop = typeof(Clan).GetProperty(
+                    nameof(Clan.IsMinorFaction),
+                    BindingFlags.Instance | BindingFlags.Public);
+
+                if (prop != null)
+                {
+                    MethodInfo? setter = prop.GetSetMethod(nonPublic: true);
+                    if (setter != null)
+                    {
+                        setter.Invoke(clan, new object[] { true });
+                        Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                            $"{clanName}: IsMinorFaction {wasMF} → true (reflection)");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"{clanName}: IsMinorFaction {wasMF} → true (frontier revenue enabled)");
+                    }
+                    else
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                            $"WARNING: IsMinorFaction setter not found for {clanName}");
+                    }
+                }
+                else
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                        $"WARNING: IsMinorFaction property not found on Clan type");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"Failed to set IsMinorFaction for {clanName}: {ex.Message}");
+            }
+
+            // 3. Remove from vanilla's RebellionsCampaignBehavior tracking
+            //    Field: Dictionary<Clan, float> _rebelClansAndDaysPassedAfterCreation
+            //    If not removed, vanilla's daily tick may still try to manage/destroy this clan.
+            try
+            {
+                var rebellionBehavior = TaleWorlds.CampaignSystem.Campaign.Current?
+                    .GetCampaignBehavior<TaleWorlds.CampaignSystem.CampaignBehaviors.RebellionsCampaignBehavior>();
+
+                if (rebellionBehavior != null)
+                {
+                    FieldInfo? field = typeof(TaleWorlds.CampaignSystem.CampaignBehaviors.RebellionsCampaignBehavior)
+                        .GetField("_rebelClansAndDaysPassedAfterCreation",
+                            BindingFlags.Instance | BindingFlags.NonPublic);
+
+                    if (field != null)
+                    {
+                        var dict = field.GetValue(rebellionBehavior) as System.Collections.IDictionary;
+                        if (dict != null && dict.Contains(clan))
+                        {
+                            dict.Remove(clan);
+                            Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                                $"Removed {clanName} from RebellionsCampaignBehavior tracking");
+                            B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                                $"Removed {clanName} from vanilla rebel tracking dictionary");
+                        }
+                        else
+                        {
+                            Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                                $"{clanName} not found in RebellionsCampaignBehavior tracking (OK)");
+                        }
+                    }
+                    else
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                            $"WARNING: _rebelClansAndDaysPassedAfterCreation field not found " +
+                            $"(API change in this game version?)");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"Failed to remove {clanName} from rebellion tracking: {ex.Message}");
             }
         }
 
@@ -306,12 +644,16 @@ namespace Byzantium1071.Campaign.Behaviors
                         {
                             Debug.Print($"[Byzantium1071][ClanSurvival] Cleared {warsCleared} " +
                                 $"stale war(s) for independent {clan.Name} (day {(int)elapsedDays}).");
+                            B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                                $"Cleared {warsCleared} war(s) for {clan.Name} (day {(int)elapsedDays})");
                         }
                     }
                     catch (Exception ex)
                     {
                         Debug.Print($"[Byzantium1071][ClanSurvival] War clearing error " +
                             $"for {clan.Name}: {ex.Message}");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"ERROR war clearing for {clan.Name}: {ex.Message}");
                     }
 
                     // Periodic status log (day 1 and every 10 days)
@@ -326,6 +668,8 @@ namespace Byzantium1071.Campaign.Behaviors
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival] DailyTick error: {ex}");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"FATAL ERROR in DailyTick: {ex.Message}");
             }
         }
     }

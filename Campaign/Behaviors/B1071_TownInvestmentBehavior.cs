@@ -122,11 +122,6 @@ namespace Byzantium1071.Campaign.Behaviors
                     }
                 }
             }
-            if (total > 0f)
-            {
-                B1071_VerboseLog.Log("TownInvestment",
-                    $"Prosperity bonus for {town.Settlement.Name}: +{total:F2}/day from {activeCount} active patron(s).");
-            }
             return total;
         }
 
@@ -161,6 +156,24 @@ namespace Byzantium1071.Campaign.Behaviors
                 _investProsperityBonus.Remove(key);
                 B1071_VerboseLog.Log("TownInvestment",
                     $"Investment expired: key={key} at {settlement.Name}.");
+            }
+
+            // Log active prosperity bonus once per day (was previously in GetActiveProsperityBonus
+            // which fires on every model query — multiple times per tick per town).
+            if (settlement.Town != null)
+            {
+                float bonus = GetActiveProsperityBonus(settlement.Town);
+                if (bonus > 0f)
+                {
+                    int activeCount = 0;
+                    foreach (var kvp in _investDaysRemaining)
+                    {
+                        if (kvp.Key.StartsWith(prefix, StringComparison.Ordinal) && kvp.Value > 0f)
+                            activeCount++;
+                    }
+                    B1071_VerboseLog.Log("TownInvestment",
+                        $"Prosperity bonus for {settlement.Name}: +{bonus:F2}/day from {activeCount} active patron(s).");
+                }
             }
         }
 

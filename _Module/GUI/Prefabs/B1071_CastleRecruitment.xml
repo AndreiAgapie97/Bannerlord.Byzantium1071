@@ -109,13 +109,32 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
 
                 <!-- ===== ELITE TROOPS SECTION ===== -->
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                            MarginBottom="8"
-                            Brush="Encyclopedia.SubPage.Element.Name.Text"
-                            Brush.FontSize="17" Brush.FontColor="#99BBFFFF"
-                            Brush.TextHorizontalAlignment="Left"
-                            Text="@EliteHeaderText"
-                            IsVisible="@HasEliteTroops" />
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        MarginBottom="8" IsVisible="@HasEliteTroops">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                Brush.FontSize="17" Brush.FontColor="#99BBFFFF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="@EliteHeaderText" />
+                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                  SuggestedWidth="90" SuggestedHeight="24"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Brush="Encyclopedia.FilterListButton"
+                                  DoNotPassEventsToChildren="true"
+                                  UpdateChildrenStates="true"
+                                  Command.Click="ExecuteRecruitAllElites">
+                      <Children>
+                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                    Brush.FontSize="13" Brush.FontColor="#99BBFFFF"
+                                    Brush.TextHorizontalAlignment="Center"
+                                    Brush.TextVerticalAlignment="Center"
+                                    Text="@RecruitAllText" />
+                      </Children>
+                    </ButtonWidget>
+                  </Children>
+                </Widget>
 
                 <!-- Column headers for Elite section -->
                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -261,13 +280,32 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
 
                 <!-- ===== READY TO RECRUIT SECTION ===== -->
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                            MarginBottom="8"
-                            Brush="Encyclopedia.SubPage.Element.Name.Text"
-                            Brush.FontSize="17" Brush.FontColor="#88DD88FF"
-                            Brush.TextHorizontalAlignment="Left"
-                            Text="@ReadyHeaderText"
-                            IsVisible="@HasAvailableTroops" />
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        MarginBottom="8" IsVisible="@HasAvailableTroops">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                Brush.FontSize="17" Brush.FontColor="#88DD88FF"
+                                Brush.TextHorizontalAlignment="Left"
+                                Text="@ReadyHeaderText" />
+                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                  SuggestedWidth="90" SuggestedHeight="24"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Brush="Encyclopedia.FilterListButton"
+                                  DoNotPassEventsToChildren="true"
+                                  UpdateChildrenStates="true"
+                                  Command.Click="ExecuteRecruitAllReady">
+                      <Children>
+                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                    Brush.FontSize="13" Brush.FontColor="#88DD88FF"
+                                    Brush.TextHorizontalAlignment="Center"
+                                    Brush.TextVerticalAlignment="Center"
+                                    Text="@RecruitAllText" />
+                      </Children>
+                    </ButtonWidget>
+                  </Children>
+                </Widget>
 
                 <!-- Column headers for Ready section -->
                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"

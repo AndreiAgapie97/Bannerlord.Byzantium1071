@@ -366,6 +366,12 @@ FodyWeavers.xsd
 Docs/AUDIT_v0.1.7.5.md
 .claude/
 .vscode/
+.github/copilot-instructions.md
+.github/
+NextFeatures.md 
+Scenario_audit.md
+
 
 # Accidental PowerShell placeholder artifact
 $null
+

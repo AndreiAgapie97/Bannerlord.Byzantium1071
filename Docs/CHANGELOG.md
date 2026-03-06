@@ -1,5 +1,176 @@
 # Campaign++ — Changelog
 
+## [0.2.7.0] — 2026-03-06 (patch 2)
+
+### Fix — Unlanded Vassal False-Rescue (ClanSurvival)
+
+**Rebel-origin clans that are currently vassals of a kingdom no longer trigger the rescue path when they lose their last fief.**
+
+- **Root cause (discovered via QA log audit):** A rebel clan whose rebellion *succeeds* receives a fief, has `IsRebelClan` cleared by vanilla, but retains a StringId containing `"rebel_clan"`. If that fief is later captured in a siege, `OnSettlementOwnerChanged` fired the rescue path, incorrectly calling `NormalizeRebelClan` (setting `IsMinorFaction = true`) on a still-active Vlandia vassal. The clan was already in a kingdom — no rescue was needed. The lasting side-effect was `IsMinorFaction = true` persisting on the vassal, causing them to receive Frontier Revenue they should not.
+- **Confirmed live reproduction:** Samar Clan (Vlandia vassal, 8 heroes, leader Samar) lost Garontor Castle in a siege. Our code caught them, set `IsMinorFaction = true`, then immediately detected `Kingdom = Vlandia` on the next daily tick and removed tracking. Samar was investing in towns and enslaving prisoners in Vlandia — clearly not a clan needing rescue.
+- **Fix 1 — `OnSettlementOwnerChanged`:** Added `if (clan.Kingdom != null) return;` guard after the no-settlements check. Clans still in a kingdom are unlanded vassals; vanilla handles fief redistribution naturally.
+- **Fix 2 — `ScanAndRescueHomelessRebelClans`:** Added `if (clan.Kingdom != null) continue;` guard after the no-settlements check. Same reasoning for session-start scan.
+- **Not affected:** The `HandleDestroyClan` safety net in `B1071_ClanSurvivalPatch` was already correct — it explicitly guards `kingdom == null && IsRebelClanOrigin(clan)` before calling the rebel rescue path. Only the behavior event handlers needed the guard.
+- **Save/load safe:** Pure guard conditions; no SyncData changes. Existing saves unaffected.
+- **Parity:** AI lord clans that are unlanded vassals are equally unaffected (they were always excluded from rebel rescue since they rarely have `"rebel_clan"` StringIds, but this closes the definitional gap).
+
+### Feature — Rebel Clan Rescue
+
+**Rebel clans that lose their last settlement are now rescued instead of being destroyed by vanilla.**
+
+- Added `OnSettlementOwnerChanged` event listener in `B1071_ClanSurvivalBehavior` — proactively rescues rebel clans when they lose their last settlement (primary rescue point).
+- Extended `HandleDestroyClan` prefix safety net in `B1071_ClanSurvivalPatch` to intercept `DestroyClanAction.Apply` / `ApplyByClanLeaderDeath` for rebel clans with `Kingdom == null` (safety net for leader-death or edge-case destructions).
+- Added `IsRebelClanOrigin()` helper — detects rebel clans by `IsRebelClan == true` OR StringId containing `"rebel_clan"` (catches both fresh rebels and normalized former-rebels).
+- Added `NormalizeRebelClan()` — three-stage normalization via reflection:
+  1. Sets `IsRebelClan = false` (public setter)
+  2. Sets `IsMinorFaction = true` (private setter, via reflection) — enables Frontier Revenue eligibility
+  3. Removes clan from vanilla's `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation` tracking dictionary
+- All reflection operations fail gracefully with logged warnings if the API changes in a future game version.
+- Rescued rebel clans enter the same tracking pipeline as kingdom-destruction rescues: daily tick clears wars, periodic status logging, auto-stop tracking when the clan joins a kingdom.
+- **TimeLord/BetterTime safe**: No inline Campaign actions in the event handler — only `RegisterRescuedClan`. War cleanup deferred to daily tick (same pattern as v0.2.6.1 fix).
+- **Save/Load safe**: No new SyncData fields. `_alreadyRescued` HashSet is session-scoped.
+- Root cause: Rebel clans have `Kingdom == null` → existing Path A (OnClanChangedKingdom) and Path B (HandleDestroyClan kingdom-elimination check) never fire for them. Vanilla destroys them via `DestroyClanAction.Apply` when settlements are lost, or `ApplyByClanLeaderDeath` when leaders die. Verified in playtest: Nathun Clan, Zeonica rebels all destroyed without rescue.
+
+### Fix — Homeless Rebel Clan Startup Scan
+
+**Rebel clans that lost their settlement in a previous session are now rescued on session load.**
+
+- Added `ScanAndRescueHomelessRebelClans()` — runs once at `OnSessionLaunched` in `B1071_ClanSurvivalBehavior`.
+- Iterates all clans, finds those matching: `IsRebelClanOrigin` + no settlements + living adult heroes + not already tracked.
+- Normalizes each clan (`IsRebelClan→false`, `IsMinorFaction→true`) and registers for tracking before vanilla's `RebellionsCampaignBehavior.DailyTickClan` can kill heroes.
+- Promotes heir if leader is dead; skips clan entirely if no valid heir or no living adults remain.
+- Root cause: `OnSettlementOwnerChanged` only fires during gameplay — rebel clans that lost their last settlement in a prior save session had their heroes killed by vanilla's daily tick (`RebellionsCampaignBehavior` Part B: if `IsRebelClan && Settlements.Count == 0` → kills heroes one by one) before any rescue path could fire.
+- Verified in playtest: Zeonica rebels (Nethor, 4 heroes) previously destroyed because all heroes were killed by `DailyTickClan` before `ApplyByClanLeaderDeath` fired.
+
+### Fix — Castle Recruitment PayHero Gold Creation
+
+**Eliminated gold-from-nothing fallback when paying heroes from castle recruitment.**
+
+- Previously, `PayHero()` in `B1071_CastleRecruitmentBehavior` called `GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount)` when `payingTown` was null, which created gold from nothing (null source = gold appears out of thin air).
+- Now skips payment entirely when `payingTown == null`, with a logged warning. No gold is created or transferred.
+- Scenario: Occurs when a castle's bound town reference is null (edge case during sieges, town destruction, or deserialization race conditions).
+
+### Fix — Overlay Data Row Visibility
+
+**Fixed overlay ledger data rows being invisible despite correct data population.**
+
+- Root cause: `CoverChildren` size policy on a non-layout Widget (no StackLayout) resolved to ~0 height, making rows invisible even though data was present.
+- Changed outer row Widget to `HeightSizePolicy="Fixed"` with `SuggestedHeight="20"` for deterministic sizing.
+- Removed `HintWidget` from code-generated XML (never used in any Bannerlord prefab XML; caused template parse/layout failures).
+- Changed zebra-striping sprite from `Encyclopedia\navbar` (~36px natural height) to `BlankWhiteSquare_9` (1px, no inflation).
+- Inner ListPanel and TextWidget children changed to `HeightSizePolicy="StretchToParent"`.
+- Text alignment set to `Brush.TextVerticalAlignment="Center"` for proper vertical centering within the 20px row.
+
+### Fix — Overlay Panel Height
+
+**Fixed overlay panel clipping title and column headers.**
+
+- Panel height formula changed from `144 + (rows × 20)` to `200 + (rows × 20)`.
+- The previous 144px base did not account for title row (20px), column headers (22px), dividers, and margins that were added in the Col5 update.
+- Default height with 10 rows: 400px (was 344px).
+
+### Feature — 5th Column in Overlay Ledger
+
+**All 13 overlay tabs now display 5 data columns.**
+
+- Added `Cell5` property to `B1071_LedgerRowVM` (view model).
+- Added 5th TextWidget column to `B1071_MapBarPanelUIExtender` for both data rows and totals row.
+- Extended header/sort infrastructure: `_sortKeys`, `_headerToSort`, `ApplySortIndicator`, `SortByHeader` all support 5 columns.
+- Per-tab Col5 data:
+
+| Tab | Col5 Data |
+|-----|-----------|
+| Factions | Prosperity (total) |
+| Wars | Territory delta (e.g., "Empire +2 / Sturgia −1") |
+| Truces | Status (Forced Peace / Voluntary) |
+| Devastation | War damage level |
+| Manpower | Garrison manpower |
+| Slaves | Culture of the settlement |
+| Investment | Type (Village/Town) |
+| Rebellion | Time-to-rebel estimate |
+| Exhaustion | Status label (Active/Armistice/Recovering) |
+| Economy | Type (Town/Castle/Village) |
+| Characters | Relation symbol (♥ ▲ ● ▼ †) |
+| Compatibility | Status (OK/Warn/Conflict) |
+| Help | (empty) |
+
+### UX — Factions Tab Reorder (CK3-style)
+
+**Factions tab columns reordered: Faction | Ruler | Treasury | Manpower | Prosperity.**
+
+- "Money" renamed to "Treasury" throughout (header, sort key, localization key).
+- Column order now matches CK3 convention: identity first, then finances, then power metrics.
+
+### UX — Wars Territory Delta
+
+- Wars tab now shows territory changes since session start: `"Empire +2 / Sturgia −1"` or `"—"` for no change.
+- Faction names abbreviated to 8 characters maximum.
+- Session-scoped baselines with automatic stale-key cleanup when wars end.
+
+### UX — Characters Relation Symbols
+
+- Characters tab now shows player relation as a Unicode symbol prefix:
+  - ♥ (≥50) — strong ally
+  - ▲ (≥20) — friendly
+  - ● (neutral, −19 to +19)
+  - ▼ (≤−20) — hostile
+  - † (≤−50) — enemy
+
+### UX — Rebellion Totals Polish
+
+- Rebellion tab totals row now uses all 5 columns: Avg Risk | score | ≤30d: X | Towns: X | Mismatch: X (or "All Native").
+
+### Fix — Duplicate Truce Registration Logs
+
+- Added idempotency guard in `RegisterKingdomPairTruce()`: if the same pair+expiry already exists within 0.01 campaign days, skip re-registration.
+- Eliminates 2–3× duplicate log entries per peace event (truce mechanism remains idempotent and intact).
+
+### Fix — TownInvestment Prosperity Log Spam
+
+- Moved prosperity bonus log from `GetActiveProsperityBonus()` (fires on every model query — multiple times per tick per town) to `OnDailyTickSettlement()` (fires once per day per town).
+- Reduces session log volume by ~70% (798 lines vs. 2,604 in prior session with same number of towns).
+
+### UX — Overlay Visual Polish (Critical Fixes)
+
+- **Zebra striping & player-faction highlight**: `IsEven` and `IsHighlighted` properties in `B1071_LedgerRowVM` are now consumed by layout — alternating rows get a subtle white overlay (5% alpha), and player-faction rows are highlighted in gold (12% alpha).
+- **Hostile relation glyph**: Replaced `⚔` (U+2694, not in Bannerlord's font) with `†` (U+2020, dagger) in `FormatRelation()` for Characters tab.
+- **Truces header**: Replaced box-drawing chars `──` (U+2500, tofu) with em-dash `—` (U+2014) in both Truces section headers in the Wars tab.
+
+### UX — Overlay High-Value Improvements
+
+- **Tab font reduction**: All 13 tab labels reduced from `FontSize="14"` to `FontSize="13"` to prevent truncation at 1080p.
+- **Keyboard tab navigation**: Left/Right arrow keys now cycle tabs with wrapping. Disabled on Search tab to avoid consuming arrow keys during text input.
+- **Row tooltips**: Added `HintViewModel` support to `B1071_LedgerRowVM`. Truncated cell text now shows full content on hover via Bannerlord's native `HintWidget`. Applied to 10 tabs (Characters, Prisoners, Castles, Towns, Villages, Factions, Armies, ClanInstability, Search, Wars).
+- **Dynamic panel height**: Panel height now adapts to MCM `OverlayLedgerRowsPerPage` setting via formula `200 + (rows × 20)`. Default 10 rows = 400px.
+- **Search row penalty fix**: Search tab controls occupy ~36px (~2 rows), not 60px (~3 rows). Changed penalty from -3 to -2, gaining 1 extra visible row on Search tab.
+- **Castle batch recruit**: Added "Recruit All" buttons to Elite and Ready sections of castle recruitment screen. Uses snapshot iteration to safely recruit all available troops in one click. Added `NumericCount` property to `B1071_CastleRecruitTroopVM` for batch loop.
+
+### UX — Overlay Nice-to-Have Polish
+
+- **Tab label caching**: Tab label TextObjects are now resolved once during initialization and cached in a static `string[]` array. Eliminates ~26 TextObject allocations per 2-second sync cycle.
+- **Number formatting**: Army size and market price in Search tab detail now use comma grouping (`"N0"` format) for values over 999.
+
+### Fix — ClanSurvival Session File Logging
+
+- All ClanSurvival events (rescues, skips, errors, kingdom eliminations, PREFIX firings, war clearing) now logged to both rgl_log (via `Debug.Print`) and the session file log (via `B1071_SessionFileLog.WriteTagged`).
+- Previously ClanSurvival only logged to rgl_log, making post-session analysis harder.
+
+### Files Changed
+
+| File | Change Summary |
+|------|---------------|
+| `B1071_ClanSurvivalBehavior.cs` | +OnSettlementOwnerChanged, +IsRebelClanOrigin, +NormalizeRebelClan, +ScanAndRescueHomelessRebelClans (startup scan), +session file logging |
+| `B1071_ClanSurvivalPatch.cs` | HandleDestroyClan rebel case, PerformRescue nullable kingdom, +session file logging throughout |
+| `B1071_CastleRecruitmentBehavior.cs` | PayHero: removed gold-from-nothing fallback, skips payment when payingTown is null |
+| `B1071_ManpowerBehavior.cs` | Truce idempotency guard |
+| `B1071_TownInvestmentBehavior.cs` | Prosperity log moved to daily tick |
+| `B1071_OverlayController.cs` | Col5 for all 13 tabs, Factions reorder, Treasury rename, relation symbols, territory delta, hostile glyph fix (†), truces header em-dash, keyboard nav, tab label cache, PanelHeight formula (200 + rows*20), search penalty fix, number formatting |
+| `B1071_LedgerRowVM.cs` | +Cell5 property, +HintViewModel support, +hintText constructor/update parameter |
+| `B1071_MapBarPanelUIExtender.cs` | +5th column TextWidget, Header5/Totals5 bindings, zebra/highlight overlays, tab font 14→13, dynamic PanelHeight binding, Fixed 20px rows, BlankWhiteSquare_9 sprite, removed HintWidget from ItemTemplate |
+| `B1071_CastleRecruitmentVM.cs` | +ExecuteRecruitAllElites(), +ExecuteRecruitAllReady(), +RecruitAllText property |
+| `B1071_CastleRecruitTroopVM.cs` | +NumericCount property |
+| `B1071_CastleRecruitment.xml` | +Recruit All buttons for Elite and Ready sections |
+
 ## [0.2.6.1] — 2026-03-04
 
 ### Fix — Save Integrity with TimeLord + BetterTime + Campaign++

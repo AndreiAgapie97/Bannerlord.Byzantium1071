@@ -22,6 +22,7 @@ namespace Byzantium1071.Campaign.UI
         private readonly CharacterObject _character;
         private readonly Settlement _castle;
         private readonly bool _isElite;
+        private int _numericCount;
 
         private ImageIdentifierVM _visual;
         private string _name = string.Empty;
@@ -76,6 +77,7 @@ namespace Byzantium1071.Campaign.UI
             _tier = character.Tier.ToString();
             _goldCost = goldCost.ToString();
             _count = count.ToString();
+            _numericCount = count;
             _isReady = true;
             _recruitText = L("b1071_ui_recruit", "Recruit");
 
@@ -122,6 +124,7 @@ namespace Byzantium1071.Campaign.UI
             _tier = character.Tier.ToString();
             _goldCost = goldCost.ToString();
             _count = count.ToString();
+            _numericCount = count;
             _isReady = isReady;
             _recruitText = L("b1071_ui_recruit", "Recruit");
 
@@ -163,6 +166,7 @@ namespace Byzantium1071.Campaign.UI
         }
 
         public CharacterObject Character => _character;
+        public int NumericCount => _numericCount;
 
         // ── Data-bound properties ─────────────────────────────────────────────────
 

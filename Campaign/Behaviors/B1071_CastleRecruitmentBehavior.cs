@@ -1605,26 +1605,23 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
-        /// Pays a hero from either a town's treasury or from nothing (gold creation).
-        /// When <paramref name="payingTown"/> is set, uses the vanilla
+        /// Pays a hero from a town's treasury using vanilla's
         /// <c>GiveGoldAction.ApplyForSettlementToCharacter</c> API which deducts from
         /// the town's <c>SettlementComponent.Gold</c> with proper clamping and events.
-        /// When null, gold is created (used only as fallback — all current callers
-        /// should provide a payingTown).
+        /// If <paramref name="payingTown"/> is null, the payment is skipped entirely
+        /// (no gold from nothing).
         /// </summary>
         private static void PayHero(Settlement? payingTown, Hero recipient, int amount)
         {
             if (amount <= 0 || recipient == null) return;
 
-            if (payingTown != null)
+            if (payingTown == null)
             {
-                GiveGoldAction.ApplyForSettlementToCharacter(payingTown, recipient, amount, disableNotification: true);
+                TaleWorlds.Library.Debug.Print($"[Byzantium1071][CastleRecruitment] PayHero: payingTown is null — skipping {amount}g payment to {recipient.Name}. No gold from nothing.");
+                return;
             }
-            else
-            {
-                TaleWorlds.Library.Debug.Print($"[Byzantium1071][CastleRecruitment] PayHero: payingTown is null - gold created from thin air ({amount}g to {recipient.Name}). This should not happen.");
-                GiveGoldAction.ApplyBetweenCharacters(null, recipient, amount, disableNotification: true);
-            }
+
+            GiveGoldAction.ApplyForSettlementToCharacter(payingTown, recipient, amount, disableNotification: true);
         }
 
         /// <summary>

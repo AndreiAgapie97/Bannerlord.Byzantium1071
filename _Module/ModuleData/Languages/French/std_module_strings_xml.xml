@@ -19,6 +19,7 @@
     <string id="b1071_cr_pending_header" text="En attente (formation)" />
     <string id="b1071_cr_ready_header" text="Prêt à recruter (prisonniers)" />
     <string id="b1071_cr_recruit_available" text="Recruter des troupes ({READY} disponibles)" />
+    <string id="b1071_cr_recruit_all" text="Tout recruter" />
     <string id="b1071_cr_recruit_available_pending" text="Recruter des troupes ({READY} disponibles, {PENDING} en attente)" />
     <string id="b1071_cr_recruit_msg" text="[{SOURCE}] {TROOP} recruté à {CASTLE} pour {GOLD}g" />
     <string id="b1071_cr_recruit_none" text="Recruter des troupes (aucune disponible)" />
@@ -885,7 +886,6 @@
     <string id="b1071_overlay_col_bound_to" text="Lié à" />
     <string id="b1071_overlay_empty_factions" text="Registre des factions&#10;Aucune entrée trouvée." />
     <string id="b1071_overlay_title_factions" text="Registre des factions  ({COUNT} entrées)" />
-    <string id="b1071_overlay_col_money" text="Argent" />
     <string id="b1071_overlay_ttr_now" text="Maintenant" />
     <string id="b1071_overlay_ttr_stable" text="Stable" />
     <string id="b1071_overlay_ttr_cap" text="999+j" />
@@ -978,5 +978,28 @@
     <string id="b1071_compat_effect_getsurvivalchance" text="Les deux mods influencent la probabilité de survie des troupes en bataille." />
     <string id="b1071_compat_effect_simulatehit" text="Les deux mods influencent le calcul interne des impacts en bataille." />
     <string id="b1071_compat_effect_calculateclanincomeinternal" text="Les deux mods influencent le revenu quotidien des clans." />
+    <!-- v0.2.7.0: New overlay column headers, labels, and statuses -->
+    <string id="b1071_overlay_col_culture" text="Culture" />
+    <string id="b1071_overlay_col_duration" text="Durée" />
+    <string id="b1071_overlay_col_garrison" text="Garnison" />
+    <string id="b1071_overlay_col_leader" text="Chef" />
+    <string id="b1071_overlay_col_lord" text="Seigneur" />
+    <string id="b1071_overlay_col_parties" text="Armées" />
+    <string id="b1071_overlay_col_relation" text="Relation" />
+    <string id="b1071_overlay_col_ruler" text="Souverain" />
+    <string id="b1071_overlay_col_status" text="Statut" />
+    <string id="b1071_overlay_col_territory" text="Territoire" />
+    <string id="b1071_overlay_col_treasury" text="Trésor" />
+    <string id="b1071_overlay_all_native" text="Tout natif" />
+    <string id="b1071_overlay_mismatch" text="Différent" />
+    <string id="b1071_overlay_native" text="Natif" />
+    <string id="b1071_overlay_oldest_war" text="Plus longue : {DAYS}j" />
+    <string id="b1071_overlay_status_active" text="Actif" />
+    <string id="b1071_overlay_status_noble" text="Noble" />
+    <string id="b1071_overlay_status_prisoner" text="Prisonnier" />
+    <string id="b1071_overlay_status_wanderer" text="Vagabond" />
+    <string id="b1071_overlay_total_entries" text="Villes : {COUNT}" />
+    <string id="b1071_overlay_war_dur" text="{DAYS}j" />
+    <string id="b1071_overlay_war_dur_new" text="Nouveau" />
   </strings>
 </base>

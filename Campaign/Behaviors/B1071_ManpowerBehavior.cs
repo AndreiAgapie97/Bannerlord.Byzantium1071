@@ -1189,6 +1189,11 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
 
             float expiryDay = (float)CampaignTime.Now.ToDays + truceDays;
+
+            // Guard: suppress duplicate log when multiple hooks fire for the same peace event.
+            if (_truceExpiryByPair.TryGetValue(key, out float existing) && Math.Abs(existing - expiryDay) < 0.01f)
+                return;
+
             _truceExpiryByPair[key] = expiryDay;
             B1071_VerboseLog.Log("Diplomacy", $"Truce registered: {kingdom1.Name} vs {kingdom2.Name}, {truceDays} days until {FormatCampaignDateTime(expiryDay)}.");
             _telemetryLastTruce = $"Truce {kingdom1.Name}-{kingdom2.Name} until {FormatCampaignDateTime(expiryDay)}";

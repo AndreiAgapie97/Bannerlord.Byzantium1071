@@ -12,7 +12,7 @@
   <Item
     id="b1071_slave"
     name="{=b1071_item_slaves}Slaves"
-    mesh="bd_barrel_a"
+    mesh="shackle"
     item_category="b1071_slaves"
     value="300"
     weight="5"

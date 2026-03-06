@@ -64,13 +64,13 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | 3 | **Castles** | Every castle in the world — manpower, prosperity, daily regen |
 | 4 | **Towns** | Every town — manpower, prosperity, daily regen |
 | 5 | **Villages** | Every village — hearth count, faction, bound settlement |
-| 6 | **Factions** | Kingdom-level totals — total manpower, prosperity, treasury |
+| 6 | **Factions** | Kingdom-level view — Faction \| Ruler \| Treasury \| Manpower \| Prosperity |
 | 7 | **Armies** | Active armies — power rating, troop count, kingdom exhaustion |
-| 8 | **Wars** | Active wars — exhaustion levels, peace pressure status |
-| 9 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion |
+| 8 | **Wars** | Active wars — exhaustion levels, peace pressure, territory delta (e.g., "Empire +2 / Sturgia −1") |
+| 9 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
 | 10 | **Prisoners** | Captured nobles — who captured them, where they're held |
 | 11 | **Clans** | Clan loyalty/instability within kingdoms |
-| 12 | **Characters** | All living characters — location and distance from you |
+| 12 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
 | 13 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
 
 ### Overlay Controls
@@ -79,8 +79,12 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 |---------|--------------|
 | **Click a column header** | Sorts the table by that column (click again to reverse) |
 | **◀ / ▶ arrows** | Page through rows (default 9 rows per page, adjustable in MCM) |
+| **← / → arrow keys** | Cycle between tabs (wraps around; disabled on Search tab to allow text editing) |
+| **Hover a truncated cell** | Shows full text in a tooltip |
 | **Type in Search tab** | Filters settlements, heroes, clans, and market prices by your search text. Try typing a trade good name (e.g., "Grain", "Slaves") to compare prices across all towns |
 | **Left-click a settlement on the map** | Updates the "Current" tab with that settlement's details |
+
+> **Visual cues:** Alternating rows have subtle zebra striping. Rows belonging to your faction are highlighted in gold.
 
 ---
 
@@ -162,6 +166,7 @@ Castles now have their own recruitment system with **three sources of troops**.
    - **Elite pool troops** — culture-matching T4/T5/T6 troops generated daily from the castle's manpower.
    - **Converted prisoners** — T4+ prisoners that have finished their holding period.
 6. **Click individual troops to recruit them.** Each has a gold cost.
+7. **"Recruit All" buttons** — each section (Elite and Ready) has a "Recruit All" button that recruits all available troops of that type in one click.
 
 ### Troop Costs
 
@@ -552,9 +557,22 @@ When a kingdom is destroyed in vanilla, all member clans are annihilated and the
 
 ### What's NOT Rescued
 
-- Clans destroyed by **failed rebellions** (legitimate consequence)
+- Clans destroyed by **failed rebellions** (legitimate consequence — the rebellion itself was defeated)
 - Clans with **no living adult heroes** (no one to carry on)
 - The **player's own clan** (vanilla handles this separately)
+
+### Rebel Clan Rescue
+
+Rebel clans — spawned when a town rebels — are also rescued when they would otherwise be destroyed:
+
+- When a rebel clan **loses its last settlement** (e.g., another faction reconquers the town), Campaign++ intercepts the destruction and rescues the clan.
+- When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net promotes an heir (if one exists) and rescues the clan.
+- Rescued rebel clans are **normalized**: `IsRebelClan` is cleared, `IsMinorFaction` is set to `true`, and the clan is removed from vanilla's internal rebel tracking.
+- Because `IsMinorFaction` is now `true`, rescued rebel clans qualify for **Frontier Revenue** — the same unaligned stipend that other minor factions receive.
+- They then survive as an independent warband until vanilla's AI recruits them into a kingdom as a vassal or mercenary.
+- **Save/load coverage**: Rebel clans that lost their settlement in a *previous session* (before Campaign++ was installed or before the save was loaded) are automatically detected and rescued on session start. You don't need to worry about timing — the mod scans for homeless rebel clans every time you load a save.
+
+> **Note:** Rebel clans destroyed during the *rebellion itself* (i.e., the revolt fails before the town is taken) are NOT rescued — that's a legitimate consequence of a failed uprising.
 
 ### Key Settings
 
