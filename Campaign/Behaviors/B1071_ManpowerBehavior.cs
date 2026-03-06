@@ -1354,9 +1354,23 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (stance == null || !stance.IsAtWar)
                         continue;
 
-                    if (minWarDays > 0 && stance.WarStartDate.ElapsedDaysUntilNow < minWarDays)
+                    float warAgeDays = stance.WarStartDate.ElapsedDaysUntilNow;
+                    int effectiveMinDays = minWarDays;
+
+                    // C+: Multi-front war relief — reduce minimum war duration during systemic crisis.
+                    if (Settings.EnableMultiFrontWarRelief && minWarDays > 0)
                     {
-                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: war age {stance.WarStartDate.ElapsedDaysUntilNow:0.0} < {minWarDays} days.");
+                        int emergencyMin = Math.Max(1, Settings.EmergencyMinWarDays);
+                        if (emergencyMin < minWarDays && IsMultiFrontCrisis(kingdom))
+                        {
+                            effectiveMinDays = emergencyMin;
+                            DebugDiplomacy($"Multi-front relief active for {kingdom.Name}: min war days {minWarDays}->{emergencyMin}.");
+                        }
+                    }
+
+                    if (effectiveMinDays > 0 && warAgeDays < effectiveMinDays)
+                    {
+                        DebugDiplomacy($"Skip peace candidate {kingdom.Name} vs {enemy.Name}: war age {warAgeDays:0.0} < {effectiveMinDays} days.");
                         continue;
                     }
 
@@ -1430,6 +1444,43 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// C+ multi-front war relief: returns true when a kingdom is in systemic crisis.
+        /// All conditions must be met: (1) active major wars >= EmergencyWarCountThreshold,
+        /// (2) in Crisis pressure band or above forced-peace exhaustion threshold,
+        /// (3) average settlement manpower fill &lt;= EmergencyManpowerThresholdPercent.
+        /// </summary>
+        internal bool IsMultiFrontCrisis(Kingdom kingdom)
+        {
+            if (kingdom == null) return false;
+
+            int warCount = CountActiveMajorWars(kingdom);
+            if (warCount < Math.Max(2, Settings.EmergencyWarCountThreshold))
+                return false;
+
+            // Check exhaustion: Crisis band (if bands enabled) OR above forced-peace threshold (legacy).
+            string kid = kingdom.StringId ?? string.Empty;
+            if (Settings.EnableDiplomacyPressureBands)
+            {
+                if (GetPressureBand(kid) != DiplomacyPressureBand.Crisis)
+                    return false;
+            }
+            else
+            {
+                float exhaustion = GetWarExhaustion(kid);
+                float threshold = Math.Max(1f, Settings.DiplomacyForcedPeaceThreshold);
+                if (exhaustion < threshold)
+                    return false;
+            }
+
+            float avgRatio = GetKingdomAverageManpowerRatio(kingdom);
+            float mpThreshold = Math.Max(0.01f, Settings.EmergencyManpowerThresholdPercent / 100f);
+            if (avgRatio > mpThreshold)
+                return false;
+
+            return true;
         }
 
         private static bool IsEnemyBesiegingCoreSettlement(Kingdom defender, IFaction attacker)

@@ -57,6 +57,9 @@ namespace Byzantium1071.Campaign.Patches
                 if (!Settings.EnableMinorFactionIncome) return;
                 if (clan == null || !clan.IsMinorFaction || clan.IsBanditFaction) return;
                 if (clan == Clan.PlayerClan) return; // Player already has settlement income; this is for AI only.
+                // Vassals with IsMinorFaction=true (e.g. rescued rebel clans that re-joined a kingdom)
+                // already receive settlement income; skip so they don't double-dip.
+                if (clan.Kingdom != null && !clan.IsUnderMercenaryService) return;
 
                 int tier = Math.Max(1, clan.Tier);
 

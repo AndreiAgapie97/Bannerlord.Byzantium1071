@@ -1012,5 +1012,20 @@ Keine Einträge gefunden." />
     <string id="b1071_overlay_total_entries" text="Städte: {COUNT}" />
     <string id="b1071_overlay_war_dur" text="{DAYS}T" />
     <string id="b1071_overlay_war_dur_new" text="Neu" />
+    <!-- v0.2.7.2: Rebel clan renaming -->
+    <string id="b1071_rescued_clan_name" text="{LEADER_NAME}s Kriegsband" />
+    <string id="b1071_rescued_clan_informal" text="{LEADER_NAME}s Kriegsband" />
+    <!-- v0.2.7.2: Early-war peace penalty MCM -->
+    <string id="b1071_mcm_t_earlywar_pen" text="Frühkriegs-Friedensabstimmungsstrafe" />
+    <string id="b1071_mcm_h_earlywar_pen" text="Maximale Friedensabstimmungsstrafe zu Kriegsbeginn. Nimmt linear bis auf null am Schwellenwert 'Min. Kriegstage' ab. Verhindert Friedensabstimmungen des Rates vor der Mindestdauer. Spieler und KI gleichermaßen betroffen bei aktivierter Spielerparität." />
+        <!-- v0.2.7.2: Multi-front war relief MCM -->
+        <string id="b1071_mcm_t_mfwr_enable" text="Mehrfronten-Entlastung aktivieren" />
+        <string id="b1071_mcm_h_mfwr_enable" text="Wenn sich ein Königreich in einer systemischen Krise befindet (hohe Kriegsmüdigkeit, erschöpfte Manpower, mehrere Kriege), wird die Mindestkriegsdauer für erzwungenen Frieden und Rats-Friedensabstimmungen vom normalen Wert auf den Notfallwert reduziert. Alle Bedingungen müssen gleichzeitig erfüllt sein." />
+        <string id="b1071_mcm_t_mfwr_mindays" text="Notfall-Minimum an Kriegstagen" />
+        <string id="b1071_mcm_h_mfwr_mindays" text="Reduzierte Mindestkriegsdauer in Tagen, die verwendet wird, wenn die Mehrfronten-Krisenbedingungen erfüllt sind. Jüngere Kriege bleiben selbst im Notfall weiterhin geschützt." />
+        <string id="b1071_mcm_t_mfwr_mp" text="Notfall-Schwelle für Manpower %" />
+        <string id="b1071_mcm_h_mfwr_mp" text="Durchschnittliche Füllrate der Siedlungs-Manpower, bei oder unter der die Notfallumgehung aktiviert wird. Beispiel: 25 = Entlastung wird verfügbar, wenn die Reserven bei 25 % oder weniger liegen." />
+        <string id="b1071_mcm_t_mfwr_wars" text="Notfall-Schwelle für Kriegsanzahl" />
+        <string id="b1071_mcm_h_mfwr_wars" text="Mindestanzahl aktiver Königreich-gegen-Königreich-Kriege, die erforderlich ist, um die Mehrfronten-Entlastung zu aktivieren." />
   </strings>
 </base>

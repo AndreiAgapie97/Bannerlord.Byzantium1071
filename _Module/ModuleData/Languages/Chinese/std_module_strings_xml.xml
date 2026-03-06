@@ -1001,5 +1001,20 @@
     <string id="b1071_overlay_total_entries" text="Towns: {COUNT}" />
     <string id="b1071_overlay_war_dur" text="{DAYS}d" />
     <string id="b1071_overlay_war_dur_new" text="New" />
+    <!-- v0.2.7.2: Rebel clan renaming -->
+    <string id="b1071_rescued_clan_name" text="{LEADER_NAME}的战团" />
+    <string id="b1071_rescued_clan_informal" text="{LEADER_NAME}的战团" />
+    <!-- v0.2.7.2: Early-war peace penalty MCM -->
+    <string id="b1071_mcm_t_earlywar_pen" text="早期战争和平投票惩罚" />
+    <string id="b1071_mcm_h_earlywar_pen" text="战争开始时施加的最大和平投票支持惩罚。会在最小战争天数期限内线性衰减至零。阻止议会在最短持续时间之前投票和平。启用玩家对等时，玩家和AI同等适用。" />
+    <!-- v0.2.7.2: Multi-front war relief MCM -->
+    <string id="b1071_mcm_t_mfwr_enable" text="启用多线战争缓解" />
+    <string id="b1071_mcm_h_mfwr_enable" text="当一个王国同时陷入高战争疲劳、兵源枯竭且身陷多场战争的系统性危机时，强制和议与议会和平投票所要求的最短战争天数会从常规值降至紧急值。必须同时满足全部条件。" />
+    <string id="b1071_mcm_t_mfwr_mindays" text="紧急最短战争天数" />
+    <string id="b1071_mcm_h_mfwr_mindays" text="当多线危机条件满足时使用的较低最短战争时长（天）。即使在紧急状态下，短于此时长的战争仍会受到保护。" />
+    <string id="b1071_mcm_t_mfwr_mp" text="紧急兵源阈值 %" />
+    <string id="b1071_mcm_h_mfwr_mp" text="当王国聚落平均兵源填充率低于或等于此值时，可触发紧急绕过。例如 25 表示兵源池平均仅剩 25% 或更低时生效。" />
+    <string id="b1071_mcm_t_mfwr_wars" text="紧急战争数量阈值" />
+    <string id="b1071_mcm_h_mfwr_wars" text="触发多线战争缓解所需的最低王国级战争数量。" />
   </strings>
 </base>

@@ -1,5 +1,57 @@
 # Campaign++ — Changelog
 
+## [0.2.7.2] — 2026-03-06
+
+### Feature — Rebel Clan Renaming
+
+**Rescued rebel clans are now renamed from their settlement-based name to a leader-derived warband name.**
+
+- **Problem:** Vanilla names rebel clans after the settlement they rebelled from (for example, "Pen Cannoc rebels"). If the same town rebels twice, players can end up with duplicate clan names in diplomacy and clan lists.
+- **Fix:** Rescued rebel clans are now renamed to a leader-derived warband name such as "Borun's Warband".
+- **Fallback:** If the clan has no valid leader at rename time, the rescue still succeeds and the rename is skipped safely.
+- **Localized:** EN, ZH, FR, DE.
+
+### Feature — Early-War Peace Vote Penalty
+
+**Council peace votes are now strongly discouraged during the early phase of a war.**
+
+- **Problem:** The 40-day minimum war duration only protected Campaign++ forced peace. Councils could still try to end wars almost immediately.
+- **Fix:** Young wars now carry a strong peace-vote penalty that starts at 300 support against peace and fades out over time.
+- **Result:** Wars are far less likely to end in the first few weeks unless the kingdom is under overwhelming pressure.
+- **MCM setting:** `EarlyWarPeacePenaltyStrength` in the Diplomacy group.
+
+### Feature — Multi-Front War Relief
+
+**Kingdoms trapped in a true multi-front collapse can now reach peace sooner without removing the normal minimum-war protections for everyone else.**
+
+- **Default behavior:** The normal 40-day minimum war duration still applies.
+- **Emergency behavior:** The minimum can drop to 15 days only when all crisis conditions are met at once: Crisis pressure, multiple major wars, and severely depleted manpower.
+- **Council alignment:** The early-war peace-vote penalty uses the same emergency window, so forced peace rules and council votes now react consistently.
+- **New MCM controls:** `EnableMultiFrontWarRelief`, `EmergencyMinWarDays`, `EmergencyManpowerThresholdPercent`, and `EmergencyWarCountThreshold`.
+
+### Fix — Frontier Revenue Vassal Double-Dip
+
+**Rescued rebel clans no longer keep collecting independent warband income after rejoining a kingdom as normal vassals.**
+
+- **Problem:** A rescued rebel clan that later joined a kingdom could still qualify as a minor faction and receive Frontier Revenue on top of regular settlement income.
+- **Fix:** Frontier Revenue now skips kingdom vassals while still allowing true independent warbands and mercenary-service clans to receive the stipend.
+
+## [0.2.7.1] — 2026-03-06
+
+### Fix — Wars Territory Column (wrong calculations)
+
+**Replaced broken territory delta tracking with absolute settlement counts.**
+
+- **Root cause:** Territory baselines were stored per war pair but measured a global quantity (total kingdom settlements). This caused three bugs:
+  1. **Cross-war contamination**: A kingdom in multiple wars showed the same global loss on every war row (e.g., Battania `-1` on both the Vlandia and Nord rows, making it look like 2 losses when only 1 occurred).
+  2. **Baseline timing inconsistency**: Each pair's baseline was set on first observation. Pairs observed at different times showed different deltas for the same kingdom (e.g., Battania `-1` on one row, `+0` on another).
+  3. **Session-dependent**: Numbers reset to 0 on every save/load, making them unreliable.
+- **Fix:** Removed session-scoped baselines entirely. Territory column now shows absolute settlement counts: `"9 vs 15"` (side A towns+castles vs side B). Always correct, no state to manage, no edge cases.
+- **Sort:** Territory column sorts by absolute difference `|countA - countB|`, surfacing the most lopsided wars.
+- **Removed:** `_warTerritoryBaselines` dictionary, `GetWarTerritoryDelta()`, `FormatTerritoryDelta()`, stale-key cleanup code.
+- **Added:** `FormatTerritoryCount()` — stateless formatter.
+- **Save/load safe:** No persisted state was affected (baselines were session-scoped). No SyncData changes.
+
 ## [0.2.7.0] — 2026-03-06 (patch 2)
 
 ### Fix — Unlanded Vassal False-Rescue (ClanSurvival)
@@ -101,11 +153,10 @@
 - "Money" renamed to "Treasury" throughout (header, sort key, localization key).
 - Column order now matches CK3 convention: identity first, then finances, then power metrics.
 
-### UX — Wars Territory Delta
+### UX — Wars Territory
 
-- Wars tab now shows territory changes since session start: `"Empire +2 / Sturgia −1"` or `"—"` for no change.
-- Faction names abbreviated to 8 characters maximum.
-- Session-scoped baselines with automatic stale-key cleanup when wars end.
+- Wars tab Territory column shows absolute settlement counts: `"9 vs 15"` (side A towns+castles vs side B).
+- Sort by territory column surfaces the most lopsided wars (sorts by `|countA - countB|`).
 
 ### UX — Characters Relation Symbols
 
@@ -220,7 +271,7 @@
 
 ### Feature — Quick Settings MCM Tab
 
-**One-screen access to every system enable/disable toggle.** A new MCM tab ("Campaign++ - Quick Settings") gathers all 21 system master toggles into 5 logical groups so players can enable or disable any system without searching through 250+ settings.
+**One-screen access to every system enable/disable toggle.** A new MCM tab ("Campaign++ - Quick Settings") gathers all 21 system master toggles into 5 logical groups so players can enable or disable any system without digging through the full settings list.
 
 - **Core Systems:** War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link
 - **Economy & Investment:** Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount

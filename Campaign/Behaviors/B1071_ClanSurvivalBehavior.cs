@@ -570,6 +570,43 @@ namespace Byzantium1071.Campaign.Behaviors
                 Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
                     $"Failed to remove {clanName} from rebellion tracking: {ex.Message}");
             }
+
+            // 4. Rename clan from settlement-based rebel name to leader-derived warband name
+            //    Vanilla names rebel clans after the settlement (e.g. "Pen Cannoc rebels").
+            //    When the same settlement rebels twice, we get duplicate clan names.
+            //    Rename to "{LeaderName}'s Warband" for uniqueness and clarity.
+            try
+            {
+                Hero? leader = clan.Leader;
+                if (leader != null)
+                {
+                    string oldName = clan.Name?.ToString() ?? clan.StringId;
+                    var newName = new TaleWorlds.Localization.TextObject(
+                        "{=b1071_rescued_clan_name}{LEADER_NAME}'s Warband");
+                    newName.SetTextVariable("LEADER_NAME", leader.Name);
+
+                    var newInformalName = new TaleWorlds.Localization.TextObject(
+                        "{=b1071_rescued_clan_informal}{LEADER_NAME}'s Warband");
+                    newInformalName.SetTextVariable("LEADER_NAME", leader.Name);
+
+                    clan.ChangeClanName(newName, newInformalName);
+
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                        $"Renamed '{oldName}' → '{newName}' (leader: {leader.Name})");
+                    B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                        $"Renamed '{oldName}' → '{newName}' (leader-derived warband name)");
+                }
+                else
+                {
+                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                        $"Skipped rename for {clanName}: no living leader");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"Failed to rename {clanName}: {ex.Message}");
+            }
         }
 
         // ── Daily Tick: clear wars for independent rescued clans ─────────

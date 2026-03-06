@@ -79,9 +79,7 @@ namespace Byzantium1071.Campaign.UI
         private static List<CharacterLedgerRow>? _scratchCharacterRows;
         private static bool _characterDistancesDirty = true;
 
-        // Wars territory baseline: session-scoped (not persisted).
-        // Key = war pair key "idA|idB" (alphabetically ordered), Value = (settlementsA, settlementsB) at first observation.
-        private static Dictionary<string, (int settA, int settB)>? _warTerritoryBaselines;
+
 
         // Party position tracking for dirty-flag distance recalculation.
         private static Vec2 _lastPartyPos;
@@ -167,7 +165,6 @@ namespace Byzantium1071.Campaign.UI
             _sortTextCached = string.Empty;
             _lastCurrentContextSettlementId = string.Empty;
             _searchQuery = string.Empty;
-            _warTerritoryBaselines = null;
         }
 
         internal static bool IsVisible => _isVisible;
@@ -2926,8 +2923,8 @@ namespace Byzantium1071.Campaign.UI
             public float MaxExhaustion;
             public float PeacePressure;
             public int DurationDays;
-            public int TerritoryDeltaA;
-            public int TerritoryDeltaB;
+            public int TerritoryA;
+            public int TerritoryB;
         }
 
         private sealed class RebellionLedgerRow
@@ -3181,36 +3178,12 @@ namespace Byzantium1071.Campaign.UI
         }
 
         /// <summary>
-        /// Computes territory delta for a war pair. Returns formatted string e.g., "+2 / -1".
-        /// Uses session-scoped baselines — not persisted across save/load.
+        /// Formats absolute territory counts for a war pair.
+        /// Shows "9 vs 15" (side A's settlements vs side B's).
         /// </summary>
-        private static (int deltaA, int deltaB) GetWarTerritoryDelta(Kingdom sideA, Kingdom sideB, string pairKey)
+        private static string FormatTerritoryCount(int countA, int countB)
         {
-            if (_warTerritoryBaselines == null)
-                _warTerritoryBaselines = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
-
-            int currentA = CountKingdomSettlements(sideA);
-            int currentB = CountKingdomSettlements(sideB);
-
-            if (!_warTerritoryBaselines.TryGetValue(pairKey, out var baseline))
-            {
-                _warTerritoryBaselines[pairKey] = (currentA, currentB);
-                return (0, 0);
-            }
-
-            return (currentA - baseline.settA, currentB - baseline.settB);
-        }
-
-        private static string FormatTerritoryDelta(int deltaA, int deltaB, string sideAName, string sideBName)
-        {
-            if (deltaA == 0 && deltaB == 0)
-                return "\u2014"; // em-dash for no change
-
-            string abbrevA = sideAName.Length > 8 ? sideAName.Substring(0, 8) : sideAName;
-            string abbrevB = sideBName.Length > 8 ? sideBName.Substring(0, 8) : sideBName;
-            string sA = deltaA >= 0 ? "+" + deltaA : deltaA.ToString();
-            string sB = deltaB >= 0 ? "+" + deltaB : deltaB.ToString();
-            return abbrevA + " " + sA + " / " + abbrevB + " " + sB;
+            return countA.ToString() + " vs " + countB.ToString();
         }
 
         /// <summary>
@@ -3388,7 +3361,8 @@ namespace Byzantium1071.Campaign.UI
                         ? Math.Max(0, (int)warStance.WarStartDate.ElapsedDaysUntilNow)
                         : 0;
 
-                    var (deltaA, deltaB) = GetWarTerritoryDelta(sideA, sideB, pairKey);
+                    int terrA = CountKingdomSettlements(sideA);
+                    int terrB = CountKingdomSettlements(sideB);
 
                     rows.Add(new WarsLedgerRow
                     {
@@ -3402,23 +3376,10 @@ namespace Byzantium1071.Campaign.UI
                         MaxExhaustion = maxExhaustion,
                         PeacePressure = peacePressure,
                         DurationDays = durationDays,
-                        TerritoryDeltaA = deltaA,
-                        TerritoryDeltaB = deltaB
+                        TerritoryA = terrA,
+                        TerritoryB = terrB
                     });
                 }
-            }
-
-            // Clean stale baselines for wars that have ended
-            if (_warTerritoryBaselines != null && _warTerritoryBaselines.Count > seenPairs.Count)
-            {
-                var staleKeys = new List<string>();
-                foreach (string key in _warTerritoryBaselines.Keys)
-                {
-                    if (!seenPairs.Contains(key))
-                        staleKeys.Add(key);
-                }
-                foreach (string key in staleKeys)
-                    _warTerritoryBaselines.Remove(key);
             }
 
             rows.Sort((a, b) =>
@@ -3428,7 +3389,7 @@ namespace Byzantium1071.Campaign.UI
                     1 => a.MaxExhaustion.CompareTo(b.MaxExhaustion),
                     2 => a.DurationDays.CompareTo(b.DurationDays),
                     3 => string.Compare(a.PairName, b.PairName, StringComparison.Ordinal),
-                    4 => (Math.Abs(a.TerritoryDeltaA) + Math.Abs(a.TerritoryDeltaB)).CompareTo(Math.Abs(b.TerritoryDeltaA) + Math.Abs(b.TerritoryDeltaB)),
+                    4 => Math.Abs(a.TerritoryA - a.TerritoryB).CompareTo(Math.Abs(b.TerritoryA - b.TerritoryB)),
                     _ => a.PeacePressure.CompareTo(b.PeacePressure)
                 };
 
@@ -3582,7 +3543,7 @@ namespace Byzantium1071.Campaign.UI
                     FormatWarDuration(row.DurationDays),
                     involvesPlayer,
                     even,
-                    c5: FormatTerritoryDelta(row.TerritoryDeltaA, row.TerritoryDeltaB, row.SideAName, row.SideBName),
+                    c5: FormatTerritoryCount(row.TerritoryA, row.TerritoryB),
                     hintText: hint));
             }
 

@@ -574,6 +574,35 @@ The mod's `MakePeaceDecisionExhaustionSupportPatch` now checks for active siege 
 
 This prevents the observed scenario where a kingdom would vote for peace while having two armies besieging an enemy castle, caused by exhaustion/manpower bonuses overwhelming vanilla's base peace scoring.
 
+### Early-War Peace Vote Penalty (v0.2.7.2)
+
+Council peace votes for wars younger than `MinWarDurationDaysBeforeForcedPeace` (default 40 days) receive a large soft penalty in the `DetermineSupport` postfix. The penalty scales linearly from `EarlyWarPeacePenaltyStrength` (default 300) at day 0 down to zero at the minimum war duration threshold.
+
+- **Mechanism:** For peace-supporting outcomes, `__result -= penalty`. For war-supporting outcomes, `__result += penalty`. This makes peace votes virtually impossible to pass in the first days of a war.
+- **Not a hard block:** Extreme exhaustion or overwhelming council consensus can still override the penalty, but in practice the default 300-point penalty ensures no council votes for peace before ~30+ days.
+- **Player parity:** Inherits the existing `DiplomacyEnforcePlayerParity` gating — when on, player kingdoms receive the same penalty.
+- **War age source:** Uses `kingdom.GetStanceWith(peaceTarget).WarStartDate.ElapsedDaysUntilNow` for accurate per-war timing.
+- **Diplomacy mod compatible:** Complements Bannerlord.Diplomacy's `MinimumWarDurationInDays` (default 21) which blocks peace *proposals*. B1071's penalty discourages peace *votes* — they address different stages of the peace pipeline.
+- **MCM:** `EarlyWarPeacePenaltyStrength` (float, 0–1000, default 300) in the "Diplomacy (War Exhaustion)" group.
+
+### Multi-Front War Relief (v0.2.7.2)
+
+The base rule remains unchanged: forced peace cannot end a war younger than `MinWarDurationDaysBeforeForcedPeace` (default 40 days). However, a kingdom trapped in a genuine systemic collapse can now use an emergency minimum instead of being locked into a hopeless spiral.
+
+Emergency relief activates only when **all** of the following are true:
+
+1. The kingdom is fighting at least `EmergencyWarCountThreshold` major kingdom wars (default 2).
+2. The kingdom is in the **Crisis** pressure band, or above the forced-peace exhaustion threshold in legacy mode.
+3. The kingdom's average settlement manpower fill is at or below `EmergencyManpowerThresholdPercent` (default 25%).
+
+When active:
+
+- Forced peace uses `EmergencyMinWarDays` (default 15) instead of the normal 40-day minimum.
+- The early-war council peace-vote penalty fades out on the same emergency schedule, so both peace paths use the same war-age window.
+- If the emergency minimum is greater than or equal to the normal minimum, the relief path is effectively disabled.
+
+This preserves the default anti-whiplash war-duration rule for ordinary conflicts while giving shattered kingdoms a way to escape multi-front death spirals.
+
 ---
 
 ## 16. Truce Enforcement
@@ -703,7 +732,7 @@ All 13 tabs use a 5-column layout. Click any column header to sort; click again 
 | **Villages** | All villages with hearth, faction, and bound pool |
 | **Factions** | Faction \| Ruler \| Treasury \| Manpower \| Prosperity (CK3-style order) |
 | **Armies** | Per-faction military power (Σ tier²×count), troop count, and war exhaustion |
-| **Wars** | Active wars with exhaustion, peace pressure, territory delta (e.g., "Empire +2 / Sturgia −1"), and active truces |
+| **Wars** | Active wars with exhaustion, peace pressure, territory counts (e.g., "9 vs 15"), and active truces |
 | **Rebellion** | All towns sorted by rebellion risk score, with L/S/Food stats, time-to-rebel estimate, and culture mismatch |
 | **Prisoners** | All imprisoned nobles — captor, holder, location |
 | **Clans** | Clan loyalty/defection risk and recruitment opportunity scores |
@@ -757,7 +786,7 @@ All settings are in the Mod Configuration Menu. Key groups:
 | Immersion Modifiers | Seasonal regen; peace dividend; culture discount; governor bonus |
 | Alerts & Militia | Manpower alert thresholds; militia-manpower link min/max scales |
 | War Exhaustion | Enable/disable; decay rate; per-event gain values; regen penalty divisor |
-| Diplomacy | 27 settings for war/peace support scaling, bands, cooldowns, truces |
+| Diplomacy | War/peace support scaling, pressure bands, cooldowns, truces, early-war voting pressure, and multi-front crisis relief |
 | Developer Tools | Debug message toggles, AI logging, telemetry display, verbose mod log, settings profile version |
 | Tooltips | Settlement manpower tooltip enable/disable |
 | Village Investment | Enable/disable; 3-tier costs, durations, hearth/relation/influence/power bonuses; power cap; cross-clan relation; AI toggle |
@@ -892,6 +921,23 @@ Version-gated hard migration with notification:
 **Confirmed compatible mods:**
 - **Bannerlord.EconomyOverhaul** (v1.1.6) — Full compatibility. 23/23 B1071 systems work. EO’s food model replacement is handled via runtime dynamic patching; volunteer model converted to Harmony Postfix to avoid AddModel collision. EO’s village-level slave system and B1071’s town-level slave system are completely independent and complementary.
 - **CavalryLogisticsOverhaul** (v1.2.0) — Fully compatible. No overlapping patch targets. Cavalry wage costs may compound (intentional — both mods make cavalry more expensive).
+- **Bannerlord.Diplomacy** (v1.0.1.50) — Compatible with caveats. See interaction map below.
+
+### Bannerlord.Diplomacy Interaction Map (v0.2.7.2)
+
+Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five code paths can end a war:
+
+| # | Path | Trigger | B1071 Intercepts? | Notes |
+|---|------|---------|--------------------|-------|
+| 1 | **Forced peace (max exhaustion)** | `ProcessWarExhaustion` → `ConsiderPeaceActions` → `KingdomPeaceAction.ApplyPeace()` | **No** | Fires when Diplomacy exhaustion = 100 + Loss/Tie. Bypasses all proposal conditions. No war-age check. |
+| 2 | **AI council proposal** | `ConsiderPeacePrefix` → `MakePeaceConditions.CanApply()` | **Partially** | Diplomacy checks `MinimumWarDurationInDays` (default 21). B1071's DetermineSupport postfix adds early-war penalty but doesn't block the proposal itself. |
+| 3 | **Council vote outcome** | `ApplyChosenOutcomePrefix` → `KingdomPeaceAction.ApplyPeace()` | **Yes (v0.2.7.2)** | B1071's early-war penalty makes peace votes fail for young wars. Once a vote passes, peace happens. |
+| 4 | **Player diplomacy UI** | Diplomacy's peace proposal panel | **Partially** | Same `MakePeaceConditions` gate as Path 2. |
+| 5 | **Player Diplomacy Control** | `PlayerDiplomacyControl` setting | **No** | Player bypasses all AI checks entirely. |
+
+**MCM alignment recommendation:** Set Diplomacy's `MinimumWarDurationInDays` from 21 → 40 to match B1071's `MinWarDurationDaysBeforeForcedPeace`. This synchronizes the proposal gate (Diplomacy) with the vote penalty (B1071).
+
+**No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
 **Patches that touch private methods** (fragile on game updates):
 - `RecruitmentCampaignBehavior.ApplyInternal` — private, string name
@@ -1073,7 +1119,7 @@ Each non-bandit minor faction clan receives a daily **"Frontier Revenue"** stipe
 
 This is visible in the clan finance tooltip as "Frontier Revenue". Bandit factions are excluded (they skip DailyTickClan entirely). The **player clan is explicitly excluded** — players have settlement income and this is an AI economic balancer only.
 
-**Rescued rebel clans** (v0.2.7.0) also qualify for Frontier Revenue after normalization. When the Clan Survival system rescues a rebel clan, it sets `IsMinorFaction = true` via reflection, making the rescued clan eligible for the unaligned stipend (`clanTier × 400 denars/day`) until it enters mercenary service or joins a kingdom.
+**Rescued rebel clans** (v0.2.7.0) also qualify for Frontier Revenue after normalization. When the Clan Survival system rescues a rebel clan, it sets `IsMinorFaction = true` via reflection, making the rescued clan eligible for the unaligned stipend (`clanTier × 400 denars/day`) while it remains independent. If that clan later joins a kingdom as a normal vassal, Frontier Revenue now stops so it does not double-dip on top of settlement income. Mercenary-service clans still qualify for the mercenary stipend path.
 
 ### MCM settings (Minor Faction Economy group)
 
@@ -1377,6 +1423,7 @@ Neither path goes through the kingdom-destruction pipeline (rebel clans have `Ki
 1. Sets `IsRebelClan = false` (public setter) — prevents vanilla from re-targeting the clan
 2. Sets `IsMinorFaction = true` (private setter, via reflection) — enables Frontier Revenue eligibility
 3. Removes from vanilla's `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation` dictionary (via reflection) — prevents vanilla's daily tick from managing the clan as a rebel
+4. Renames clan from settlement-based rebel name (e.g., "Pen Cannoc rebels") to leader-derived warband name (e.g., "Borun's Warband") via `clan.ChangeClanName()` — prevents duplicate names when the same settlement rebels twice. Skips gracefully if the leader is null. (v0.2.7.2)
 
 All three reflection operations fail gracefully with logged warnings if the game API changes.
 

@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 0.2.6.1 — Everything you need to know, step by step.*
+*Version 0.2.7.2 — Everything you need to know, step by step.*
 
 ---
 
@@ -36,7 +36,7 @@ Once the mod is installed and you start a campaign, the following happens behind
 - **Garrison wages** are discounted to 60% of field rates automatically.
 - Non-bandit minor factions receive a "**Frontier Revenue**" stipend so they don't go bankrupt.
 - AI lords will automatically deposit prisoners at castles they visit.
-- UI/localized strings follow your game language automatically (**English + Simplified Chinese + French** included).
+- UI/localized strings follow your game language automatically (**English + Simplified Chinese + French + German** included).
 - If upgrading from a previous version, a **green notification** confirms that balance settings have been auto-migrated to the latest defaults. Your non-balance settings (pool sizes, toggles, etc.) are preserved.
 
 You don't need to press anything. Just start playing.
@@ -66,7 +66,7 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | 5 | **Villages** | Every village — hearth count, faction, bound settlement |
 | 6 | **Factions** | Kingdom-level view — Faction \| Ruler \| Treasury \| Manpower \| Prosperity |
 | 7 | **Armies** | Active armies — power rating, troop count, kingdom exhaustion |
-| 8 | **Wars** | Active wars — exhaustion levels, peace pressure, territory delta (e.g., "Empire +2 / Sturgia −1") |
+| 8 | **Wars** | Active wars — exhaustion levels, peace pressure, territory counts (e.g., "9 vs 15") |
 | 9 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
 | 10 | **Prisoners** | Captured nobles — who captured them, where they're held |
 | 11 | **Clans** | Clan loyalty/instability within kingdoms |
@@ -446,7 +446,7 @@ Exhaustion **decays at 0.65/day** naturally. Recovery from 100→0 takes ~154 da
 
 The system uses **pressure bands** (Low → Rising → Crisis) with hysteresis to prevent oscillation when exhaustion hovers near a boundary.
 
-Multi-front wars accelerate collapse: each extra war beyond 2 reduces the forced-peace threshold by 5 (80→75→70).
+Multi-front wars still accelerate collapse: each extra war beyond 2 reduces the forced-peace threshold by 5 (80→75→70).
 
 Forced peace has safety rails:
 - Minimum 40 days into a war before it can be force-ended.
@@ -455,7 +455,14 @@ Forced peace has safety rails:
 - Won't fire against a faction your kingdom is actively besieging — sieges are completed before peace is forced.
 - 30-day truce enforced after any peace (no instant re-declarations).
 
+If a kingdom is in a true multi-front collapse, those rails can loosen slightly instead of breaking entirely:
+- By default, the minimum war age can drop from 40 days to 15 days.
+- This only happens if the kingdom is simultaneously in the Crisis band, fighting at least 2 kingdom wars, and sitting at 25% average manpower or lower.
+- The same emergency window also softens the council peace-vote penalty, so desperate kingdoms can actually get out of a death spiral.
+
 > **Siege-aware peace voting:** When your kingdom has armies besieging the enemy, the mod's exhaustion and manpower peace bonuses are fully suppressed — preventing absurd peace votes while you're winning a siege. Vanilla's own peace scoring still applies, so peace is merely harder during offensives, not impossible.
+
+> **Early-war peace penalty (v0.2.7.2):** Council peace votes for wars younger than 40 days receive a large penalty (default 300, fading linearly to 0). This prevents councils from voting for peace in the first weeks of a war. The penalty is a soft gate, not a hard lock. In an extreme multi-front crisis, the vote penalty fades out earlier to match the emergency war-duration rule.
 
 ### Does This Affect the Player?
 
@@ -506,7 +513,7 @@ This means your expensive elite troops are **less likely to die** in autoresolve
 
 1. From the **main menu** or **in-game pause menu**, click **Mod Options** (requires MCM mod).
 2. Find **"Campaign++"** in the list (two tabs: full settings + Quick Settings).
-3. Browse through 15+ setting groups with 250+ individually tunable options.
+3. Browse through the full settings tab for detailed system-by-system tuning, or use Quick Settings for the master toggles.
 
 ### Quick Settings Tab
 
@@ -534,6 +541,8 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Enable war exhaustion | War Exhaustion | ON | Turns on per-kingdom exhaustion from combat |
 | Enforce player parity | Diplomacy | ON | Player kingdom follows same forced-peace rules as AI |
 | Forced peace threshold | Diplomacy | 80 | Exhaustion level that triggers forced peace |
+| Early-war peace vote penalty | Diplomacy | 300 | Makes very young wars much harder to end through council votes |
+| Enable multi-front war relief | Diplomacy | ON | Lets a kingdom in true multi-front collapse seek peace earlier instead of waiting the full minimum |
 | Hotkey (0-6) | Overlay | 0 (M key) | Change the overlay toggle key |
 | Hire & upgrade cost preset | Army Economics | 2 (Moderate) | 0=Vanilla, 1=Light, 2=Moderate, 3=Severe |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
@@ -542,7 +551,7 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 
 ---
 
-## 13. Clan Survival
+## 14. Clan Survival
 
 When a kingdom is destroyed in vanilla, all member clans are annihilated and their heroes killed. Campaign++ rescues eligible clans instead.
 
@@ -567,7 +576,7 @@ Rebel clans — spawned when a town rebels — are also rescued when they would 
 
 - When a rebel clan **loses its last settlement** (e.g., another faction reconquers the town), Campaign++ intercepts the destruction and rescues the clan.
 - When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net promotes an heir (if one exists) and rescues the clan.
-- Rescued rebel clans are **normalized**: `IsRebelClan` is cleared, `IsMinorFaction` is set to `true`, and the clan is removed from vanilla's internal rebel tracking.
+- Rescued rebel clans are **normalized**: `IsRebelClan` is cleared, `IsMinorFaction` is set to `true`, and the clan is removed from vanilla's internal rebel tracking. The clan is also **renamed** from its settlement-based name (e.g., "Pen Cannoc rebels") to a leader-derived warband name (e.g., "Borun's Warband") for uniqueness.
 - Because `IsMinorFaction` is now `true`, rescued rebel clans qualify for **Frontier Revenue** — the same unaligned stipend that other minor factions receive.
 - They then survive as an independent warband until vanilla's AI recruits them into a kingdom as a vassal or mercenary.
 - **Save/load coverage**: Rebel clans that lost their settlement in a *previous session* (before Campaign++ was installed or before the save was loaded) are automatically detected and rescued on session start. You don't need to worry about timing — the mod scans for homeless rebel clans every time you load a save.
@@ -584,7 +593,7 @@ Rebel clans — spawned when a town rebels — are also rescued when they would 
 
 ### Tips
 
-- Watch the verbose log (press **M** → **Log** tab) to see which clans were rescued and tracked.
+- If you want to audit rescue behavior, enable verbose logging in MCM and review the session or game logs.
 - Rescued clans are not hard-assigned by this system in v0.2.0.1; later kingdom entry depends on vanilla campaign behavior or other mods.
 - Keep clan survival enabled if you want more late-game noble continuity after kingdom collapse events.
 

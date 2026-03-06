@@ -1001,5 +1001,20 @@
     <string id="b1071_overlay_total_entries" text="Towns: {COUNT}" />
     <string id="b1071_overlay_war_dur" text="{DAYS}d" />
     <string id="b1071_overlay_war_dur_new" text="New" />
+    <!-- v0.2.7.2: Rebel clan renaming -->
+    <string id="b1071_rescued_clan_name" text="{LEADER_NAME}'s Warband" />
+    <string id="b1071_rescued_clan_informal" text="{LEADER_NAME}'s Warband" />
+    <!-- v0.2.7.2: Early-war peace penalty MCM -->
+    <string id="b1071_mcm_t_earlywar_pen" text="Early-war peace vote penalty" />
+    <string id="b1071_mcm_h_earlywar_pen" text="Maximum peace-vote support penalty applied at the start of a war. Fades linearly to zero at 'Min war days'. Discourages council peace votes before the minimum duration. Both player and AI affected when player parity is on." />
+    <!-- v0.2.7.2: Multi-front war relief MCM -->
+    <string id="b1071_mcm_t_mfwr_enable" text="Enable multi-front war relief" />
+    <string id="b1071_mcm_h_mfwr_enable" text="When a kingdom is in systemic crisis (high exhaustion, depleted manpower, multiple wars), the minimum war duration for forced peace and council votes is reduced from the normal minimum to the emergency minimum. All conditions must be met simultaneously." />
+    <string id="b1071_mcm_t_mfwr_mindays" text="Emergency min war days" />
+    <string id="b1071_mcm_h_mfwr_mindays" text="Reduced minimum war duration (in days) used when multi-front crisis conditions are met. Wars younger than this are still protected even during emergencies." />
+    <string id="b1071_mcm_t_mfwr_mp" text="Emergency manpower threshold %" />
+    <string id="b1071_mcm_h_mfwr_mp" text="Average settlement manpower fill at or below which the emergency bypass activates. E.g., 25 = bypass available when pools are at 25% or less." />
+    <string id="b1071_mcm_t_mfwr_wars" text="Emergency war count threshold" />
+    <string id="b1071_mcm_h_mfwr_wars" text="Minimum number of active kingdom-vs-kingdom wars required for multi-front war relief to activate." />
   </strings>
 </base>

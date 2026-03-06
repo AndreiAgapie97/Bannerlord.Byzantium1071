@@ -1001,5 +1001,20 @@
     <string id="b1071_overlay_total_entries" text="Villes : {COUNT}" />
     <string id="b1071_overlay_war_dur" text="{DAYS}j" />
     <string id="b1071_overlay_war_dur_new" text="Nouveau" />
+    <!-- v0.2.7.2: Rebel clan renaming -->
+    <string id="b1071_rescued_clan_name" text="Bande de {LEADER_NAME}" />
+    <string id="b1071_rescued_clan_informal" text="Bande de {LEADER_NAME}" />
+    <!-- v0.2.7.2: Early-war peace penalty MCM -->
+    <string id="b1071_mcm_t_earlywar_pen" text="Pénalité de vote de paix en début de guerre" />
+    <string id="b1071_mcm_h_earlywar_pen" text="Pénalité maximale de soutien au vote de paix appliquée au début d'une guerre. Diminue linéairement jusqu'à zéro au seuil de 'Jours de guerre min.'. Décourage les votes de paix du conseil avant la durée minimale. Joueur et IA affectés lorsque la parité joueur est activée." />
+    <!-- v0.2.7.2: Multi-front war relief MCM -->
+    <string id="b1071_mcm_t_mfwr_enable" text="Activer l'allègement multi-front" />
+    <string id="b1071_mcm_h_mfwr_enable" text="Lorsqu'un royaume subit une crise systémique (fatigue de guerre élevée, réserves humaines épuisées, guerres multiples), la durée minimale d'une guerre pour la paix forcée et les votes de paix du conseil est réduite de la valeur normale à la valeur d'urgence. Toutes les conditions doivent être remplies en même temps." />
+    <string id="b1071_mcm_t_mfwr_mindays" text="Jours de guerre min. d'urgence" />
+    <string id="b1071_mcm_h_mfwr_mindays" text="Durée minimale réduite d'une guerre, en jours, utilisée lorsque les conditions de crise multi-front sont réunies. Les guerres plus jeunes que ce seuil restent protégées même en situation d'urgence." />
+    <string id="b1071_mcm_t_mfwr_mp" text="Seuil d'effectifs d'urgence %" />
+    <string id="b1071_mcm_h_mfwr_mp" text="Taux moyen de remplissage des réserves humaines des colonies à partir duquel le contournement d'urgence s'active. Exemple : 25 = l'allègement devient possible lorsque les réserves sont à 25 % ou moins." />
+    <string id="b1071_mcm_t_mfwr_wars" text="Seuil de guerres d'urgence" />
+    <string id="b1071_mcm_h_mfwr_wars" text="Nombre minimal de guerres royaume contre royaume actives requis pour activer l'allègement multi-front." />
   </strings>
 </base>

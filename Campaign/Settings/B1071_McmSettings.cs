@@ -707,6 +707,10 @@ namespace Byzantium1071.Campaign.Settings
         public int MinWarDurationDaysBeforeForcedPeace { get; set; } = 40;
 
         [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_earlywar_pen}Early-war peace vote penalty", 0f, 1000f, "0", Order = 9, HintText = "{=b1071_mcm_h_earlywar_pen}Maximum peace-vote support penalty applied at the start of a war. Fades linearly to zero at 'Min war days'. Discourages council peace votes before the minimum duration. Both player and AI affected when player parity is on.")]
+        public float EarlyWarPeacePenaltyStrength { get; set; } = 300f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
         [SettingPropertyBool("{=b1071_mcm_t_76efdb170a}Ignore if enemy besieges core fief", Order = 10, HintText = "{=b1071_mcm_h_018c2990f0}Do not force peace with an enemy currently besieging one of your owned towns/castles.")]
         public bool IgnoreForcedPeaceIfEnemyBesiegingCoreSettlement { get; set; } = true;
 
@@ -730,8 +734,26 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_8000699f51}Forced peace threshold reduction/war", 0f, 100f, "0.0", Order = 14, HintText = "{=b1071_mcm_h_7bd40a9ca1}Lowers forced-peace exhaustion threshold per extra major war.")]
         public float DiplomacyForcedPeaceThresholdReductionPerMajorWar { get; set; } = 5f;
 
+        // ─── Multi-front war relief (C+) ───
+
         [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
-        [SettingPropertyBool("{=b1071_mcm_t_7186800480}Enforce player parity", Order = 15, HintText = "{=b1071_mcm_h_8f1443b071}If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
+        [SettingPropertyBool("{=b1071_mcm_t_mfwr_enable}Enable multi-front war relief", Order = 15, HintText = "{=b1071_mcm_h_mfwr_enable}When a kingdom is in systemic crisis (high exhaustion, depleted manpower, multiple wars), the minimum war duration for forced peace and council votes is reduced from the normal minimum to the emergency minimum. All conditions must be met simultaneously.")]
+        public bool EnableMultiFrontWarRelief { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyInteger("{=b1071_mcm_t_mfwr_mindays}Emergency min war days", 1, 40, "0", Order = 16, HintText = "{=b1071_mcm_h_mfwr_mindays}Reduced minimum war duration (in days) used when multi-front crisis conditions are met. Wars younger than this are still protected even during emergencies.")]
+        public int EmergencyMinWarDays { get; set; } = 15;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyInteger("{=b1071_mcm_t_mfwr_mp}Emergency manpower threshold %", 5, 50, "0", Order = 17, HintText = "{=b1071_mcm_h_mfwr_mp}Average settlement manpower fill at or below which the emergency bypass activates. E.g., 25 = bypass available when pools are at 25% or less.")]
+        public int EmergencyManpowerThresholdPercent { get; set; } = 25;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyInteger("{=b1071_mcm_t_mfwr_wars}Emergency war count threshold", 2, 10, "0", Order = 18, HintText = "{=b1071_mcm_h_mfwr_wars}Minimum number of active kingdom-vs-kingdom wars required for multi-front war relief to activate.")]
+        public int EmergencyWarCountThreshold { get; set; } = 2;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_239cdae2ee}Diplomacy (War Exhaustion)", GroupOrder = 13)]
+        [SettingPropertyBool("{=b1071_mcm_t_7186800480}Enforce player parity", Order = 19, HintText = "{=b1071_mcm_h_8f1443b071}If enabled, player kingdom follows the same truce/no-war diplomacy gates as AI.")]
         public bool DiplomacyEnforcePlayerParity { get; set; } = true;
 
         // ─── WP5 Pressure Bands ───

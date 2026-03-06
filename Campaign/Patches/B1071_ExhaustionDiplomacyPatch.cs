@@ -155,6 +155,51 @@ namespace Byzantium1071.Campaign.Patches
             return false;
         }
 
+        /// <summary>
+        /// Returns a peace-vote penalty for wars younger than MinWarDurationDaysBeforeForcedPeace.
+        /// Penalty is 300 at day 0 (virtually guarantees vote fails), fading linearly to 0 at the threshold.
+        /// Returns 0 when there is no stance, no war, or the war is old enough.
+        /// </summary>
+        internal static float GetEarlyWarPeacePenalty(Kingdom kingdom, IFaction peaceTarget)
+        {
+            B1071_McmSettings s = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+            int minDays = Math.Max(0, s.MinWarDurationDaysBeforeForcedPeace);
+            if (minDays <= 0) return 0f;
+
+            if (peaceTarget == null) return 0f;
+
+            StanceLink? stance = kingdom.GetStanceWith(peaceTarget);
+            if (stance == null || !stance.IsAtWar) return 0f;
+
+            // C+: Under multi-front crisis, use the emergency minimum for the penalty ramp.
+            int effectiveMinDays = minDays;
+            if (s.EnableMultiFrontWarRelief)
+            {
+                int emergencyMin = Math.Max(1, s.EmergencyMinWarDays);
+                if (emergencyMin < minDays)
+                {
+                    B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+                    if (behavior != null && behavior.IsMultiFrontCrisis(kingdom))
+                        effectiveMinDays = emergencyMin;
+                }
+            }
+
+            float elapsedDays = stance.WarStartDate.ElapsedDaysUntilNow;
+            if (elapsedDays >= effectiveMinDays) return 0f;
+
+            // Linear ramp: full penalty at day 0, zero at effectiveMinDays.
+            float ratio = 1f - (elapsedDays / effectiveMinDays);
+            float penalty = ratio * s.EarlyWarPeacePenaltyStrength;
+
+            if (EnableDebugLogs)
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071][Diplomacy][Debug] Early-war peace penalty {penalty:0.0} " +
+                    $"for {kingdom.Name} vs {peaceTarget.Name}: war age {elapsedDays:0.0} < {effectiveMinDays} days" +
+                    (effectiveMinDays < minDays ? " (multi-front relief)." : "."));
+
+            return penalty;
+        }
+
         internal static void RecordTelemetry(string reason)
         {
             if (string.IsNullOrEmpty(reason))
@@ -299,6 +344,21 @@ namespace Byzantium1071.Campaign.Patches
                 B1071_ExhaustionDiplomacyHelpers.RecordTelemetry(
                     $"MakePeace support suppressed: {__instance.Kingdom.Name} besieging {__instance.FactionToMakePeaceWith.Name}.");
                 return;
+            }
+
+            // ─── Early-war penalty: discourage council peace votes before minimum war duration ───
+            // Applies a large negative bias to peace outcomes for wars younger than MinWarDurationDaysBeforeForcedPeace.
+            // Penalty scales linearly: full strength at day 0, fading to zero at the threshold.
+            // Player parity enforced when DiplomacyEnforcePlayerParity is on.
+            if (possibleOutcome is MakePeaceKingdomDecision.MakePeaceDecisionOutcome earlyWarOutcome)
+            {
+                float earlyWarPenalty = B1071_ExhaustionDiplomacyHelpers.GetEarlyWarPeacePenalty(
+                    __instance.Kingdom, __instance.FactionToMakePeaceWith);
+                if (earlyWarPenalty > 0f)
+                {
+                    if (earlyWarOutcome.ShouldPeaceBeDeclared) __result -= earlyWarPenalty;
+                    else __result += earlyWarPenalty;
+                }
             }
 
             // Manpower-diplomacy pressure (runs independently of war exhaustion system).
