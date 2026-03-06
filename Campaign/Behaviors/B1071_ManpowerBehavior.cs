@@ -100,13 +100,13 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<float> _savedRecoveryPenaltyBaseValues = new();
         private List<float> _savedRecoveryPenaltyStartDays = new();
         private List<float> _savedRecoveryPenaltyExpiryDays = new();
-        // Casualties ledger: kingdom-pair key → (deathsOnSideA, deathsOnSideB).
+        // Casualties ledger: kingdom-pair key → (killsBySideA, killsBySideB).
         // Side A/B are the normalized pair slots (CompareOrdinal order).
-        // "deathsOnSideA" = troops killed belonging to side A (i.e. killed BY side B).
-        private readonly Dictionary<string, (int deathsA, int deathsB)> _casualtiesByPair = new();
+        // Values are contribution-weighted kills inflicted by each kingdom against the other kingdom.
+        private readonly Dictionary<string, (int killsA, int killsB)> _casualtiesByPair = new();
         private List<string> _savedCasualtiesKeys = new();
-        private List<int> _savedCasualtiesDeathsA = new();
-        private List<int> _savedCasualtiesDeathsB = new();
+        private List<int> _savedCasualtiesKillsA = new();
+        private List<int> _savedCasualtiesKillsB = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -407,41 +407,41 @@ namespace Byzantium1071.Campaign.Behaviors
 
             // Casualties ledger save/load.
             _savedCasualtiesKeys ??= new List<string>();
-            _savedCasualtiesDeathsA ??= new List<int>();
-            _savedCasualtiesDeathsB ??= new List<int>();
+            _savedCasualtiesKillsA ??= new List<int>();
+            _savedCasualtiesKillsB ??= new List<int>();
 
             if (!dataStore.IsLoading)
             {
                 _savedCasualtiesKeys.Clear();
-                _savedCasualtiesDeathsA.Clear();
-                _savedCasualtiesDeathsB.Clear();
+                _savedCasualtiesKillsA.Clear();
+                _savedCasualtiesKillsB.Clear();
                 foreach (var kvp in _casualtiesByPair)
                 {
                     _savedCasualtiesKeys.Add(kvp.Key);
-                    _savedCasualtiesDeathsA.Add(kvp.Value.Item1);
-                    _savedCasualtiesDeathsB.Add(kvp.Value.Item2);
+                    _savedCasualtiesKillsA.Add(kvp.Value.Item1);
+                    _savedCasualtiesKillsB.Add(kvp.Value.Item2);
                 }
             }
 
             dataStore.SyncData("B1071_Casualties_Keys", ref _savedCasualtiesKeys);
-            dataStore.SyncData("B1071_Casualties_DeathsA", ref _savedCasualtiesDeathsA);
-            dataStore.SyncData("B1071_Casualties_DeathsB", ref _savedCasualtiesDeathsB);
+            dataStore.SyncData("B1071_Casualties_DeathsA", ref _savedCasualtiesKillsA);
+            dataStore.SyncData("B1071_Casualties_DeathsB", ref _savedCasualtiesKillsB);
 
             _savedCasualtiesKeys ??= new List<string>();
-            _savedCasualtiesDeathsA ??= new List<int>();
-            _savedCasualtiesDeathsB ??= new List<int>();
+            _savedCasualtiesKillsA ??= new List<int>();
+            _savedCasualtiesKillsB ??= new List<int>();
 
             if (dataStore.IsLoading)
             {
                 _casualtiesByPair.Clear();
                 int nc = Math.Min(
                     _savedCasualtiesKeys.Count,
-                    Math.Min(_savedCasualtiesDeathsA.Count, _savedCasualtiesDeathsB.Count));
+                    Math.Min(_savedCasualtiesKillsA.Count, _savedCasualtiesKillsB.Count));
                 for (int i = 0; i < nc; i++)
                 {
                     string key = _savedCasualtiesKeys[i];
                     if (!string.IsNullOrEmpty(key))
-                        _casualtiesByPair[key] = (_savedCasualtiesDeathsA[i], _savedCasualtiesDeathsB[i]);
+                        _casualtiesByPair[key] = (_savedCasualtiesKillsA[i], _savedCasualtiesKillsB[i]);
                 }
             }
         }
@@ -2721,30 +2721,51 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
-        /// Resolves exactly one kingdom from a map event side. Returns null if zero or multiple kingdoms found.
-        /// Skips bandits, caravans, villagers, and parties without a kingdom affiliation.
+        /// Resolves the kingdom for a map-event party, including settlement defenders
+        /// whose faction is only available through PartyBase.MapFaction.
         /// </summary>
-        private static Kingdom? ResolveSingleKingdom(MapEventSide? side)
+        private static Kingdom? ResolveCasualtiesKingdom(MapEventParty? mep)
         {
-            if (side?.Parties == null) return null;
-            Kingdom? found = null;
-            foreach (MapEventParty mep in side.Parties)
+            if (mep?.Party == null) return null;
+
+            MobileParty? mp = mep.Party.MobileParty;
+            if (mp != null)
             {
-                if (mep == null) continue;
-                MobileParty? mp = mep.Party?.MobileParty;
-                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
-                Kingdom? k = mp.LeaderHero?.Clan?.Kingdom;
-                if (k == null) continue;
-                if (found == null)
-                    found = k;
-                else if (found != k)
-                    return null; // Multiple kingdoms on same side — ambiguous
+                if (mp.IsBandit || mp.IsCaravan || mp.IsVillager)
+                    return null;
+
+                Kingdom? mobilePartyKingdom = mp.LeaderHero?.Clan?.Kingdom;
+                if (mobilePartyKingdom != null)
+                    return mobilePartyKingdom;
+
+                if (mp.MapFaction is Kingdom mobilePartyFactionKingdom)
+                    return mobilePartyFactionKingdom;
             }
-            return found;
+
+            if (mep.Party.MapFaction is Kingdom partyFactionKingdom)
+                return partyFactionKingdom;
+
+            return null;
         }
 
         /// <summary>
-        /// Sums deaths (DiedInBattle) for all parties on a side that belong to the given kingdom.
+        /// Resolves all distinct kingdoms from a map event side.
+        /// Skips bandits, caravans, villagers, and parties without a kingdom affiliation.
+        /// </summary>
+        private static HashSet<Kingdom> ResolveKingdomsOnSide(MapEventSide? side)
+        {
+            var kingdoms = new HashSet<Kingdom>();
+            if (side?.Parties == null) return kingdoms;
+            foreach (MapEventParty mep in side.Parties)
+            {
+                Kingdom? k = ResolveCasualtiesKingdom(mep);
+                if (k != null) kingdoms.Add(k);
+            }
+            return kingdoms;
+        }
+
+        /// <summary>
+        /// Sums deaths suffered on a side for all parties that belong to the given kingdom.
         /// </summary>
         private static int SumDeathsForKingdom(MapEventSide? side, Kingdom kingdom)
         {
@@ -2752,55 +2773,165 @@ namespace Byzantium1071.Campaign.Behaviors
             int total = 0;
             foreach (MapEventParty mep in side.Parties)
             {
-                if (mep == null) continue;
-                MobileParty? mp = mep.Party?.MobileParty;
-                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
-                if (mp.LeaderHero?.Clan?.Kingdom != kingdom) continue;
+                if (ResolveCasualtiesKingdom(mep) != kingdom) continue;
                 total += mep.DiedInBattle?.TotalManCount ?? 0;
             }
             return total;
         }
 
         /// <summary>
-        /// Processes a completed map event and records kingdom-pair deaths in the casualties ledger.
-        /// Skips events that don't qualify (hideout), events with ambiguous attribution, and non-kingdom combats.
+        /// Builds a contribution weight map per kingdom for one side of a battle.
+        /// Falls back to equal kingdom weights if Bannerlord reports zero contribution for every party.
+        /// </summary>
+        private static Dictionary<Kingdom, int> BuildContributionWeights(MapEventSide? side)
+        {
+            var weights = new Dictionary<Kingdom, int>();
+            if (side?.Parties == null) return weights;
+
+            foreach (MapEventParty mep in side.Parties)
+            {
+                Kingdom? kingdom = ResolveCasualtiesKingdom(mep);
+                if (kingdom == null) continue;
+
+                int contribution = Math.Max(0, mep.ContributionToBattle);
+                if (weights.TryGetValue(kingdom, out int existing))
+                    weights[kingdom] = existing + contribution;
+                else
+                    weights[kingdom] = contribution;
+            }
+
+            bool allWeightsNonPositive = weights.Count > 0;
+            foreach (int value in weights.Values)
+            {
+                if (value > 0)
+                {
+                    allWeightsNonPositive = false;
+                    break;
+                }
+            }
+
+            if (allWeightsNonPositive)
+            {
+                var kingdoms = new List<Kingdom>(weights.Keys);
+                foreach (Kingdom kingdom in kingdoms)
+                    weights[kingdom] = 1;
+            }
+
+            return weights;
+        }
+
+        /// <summary>
+        /// Splits a total integer value across weighted buckets while preserving the exact total.
+        /// </summary>
+        private static Dictionary<Kingdom, int> AllocateByWeights(int total, Dictionary<Kingdom, int> weights)
+        {
+            var allocation = new Dictionary<Kingdom, int>();
+            if (total <= 0 || weights.Count == 0) return allocation;
+
+            int totalWeight = 0;
+            foreach (int value in weights.Values)
+            {
+                if (value > 0)
+                    totalWeight += value;
+            }
+            if (totalWeight <= 0)
+            {
+                int evenShare = total / weights.Count;
+                int remainder = total % weights.Count;
+                int index = 0;
+                foreach (Kingdom kingdom in weights.Keys)
+                {
+                    allocation[kingdom] = evenShare + (index < remainder ? 1 : 0);
+                    index++;
+                }
+                return allocation;
+            }
+
+            var remainders = new List<(Kingdom kingdom, float remainder)>();
+            int assigned = 0;
+            foreach (var kvp in weights)
+            {
+                int weight = Math.Max(0, kvp.Value);
+                float exact = (float)total * weight / totalWeight;
+                int whole = (int)Math.Floor(exact);
+                allocation[kvp.Key] = whole;
+                assigned += whole;
+                remainders.Add((kvp.Key, exact - whole));
+            }
+
+            remainders.Sort((a, b) =>
+            {
+                int compare = b.remainder.CompareTo(a.remainder);
+                if (compare != 0) return compare;
+                return string.CompareOrdinal(a.kingdom.StringId, b.kingdom.StringId);
+            });
+
+            int leftover = total - assigned;
+            for (int i = 0; i < leftover && i < remainders.Count; i++)
+            {
+                Kingdom kingdom = remainders[i].kingdom;
+                allocation[kingdom] = allocation.TryGetValue(kingdom, out int current) ? current + 1 : 1;
+            }
+
+            return allocation;
+        }
+
+        /// <summary>
+        /// Processes a completed map event and records kingdom-pair kills in the casualties ledger.
+        /// Bannerlord does not expose exact per-kingdom kills at event end, so coalition attribution
+        /// is estimated by distributing each side's deaths across enemy kingdoms by battle contribution.
         /// </summary>
         private void AccumulateCasualties(MapEvent mapEvent)
         {
             if (!IsCasualtiesEligibleEvent(mapEvent)) return;
 
-            Kingdom? kingdomA = ResolveSingleKingdom(mapEvent.AttackerSide);
-            Kingdom? kingdomB = ResolveSingleKingdom(mapEvent.DefenderSide);
-            if (kingdomA == null || kingdomB == null) return;
-            if (kingdomA == kingdomB) return;
+            HashSet<Kingdom> attackerKingdoms = ResolveKingdomsOnSide(mapEvent.AttackerSide);
+            HashSet<Kingdom> defenderKingdoms = ResolveKingdomsOnSide(mapEvent.DefenderSide);
+            if (attackerKingdoms.Count == 0 || defenderKingdoms.Count == 0) return;
 
-            int deathsAttacker = SumDeathsForKingdom(mapEvent.AttackerSide, kingdomA);
-            int deathsDefender = SumDeathsForKingdom(mapEvent.DefenderSide, kingdomB);
-            if (deathsAttacker + deathsDefender <= 0) return;
+            Dictionary<Kingdom, int> attackerWeights = BuildContributionWeights(mapEvent.AttackerSide);
+            Dictionary<Kingdom, int> defenderWeights = BuildContributionWeights(mapEvent.DefenderSide);
 
-            string pairKey = MakeKingdomPairKey(kingdomA, kingdomB);
-            if (string.IsNullOrEmpty(pairKey)) return;
+            foreach (Kingdom kAtk in attackerKingdoms)
+            {
+                int attackerDeaths = SumDeathsForKingdom(mapEvent.AttackerSide, kAtk);
+                Dictionary<Kingdom, int> defenderKillAllocations = AllocateByWeights(attackerDeaths, defenderWeights);
 
-            // Determine which side is A vs B in the normalized pair key.
-            string idA = kingdomA.StringId ?? string.Empty;
-            string idB = kingdomB.StringId ?? string.Empty;
-            bool attackerIsNormalizedA = string.CompareOrdinal(idA, idB) <= 0;
+                foreach (Kingdom kDef in defenderKingdoms)
+                {
+                    if (kAtk == kDef) continue;
 
-            var existing = _casualtiesByPair.TryGetValue(pairKey, out var val) ? val : (deathsA: 0, deathsB: 0);
+                    int defenderDeaths = SumDeathsForKingdom(mapEvent.DefenderSide, kDef);
+                    Dictionary<Kingdom, int> attackerKillAllocations = AllocateByWeights(defenderDeaths, attackerWeights);
 
-            if (attackerIsNormalizedA)
-                _casualtiesByPair[pairKey] = (existing.Item1 + deathsAttacker, existing.Item2 + deathsDefender);
-            else
-                _casualtiesByPair[pairKey] = (existing.Item1 + deathsDefender, existing.Item2 + deathsAttacker);
+                    int killsByAttacker = attackerKillAllocations.TryGetValue(kAtk, out int atkKills) ? atkKills : 0;
+                    int killsByDefender = defenderKillAllocations.TryGetValue(kDef, out int defKills) ? defKills : 0;
+                    if (killsByAttacker + killsByDefender <= 0) continue;
 
-            B1071_VerboseLog.Log("Casualties", $"Recorded {deathsAttacker}+{deathsDefender} deaths: {kingdomA.Name} vs {kingdomB.Name} (pair {pairKey}).");
+                    string pairKey = MakeKingdomPairKey(kAtk, kDef);
+                    if (string.IsNullOrEmpty(pairKey)) continue;
+
+                    string idA = kAtk.StringId ?? string.Empty;
+                    string idB = kDef.StringId ?? string.Empty;
+                    bool attackerIsNormalizedA = string.CompareOrdinal(idA, idB) <= 0;
+
+                    var existing = _casualtiesByPair.TryGetValue(pairKey, out var val) ? val : (killsA: 0, killsB: 0);
+
+                    if (attackerIsNormalizedA)
+                        _casualtiesByPair[pairKey] = (existing.Item1 + killsByAttacker, existing.Item2 + killsByDefender);
+                    else
+                        _casualtiesByPair[pairKey] = (existing.Item1 + killsByDefender, existing.Item2 + killsByAttacker);
+
+                    B1071_VerboseLog.Log("Casualties", $"Recorded {killsByAttacker}+{killsByDefender} kills: {kAtk.Name} vs {kDef.Name} (pair {pairKey}).");
+                }
+            }
         }
 
         /// <summary>
-        /// Returns overlay-ready casualties data for all kingdom pairs with recorded deaths.
-        /// Each entry contains resolved kingdom names, pair key, and per-side death counts.
+        /// Returns overlay-ready casualties data for all kingdom pairs with recorded kills.
+        /// Each entry contains resolved kingdom names, pair key, and per-side kill counts.
         /// </summary>
-        internal List<(string pairKey, string nameA, string nameB, int deathsA, int deathsB)> GetCasualtiesLedger()
+        internal List<(string pairKey, string nameA, string nameB, int killsA, int killsB)> GetCasualtiesLedger()
         {
             var result = new List<(string, string, string, int, int)>();
             foreach (var kvp in _casualtiesByPair)

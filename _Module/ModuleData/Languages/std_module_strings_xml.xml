@@ -1021,8 +1021,8 @@
     <string id="b1071_overlay_empty_casualties" text="Casualties Ledger\nNo kingdom battles recorded yet." />
     <string id="b1071_overlay_title_casualties" text="Casualties Ledger  ({COUNT} wars)" />
     <string id="b1071_overlay_col_cas_pair" text="Kingdom Pair" />
-    <string id="b1071_overlay_col_cas_deatha" text="Deaths A" />
-    <string id="b1071_overlay_col_cas_deathb" text="Deaths B" />
+    <string id="b1071_overlay_col_cas_killa" text="Kills A" />
+    <string id="b1071_overlay_col_cas_killb" text="Kills B" />
     <string id="b1071_overlay_col_cas_total" text="Total" />
     <string id="b1071_overlay_col_cas_ratio" text="Ratio" />
     <string id="b1071_overlay_totals_bloodiest" text="Bloodiest: {PAIR}" />

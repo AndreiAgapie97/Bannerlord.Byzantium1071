@@ -247,7 +247,7 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Risk", "Kingdom", "Status", "Clan", "Leader" },
             new[] { "Dist", "Clan", "Where", "Name", "Rel" },
             new[] { "Dist", "Affil", "Detail", "Name", "Status" },
-            new[] { "Total", "DeathA", "DeathB", "Pair", "Ratio" }
+            new[] { "Total", "KillA", "KillB", "Pair", "Ratio" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -267,7 +267,7 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 1, 2, 0, 4 },  // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0), H5→Leader(4)
             new[] { 3, 1, 2, 0, 4 },  // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0), H5→Rel(4)
             new[] { 3, 1, 2, 0, 4 },  // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Dist(0), H5→Status(4)
-            new[] { 3, 1, 2, 0, 4 }   // Casualties:  H1→Pair(3), H2→DeathA(1), H3→DeathB(2), H4→Total(0), H5→Ratio(4)
+            new[] { 3, 1, 2, 0, 4 }   // Casualties:  H1→Pair(3), H2→KillA(1), H3→KillB(2), H4→Total(0), H5→Ratio(4)
         };
 
         internal static string SortText => _sortTextCached;
@@ -3575,8 +3575,8 @@ namespace Byzantium1071.Campaign.UI
             public string PairKey = string.Empty;
             public string NameA = string.Empty;
             public string NameB = string.Empty;
-            public int DeathsA;
-            public int DeathsB;
+            public int KillsA;
+            public int KillsB;
             public int Total;
         }
 
@@ -3585,16 +3585,16 @@ namespace Byzantium1071.Campaign.UI
             var rawData = behavior.GetCasualtiesLedger();
             var rows = new List<CasualtiesLedgerRow>(rawData.Count);
 
-            foreach (var (pairKey, nameA, nameB, deathsA, deathsB) in rawData)
+            foreach (var (pairKey, nameA, nameB, killsA, killsB) in rawData)
             {
                 rows.Add(new CasualtiesLedgerRow
                 {
                     PairKey = pairKey,
                     NameA = nameA,
                     NameB = nameB,
-                    DeathsA = deathsA,
-                    DeathsB = deathsB,
-                    Total = deathsA + deathsB
+                    KillsA = killsA,
+                    KillsB = killsB,
+                    Total = killsA + killsB
                 });
             }
 
@@ -3602,10 +3602,10 @@ namespace Byzantium1071.Campaign.UI
             {
                 int compare = _sortColumn switch
                 {
-                    1 => a.DeathsA.CompareTo(b.DeathsA),
-                    2 => a.DeathsB.CompareTo(b.DeathsB),
+                    1 => a.KillsA.CompareTo(b.KillsA),
+                    2 => a.KillsB.CompareTo(b.KillsB),
                     3 => string.Compare(a.NameA + " vs " + a.NameB, b.NameA + " vs " + b.NameB, StringComparison.Ordinal),
-                    4 => (a.Total > 0 ? (float)a.DeathsA / a.Total : 0f).CompareTo(b.Total > 0 ? (float)b.DeathsA / b.Total : 0f),
+                    4 => (a.Total > 0 ? (float)a.KillsA / a.Total : 0f).CompareTo(b.Total > 0 ? (float)b.KillsA / b.Total : 0f),
                     _ => a.Total.CompareTo(b.Total)
                 };
 
@@ -3627,13 +3627,13 @@ namespace Byzantium1071.Campaign.UI
             int endIndex = Math.Min(rows.Count, startIndex + pageSize);
 
             string playerFaction = GetPlayerFactionName();
-            int grandTotalDeaths = 0;
+            int grandTotalKills = 0;
             int bloodiestTotal = 0;
             string bloodiestPair = string.Empty;
 
             foreach (CasualtiesLedgerRow row in rows)
             {
-                grandTotalDeaths += row.Total;
+                grandTotalKills += row.Total;
                 if (row.Total > bloodiestTotal)
                 {
                     bloodiestTotal = row.Total;
@@ -3644,8 +3644,8 @@ namespace Byzantium1071.Campaign.UI
             _titleText = new TextObject("{=b1071_overlay_title_casualties}Casualties Ledger  ({COUNT} wars)")
                 .SetTextVariable("COUNT", rows.Count).ToString();
             _header1 = L("b1071_overlay_col_cas_pair", "Kingdom Pair");
-            _header2 = L("b1071_overlay_col_cas_deatha", "Deaths A");
-            _header3 = L("b1071_overlay_col_cas_deathb", "Deaths B");
+            _header2 = L("b1071_overlay_col_cas_killa", "Kills A");
+            _header3 = L("b1071_overlay_col_cas_killb", "Kills B");
             _header4 = L("b1071_overlay_col_cas_total", "Total");
             _header5 = L("b1071_overlay_col_cas_ratio", "Ratio");
             ApplySortIndicator(new[] { 3, 2, 4, 1, 5 });
@@ -3663,12 +3663,12 @@ namespace Byzantium1071.Campaign.UI
                 string pairDisplay = row.NameA + " vs " + row.NameB;
                 string nameCell = prefix + rank + ". " + TruncateForColumn(pairDisplay, 26, out string hint);
 
-                // Dynamic column headers: replace generic "Deaths A/B" with actual kingdom names
+                // Dynamic column headers: replace generic "Kills A/B" with actual kingdom names
                 // This is done via hint text on the pair cell so the header stays compact.
                 string ratioText;
                 if (row.Total > 0)
                 {
-                    float ratioA = (float)row.DeathsA / row.Total;
+                    float ratioA = (float)row.KillsA / row.Total;
                     ratioText = (ratioA * 100f).ToString("0") + ":" + ((1f - ratioA) * 100f).ToString("0");
                 }
                 else
@@ -3677,13 +3677,13 @@ namespace Byzantium1071.Campaign.UI
                 }
 
                 string hintFull = string.IsNullOrEmpty(hint)
-                    ? row.NameA + ": " + row.DeathsA.ToString("N0") + " dead | " + row.NameB + ": " + row.DeathsB.ToString("N0") + " dead"
-                    : hint + "\n" + row.NameA + ": " + row.DeathsA.ToString("N0") + " dead | " + row.NameB + ": " + row.DeathsB.ToString("N0") + " dead";
+                    ? row.NameA + ": " + row.KillsA.ToString("N0") + " killed | " + row.NameB + ": " + row.KillsB.ToString("N0") + " killed"
+                    : hint + "\n" + row.NameA + ": " + row.KillsA.ToString("N0") + " killed | " + row.NameB + ": " + row.KillsB.ToString("N0") + " killed";
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     nameCell,
-                    row.DeathsA.ToString("N0"),
-                    row.DeathsB.ToString("N0"),
+                    row.KillsA.ToString("N0"),
+                    row.KillsB.ToString("N0"),
                     row.Total.ToString("N0"),
                     involvesPlayer,
                     even,
@@ -3692,7 +3692,7 @@ namespace Byzantium1071.Campaign.UI
             }
 
             _totals1 = L("b1071_overlay_totals_total", "Total");
-            _totals2 = grandTotalDeaths.ToString("N0");
+            _totals2 = grandTotalKills.ToString("N0");
             _totals3 = rows.Count > 0
                 ? new TextObject("{=b1071_overlay_totals_bloodiest}Bloodiest: {PAIR}")
                     .SetTextVariable("PAIR", TruncateForColumn(bloodiestPair, 18)).ToString()
