@@ -1016,5 +1016,16 @@
     <string id="b1071_mcm_h_mfwr_mp" text="Average settlement manpower fill at or below which the emergency bypass activates. E.g., 25 = bypass available when pools are at 25% or less." />
     <string id="b1071_mcm_t_mfwr_wars" text="Emergency war count threshold" />
     <string id="b1071_mcm_h_mfwr_wars" text="Minimum number of active kingdom-vs-kingdom wars required for multi-front war relief to activate." />
+    <!-- v0.2.8: Casualties tab -->
+    <string id="b1071_tab_casualties" text="Casualties" />
+    <string id="b1071_overlay_empty_casualties" text="Casualties Ledger\nNo kingdom battles recorded yet." />
+    <string id="b1071_overlay_title_casualties" text="Casualties Ledger  ({COUNT} wars)" />
+    <string id="b1071_overlay_col_cas_pair" text="Kingdom Pair" />
+    <string id="b1071_overlay_col_cas_deatha" text="Deaths A" />
+    <string id="b1071_overlay_col_cas_deathb" text="Deaths B" />
+    <string id="b1071_overlay_col_cas_total" text="Total" />
+    <string id="b1071_overlay_col_cas_ratio" text="Ratio" />
+    <string id="b1071_overlay_totals_bloodiest" text="Bloodiest: {PAIR}" />
+    <string id="b1071_overlay_total_entries_cas" text="Wars: {COUNT}" />
   </strings>
 </base>

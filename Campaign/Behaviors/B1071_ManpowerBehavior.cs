@@ -100,6 +100,13 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<float> _savedRecoveryPenaltyBaseValues = new();
         private List<float> _savedRecoveryPenaltyStartDays = new();
         private List<float> _savedRecoveryPenaltyExpiryDays = new();
+        // Casualties ledger: kingdom-pair key → (deathsOnSideA, deathsOnSideB).
+        // Side A/B are the normalized pair slots (CompareOrdinal order).
+        // "deathsOnSideA" = troops killed belonging to side A (i.e. killed BY side B).
+        private readonly Dictionary<string, (int deathsA, int deathsB)> _casualtiesByPair = new();
+        private List<string> _savedCasualtiesKeys = new();
+        private List<int> _savedCasualtiesDeathsA = new();
+        private List<int> _savedCasualtiesDeathsB = new();
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -395,6 +402,46 @@ namespace Byzantium1071.Campaign.Behaviors
                     _recoveryPenaltyBaseByPoolId[poolId] = Math.Max(0f, _savedRecoveryPenaltyBaseValues[i]);
                     _recoveryPenaltyStartDayByPoolId[poolId] = _savedRecoveryPenaltyStartDays[i];
                     _recoveryPenaltyExpiryDayByPoolId[poolId] = _savedRecoveryPenaltyExpiryDays[i];
+                }
+            }
+
+            // Casualties ledger save/load.
+            _savedCasualtiesKeys ??= new List<string>();
+            _savedCasualtiesDeathsA ??= new List<int>();
+            _savedCasualtiesDeathsB ??= new List<int>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedCasualtiesKeys.Clear();
+                _savedCasualtiesDeathsA.Clear();
+                _savedCasualtiesDeathsB.Clear();
+                foreach (var kvp in _casualtiesByPair)
+                {
+                    _savedCasualtiesKeys.Add(kvp.Key);
+                    _savedCasualtiesDeathsA.Add(kvp.Value.Item1);
+                    _savedCasualtiesDeathsB.Add(kvp.Value.Item2);
+                }
+            }
+
+            dataStore.SyncData("B1071_Casualties_Keys", ref _savedCasualtiesKeys);
+            dataStore.SyncData("B1071_Casualties_DeathsA", ref _savedCasualtiesDeathsA);
+            dataStore.SyncData("B1071_Casualties_DeathsB", ref _savedCasualtiesDeathsB);
+
+            _savedCasualtiesKeys ??= new List<string>();
+            _savedCasualtiesDeathsA ??= new List<int>();
+            _savedCasualtiesDeathsB ??= new List<int>();
+
+            if (dataStore.IsLoading)
+            {
+                _casualtiesByPair.Clear();
+                int nc = Math.Min(
+                    _savedCasualtiesKeys.Count,
+                    Math.Min(_savedCasualtiesDeathsA.Count, _savedCasualtiesDeathsB.Count));
+                for (int i = 0; i < nc; i++)
+                {
+                    string key = _savedCasualtiesKeys[i];
+                    if (!string.IsNullOrEmpty(key))
+                        _casualtiesByPair[key] = (_savedCasualtiesDeathsA[i], _savedCasualtiesDeathsB[i]);
                 }
             }
         }
@@ -2547,8 +2594,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnMapEventEnded(MapEvent mapEvent)
         {
-            if (!Settings.EnableWarEffects) return;
             if (mapEvent == null) return;
+
+            // Casualties ledger: broader scope than war effects (includes siege assaults, sally-outs, raids, coercion).
+            AccumulateCasualties(mapEvent);
+
+            if (!Settings.EnableWarEffects) return;
             if (IsVillageRaidRelatedMapEvent(mapEvent)) return;
             if (!mapEvent.IsFieldBattle && !mapEvent.IsSiegeOutside) return;
 
@@ -2648,6 +2699,119 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (mp.LeaderHero?.Clan?.Kingdom != null) return true;
             }
             return false;
+        }
+
+        // ─── Casualties ledger ───
+
+        /// <summary>
+        /// Returns true if the map event type qualifies for the casualties ledger.
+        /// Includes: field battles, siege-outside, sally-out, siege assaults, raids, forcing volunteers/supplies.
+        /// Excludes: hideout battles.
+        /// </summary>
+        private static bool IsCasualtiesEligibleEvent(MapEvent mapEvent)
+        {
+            if (mapEvent.IsFieldBattle) return true;
+            if (mapEvent.IsSiegeOutside) return true;
+            if (mapEvent.IsSallyOut) return true;
+            if (mapEvent.IsSiegeAssault) return true;
+            if (mapEvent.IsRaid) return true;
+            if (mapEvent.IsForcingVolunteers) return true;
+            if (mapEvent.IsForcingSupplies) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Resolves exactly one kingdom from a map event side. Returns null if zero or multiple kingdoms found.
+        /// Skips bandits, caravans, villagers, and parties without a kingdom affiliation.
+        /// </summary>
+        private static Kingdom? ResolveSingleKingdom(MapEventSide? side)
+        {
+            if (side?.Parties == null) return null;
+            Kingdom? found = null;
+            foreach (MapEventParty mep in side.Parties)
+            {
+                if (mep == null) continue;
+                MobileParty? mp = mep.Party?.MobileParty;
+                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
+                Kingdom? k = mp.LeaderHero?.Clan?.Kingdom;
+                if (k == null) continue;
+                if (found == null)
+                    found = k;
+                else if (found != k)
+                    return null; // Multiple kingdoms on same side — ambiguous
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Sums deaths (DiedInBattle) for all parties on a side that belong to the given kingdom.
+        /// </summary>
+        private static int SumDeathsForKingdom(MapEventSide? side, Kingdom kingdom)
+        {
+            if (side?.Parties == null) return 0;
+            int total = 0;
+            foreach (MapEventParty mep in side.Parties)
+            {
+                if (mep == null) continue;
+                MobileParty? mp = mep.Party?.MobileParty;
+                if (mp == null || mp.IsBandit || mp.IsCaravan || mp.IsVillager) continue;
+                if (mp.LeaderHero?.Clan?.Kingdom != kingdom) continue;
+                total += mep.DiedInBattle?.TotalManCount ?? 0;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// Processes a completed map event and records kingdom-pair deaths in the casualties ledger.
+        /// Skips events that don't qualify (hideout), events with ambiguous attribution, and non-kingdom combats.
+        /// </summary>
+        private void AccumulateCasualties(MapEvent mapEvent)
+        {
+            if (!IsCasualtiesEligibleEvent(mapEvent)) return;
+
+            Kingdom? kingdomA = ResolveSingleKingdom(mapEvent.AttackerSide);
+            Kingdom? kingdomB = ResolveSingleKingdom(mapEvent.DefenderSide);
+            if (kingdomA == null || kingdomB == null) return;
+            if (kingdomA == kingdomB) return;
+
+            int deathsAttacker = SumDeathsForKingdom(mapEvent.AttackerSide, kingdomA);
+            int deathsDefender = SumDeathsForKingdom(mapEvent.DefenderSide, kingdomB);
+            if (deathsAttacker + deathsDefender <= 0) return;
+
+            string pairKey = MakeKingdomPairKey(kingdomA, kingdomB);
+            if (string.IsNullOrEmpty(pairKey)) return;
+
+            // Determine which side is A vs B in the normalized pair key.
+            string idA = kingdomA.StringId ?? string.Empty;
+            string idB = kingdomB.StringId ?? string.Empty;
+            bool attackerIsNormalizedA = string.CompareOrdinal(idA, idB) <= 0;
+
+            var existing = _casualtiesByPair.TryGetValue(pairKey, out var val) ? val : (deathsA: 0, deathsB: 0);
+
+            if (attackerIsNormalizedA)
+                _casualtiesByPair[pairKey] = (existing.Item1 + deathsAttacker, existing.Item2 + deathsDefender);
+            else
+                _casualtiesByPair[pairKey] = (existing.Item1 + deathsDefender, existing.Item2 + deathsAttacker);
+
+            B1071_VerboseLog.Log("Casualties", $"Recorded {deathsAttacker}+{deathsDefender} deaths: {kingdomA.Name} vs {kingdomB.Name} (pair {pairKey}).");
+        }
+
+        /// <summary>
+        /// Returns overlay-ready casualties data for all kingdom pairs with recorded deaths.
+        /// Each entry contains resolved kingdom names, pair key, and per-side death counts.
+        /// </summary>
+        internal List<(string pairKey, string nameA, string nameB, int deathsA, int deathsB)> GetCasualtiesLedger()
+        {
+            var result = new List<(string, string, string, int, int)>();
+            foreach (var kvp in _casualtiesByPair)
+            {
+                string[] parts = kvp.Key.Split('|');
+                if (parts.Length != 2) continue;
+                string nameA = ResolveKingdomDisplayName(parts[0]);
+                string nameB = ResolveKingdomDisplayName(parts[1]);
+                result.Add((kvp.Key, nameA, nameB, kvp.Value.Item1, kvp.Value.Item2));
+            }
+            return result;
         }
 
         private void AccumulateBattleExhaustion(MapEventSide side, MapEventSide? opposingSide)

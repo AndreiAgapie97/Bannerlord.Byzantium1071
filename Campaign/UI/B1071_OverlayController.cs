@@ -28,7 +28,8 @@ namespace Byzantium1071.Campaign.UI
         Prisoners = 9,
         ClanInstability = 10,
         Characters = 11,
-        Search = 12
+        Search = 12,
+        Casualties = 13
     }
 
     internal static class B1071_OverlayController
@@ -214,6 +215,7 @@ namespace Byzantium1071.Campaign.UI
         internal static string TabClanInstabilityText => FormatTabText(_tabLabels?[10] ?? "Clans", _activeTab == B1071LedgerTab.ClanInstability);
         internal static string TabCharactersText => FormatTabText(_tabLabels?[11] ?? "Characters", _activeTab == B1071LedgerTab.Characters);
         internal static string TabSearchText => FormatTabText(_tabLabels?[12] ?? "Search", _activeTab == B1071LedgerTab.Search);
+        internal static string TabCasualtiesText => FormatTabText(_tabLabels?[13] ?? "Casualties", _activeTab == B1071LedgerTab.Casualties);
         internal static bool IsTabCurrentActive => _activeTab == B1071LedgerTab.Current;
         internal static bool IsTabNearbyActive => _activeTab == B1071LedgerTab.NearbyPools;
         internal static bool IsTabCastlesActive => _activeTab == B1071LedgerTab.Castles;
@@ -227,6 +229,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabClanInstabilityActive => _activeTab == B1071LedgerTab.ClanInstability;
         internal static bool IsTabCharactersActive => _activeTab == B1071LedgerTab.Characters;
         internal static bool IsTabSearchActive => _activeTab == B1071LedgerTab.Search;
+        internal static bool IsTabCasualtiesActive => _activeTab == B1071LedgerTab.Casualties;
         internal static bool IsSearchControlsVisible => _activeTab == B1071LedgerTab.Search;
         internal static string SearchQuery => _searchQuery;
         private static readonly string[][] _sortKeys = new[]
@@ -243,7 +246,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { "Captor", "Where", "By", "Noble", "Clan" },
             new[] { "Risk", "Kingdom", "Status", "Clan", "Leader" },
             new[] { "Dist", "Clan", "Where", "Name", "Rel" },
-            new[] { "Dist", "Affil", "Detail", "Name", "Status" }
+            new[] { "Dist", "Affil", "Detail", "Name", "Status" },
+            new[] { "Total", "DeathA", "DeathB", "Pair", "Ratio" }
         };
 
         // Inverse of the per-tab sortToHeader arrays used in each Build*Columns method.
@@ -262,7 +266,8 @@ namespace Byzantium1071.Campaign.UI
             new[] { 3, 0, 2, 1, 4 },  // Prisoners:   H1→Noble(3), H2→Captor(0), H3→By(2), H4→Where(1), H5→Clan(4)
             new[] { 3, 1, 2, 0, 4 },  // Clans:       H1→Clan(3), H2→Kingdom(1), H3→Status(2), H4→Risk(0), H5→Leader(4)
             new[] { 3, 1, 2, 0, 4 },  // Characters:  H1→Name(3), H2→Clan(1), H3→Where(2), H4→Dist(0), H5→Rel(4)
-            new[] { 3, 1, 2, 0, 4 }   // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Dist(0), H5→Status(4)
+            new[] { 3, 1, 2, 0, 4 },  // Search:      H1→Name(3), H2→Affil(1), H3→Detail(2), H4→Dist(0), H5→Status(4)
+            new[] { 3, 1, 2, 0, 4 }   // Casualties:  H1→Pair(3), H2→DeathA(1), H3→DeathB(2), H4→Total(0), H5→Ratio(4)
         };
 
         internal static string SortText => _sortTextCached;
@@ -612,6 +617,7 @@ namespace Byzantium1071.Campaign.UI
                 case B1071LedgerTab.ClanInstability: return BuildClanInstabilityColumns();
                 case B1071LedgerTab.Characters: return BuildCharactersColumns();
                 case B1071LedgerTab.Search: return BuildSearchColumns(behavior);
+                case B1071LedgerTab.Casualties: return BuildCasualtiesColumns(behavior);
                 default: return BuildCurrentColumns(behavior);
             }
         }
@@ -2822,12 +2828,13 @@ namespace Byzantium1071.Campaign.UI
                     new TaleWorlds.Localization.TextObject("{=b1071_tab_clans}Clans").ToString(),
                     new TaleWorlds.Localization.TextObject("{=b1071_tab_characters}Characters").ToString(),
                     new TaleWorlds.Localization.TextObject("{=b1071_tab_search}Search").ToString(),
+                    new TaleWorlds.Localization.TextObject("{=b1071_tab_casualties}Casualties").ToString(),
                 };
             }
 
             int tabValue = Settings.OverlayLedgerDefaultTab;
             if (tabValue < 0) tabValue = 0;
-            if (tabValue > 12) tabValue = 12;
+            if (tabValue > 13) tabValue = 13;
 
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
@@ -3557,6 +3564,141 @@ namespace Byzantium1071.Campaign.UI
             _totals4 = maxDuration > 0
                 ? new TextObject("{=b1071_overlay_oldest_war}Longest: {DAYS}d").SetTextVariable("DAYS", maxDuration).ToString()
                 : string.Empty;
+            _totals5 = string.Empty;
+            return _titleText;
+        }
+
+        // ─── Casualties tab ───
+
+        private sealed class CasualtiesLedgerRow
+        {
+            public string PairKey = string.Empty;
+            public string NameA = string.Empty;
+            public string NameB = string.Empty;
+            public int DeathsA;
+            public int DeathsB;
+            public int Total;
+        }
+
+        private static string BuildCasualtiesColumns(B1071_ManpowerBehavior behavior)
+        {
+            var rawData = behavior.GetCasualtiesLedger();
+            var rows = new List<CasualtiesLedgerRow>(rawData.Count);
+
+            foreach (var (pairKey, nameA, nameB, deathsA, deathsB) in rawData)
+            {
+                rows.Add(new CasualtiesLedgerRow
+                {
+                    PairKey = pairKey,
+                    NameA = nameA,
+                    NameB = nameB,
+                    DeathsA = deathsA,
+                    DeathsB = deathsB,
+                    Total = deathsA + deathsB
+                });
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = _sortColumn switch
+                {
+                    1 => a.DeathsA.CompareTo(b.DeathsA),
+                    2 => a.DeathsB.CompareTo(b.DeathsB),
+                    3 => string.Compare(a.NameA + " vs " + a.NameB, b.NameA + " vs " + b.NameB, StringComparison.Ordinal),
+                    4 => (a.Total > 0 ? (float)a.DeathsA / a.Total : 0f).CompareTo(b.Total > 0 ? (float)b.DeathsA / b.Total : 0f),
+                    _ => a.Total.CompareTo(b.Total)
+                };
+
+                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
+                else { if (_sortAscending) compare = -compare; }
+                if (compare != 0) return compare;
+                return string.Compare(a.NameA, b.NameA, StringComparison.Ordinal);
+            });
+
+            if (rows.Count == 0)
+            {
+                string emptyText = L("b1071_overlay_empty_casualties", "Casualties Ledger\nNo kingdom battles recorded yet.");
+                ClearColumns(emptyText);
+                return emptyText;
+            }
+
+            int pageSize = GetRowsPerPage();
+            int startIndex = GetPageStart(rows.Count, pageSize);
+            int endIndex = Math.Min(rows.Count, startIndex + pageSize);
+
+            string playerFaction = GetPlayerFactionName();
+            int grandTotalDeaths = 0;
+            int bloodiestTotal = 0;
+            string bloodiestPair = string.Empty;
+
+            foreach (CasualtiesLedgerRow row in rows)
+            {
+                grandTotalDeaths += row.Total;
+                if (row.Total > bloodiestTotal)
+                {
+                    bloodiestTotal = row.Total;
+                    bloodiestPair = row.NameA + "/" + row.NameB;
+                }
+            }
+
+            _titleText = new TextObject("{=b1071_overlay_title_casualties}Casualties Ledger  ({COUNT} wars)")
+                .SetTextVariable("COUNT", rows.Count).ToString();
+            _header1 = L("b1071_overlay_col_cas_pair", "Kingdom Pair");
+            _header2 = L("b1071_overlay_col_cas_deatha", "Deaths A");
+            _header3 = L("b1071_overlay_col_cas_deathb", "Deaths B");
+            _header4 = L("b1071_overlay_col_cas_total", "Total");
+            _header5 = L("b1071_overlay_col_cas_ratio", "Ratio");
+            ApplySortIndicator(new[] { 3, 2, 4, 1, 5 });
+
+            _ledgerRows.Clear();
+            for (int i = endIndex - 1; i >= startIndex; i--)
+            {
+                CasualtiesLedgerRow row = rows[i];
+                int rank = i + 1;
+                bool involvesPlayer = string.Equals(row.NameA, playerFaction, StringComparison.Ordinal) ||
+                                      string.Equals(row.NameB, playerFaction, StringComparison.Ordinal);
+                string prefix = involvesPlayer ? "> " : "";
+                bool even = (i - startIndex) % 2 == 0;
+
+                string pairDisplay = row.NameA + " vs " + row.NameB;
+                string nameCell = prefix + rank + ". " + TruncateForColumn(pairDisplay, 26, out string hint);
+
+                // Dynamic column headers: replace generic "Deaths A/B" with actual kingdom names
+                // This is done via hint text on the pair cell so the header stays compact.
+                string ratioText;
+                if (row.Total > 0)
+                {
+                    float ratioA = (float)row.DeathsA / row.Total;
+                    ratioText = (ratioA * 100f).ToString("0") + ":" + ((1f - ratioA) * 100f).ToString("0");
+                }
+                else
+                {
+                    ratioText = "-";
+                }
+
+                string hintFull = string.IsNullOrEmpty(hint)
+                    ? row.NameA + ": " + row.DeathsA.ToString("N0") + " dead | " + row.NameB + ": " + row.DeathsB.ToString("N0") + " dead"
+                    : hint + "\n" + row.NameA + ": " + row.DeathsA.ToString("N0") + " dead | " + row.NameB + ": " + row.DeathsB.ToString("N0") + " dead";
+
+                _ledgerRows.Add(new B1071_LedgerRowVM(
+                    nameCell,
+                    row.DeathsA.ToString("N0"),
+                    row.DeathsB.ToString("N0"),
+                    row.Total.ToString("N0"),
+                    involvesPlayer,
+                    even,
+                    c5: ratioText,
+                    hintText: hintFull));
+            }
+
+            _totals1 = L("b1071_overlay_totals_total", "Total");
+            _totals2 = grandTotalDeaths.ToString("N0");
+            _totals3 = rows.Count > 0
+                ? new TextObject("{=b1071_overlay_totals_bloodiest}Bloodiest: {PAIR}")
+                    .SetTextVariable("PAIR", TruncateForColumn(bloodiestPair, 18)).ToString()
+                : string.Empty;
+            _totals4 = new TextObject("{=b1071_overlay_total_entries_cas}Wars: {COUNT}")
+                .SetTextVariable("COUNT", rows.Count.ToString("N0")).ToString();
             _totals5 = string.Empty;
             return _titleText;
         }
