@@ -8,19 +8,21 @@
 
 - **Problem:** Manpower already limited how many volunteers could be hired, but not how advanced those volunteers could be. That left village and town recruiting too permissive for campaigns aiming at a stricter progression curve.
 - **Fix:** Village volunteer boards now respect `VillageVolunteerTierMax` (default T2) and town volunteer boards respect `TownVolunteerTierMax` (default T4).
+- **Board healing:** Over-cap volunteers are normalized out of the board by downgrading them to the highest legal ancestor on the culture tree, or clearing the slot if no safe downgrade exists.
 - **Parity:** The same helper now gates player single-click recruit, Recruit All, confirm-cart validation, recruitment UI state, and AI recruitment.
 - **Scope:** Castle elite recruitment is unchanged; this only affects vanilla village/town volunteer recruitment.
 - **Safety:** No SyncData changes outside normal MCM profile migration. Existing campaigns pick up defaults safely, and removing the mod simply removes the extra gate.
 
 ### Fix — Casualties Tab War Lifecycle and Kingdom Attribution
 
-**Casualties rows now track active wars correctly and disappear when the war ends.**
+**Casualties rows now attribute kingdom losses more accurately and persist as campaign history after peace.**
 
 - **Problem 1:** Some Southern Empire wars were missing from the casualties tab because settlement defenders, militias, and garrisons could lack a usable `LeaderHero.Clan.Kingdom`, causing kingdom attribution to fail.
 - **Fix 1:** Casualties attribution now falls back to party/map-faction kingdom resolution, so siege defenders and other non-standard parties are counted safely.
-- **Problem 2:** Ended wars could remain visible in the casualties tab from persisted ledger data.
-- **Fix 2:** Casualty rows are now removed on peace, pruned on session launch and daily cleanup, filtered defensively on read, and the overlay is forced stale immediately after peace removal.
-- **Safety:** Save/load safe. Existing stale rows are cleaned automatically on next session launch, daily tick, or casualties-tab rebuild.
+- **Problem 2:** Coalition and non-standard battle compositions could also make casualty attribution too coarse for a running historical ledger.
+- **Fix 2:** Opposing-side deaths are now distributed across enemy kingdoms by contribution weight, with safe fallbacks when Bannerlord reports zero contribution.
+- **History:** Casualty rows are intentionally retained after peace so the tab works as a cumulative campaign ledger rather than an active-war-only board.
+- **Safety:** Save/load safe. Malformed historical rows are filtered defensively on cleanup and read.
 
 ### Feature — Rebel Clan Renaming
 
