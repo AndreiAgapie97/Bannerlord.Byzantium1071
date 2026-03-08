@@ -11,6 +11,9 @@
     <string id="b1071_cr_deposited_msg" text="{COUNT} prisonnier{PLURAL} déposés à {CASTLE}. Vous recevez {SHARE}% des revenus de traitement (frais de garde : {FEE}%)." />
     <string id="b1071_cr_elite_header" text="Troupes d'élite (pool culturel)" />
     <string id="b1071_cr_manpower_block" text="Effectif : impossible de recruter {TROOP} — {POOL} a besoin de {COST}, il ne reste que {LEFT}." />
+      <string id="b1071_cr_tier_block" text="Plafond des volontaires : {SETTLEMENT} est une {TYPE} ; elle ne fournit que des volontaires jusqu'au rang {CAP}. {TROOP} est de rang {TIER}." />
+      <string id="b1071_recruit_type_town" text="ville" />
+      <string id="b1071_recruit_type_village" text="village" />
     <string id="b1071_cr_no_elite" text="Aucune troupe d'élite disponible. La réserve se régénère chaque jour grâce à la main-d'œuvre du château." />
     <string id="b1071_cr_no_pending" text="Aucun prisonnier en attente." />
     <string id="b1071_cr_no_ready" text="Aucun prisonnier prêt à être recruté." />
@@ -192,6 +195,9 @@
     <string id="b1071_mp_raid_not_completed" text="[B1071] Raid non terminé à {VILLAGE} : pas de fuite de main d'œuvre." />
     <string id="b1071_ui_mp_confirm_block" text="Effectifs : confirmation impossible — {POOL} exige {NEEDED} pour {TROOP}, il n'en reste que {LEFT}." />
     <string id="b1071_ui_mp_recruit_all_block" text="Effectifs : « Recruter tout » bloqué — {POOL} exige {NEEDED} pour {TROOP}, il n'en reste que {LEFT}." />
+      <string id="b1071_ui_tier_confirm_block" text="Plafond des volontaires : confirmation impossible — {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
+      <string id="b1071_ui_tier_donehint" text="Plafond des volontaires : {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
+      <string id="b1071_ui_tier_recruit_all_block" text="Plafond des volontaires : « Recruter tout » bloqué — {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
     <string id="b1071_overlay_title" text="Superposition Campaign++" />
     <string id="b1071_panel_text" text="Superposition Campaign++\n[Appuyez sur M pour basculer]" />
     <string id="b1071_slave_body" text="Commerce des esclaves — {SETTLEMENT}\n\nPrisonniers (T1–{MAXTIER}, asservissables) : {ENSLAVEABLE}\n{HIGHTIER}Marchandises d'esclaves dans votre inventaire : {INV}\nEsclaves sur le marché de {SETTLEMENT} : {MARKET}\n\nVendez les esclaves via l'écran de commerce.\nLes bonus quotidiens de la ville s'appliquent tant qu'il y a des esclaves sur le marché." />
@@ -521,6 +527,8 @@
     <string id="b1071_mcm_h_ddd08bc714" text="Bonus de croissance de prospérité quotidien provenant d’un investissement dans une ville modeste. Visible dans l'info-bulle de la ville sous le nom « Patronage civique ». Par défaut : 0,5." />
     <string id="b1071_mcm_h_de483c5153" text="Contrôle la forte baisse des prix des esclaves par unité de stock. Facteur de prix = DecayRate ^ stock, fixé à 0,1 (plancher = 30d à une valeur de base de 300). Valeurs inférieures = baisse de prix plus importante. À 0,98 (par défaut) : stock 10 = ~245d, stock 30 = ~164d, stock 50 = ~109d, stock 80 = ~60d. À 0,96 : stock 30 = ~88d, stock 50 = ~39d (plancher). Par défaut : 0,98." />
     <string id="b1071_mcm_h_df9b5fe7fe" text="Nécessaire pour une consommation cohérente de main-d'œuvre de recrutement de joueurs dans le flux d'événements en cours. Gardez activé sauf si vous dépannez explicitement la compatibilité." />
+      <string id="b1071_mcm_h_town_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'une ville. Le recrutement d'élite des châteaux n'est pas affecté ; ceci ne s'applique qu'au recrutement de volontaires vanilla." />
+      <string id="b1071_mcm_h_village_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'un village. Utilise uniquement le type de la colonie source ; les effectifs proviennent toujours de la réserve de la ville ou du château lié." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Décalage horizontal par rapport au bord gauche pour le panneau racine de superposition." />
     <string id="b1071_mcm_h_e1a2720769" text="Les troupes de rang supérieur ont plus de chances de survivre en étant blessées plutôt que de mourir en résolution automatique. T1=+0 %, T2=+5 %, T3=+10 %, T4=+15 %, T5=+20 %, T6=+25 % de bonus fixe aux chances de survie en plus du taux de base basé sur les médicaments." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Puissance ajoutée à chaque ville notable grâce à un grand investissement. Par défaut : 20." />
@@ -596,6 +604,8 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Plafond des primes de soutien à la paix" />
     <string id="b1071_mcm_t_329e2f2547" text="Activer la protection contre la conquête dynamique" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Activer le crochet de recrutement de joueurs" />
+      <string id="b1071_mcm_t_town_vol_tier_max" text="Rang max des volontaires de ville" />
+      <string id="b1071_mcm_t_village_vol_tier_max" text="Rang max des volontaires de village" />
     <string id="b1071_mcm_t_333ebd3f63" text="Dévastation par raid" />
     <string id="b1071_mcm_t_334b3b9871" text="Permettre l’investissement villageois" />
     <string id="b1071_mcm_t_33dc1f57bd" text="% maximum de régénération des aliments" />

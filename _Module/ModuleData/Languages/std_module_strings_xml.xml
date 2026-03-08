@@ -11,6 +11,9 @@
     <string id="b1071_cr_deposited_msg" text="⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%)." />
     <string id="b1071_cr_elite_header" text="Elite Troops (Culture Pool)" />
     <string id="b1071_cr_manpower_block" text="Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left." />
+      <string id="b1071_cr_tier_block" text="Volunteer cap: {SETTLEMENT} is a {TYPE}; it only provides volunteers up to tier {CAP}. {TROOP} is tier {TIER}." />
+      <string id="b1071_recruit_type_town" text="town" />
+      <string id="b1071_recruit_type_village" text="village" />
     <string id="b1071_cr_no_elite" text="No elite troops available. Pool regenerates daily from castle manpower." />
     <string id="b1071_cr_no_pending" text="No prisoners pending." />
     <string id="b1071_cr_no_ready" text="No prisoners ready for recruitment." />
@@ -192,6 +195,9 @@
     <string id="b1071_mp_raid_not_completed" text="[B1071] Raid not completed at {VILLAGE}: no manpower drain." />
     <string id="b1071_ui_mp_confirm_block" text="Manpower: cannot confirm — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
     <string id="b1071_ui_mp_recruit_all_block" text="Manpower: Recruit All blocked — {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
+      <string id="b1071_ui_tier_confirm_block" text="Volunteer cap: cannot confirm — {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
+      <string id="b1071_ui_tier_donehint" text="Volunteer cap: {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
+      <string id="b1071_ui_tier_recruit_all_block" text="Volunteer cap: Recruit All blocked — {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
     <string id="b1071_overlay_title" text="Campaign++ Overlay" />
     <string id="b1071_panel_text" text="Campaign++ Overlay\n[Press M to toggle]" />
     <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market." />
@@ -521,6 +527,8 @@
     <string id="b1071_mcm_h_ddd08bc714" text="Daily prosperity growth bonus from a Modest town investment. Visible in the town tooltip as 'Civic Patronage'. Default: 0.5." />
     <string id="b1071_mcm_h_de483c5153" text="Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 30d at base value 300). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~245d, stock 30 = ~164d, stock 50 = ~109d, stock 80 = ~60d. At 0.96: stock 30 = ~88d, stock 50 = ~39d (floor). Default: 0.98." />
     <string id="b1071_mcm_h_df9b5fe7fe" text="Required for consistent player recruitment manpower consumption in current event flow. Keep enabled unless explicitly troubleshooting compatibility." />
+      <string id="b1071_mcm_h_town_vol_tier_max" text="Maximum troop tier that can be recruited from a town volunteer board. Castle elite recruitment is unaffected; this only applies to vanilla volunteer recruitment." />
+      <string id="b1071_mcm_h_village_vol_tier_max" text="Maximum troop tier that can be recruited from a village volunteer board. Uses the source settlement type only; manpower still comes from the bound town or castle pool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontal offset from the left edge for the overlay root panel." />
     <string id="b1071_mcm_h_e1a2720769" text="Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+5%, T3=+10%, T4=+15%, T5=+20%, T6=+25% flat bonus to survival chance on top of Medicine-based base rate." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
@@ -596,6 +604,8 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Peace support bonus cap" />
     <string id="b1071_mcm_t_329e2f2547" text="Enable dynamic conquest protection" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Enable player recruit manpower hook" />
+      <string id="b1071_mcm_t_town_vol_tier_max" text="Town volunteer tier max" />
+      <string id="b1071_mcm_t_village_vol_tier_max" text="Village volunteer tier max" />
     <string id="b1071_mcm_t_333ebd3f63" text="Devastation per raid" />
     <string id="b1071_mcm_t_334b3b9871" text="Enable village investment" />
     <string id="b1071_mcm_t_33dc1f57bd" text="Food regen max %" />

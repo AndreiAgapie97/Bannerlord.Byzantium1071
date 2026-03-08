@@ -42,6 +42,44 @@ namespace Byzantium1071.Campaign.Patches
                 if (recruitmentSettlement == null)
                     return true;
 
+                // Tier caps apply only to volunteer-board recruitment, where the notable's current
+                // settlement identifies the actual source board. Do not apply these caps to broader
+                // RecruitmentCampaignBehavior paths such as tavern mercenaries or other non-notable recruits.
+                Settlement? volunteerSourceSettlement = individual?.CurrentSettlement ?? settlement;
+                if (individual != null
+                    && volunteerSourceSettlement != null
+                    && B1071_RecruitmentTierGateHelper.TryGetTierGateBlock(
+                        volunteerSourceSettlement,
+                        troop,
+                        out TextObject? settlementType,
+                        out int tierCap))
+                {
+                    bool isMainParty = side1Party == MobileParty.MainParty;
+                    if (isMainParty)
+                    {
+                        TextObject tierMsg = B1071_RecruitmentTierGateHelper.BuildSingleRecruitBlockedMessage(
+                            volunteerSourceSettlement,
+                            troop,
+                            settlementType!,
+                            tierCap);
+
+                        InformationManager.DisplayMessage(new InformationMessage(tierMsg.ToString(), Colors.Yellow));
+                    }
+                    else if (B1071_McmSettings.Instance?.LogAiManpowerConsumption == true
+                        || B1071_VerboseLog.Enabled)
+                    {
+                        B1071_RecruitmentTierGateHelper.LogAiTierGateBlock(
+                            volunteerSourceSettlement,
+                            troop,
+                            settlementType!,
+                            tierCap,
+                            number,
+                            detail.ToString());
+                    }
+
+                    return false;
+                }
+
                 if (behavior.CanRecruitCountForPlayer(
                         recruitmentSettlement,
                         side1Party,

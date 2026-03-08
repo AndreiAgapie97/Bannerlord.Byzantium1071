@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 9;
+        internal const int LATEST_PROFILE_VERSION = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -184,6 +184,15 @@ namespace Byzantium1071.Campaign.Settings
                 EmergencyWarCountThreshold = 2;
 
                 migrated += "v0.2.7.2 early-war peace penalty and multi-front war relief defaults applied. ";
+            }
+
+            // ── Profile v10: tiered volunteer recruitment by settlement type ──
+            if (SettingsProfileVersion < 10)
+            {
+                VillageVolunteerTierMax = 2;
+                TownVolunteerTierMax = 4;
+
+                migrated += "tiered volunteer recruitment defaults applied (village T2, town T4). ";
             }
 
             // ── Future migrations go here ──
@@ -360,6 +369,14 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_d8242acd7d}Recruitment Cost", GroupOrder = 4)]
         [SettingPropertyInteger("{=b1071_mcm_t_b2d4cf52fb}Base manpower cost", 1, 50, "0", Order = 0, HintText = "{=b1071_mcm_h_8c81642f23}Base manpower cost for a tier-1 recruit.")]
         public int BaseManpowerCostPerTroop { get; set; } = 1;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_d8242acd7d}Recruitment Cost", GroupOrder = 4)]
+        [SettingPropertyInteger("{=b1071_mcm_t_village_vol_tier_max}Village volunteer tier max", 1, 6, "0", Order = 1, HintText = "{=b1071_mcm_h_village_vol_tier_max}Maximum troop tier that can be recruited from a village volunteer board. Uses the source settlement type only; manpower still comes from the bound town or castle pool.")]
+        public int VillageVolunteerTierMax { get; set; } = 2;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_d8242acd7d}Recruitment Cost", GroupOrder = 4)]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_vol_tier_max}Town volunteer tier max", 1, 6, "0", Order = 2, HintText = "{=b1071_mcm_h_town_vol_tier_max}Maximum troop tier that can be recruited from a town volunteer board. Castle elite recruitment is unaffected; this only applies to vanilla volunteer recruitment.")]
+        public int TownVolunteerTierMax { get; set; } = 4;
 
         [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("{=b1071_mcm_t_e92571fa60}[Legacy] Tiers per +1 cost step", 1, 10, "0", Order = 10, HintText = "{=b1071_mcm_h_29e86259f4}[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility.")]

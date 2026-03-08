@@ -81,9 +81,27 @@ namespace Byzantium1071.Campaign.Patches
                     if (troop.IsInCart)
                         continue;
 
+                    bool vanillaCanBeRecruited = troop.CanBeRecruited;
+
                     if (!troop.PlayerHasEnoughRelation)
                     {
                         troop.CanBeRecruited = false;
+                        continue;
+                    }
+
+                    // Only evaluate extra batch restrictions against slots vanilla still considers recruitable.
+                    // This prevents our Recruit All state from being blocked by troops another rule already disabled.
+                    if (!vanillaCanBeRecruited)
+                        continue;
+
+                    if (B1071_RecruitmentTierGateHelper.TryGetTierGateBlock(
+                            settlement,
+                            troop.Character,
+                            out _,
+                            out _))
+                    {
+                        troop.CanBeRecruited = false;
+                        allRecruitAllCandidatesAffordable = false;
                         continue;
                     }
 
@@ -106,6 +124,25 @@ namespace Byzantium1071.Campaign.Patches
             // AND with vanilla's existing value: manpower can only further restrict Recruit All,
             // never re-enable it when vanilla disabled it for other reasons (party full, no gold, etc.).
             vm.CanRecruitAll = vm.CanRecruitAll && individualAvailableCount > 0 && allRecruitAllCandidatesAffordable;
+
+            if (B1071_RecruitmentTierGateHelper.TryGetFirstTierGateBlock(
+                    settlement,
+                    troopsInCart,
+                    out CharacterObject? tierBlockedTroop,
+                    out TextObject? settlementType,
+                    out int tierCap))
+            {
+                vm.IsDoneEnabled = false;
+                if (vm.DoneHint != null)
+                {
+                    vm.DoneHint.HintText = B1071_RecruitmentTierGateHelper.BuildDoneHint(
+                        settlement,
+                        tierBlockedTroop!,
+                        settlementType!,
+                        tierCap);
+                }
+                return;
+            }
 
             if (!behavior.CanRecruitSequenceAllOrNothing(
                     settlement,

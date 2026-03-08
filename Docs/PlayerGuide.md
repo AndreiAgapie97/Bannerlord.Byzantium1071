@@ -135,7 +135,7 @@ Pools regenerate **daily**, scaled by:
 
 ## 4. Recruiting Volunteers (Villages & Towns)
 
-Recruitment works exactly like vanilla, **but now it's gated by manpower**.
+Recruitment works exactly like vanilla, **but now it's gated by manpower and settlement-type volunteer tier caps**.
 
 ### Step by Step
 
@@ -143,11 +143,16 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower**.
 2. **Click "Recruit Troops"** in the settlement menu.
 3. The recruitment screen appears — volunteers are shown as normal.
 4. **Click a volunteer to recruit them.** Each recruitment deducts manpower from the settlement's pool.
-5. If manpower is insufficient, the recruit button will be blocked and a **yellow message** explains why: *"Manpower: cannot recruit X — [Settlement] needs Y, only Z left."*
+5. If a troop is above that settlement type's volunteer cap, the slot is blocked and a **yellow message** explains why: *"Volunteer cap: [Settlement] is a village/town; [Troop] is tier X, cap Y."*
+6. If manpower is insufficient, the recruit button will be blocked and a **yellow message** explains why: *"Manpower: cannot recruit X — [Settlement] needs Y, only Z left."*
 
 ### What's Different from Vanilla
 
 - **Depleted pools = empty recruitment boards.** If a village's bound town/castle has 0 manpower, you'll find no volunteers.
+- **Village and town boards can have different tier caps.** By default, villages stop at T2 and towns stop at T4.
+- **The cap uses the source settlement type only.** A village still draws manpower from its bound town/castle pool, but the troop-tier cap is determined by the village board itself.
+- **Recruit All and Done are checked too.** If any selected troop breaks the cap, the batch is blocked and the Done hint explains which troop caused it.
+- **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
 
 ---
@@ -536,6 +541,8 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Enable castle recruitment | Castle Recruitment | ON | Master toggle for the entire castle system |
 | Open castle access | Castle Recruitment | ON | Removes bribe/clan-tier restriction at neutral castles |
 | Castle holding fee % | Castle Recruitment | 30% | Commission the castle owner takes from cross-clan prisoner processing |
+| Village volunteer tier max | Recruitment Cost | 2 | Highest troop tier recruitable from village volunteer boards |
+| Town volunteer tier max | Recruitment Cost | 4 | Highest troop tier recruitable from town volunteer boards |
 | Enable village investment | Village Investment | ON | Master toggle for village patronage system |
 | Enable slave economy | Slave Economy | ON | Master toggle for slave acquisition, trade, and town bonuses |
 | Enable war exhaustion | War Exhaustion | ON | Turns on per-kingdom exhaustion from combat |

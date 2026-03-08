@@ -11,6 +11,9 @@
     <string id="b1071_cr_deposited_msg" text="{COUNT} Gefangene{PLURAL} bei {CASTLE} deponiert. Sie erhalten {SHARE} % des Bearbeitungseinkommens (Haltegebühr: {FEE} %)." />
     <string id="b1071_cr_elite_header" text="Elitetruppen (Kulturpool)" />
     <string id="b1071_cr_manpower_block" text="Mannstärke: {TROOP} können nicht rekrutiert werden – {POOL} benötigt {COST}, nur noch {LEFT} übrig." />
+        <string id="b1071_cr_tier_block" text="Freiwilligenobergrenze: {SETTLEMENT} ist eine {TYPE}; dort werden nur Freiwillige bis Stufe {CAP} gestellt. {TROOP} ist Stufe {TIER}." />
+        <string id="b1071_recruit_type_town" text="Stadt" />
+        <string id="b1071_recruit_type_village" text="Dorf" />
     <string id="b1071_cr_no_elite" text="Keine Elitetruppen verfügbar. Der Pool wird täglich durch die Mannstärke des Schlosses regeneriert." />
     <string id="b1071_cr_no_pending" text="Es sind keine Gefangenen anhängig." />
     <string id="b1071_cr_no_ready" text="Keine zur Rekrutierung bereiten Gefangenen." />
@@ -192,6 +195,9 @@
     <string id="b1071_mp_raid_not_completed" text="[B1071] Razzia am {VILLAGE} nicht abgeschlossen: kein Mannstärkeverlust." />
     <string id="b1071_ui_mp_confirm_block" text="Mannstärke: kann nicht bestätigt werden – {POOL} benötigt {NEEDED} für {TROOP}, nur noch {LEFT} übrig." />
     <string id="b1071_ui_mp_recruit_all_block" text="Mannstärke: Rekrutieren Alle blockiert – {POOL} benötigt {NEEDED} für {TROOP}, nur noch {LEFT} übrig." />
+        <string id="b1071_ui_tier_confirm_block" text="Freiwilligenobergrenze: kann nicht bestätigt werden – {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
+        <string id="b1071_ui_tier_donehint" text="Freiwilligenobergrenze: {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
+        <string id="b1071_ui_tier_recruit_all_block" text="Freiwilligenobergrenze: Rekrutiere alle blockiert – {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
     <string id="b1071_overlay_title" text="Campaign++-Overlay" />
     <string id="b1071_panel_text" text="Campaign++-Overlay\n[Zum Umschalten M drücken]" />
     <string id="b1071_slave_body" text="Sklavenhandel – {SETTLEMENT}\n\nGefangene (T1–{MAXTIER}, versklavbar): {ENSLAVEABLE}\n{HIGHTIER}Sklavenwaren in Ihrem Inventar: {INV}\nSklaven auf dem {SETTLEMENT} Markt: {MARKET}\n\nVerkaufen Sie Sklaven über den Handelsbildschirm.\nTägliche Stadtboni gelten, solange Sklaven auf dem Markt sind." />
@@ -521,6 +527,8 @@
     <string id="b1071_mcm_h_ddd08bc714" text="Täglicher Wohlstandswachstumsbonus durch eine bescheidene Stadtinvestition. Im Tooltip der Stadt als „Bürgerliche Schirmherrschaft“ sichtbar. Standard: 0,5." />
     <string id="b1071_mcm_h_de483c5153" text="Steuert, wie stark die Sklavenpreise pro Lagereinheit sinken. Preisfaktor = DecayRate ^ Lagerbestand, geklemmt bei 0,1 (Untergrenze = 30 Tage bei Basiswert 300). Niedrigere Werte = stärkerer Preisverfall. Bei 0,98 (Standard): Lager 10 = ~245d, Lager 30 = ~164d, Lager 50 = ~109d, Lager 80 = ~60d. Bei 0,96: Bestand 30 = ~88d, Bestand 50 = ~39d (Untergrenze). Standard: 0,98." />
     <string id="b1071_mcm_h_df9b5fe7fe" text="Erforderlich für einen konsistenten Personalverbrauch bei der Spielerrekrutierung im aktuellen Eventablauf. Bleiben Sie aktiviert, es sei denn, es geht ausdrücklich um die Fehlerbehebung bei der Kompatibilität." />
+        <string id="b1071_mcm_h_town_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett einer Stadt rekrutiert werden kann. Die Elite-Rekrutierung in Burgen bleibt unverändert; dies gilt nur für die Vanilla-Freiwilligenrekrutierung." />
+        <string id="b1071_mcm_h_village_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett eines Dorfes rekrutiert werden kann. Verwendet nur den Typ der Herkunftssiedlung; die Mannstärke stammt weiterhin aus dem gebundenen Stadt- oder Burgpool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontaler Versatz vom linken Bildschirmrand für das Overlay-Hauptpanel." />
     <string id="b1071_mcm_h_e1a2720769" text="Truppen höherer Stufen überleben eher als Verwundete, als dass sie bei der automatischen Auflösung sterben. T1=+0 %, T2=+5 %, T3=+10 %, T4=+15 %, T5=+20 %, T6=+25 % Pauschalbonus auf die Überlebenschance zusätzlich zum medikamentenbasierten Basissatz." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Jeder bemerkenswerten Stadt wird durch eine Großinvestition mehr Macht verliehen. Standard: 20." />
@@ -596,6 +604,8 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Bonusobergrenze für Friedensunterstützung" />
     <string id="b1071_mcm_t_329e2f2547" text="Aktivieren Sie den dynamischen Eroberungsschutz" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Aktivieren Sie den Haken für die Spielerrekrutierung" />
+        <string id="b1071_mcm_t_town_vol_tier_max" text="Max. Freiwilligenstufe Stadt" />
+        <string id="b1071_mcm_t_village_vol_tier_max" text="Max. Freiwilligenstufe Dorf" />
     <string id="b1071_mcm_t_333ebd3f63" text="Verwüstung pro Raid" />
     <string id="b1071_mcm_t_334b3b9871" text="Ermöglichen Sie Dorfinvestitionen" />
     <string id="b1071_mcm_t_33dc1f57bd" text="Nahrungsregeneration max. %" />

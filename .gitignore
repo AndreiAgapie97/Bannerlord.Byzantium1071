@@ -370,7 +370,7 @@ Docs/AUDIT_v0.1.7.5.md
 .github/
 NextFeatures.md 
 Scenario_audit.md
-
+.serena/
 
 # Accidental PowerShell placeholder artifact
 $null

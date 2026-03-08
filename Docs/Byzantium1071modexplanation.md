@@ -183,6 +183,14 @@ This means settlements drained of manpower by war also see weakened militia — 
 
 When you open the recruitment menu at a settlement, the mod intercepts your hiring actions:
 
+### Settlement-type tier gate
+Before manpower is even checked, the mod resolves the source settlement type of the volunteer board:
+- Villages use `VillageVolunteerTierMax` (default T2)
+- Towns use `TownVolunteerTierMax` (default T4)
+- Castles are ignored here because castle recruitment is handled by the separate castle recruitment system
+
+If a troop is above the relevant cap, recruitment is blocked immediately with a yellow volunteer-cap message. This applies to the single-click path, Recruit All, and the final confirm/cart path.
+
 ### Per-troop gate (single recruit)
 Before each troop hire, the mod checks:
 - How much manpower the pool has
@@ -198,9 +206,10 @@ Before the entire "Recruit All" action, the mod checks the full sequence of all 
 When you confirm a batch of troops you put in the "cart", the same sequence check is run again against what you've accumulated.
 
 ### UI feedback
+- Over-cap troops show greyed-out before you click them
 - Unaffordable troops show greyed-out (their `CanBeRecruited` flag is set false by AND-ing with vanilla's gate — never re-enabling what vanilla disabled for other reasons)
-- The Recruit All button is disabled if sequence would fail (AND-ed with vanilla's gate)
-- The Done button shows a tooltip with the blocker troop/pool/cost details
+- The Recruit All button is disabled if the tier cap or manpower sequence would fail (AND-ed with vanilla's gate)
+- The Done button shows a tooltip with the blocker troop and either tier-cap or manpower details
 
 ### Culture discount
 If your party leader shares culture with the recruitment settlement, a configurable discount (CultureCostPercent) applies.
@@ -209,13 +218,13 @@ If your party leader shares culture with the recruitment settlement, a configura
 
 ## 7. AI Recruitment Gate
 
-The mod patches the AI recruitment pipeline (`RecruitmentCampaignBehavior.ApplyInternal`, a private internal method). Before AI parties recruit at a settlement, the same `CanRecruitCountForPlayer` check is applied. 
+The mod patches the AI recruitment pipeline (`RecruitmentCampaignBehavior.ApplyInternal`, a private internal method). Before AI parties recruit at a settlement, the same settlement-type tier-cap check and `CanRecruitCountForPlayer` manpower check are applied.
 
-If the pool lacks manpower:
+If the recruit is blocked:
 - **Player context**: yellow on-screen message
 - **AI**: debug log (visible when AI logging is enabled in MCM)
 
-The AI sees the same resource constraints you do. A kingdom that has fought many battles and drained its pools will struggle to recruit new troops — a natural attrition mechanic.
+The AI sees the same resource constraints you do. A kingdom that has fought many battles and drained its pools will struggle to recruit new troops, and villages/towns will stop feeding it troops above their configured cap — a natural attrition mechanic.
 
 ---
 
@@ -774,7 +783,7 @@ All settings are in the Mod Configuration Menu. Key groups:
 | Regen | Per-type daily regen %, soft cap, stress floor, hard cap, min daily, castle min daily, castle supply chain toggle |
 | Regen Modifiers | Security/food/loyalty/siege/governor scales |
 | Depleted Emergency Regen | Enable toggle, threshold %, bonus at zero |
-| Recruitment Cost | Base cost per troop, culture discount |
+| Recruitment Cost | Base cost per troop, culture discount, village volunteer tier max, town volunteer tier max |
 | Castle Recruitment | Enable/disable; prisoner tier threshold; T4/T5/T6 days and gold costs; elite pool max, regen range, manpower cost; AI recruit toggle |
 | Combat Realism | Enable/disable tier survivability; enable/disable tier armor simulation |
 | Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 60); garrison discount toggle |

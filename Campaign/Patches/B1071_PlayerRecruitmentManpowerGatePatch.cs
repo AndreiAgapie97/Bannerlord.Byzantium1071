@@ -28,6 +28,22 @@ namespace Byzantium1071.Campaign.Patches
                 if (behavior == null || settlement == null || party == null)
                     return true;
 
+                if (B1071_RecruitmentTierGateHelper.TryGetTierGateBlock(
+                        settlement,
+                        troop.Character,
+                        out TextObject? settlementType,
+                        out int tierCap))
+                {
+                    TextObject tierMsg = B1071_RecruitmentTierGateHelper.BuildSingleRecruitBlockedMessage(
+                        settlement,
+                        troop.Character,
+                        settlementType!,
+                        tierCap);
+
+                    InformationManager.DisplayMessage(new InformationMessage(tierMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
+
                 if (behavior.CanRecruitCountForPlayer(
                         settlement,
                         party,
@@ -81,12 +97,30 @@ namespace Byzantium1071.Campaign.Patches
                         if (troop == null || troop.Character == null) continue;
                         if (troop.IsInCart || troop.IsTroopEmpty) continue;
                         if (!troop.PlayerHasEnoughRelation) continue;
+                        if (!troop.CanBeRecruited) continue;
                         requestedTroops.Add(troop.Character);
                     }
                 }
 
                 if (requestedTroops.Count == 0)
                     return true;
+
+                if (B1071_RecruitmentTierGateHelper.TryGetFirstTierGateBlock(
+                        settlement,
+                        requestedTroops,
+                        out CharacterObject? tierBlockedTroop,
+                        out TextObject? settlementType,
+                        out int tierCap))
+                {
+                    TextObject tierMsg = B1071_RecruitmentTierGateHelper.BuildRecruitAllBlockedMessage(
+                        settlement,
+                        tierBlockedTroop!,
+                        settlementType!,
+                        tierCap);
+
+                    InformationManager.DisplayMessage(new InformationMessage(tierMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
 
                 if (behavior.CanRecruitSequenceAllOrNothing(
                         settlement,
@@ -143,6 +177,23 @@ namespace Byzantium1071.Campaign.Patches
 
                 if (troopsInCart.Count == 0)
                     return true;
+
+                if (B1071_RecruitmentTierGateHelper.TryGetFirstTierGateBlock(
+                        settlement,
+                        troopsInCart,
+                        out CharacterObject? tierBlockedTroop,
+                        out TextObject? settlementType,
+                        out int tierCap))
+                {
+                    TextObject tierMsg = B1071_RecruitmentTierGateHelper.BuildConfirmBlockedMessage(
+                        settlement,
+                        tierBlockedTroop!,
+                        settlementType!,
+                        tierCap);
+
+                    InformationManager.DisplayMessage(new InformationMessage(tierMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
 
                 if (behavior.CanRecruitSequenceAllOrNothing(
                         settlement,

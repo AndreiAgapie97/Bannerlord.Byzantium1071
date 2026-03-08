@@ -2,6 +2,16 @@
 
 ## [0.2.7.2] — 2026-03-06
 
+### Feature — Tiered Volunteer Recruitment
+
+**Village and town volunteer boards can now enforce settlement-type troop tier caps with full player/AI parity.**
+
+- **Problem:** Manpower already limited how many volunteers could be hired, but not how advanced those volunteers could be. That left village and town recruiting too permissive for campaigns aiming at a stricter progression curve.
+- **Fix:** Village volunteer boards now respect `VillageVolunteerTierMax` (default T2) and town volunteer boards respect `TownVolunteerTierMax` (default T4).
+- **Parity:** The same helper now gates player single-click recruit, Recruit All, confirm-cart validation, recruitment UI state, and AI recruitment.
+- **Scope:** Castle elite recruitment is unchanged; this only affects vanilla village/town volunteer recruitment.
+- **Safety:** No SyncData changes outside normal MCM profile migration. Existing campaigns pick up defaults safely, and removing the mod simply removes the extra gate.
+
 ### Fix — Casualties Tab War Lifecycle and Kingdom Attribution
 
 **Casualties rows now track active wars correctly and disappear when the war ends.**
