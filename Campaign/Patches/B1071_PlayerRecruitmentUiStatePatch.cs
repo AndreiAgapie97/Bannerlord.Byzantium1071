@@ -16,6 +16,12 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(RecruitmentVM), "RefreshScreen")]
     public static class B1071_PlayerRecruitmentUiRefreshScreenPatch
     {
+        private static void Prefix()
+        {
+            try { B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(Settlement.CurrentSettlement); }
+            catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] UiRefreshScreenPatch prefix error: {ex}"); }
+        }
+
         private static void Postfix(RecruitmentVM __instance)
         {
             try { B1071_PlayerRecruitmentUiStateHelper.RefreshUiState(__instance); }
@@ -26,6 +32,12 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(RecruitmentVM), "RefreshPartyProperties")]
     public static class B1071_PlayerRecruitmentUiRefreshPartyPatch
     {
+        private static void Prefix()
+        {
+            try { B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(Settlement.CurrentSettlement); }
+            catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] UiRefreshPartyPatch prefix error: {ex}"); }
+        }
+
         private static void Postfix(RecruitmentVM __instance)
         {
             try { B1071_PlayerRecruitmentUiStateHelper.RefreshUiState(__instance); }

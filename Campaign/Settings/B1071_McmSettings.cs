@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 10;
+        internal const int LATEST_PROFILE_VERSION = 11;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -195,8 +195,17 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "tiered volunteer recruitment defaults applied (village T2, town T4). ";
             }
 
+            // ── Profile v11: re-pin tiered volunteer defaults after playtest churn ──
+            if (SettingsProfileVersion < 11)
+            {
+                VillageVolunteerTierMax = 2;
+                TownVolunteerTierMax = 4;
+
+                migrated += "tiered volunteer recruitment defaults re-pinned (village T2, town T4). ";
+            }
+
             // ── Future migrations go here ──
-            // if (SettingsProfileVersion < 10) { ... migrated += "..."; }
+            // if (SettingsProfileVersion < 12) { ... migrated += "..."; }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 

@@ -53,7 +53,7 @@ You don't need to press anything. Just start playing.
 
 > The hotkey is configurable in MCM: M (default), N, K, F9, F10, F11, or F12.
 
-### The 13 Tabs
+### The 14 Tabs
 
 Once the overlay is open, you'll see **tab buttons** along the top. Click any tab to switch views:
 
@@ -72,6 +72,7 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | 11 | **Clans** | Clan loyalty/instability within kingdoms |
 | 12 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
 | 13 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
+| 14 | **Casualties** | Cumulative battlefield deaths by kingdom pair since the feature became active — compare who has bled most across the campaign |
 
 ### Overlay Controls
 
@@ -143,7 +144,7 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 2. **Click "Recruit Troops"** in the settlement menu.
 3. The recruitment screen appears — volunteers are shown as normal.
 4. **Click a volunteer to recruit them.** Each recruitment deducts manpower from the settlement's pool.
-5. If a troop is above that settlement type's volunteer cap, the slot is blocked and a **yellow message** explains why: *"Volunteer cap: [Settlement] is a village/town; [Troop] is tier X, cap Y."*
+5. Slots above that settlement type's volunteer cap are **normalized out of the board** before you recruit. Villages should only show village-legal tiers; towns should only show town-legal tiers.
 6. If manpower is insufficient, the recruit button will be blocked and a **yellow message** explains why: *"Manpower: cannot recruit X — [Settlement] needs Y, only Z left."*
 
 ### What's Different from Vanilla
@@ -151,7 +152,8 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 - **Depleted pools = empty recruitment boards.** If a village's bound town/castle has 0 manpower, you'll find no volunteers.
 - **Village and town boards can have different tier caps.** By default, villages stop at T2 and towns stop at T4.
 - **The cap uses the source settlement type only.** A village still draws manpower from its bound town/castle pool, but the troop-tier cap is determined by the village board itself.
-- **Recruit All and Done are checked too.** If any selected troop breaks the cap, the batch is blocked and the Done hint explains which troop caused it.
+- **Illegal slots are sanitized at the roster level.** Existing over-cap volunteers are downgraded to the highest legal ancestor for that culture tree, or cleared if no safe ancestor exists, so they do not clog the board forever.
+- **Recruit All and Done are still checked too.** The button/path gates remain as a defensive fallback if another mod injects an over-cap troop into the screen.
 - **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
 

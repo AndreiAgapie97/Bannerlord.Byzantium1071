@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -453,6 +454,14 @@ namespace Byzantium1071.Campaign.Behaviors
             UI.B1071_OverlayController.Reset();
             CleanupInactiveCasualties();
 
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || settlement.IsHideout)
+                    continue;
+
+                B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(settlement);
+            }
+
             ResetDailyTelemetry();
             _telemetryLastForcedPeace = "None";
             _telemetryLastTruce = "None";
@@ -470,6 +479,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
+            if (settlement != null && !settlement.IsHideout)
+                B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(settlement);
+
             if (!Settings.ShowPlayerDebugMessages) return;
             if (hero != Hero.MainHero) return;
             if (settlement == null || settlement.IsHideout) return;
@@ -549,6 +561,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private void OnDailyTickSettlement(Settlement settlement)
         {
             if (settlement == null || settlement.IsHideout) return;
+
+            B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(settlement);
 
             // Regen ONLY on pool settlements (Town/Castle), not per village.
             Settlement? pool = GetPoolSettlement(settlement);
@@ -1322,14 +1336,21 @@ namespace Byzantium1071.Campaign.Behaviors
 
             foreach (var kvp in _casualtiesByPair)
             {
-                if (!IsKingdomPairWarActive(kvp.Key))
+                if (string.IsNullOrWhiteSpace(kvp.Key))
+                {
+                    _casualtiesCleanupKeysScratch.Add(kvp.Key);
+                    continue;
+                }
+
+                string[] parts = kvp.Key.Split('|');
+                if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[1]))
                     _casualtiesCleanupKeysScratch.Add(kvp.Key);
             }
 
             foreach (string key in _casualtiesCleanupKeysScratch)
             {
                 _casualtiesByPair.Remove(key);
-                B1071_VerboseLog.Log("Casualties", $"Removed inactive war entry: {key}.");
+                B1071_VerboseLog.Log("Casualties", $"Removed malformed historical entry: {key}.");
             }
         }
 
@@ -3203,16 +3224,6 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private void OnMakePeaceEvent(IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail)
         {
-            if (faction1 is Kingdom kingdom1 && faction2 is Kingdom kingdom2)
-            {
-                string pairKey = MakeKingdomPairKey(kingdom1, kingdom2);
-                if (!string.IsNullOrEmpty(pairKey) && _casualtiesByPair.Remove(pairKey))
-                {
-                    B1071_VerboseLog.Log("Casualties", $"Removed ended war entry after peace: {pairKey}.");
-                    UI.B1071_OverlayController.MarkCacheStale();
-                }
-            }
-
             if (!(Settings.EnableTruceEnforcement)) return;
             B1071_VerboseLog.Log("Diplomacy", $"Peace event ({detail}): {faction1?.Name} and {faction2?.Name}.");
             RegisterKingdomPairTruce(faction1, faction2);

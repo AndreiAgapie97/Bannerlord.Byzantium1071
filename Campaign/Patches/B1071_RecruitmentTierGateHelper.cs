@@ -1,6 +1,7 @@
 using Byzantium1071.Campaign.Settings;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -61,6 +62,38 @@ namespace Byzantium1071.Campaign.Patches
             }
 
             return false;
+        }
+
+        internal static bool SanitizeSettlementVolunteerTypes(Settlement? settlement)
+        {
+            if (settlement == null)
+                return false;
+
+            if (!TryGetTierCap(settlement, out _, out int tierCap))
+                return false;
+
+            bool changed = false;
+            foreach (Hero notable in settlement.Notables)
+            {
+                if (notable == null || !notable.IsAlive || notable.VolunteerTypes == null)
+                    continue;
+
+                for (int i = 0; i < notable.VolunteerTypes.Length; i++)
+                {
+                    CharacterObject volunteer = notable.VolunteerTypes[i];
+                    if (volunteer == null || volunteer.IsHero || volunteer.Tier <= tierCap)
+                        continue;
+
+                    CharacterObject? replacement = FindHighestAllowedAncestor(volunteer, tierCap);
+                    if (replacement == volunteer)
+                        continue;
+
+                    notable.VolunteerTypes[i] = replacement;
+                    changed = true;
+                }
+            }
+
+            return changed;
         }
 
         internal static TextObject BuildSingleRecruitBlockedMessage(
@@ -155,6 +188,96 @@ namespace Byzantium1071.Campaign.Patches
             }
 
             return false;
+        }
+
+        private static CharacterObject? FindHighestAllowedAncestor(CharacterObject troop, int tierCap)
+        {
+            if (troop == null)
+                return null;
+
+            if (troop.Tier <= tierCap)
+                return troop;
+
+            CultureObject culture = troop.Culture;
+            if (culture == null)
+                return null;
+
+            CharacterObject? best = null;
+            foreach (CharacterObject root in EnumerateVolunteerRoots(culture))
+            {
+                CharacterObject? candidate = FindHighestAllowedAncestorOnPath(root, troop, tierCap);
+                if (candidate != null && !candidate.IsHero && candidate.Tier <= tierCap)
+                {
+                    if (best == null || candidate.Tier > best.Tier)
+                        best = candidate;
+                }
+            }
+
+            return best;
+        }
+
+        private static IEnumerable<CharacterObject> EnumerateVolunteerRoots(CultureObject culture)
+        {
+            if (culture.BasicTroop != null)
+                yield return culture.BasicTroop;
+
+            if (culture.EliteBasicTroop != null && culture.EliteBasicTroop != culture.BasicTroop)
+                yield return culture.EliteBasicTroop;
+        }
+
+        private static CharacterObject? FindHighestAllowedAncestorOnPath(CharacterObject root, CharacterObject target, int tierCap)
+        {
+            var visited = new HashSet<CharacterObject>();
+            var parents = new Dictionary<CharacterObject, CharacterObject?>();
+            var queue = new Queue<CharacterObject>();
+
+            queue.Enqueue(root);
+            visited.Add(root);
+            parents[root] = null;
+
+            while (queue.Count > 0)
+            {
+                CharacterObject current = queue.Dequeue();
+                if (current == target)
+                    return SelectHighestAllowedFromParentChain(current, parents, tierCap);
+
+                if (current.UpgradeTargets == null)
+                    continue;
+
+                foreach (CharacterObject next in current.UpgradeTargets)
+                {
+                    if (next == null || visited.Contains(next))
+                        continue;
+
+                    visited.Add(next);
+                    parents[next] = current;
+                    queue.Enqueue(next);
+                }
+            }
+
+            return null;
+        }
+
+        private static CharacterObject? SelectHighestAllowedFromParentChain(
+            CharacterObject current,
+            Dictionary<CharacterObject, CharacterObject?> parents,
+            int tierCap)
+        {
+            CharacterObject? best = null;
+            CharacterObject? cursor = current;
+            while (cursor != null)
+            {
+                if (!cursor.IsHero && cursor.Tier <= tierCap)
+                {
+                    if (best == null || cursor.Tier > best.Tier)
+                        best = cursor;
+                }
+
+                parents.TryGetValue(cursor, out CharacterObject? parent);
+                cursor = parent;
+            }
+
+            return best;
         }
     }
 }

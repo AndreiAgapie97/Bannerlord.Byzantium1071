@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 0.2.6.1  
+**Version:** 0.2.7.2  
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.3.15)  
 **Mod ID:** `Byzantium1071`
 
@@ -189,7 +189,7 @@ Before manpower is even checked, the mod resolves the source settlement type of 
 - Towns use `TownVolunteerTierMax` (default T4)
 - Castles are ignored here because castle recruitment is handled by the separate castle recruitment system
 
-If a troop is above the relevant cap, recruitment is blocked immediately with a yellow volunteer-cap message. This applies to the single-click path, Recruit All, and the final confirm/cart path.
+If a troop is above the relevant cap, the volunteer roster is sanitized back down to the highest legal ancestor from that culture tree (or cleared if no safe ancestor exists). This prevents over-cap troops from occupying notable slots forever. The recruit-time gates still remain as a defensive fallback for injected or stale UI entries.
 
 ### Per-troop gate (single recruit)
 Before each troop hire, the mod checks:
@@ -206,7 +206,7 @@ Before the entire "Recruit All" action, the mod checks the full sequence of all 
 When you confirm a batch of troops you put in the "cart", the same sequence check is run again against what you've accumulated.
 
 ### UI feedback
-- Over-cap troops show greyed-out before you click them
+- Over-cap troops should normally not appear on the board at all; the roster is sanitized before daily use and before the recruitment VM refreshes
 - Unaffordable troops show greyed-out (their `CanBeRecruited` flag is set false by AND-ing with vanilla's gate — never re-enabling what vanilla disabled for other reasons)
 - The Recruit All button is disabled if the tier cap or manpower sequence would fail (AND-ed with vanilla's gate)
 - The Done button shows a tooltip with the blocker troop and either tier-cap or manpower details
@@ -730,7 +730,7 @@ Press **M** (or configured hotkey) to toggle the Byzantium 1071 Overlay — a ta
 
 ### Tabs
 
-All 13 tabs use a 5-column layout. Click any column header to sort; click again to reverse.
+All 14 tabs use a 5-column layout. Click any column header to sort; click again to reverse.
 
 | Tab | What it shows |
 |-----|---------------|
@@ -747,6 +747,7 @@ All 13 tabs use a 5-column layout. Click any column header to sort; click again 
 | **Clans** | Clan loyalty/defection risk and recruitment opportunity scores |
 | **Characters** | All live heroes and wanderers with approximate locations and relation symbol (♥ ▲ ● ▼ †) |
 | **Search** | Free-text search across heroes, settlements, armies, clans, kingdoms, and **trade good / food prices** at every town |
+| **Casualties** | Cumulative battlefield deaths by kingdom pair since the ledger became active, with total losses and kill ratio |
 
 ### Performance
 
