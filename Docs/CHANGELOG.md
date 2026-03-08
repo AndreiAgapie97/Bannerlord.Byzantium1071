@@ -2,6 +2,16 @@
 
 ## [0.2.7.2] — 2026-03-06
 
+### Fix — Casualties Tab War Lifecycle and Kingdom Attribution
+
+**Casualties rows now track active wars correctly and disappear when the war ends.**
+
+- **Problem 1:** Some Southern Empire wars were missing from the casualties tab because settlement defenders, militias, and garrisons could lack a usable `LeaderHero.Clan.Kingdom`, causing kingdom attribution to fail.
+- **Fix 1:** Casualties attribution now falls back to party/map-faction kingdom resolution, so siege defenders and other non-standard parties are counted safely.
+- **Problem 2:** Ended wars could remain visible in the casualties tab from persisted ledger data.
+- **Fix 2:** Casualty rows are now removed on peace, pruned on session launch and daily cleanup, filtered defensively on read, and the overlay is forced stale immediately after peace removal.
+- **Safety:** Save/load safe. Existing stale rows are cleaned automatically on next session launch, daily tick, or casualties-tab rebuild.
+
 ### Feature — Rebel Clan Renaming
 
 **Rescued rebel clans are now renamed from their settlement-based name to a leader-derived warband name.**

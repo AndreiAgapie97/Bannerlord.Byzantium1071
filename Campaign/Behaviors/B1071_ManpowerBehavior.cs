@@ -107,6 +107,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string> _savedCasualtiesKeys = new();
         private List<int> _savedCasualtiesKillsA = new();
         private List<int> _savedCasualtiesKillsB = new();
+        private List<string>? _casualtiesCleanupKeysScratch;
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
@@ -450,6 +451,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             Instance = this;
             UI.B1071_OverlayController.Reset();
+            CleanupInactiveCasualties();
 
             ResetDailyTelemetry();
             _telemetryLastForcedPeace = "None";
@@ -666,6 +668,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CleanupExpiredDelayedRecovery();
 
             CleanupExpiredTruces();
+            CleanupInactiveCasualties();
 
             if (Settings.EnableWarExhaustion)
             {
@@ -1279,6 +1282,55 @@ namespace Byzantium1071.Campaign.Behaviors
                 return string.Empty;
 
             return string.CompareOrdinal(idA, idB) <= 0 ? $"{idA}|{idB}" : $"{idB}|{idA}";
+        }
+
+        private static Kingdom? ResolveKingdomById(string kingdomId)
+        {
+            if (string.IsNullOrEmpty(kingdomId)) return null;
+            foreach (Kingdom kingdom in Kingdom.All)
+            {
+                if (kingdom != null && string.Equals(kingdom.StringId, kingdomId, StringComparison.Ordinal))
+                    return kingdom;
+            }
+            return null;
+        }
+
+        private static bool IsKingdomPairWarActive(string pairKey)
+        {
+            if (string.IsNullOrEmpty(pairKey)) return false;
+
+            string[] parts = pairKey.Split('|');
+            if (parts.Length != 2) return false;
+
+            Kingdom? kingdomA = ResolveKingdomById(parts[0]);
+            Kingdom? kingdomB = ResolveKingdomById(parts[1]);
+            if (kingdomA == null || kingdomB == null) return false;
+            if (kingdomA.IsEliminated || kingdomB.IsEliminated) return false;
+
+            return kingdomA.IsAtWarWith(kingdomB);
+        }
+
+        private void CleanupInactiveCasualties()
+        {
+            if (_casualtiesByPair.Count == 0)
+                return;
+
+            if (_casualtiesCleanupKeysScratch == null)
+                _casualtiesCleanupKeysScratch = new List<string>(_casualtiesByPair.Count);
+            else
+                _casualtiesCleanupKeysScratch.Clear();
+
+            foreach (var kvp in _casualtiesByPair)
+            {
+                if (!IsKingdomPairWarActive(kvp.Key))
+                    _casualtiesCleanupKeysScratch.Add(kvp.Key);
+            }
+
+            foreach (string key in _casualtiesCleanupKeysScratch)
+            {
+                _casualtiesByPair.Remove(key);
+                B1071_VerboseLog.Log("Casualties", $"Removed inactive war entry: {key}.");
+            }
         }
 
         private void CleanupExpiredTruces()
@@ -2900,6 +2952,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 foreach (Kingdom kDef in defenderKingdoms)
                 {
                     if (kAtk == kDef) continue;
+                    if (!kAtk.IsAtWarWith(kDef)) continue;
 
                     int defenderDeaths = SumDeathsForKingdom(mapEvent.DefenderSide, kDef);
                     Dictionary<Kingdom, int> attackerKillAllocations = AllocateByWeights(defenderDeaths, attackerWeights);
@@ -2933,6 +2986,8 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         internal List<(string pairKey, string nameA, string nameB, int killsA, int killsB)> GetCasualtiesLedger()
         {
+            CleanupInactiveCasualties();
+
             var result = new List<(string, string, string, int, int)>();
             foreach (var kvp in _casualtiesByPair)
             {
@@ -3148,6 +3203,16 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private void OnMakePeaceEvent(IFaction faction1, IFaction faction2, MakePeaceAction.MakePeaceDetail detail)
         {
+            if (faction1 is Kingdom kingdom1 && faction2 is Kingdom kingdom2)
+            {
+                string pairKey = MakeKingdomPairKey(kingdom1, kingdom2);
+                if (!string.IsNullOrEmpty(pairKey) && _casualtiesByPair.Remove(pairKey))
+                {
+                    B1071_VerboseLog.Log("Casualties", $"Removed ended war entry after peace: {pairKey}.");
+                    UI.B1071_OverlayController.MarkCacheStale();
+                }
+            }
+
             if (!(Settings.EnableTruceEnforcement)) return;
             B1071_VerboseLog.Log("Diplomacy", $"Peace event ({detail}): {faction1?.Name} and {faction2?.Name}.");
             RegisterKingdomPairTruce(faction1, faction2);

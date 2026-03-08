@@ -1027,5 +1027,15 @@ Keine Einträge gefunden." />
         <string id="b1071_mcm_h_mfwr_mp" text="Durchschnittliche Füllrate der Siedlungs-Manpower, bei oder unter der die Notfallumgehung aktiviert wird. Beispiel: 25 = Entlastung wird verfügbar, wenn die Reserven bei 25 % oder weniger liegen." />
         <string id="b1071_mcm_t_mfwr_wars" text="Notfall-Schwelle für Kriegsanzahl" />
         <string id="b1071_mcm_h_mfwr_wars" text="Mindestanzahl aktiver Königreich-gegen-Königreich-Kriege, die erforderlich ist, um die Mehrfronten-Entlastung zu aktivieren." />
+                <string id="b1071_tab_casualties" text="Verluste" />
+                <string id="b1071_overlay_empty_casualties" text="Verlustprotokoll&#10;Noch keine Königreichsschlachten erfasst." />
+                <string id="b1071_overlay_title_casualties" text="Verlustprotokoll ({COUNT} Kriege)" />
+                <string id="b1071_overlay_col_cas_pair" text="Königreichspaar" />
+                <string id="b1071_overlay_col_cas_killa" text="Tötungen A" />
+                <string id="b1071_overlay_col_cas_killb" text="Tötungen B" />
+                <string id="b1071_overlay_col_cas_total" text="Gesamt" />
+                <string id="b1071_overlay_col_cas_ratio" text="Verhältnis" />
+                <string id="b1071_overlay_totals_bloodiest" text="Blutigster Krieg: {PAIR}" />
+                <string id="b1071_overlay_total_entries_cas" text="Kriege: {COUNT}" />
   </strings>
 </base>

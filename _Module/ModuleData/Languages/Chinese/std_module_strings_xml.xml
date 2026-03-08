@@ -1016,5 +1016,15 @@
     <string id="b1071_mcm_h_mfwr_mp" text="当王国聚落平均兵源填充率低于或等于此值时，可触发紧急绕过。例如 25 表示兵源池平均仅剩 25% 或更低时生效。" />
     <string id="b1071_mcm_t_mfwr_wars" text="紧急战争数量阈值" />
     <string id="b1071_mcm_h_mfwr_wars" text="触发多线战争缓解所需的最低王国级战争数量。" />
+    <string id="b1071_tab_casualties" text="伤亡" />
+    <string id="b1071_overlay_empty_casualties" text="伤亡统计&#10;尚未记录王国间战斗。" />
+    <string id="b1071_overlay_title_casualties" text="伤亡统计（{COUNT}场战争）" />
+    <string id="b1071_overlay_col_cas_pair" text="王国对" />
+    <string id="b1071_overlay_col_cas_killa" text="A方击杀" />
+    <string id="b1071_overlay_col_cas_killb" text="B方击杀" />
+    <string id="b1071_overlay_col_cas_total" text="总计" />
+    <string id="b1071_overlay_col_cas_ratio" text="比率" />
+    <string id="b1071_overlay_totals_bloodiest" text="最血腥：{PAIR}" />
+    <string id="b1071_overlay_total_entries_cas" text="战争：{COUNT}" />
   </strings>
 </base>

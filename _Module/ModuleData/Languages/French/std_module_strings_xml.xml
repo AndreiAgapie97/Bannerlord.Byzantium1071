@@ -1016,5 +1016,15 @@
     <string id="b1071_mcm_h_mfwr_mp" text="Taux moyen de remplissage des réserves humaines des colonies à partir duquel le contournement d'urgence s'active. Exemple : 25 = l'allègement devient possible lorsque les réserves sont à 25 % ou moins." />
     <string id="b1071_mcm_t_mfwr_wars" text="Seuil de guerres d'urgence" />
     <string id="b1071_mcm_h_mfwr_wars" text="Nombre minimal de guerres royaume contre royaume actives requis pour activer l'allègement multi-front." />
+    <string id="b1071_tab_casualties" text="Pertes" />
+    <string id="b1071_overlay_empty_casualties" text="Registre des pertes&#10;Aucune bataille entre royaumes enregistrée pour le moment." />
+    <string id="b1071_overlay_title_casualties" text="Registre des pertes ({COUNT} guerres)" />
+    <string id="b1071_overlay_col_cas_pair" text="Paire de royaumes" />
+    <string id="b1071_overlay_col_cas_killa" text="Tués A" />
+    <string id="b1071_overlay_col_cas_killb" text="Tués B" />
+    <string id="b1071_overlay_col_cas_total" text="Total" />
+    <string id="b1071_overlay_col_cas_ratio" text="Ratio" />
+    <string id="b1071_overlay_totals_bloodiest" text="La plus sanglante : {PAIR}" />
+    <string id="b1071_overlay_total_entries_cas" text="Guerres : {COUNT}" />
   </strings>
 </base>
