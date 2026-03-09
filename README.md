@@ -24,6 +24,16 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ---
 
+## Submod integration
+
+Campaign++ exposes a **stable public API** for third-party submods. If you're building a submod that extends or depends on Campaign++:
+
+- **Read [SUBMOD_API.md](Docs/SUBMOD_API.md)** for the full public surface, safe integration patterns, and compatibility checklist.
+- **Key surfaces:** behavior instances (manpower, castle recruitment, clan survival, investment), settings read access, Harmony patch guidance, save/load safety
+- **Example:** Population growth modifiers, custom war effects, diplomacy rule extensions, cavalry rework with manpower tier scaling
+
+---
+
 ## Developer orientation
 
 - **Architecture style:** campaign behaviors own state and ticks; Harmony patches intercept vanilla model/action paths.
