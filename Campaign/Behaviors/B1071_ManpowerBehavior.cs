@@ -512,7 +512,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void OnUnitRecruitedFallback(CharacterObject troop, int amount)
         {
-            if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
+            if (!Settings.UseOnUnitRecruitedFallbackForPlayer)
+            {
+                return;
+            }
             if (troop == null || amount <= 0) return;
 
             // Skip if this is the AI recruitment we already handled in OnTroopRecruited.
@@ -532,14 +535,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 return;
             }
 
-            Settlement? playerSettlement = Hero.MainHero?.CurrentSettlement ?? MobileParty.MainParty?.CurrentSettlement;
-            if (playerSettlement == null || playerSettlement.IsHideout) return;
-
-            MobileParty? main = MobileParty.MainParty;
-            if (main != null)
-            {
-                ConsumeManpower(playerSettlement, main, troop, amount, isPlayer: true, context: "UnitRecruited");
-            }
+            // Player volunteer recruitment is consumed by B1071_PlayerRecruitmentOnDoneGatePatch
+            // after vanilla RecruitmentVM.OnDone commits the cart. OnUnitRecruited has no source
+            // context and also fires for prisoners, tavern mercenaries, and other non-volunteer hires.
+            B1071_VerboseLog.Log("Manpower", $"OnUnitRecruitedFallback: skipping player recruit {troop.Name} x{amount}; source handled by dedicated hooks.");
         }
 
         private void SeedAllPoolsIfNeeded()
@@ -722,13 +721,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 // WP5: Evaluate pressure bands (with hysteresis) for all kingdoms with exhaustion.
                 if (Settings.EnableDiplomacyPressureBands)
                 {
-                    foreach (Kingdom kingdom in Kingdom.All)
+                    var kingdoms = Kingdom.All;
+                    if (kingdoms != null)
                     {
-                        if (kingdom == null || kingdom.IsEliminated) continue;
-                        string kid = kingdom.StringId;
-                        if (string.IsNullOrEmpty(kid)) continue;
-                        float exh = GetWarExhaustion(kid);
-                        EvaluatePressureBand(kid, exh);
+                        foreach (Kingdom kingdom in kingdoms)
+                        {
+                            if (kingdom == null || kingdom.IsEliminated) continue;
+                            string kid = kingdom.StringId;
+                            if (string.IsNullOrEmpty(kid)) continue;
+                            float exh = GetWarExhaustion(kid);
+                            EvaluatePressureBand(kid, exh);
+                        }
                     }
                 }
 
@@ -2405,6 +2408,24 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             return true;
+        }
+
+        internal void ConsumePlayerVolunteerRecruitment(
+            Settlement recruitmentSettlement,
+            MobileParty party,
+            IEnumerable<KeyValuePair<CharacterObject, int>> recruitedCounts)
+        {
+            if (!Settings.UseOnUnitRecruitedFallbackForPlayer) return;
+            if (recruitmentSettlement == null || party == null || recruitedCounts == null) return;
+
+            foreach (KeyValuePair<CharacterObject, int> recruitedCount in recruitedCounts)
+            {
+                CharacterObject troop = recruitedCount.Key;
+                int amount = recruitedCount.Value;
+                if (troop == null || amount <= 0) continue;
+
+                ConsumeManpower(recruitmentSettlement, party, troop, amount, isPlayer: true, context: "RecruitmentVM.OnDone");
+            }
         }
 
         /// <summary>

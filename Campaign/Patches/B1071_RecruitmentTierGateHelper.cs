@@ -88,6 +88,14 @@ namespace Byzantium1071.Campaign.Patches
                     if (replacement == volunteer)
                         continue;
 
+                    // If no legal ancestor was found (null), the troop likely belongs to
+                    // a modded troop tree whose root is not culture.BasicTroop/EliteBasicTroop
+                    // (e.g., Retinues mod custom trees). Nulling the slot would permanently
+                    // destroy the volunteer. Instead, leave it in place — the recruit-time
+                    // tier gate still blocks the player/AI from actually recruiting it.
+                    if (replacement == null)
+                        continue;
+
                     notable.VolunteerTypes[i] = replacement;
                     changed = true;
                 }

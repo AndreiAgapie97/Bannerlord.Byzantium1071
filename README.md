@@ -8,7 +8,7 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ## At a glance
 
-- **Current version:** 0.2.7.2  
+- **Current version:** 1.0.0.1  
 - **Target game:** Bannerlord v1.3.15 (tested)  
 - **Module ID:** `Byzantium1071`
 

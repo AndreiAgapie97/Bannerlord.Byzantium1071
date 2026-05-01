@@ -1,4 +1,5 @@
 using Byzantium1071.Campaign.Settings;
+using Byzantium1071.Campaign.Patches;
 using Helpers;
 using System;
 using System.Collections.Generic;
@@ -83,6 +84,20 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, List<CharacterObject>> _cultureTroopCache
             = new Dictionary<string, List<CharacterObject>>();
 
+        /// <summary>
+        /// Cache: culture StringId → bucketed troop lists for diversified pool mode.
+        /// Keys: "t2_basic", "t2_noble", "t3t4", "t5plus".
+        /// </summary>
+        private readonly Dictionary<string, Dictionary<string, List<CharacterObject>>> _cultureDiversifiedCache
+            = new Dictionary<string, Dictionary<string, List<CharacterObject>>>();
+
+        /// <summary>
+        /// Cache: culture StringId → supplemental volunteer roots discovered from
+        /// the live volunteer boards of settlements using that culture.
+        /// </summary>
+        private readonly Dictionary<string, List<CharacterObject>> _cultureVolunteerRootCache
+            = new Dictionary<string, List<CharacterObject>>();
+
         // ── Save/load backing lists (flat format for IDataStore) ──────────────────
 
         private List<string>? _savedPrisonerCastleIds;
@@ -111,6 +126,20 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string>? _savedDepositorTroopIds;
         private List<string>? _savedDepositorHeroIds;
         private List<int>? _savedDepositorCounts;
+
+        /// <summary>
+        /// Tracks original depositor hero + party for delayed castle auto-enslavement Roguery XP.
+        /// Separate from economic depositor tracking because same-clan deposits still earn XP.
+        /// Structure: castleId → troopId → list of (heroStringId, partyStringId, count) FIFO entries.
+        /// </summary>
+        private Dictionary<string, Dictionary<string, List<(string HeroId, string PartyId, int Count)>>> _enslavementXpTracking
+            = new Dictionary<string, Dictionary<string, List<(string, string, int)>>>();
+
+        private List<string>? _savedXpCastleIds;
+        private List<string>? _savedXpTroopIds;
+        private List<string>? _savedXpHeroIds;
+        private List<string>? _savedXpPartyIds;
+        private List<int>? _savedXpCounts;
 
         // ── Hero lookup cache (G-6 optimisation) ──────────────────────────────────────────
 
@@ -291,6 +320,77 @@ namespace Byzantium1071.Campaign.Behaviors
                     heroList.Add((hId, cnt));
                 }
             }
+
+            // ── Delayed enslavement XP tracking: flatten Dict<castle, Dict<troop, List<(hero, party, count)>>> → 5 parallel lists ──
+            _savedXpCastleIds ??= new List<string>();
+            _savedXpTroopIds ??= new List<string>();
+            _savedXpHeroIds ??= new List<string>();
+            _savedXpPartyIds ??= new List<string>();
+            _savedXpCounts ??= new List<int>();
+
+            if (!dataStore.IsLoading)
+            {
+                _savedXpCastleIds.Clear();
+                _savedXpTroopIds.Clear();
+                _savedXpHeroIds.Clear();
+                _savedXpPartyIds.Clear();
+                _savedXpCounts.Clear();
+
+                foreach (var castleKvp in _enslavementXpTracking)
+                    foreach (var troopKvp in castleKvp.Value)
+                        foreach (var entry in troopKvp.Value)
+                        {
+                            if (entry.Count <= 0 || string.IsNullOrEmpty(entry.HeroId)) continue;
+                            _savedXpCastleIds.Add(castleKvp.Key);
+                            _savedXpTroopIds.Add(troopKvp.Key);
+                            _savedXpHeroIds.Add(entry.HeroId);
+                            _savedXpPartyIds.Add(entry.PartyId ?? string.Empty);
+                            _savedXpCounts.Add(entry.Count);
+                        }
+            }
+
+            dataStore.SyncData("b1071_cr_xpCastles", ref _savedXpCastleIds);
+            dataStore.SyncData("b1071_cr_xpTroops", ref _savedXpTroopIds);
+            dataStore.SyncData("b1071_cr_xpHeroes", ref _savedXpHeroIds);
+            dataStore.SyncData("b1071_cr_xpParties", ref _savedXpPartyIds);
+            dataStore.SyncData("b1071_cr_xpCounts", ref _savedXpCounts);
+
+            _savedXpCastleIds ??= new List<string>();
+            _savedXpTroopIds ??= new List<string>();
+            _savedXpHeroIds ??= new List<string>();
+            _savedXpPartyIds ??= new List<string>();
+            _savedXpCounts ??= new List<int>();
+
+            if (dataStore.IsLoading)
+            {
+                _enslavementXpTracking.Clear();
+                int nx = Math.Min(_savedXpCastleIds.Count,
+                         Math.Min(_savedXpTroopIds.Count,
+                         Math.Min(_savedXpHeroIds.Count,
+                         Math.Min(_savedXpPartyIds.Count, _savedXpCounts.Count))));
+                for (int i = 0; i < nx; i++)
+                {
+                    string cId = _savedXpCastleIds[i];
+                    string tId = _savedXpTroopIds[i];
+                    string hId = _savedXpHeroIds[i];
+                    string pId = _savedXpPartyIds[i] ?? string.Empty;
+                    int cnt = _savedXpCounts[i];
+                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)
+                        || string.IsNullOrEmpty(hId) || cnt <= 0) continue;
+
+                    if (!_enslavementXpTracking.TryGetValue(cId, out var troopDict))
+                    {
+                        troopDict = new Dictionary<string, List<(string, string, int)>>();
+                        _enslavementXpTracking[cId] = troopDict;
+                    }
+                    if (!troopDict.TryGetValue(tId, out var heroList))
+                    {
+                        heroList = new List<(string, string, int)>();
+                        troopDict[tId] = heroList;
+                    }
+                    heroList.Add((hId, pId, cnt));
+                }
+            }
         }
 
         // ── Session launch ────────────────────────────────────────────────────────
@@ -300,6 +400,8 @@ namespace Byzantium1071.Campaign.Behaviors
             Instance = this;
             _slaveItem = MBObjectManager.Instance.GetObject<ItemObject>("b1071_slave");
             _cultureTroopCache.Clear();
+            _cultureDiversifiedCache.Clear();
+            _cultureVolunteerRootCache.Clear();
 
             RegisterMenus(starter);
         }
@@ -359,8 +461,17 @@ namespace Byzantium1071.Campaign.Behaviors
             if (slavePrice <= 0) return;
 
             string castleId = settlement.StringId;
+            int totalCandidates = toEnslave.Sum(e => e.Number);
+            int totalProcessed = 0;
+            bool townBroke = false;
             int playerEnslavementGold = 0;
             int playerEnslavementCount = 0;
+            // Owner income tracker — covers same-clan, untracked, and holding-fee income
+            // when the player IS the castle owner (mirrors DistributeIncome owner share).
+            bool playerIsOwner = settlement.Owner == Hero.MainHero;
+            int playerOwnerGold = 0;
+            int playerOwnerCount = 0;
+            var rogueryXpByRecipient = new Dictionary<string, TroopRoster>(StringComparer.Ordinal);
 
             // The nearest town BUYS the slaves from the castle. Process one unit
             // at a time — only enslave what the town can afford. When the town's
@@ -371,10 +482,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     // Affordability gate: town must have gold to buy this slave.
                     int townGold = town.Gold;
-                    if (townGold < slavePrice) goto done; // Town broke — stop all enslavement.
+                    if (townGold < slavePrice) { townBroke = true; goto done; }
 
                     prisonRoster.RemoveTroop(element.Character, 1);
                     nearestTown.ItemRoster.AddToCounts(_slaveItem, 1);
+                    totalProcessed++;
+                    AccumulateDelayedEnslavementRogueryXp(castleId, element.Character, 1, rogueryXpByRecipient);
 
                     // Town pays for the slave. Income distributed to depositor/owner
                     // via GiveGoldAction.ApplyForSettlementToCharacter (deducts from
@@ -383,19 +496,49 @@ namespace Byzantium1071.Campaign.Behaviors
                     foreach (var (heroId, consumed) in depositorEntries)
                     {
                         int income = slavePrice * consumed;
-                        // Track player share before DistributeIncome pays it out.
+                        // Track player share as cross-clan depositor.
                         int playerShare = GetPlayerDepositorShare(settlement, heroId, income);
                         if (playerShare > 0)
                         {
                             playerEnslavementGold += playerShare;
                             playerEnslavementCount += consumed;
                         }
+
+                        // Track owner income when player owns this castle.
+                        if (playerIsOwner)
+                        {
+                            Hero? dep = string.IsNullOrEmpty(heroId) ? null : FindAliveHero(heroId);
+                            bool ownerGetsAll = dep == null
+                                || dep.Clan == settlement.OwnerClan
+                                || FactionManager.IsAtWarAgainstFaction(
+                                    dep.MapFaction, settlement.OwnerClan?.MapFaction);
+                            int ownerCut = ownerGetsAll
+                                ? income
+                                : (int)(income * (Settings.CastleHoldingFeePercent / 100f));
+                            playerOwnerGold += ownerCut;
+                            playerOwnerCount += consumed;
+                        }
+
                         DistributeIncome(settlement, heroId, income, nearestTown);
                     }
                 }
             }
             done:
 
+            AwardDelayedEnslavementRogueryXp(rogueryXpByRecipient, $"CastleAutoEnslave:{castleId}");
+
+            // ── Verbose log ───────────────────────────────────────────────────────
+            if (totalProcessed > 0 || townBroke)
+            {
+                B1071_VerboseLog.Log("CastleRecruitment",
+                    $"AutoEnslave {settlement.Name}: {totalProcessed}/{totalCandidates} " +
+                    $"T1-T{enslaveTierMax} prisoners -> {nearestTown.Name} @{slavePrice}d" +
+                    (townBroke ? $" (TOWN BROKE, {totalCandidates - totalProcessed} stay in dungeon)" : "") +
+                    $", town gold remaining: {town.Gold}.");
+            }
+
+            // ── Player notifications ──────────────────────────────────────────────
+            // 1. Cross-clan depositor share (player deposited at someone else's castle).
             if (playerEnslavementGold > 0)
             {
                 int sharePercent = 100 - Settings.CastleHoldingFeePercent;
@@ -409,6 +552,36 @@ namespace Byzantium1071.Campaign.Behaviors
                         .SetTextVariable("SHARE", sharePercent)
                         .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
+            }
+
+            // 2. Owner income (player owns this castle — covers same-clan, untracked,
+            //    hostile-forfeit, and cross-clan holding-fee income).
+            if (playerOwnerGold > 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_owner_enslave}{CASTLE} enslaved {COUNT} prisoner{PLURAL} — sold to {TOWN}, treasury income +{GOLD}{COIN}.")
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
+                        .SetTextVariable("COUNT", playerOwnerCount)
+                        .SetTextVariable("PLURAL", playerOwnerCount != 1 ? "s" : string.Empty)
+                        .SetTextVariable("TOWN", nearestTown.Name?.ToString() ?? "Town")
+                        .SetTextVariable("GOLD", playerOwnerGold)
+                        .SetTextVariable("COIN", "{=!}{GOLD_ICON}")
+                        .ToString(),
+                    new Color(0.3f, 0.7f, 0.3f))); // Green — income to player's own treasury.
+            }
+
+            // 3. Town ran out of gold — warn player so they understand why prisoners remain.
+            if (townBroke && playerIsOwner && totalCandidates > totalProcessed)
+            {
+                int stuck = totalCandidates - totalProcessed;
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_town_broke}{CASTLE}: {STUCK} low-tier prisoner{PLURAL} await enslavement — {TOWN} ran out of gold. They will be retried tomorrow.")
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "Castle")
+                        .SetTextVariable("STUCK", stuck)
+                        .SetTextVariable("PLURAL", stuck != 1 ? "s" : string.Empty)
+                        .SetTextVariable("TOWN", nearestTown.Name?.ToString() ?? "Town")
+                        .ToString(),
+                    new Color(0.9f, 0.7f, 0.1f))); // Yellow — warning, not error.
             }
         }
 
@@ -457,11 +630,23 @@ namespace Byzantium1071.Campaign.Behaviors
             CultureObject? culture = settlement.Culture;
             if (culture == null) return;
 
-            var cultureTroops = GetCultureEliteTroops(culture);
-            if (cultureTroops.Count == 0) return;
-
             string castleId = settlement.StringId;
-            int poolMax = Settings.CastleElitePoolMax;
+
+            // ── Compute effective pool cap ──
+            int poolMax;
+            if (Settings.EnableDynamicPoolCapacity)
+            {
+                float prosperity = settlement.Town?.Prosperity ?? 0f;
+                int wallLevel = settlement.Town?.GetWallLevel() ?? 0;
+                poolMax = Settings.CastleElitePoolBaseCapDynamic
+                    + (int)Math.Floor(prosperity * Settings.CastleElitePoolProsperityScaling)
+                    + wallLevel * Settings.CastleElitePoolWallBonus;
+                poolMax = Math.Max(1, poolMax);
+            }
+            else
+            {
+                poolMax = Settings.CastleElitePoolMax;
+            }
 
             if (!_elitePool.TryGetValue(castleId, out var poolDict))
             {
@@ -469,19 +654,50 @@ namespace Byzantium1071.Campaign.Behaviors
                 _elitePool[castleId] = poolDict;
             }
 
-            // Current total across all troop types at this castle.
             int currentTotal = poolDict.Values.Sum();
             if (currentTotal >= poolMax) return;
 
             // Determine how many troops to add today (based on castle prosperity).
-            float prosperity = settlement.Town?.Prosperity ?? 0f;
-            float prosperityRatio = Math.Min(1f, prosperity / Settings.ProsperityNormalizer);
+            float settleProsperity = settlement.Town?.Prosperity ?? 0f;
+            float prosperityRatio = Math.Min(1f, settleProsperity / Settings.ProsperityNormalizer);
             int regenMin = Settings.CastleEliteRegenMin;
             int regenMax = Settings.CastleEliteRegenMax;
             int toAdd = Math.Max(regenMin, (int)Math.Round(regenMin + (regenMax - regenMin) * prosperityRatio));
             toAdd = Math.Min(toAdd, poolMax - currentTotal);
 
             if (toAdd <= 0) return;
+
+            Dictionary<string, List<CharacterObject>>? diversifiedBuckets = null;
+            var weightedBuckets = new List<(string key, int weight)>();
+            int totalWeight = 0;
+            List<CharacterObject>? legacyTroops = null;
+
+            // Validate generation sources before draining manpower. MCM weights are allowed
+            // to be zero, and custom troop-tree setups can legitimately leave buckets empty.
+            if (Settings.EnableDiversifiedCastlePool)
+            {
+                diversifiedBuckets = GetCultureDiversifiedTroops(culture);
+                if (diversifiedBuckets.Count == 0) return;
+
+                if (diversifiedBuckets.TryGetValue("t2_basic", out var basicTierTwo) && basicTierTwo.Count > 0)
+                    weightedBuckets.Add(("t2_basic", Settings.CastlePoolT2LevyPercent));
+                if (diversifiedBuckets.TryGetValue("t2_noble", out var nobleTierTwo) && nobleTierTwo.Count > 0)
+                    weightedBuckets.Add(("t2_noble", Settings.CastlePoolT2NoblePercent));
+                if (diversifiedBuckets.TryGetValue("t3t4", out var midTier) && midTier.Count > 0)
+                    weightedBuckets.Add(("t3t4", Settings.CastlePoolT3T4Percent));
+                if (diversifiedBuckets.TryGetValue("t5plus", out var eliteTier) && eliteTier.Count > 0)
+                    weightedBuckets.Add(("t5plus", Settings.CastlePoolT5PlusPercent));
+
+                if (weightedBuckets.Count == 0) return;
+
+                totalWeight = weightedBuckets.Sum(weightedBucket => weightedBucket.weight);
+                if (totalWeight <= 0) return;
+            }
+            else
+            {
+                legacyTroops = GetCultureEliteTroops(culture);
+                if (legacyTroops.Count == 0) return;
+            }
 
             // Drain manpower for the elite regen.
             if (Settings.CastleRecruitDrainsManpower)
@@ -495,20 +711,49 @@ namespace Byzantium1071.Campaign.Behaviors
                     toAdd = Math.Min(toAdd, affordableFromManpower);
                     if (toAdd <= 0) return;
 
-                    // Consume manpower using the flat elite cost, aligned with affordability check.
                     manpowerBehavior.ConsumeManpowerFlat(settlement, toAdd * costPer);
                 }
             }
 
-            // Distribute toAdd troops randomly among the culture troop types.
-            for (int i = 0; i < toAdd; i++)
+            // ── Distribute troops ──
+            if (Settings.EnableDiversifiedCastlePool)
             {
-                var troop = cultureTroops[MBRandom.RandomInt(0, cultureTroops.Count)];
-                string troopId = troop.StringId;
-                if (poolDict.TryGetValue(troopId, out int cnt))
-                    poolDict[troopId] = cnt + 1;
-                else
-                    poolDict[troopId] = 1;
+                for (int i = 0; i < toAdd; i++)
+                {
+                    int roll = MBRandom.RandomInt(0, totalWeight);
+                    string chosenKey = weightedBuckets[weightedBuckets.Count - 1].key;
+                    int cumulative = 0;
+                    foreach (var (key, weight) in weightedBuckets)
+                    {
+                        cumulative += weight;
+                        if (roll < cumulative)
+                        {
+                            chosenKey = key;
+                            break;
+                        }
+                    }
+
+                    var troopList = diversifiedBuckets![chosenKey];
+                    var troop = troopList[MBRandom.RandomInt(0, troopList.Count)];
+                    string troopId = troop.StringId;
+                    if (poolDict.TryGetValue(troopId, out int cnt))
+                        poolDict[troopId] = cnt + 1;
+                    else
+                        poolDict[troopId] = 1;
+                }
+            }
+            else
+            {
+                // Legacy path: flat random from T4-T6.
+                for (int i = 0; i < toAdd; i++)
+                {
+                    var troop = legacyTroops![MBRandom.RandomInt(0, legacyTroops.Count)];
+                    string troopId = troop.StringId;
+                    if (poolDict.TryGetValue(troopId, out int cnt))
+                        poolDict[troopId] = cnt + 1;
+                    else
+                        poolDict[troopId] = 1;
+                }
             }
         }
 
@@ -550,7 +795,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (party == null || party == MobileParty.MainParty) continue;
                 if (party.LeaderHero == null) continue;
                 if (!party.IsLordParty) continue;
-                if (party.MapFaction == null || FactionManager.IsAtWarAgainstFaction(party.MapFaction, faction)) continue;
+                if (party.MapFaction == null) continue;
+                if (!CanFactionAccessCastleRecruitment(party.MapFaction, party.LeaderHero.Clan, settlement)) continue;
 
                 int partyLimit = party.Party.PartySizeLimit;
                 int partySize = party.MemberRoster.TotalManCount;
@@ -835,7 +1081,8 @@ namespace Byzantium1071.Campaign.Behaviors
         // ══════════════════════════════════════════════════════════════════════════
 
         /// <summary>
-        /// Returns all T4-T6 troops from a culture's basic + elite troop trees.
+        /// Returns all T4-T6 troops from a culture's basic + elite troop trees,
+        /// plus any extra volunteer trees currently present on same-culture settlements.
         /// Cached per session for performance.
         /// </summary>
         public List<CharacterObject> GetCultureEliteTroops(CultureObject culture)
@@ -851,22 +1098,136 @@ namespace Byzantium1071.Campaign.Behaviors
             // C-2: Use safe BFS traversal with visited-set guard instead of
             // CharacterHelper.GetTroopTree to prevent infinite loops from
             // circular UpgradeTargets in modded troop trees.
-            if (culture.BasicTroop != null)
-                CollectTroopsFromTree(culture.BasicTroop, result);
-
-            if (culture.EliteBasicTroop != null)
-                CollectTroopsFromTree(culture.EliteBasicTroop, result);
+            foreach (CharacterObject root in EnumerateCultureTroopRoots(culture))
+                CollectTroopsFromTree(root, result);
 
             var list = result.ToList();
             _cultureTroopCache[cultureId] = list;
             return list;
         }
 
+        private IEnumerable<CharacterObject> EnumerateCultureTroopRoots(CultureObject culture)
+        {
+            var seen = new HashSet<CharacterObject>();
+
+            if (culture.BasicTroop != null && seen.Add(culture.BasicTroop))
+                yield return culture.BasicTroop;
+
+            if (culture.EliteBasicTroop != null && seen.Add(culture.EliteBasicTroop))
+                yield return culture.EliteBasicTroop;
+
+            foreach (CharacterObject root in GetVolunteerBoardRoots(culture))
+            {
+                if (root != null && seen.Add(root))
+                    yield return root;
+            }
+        }
+
+        private List<CharacterObject> GetVolunteerBoardRoots(CultureObject culture)
+        {
+            string cultureId = culture.StringId;
+            if (_cultureVolunteerRootCache.TryGetValue(cultureId, out var cached))
+                return cached;
+
+            var observedTroops = new HashSet<CharacterObject>();
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null || settlement.Culture != culture) continue;
+
+                foreach (Hero notable in settlement.Notables)
+                {
+                    if (notable == null || !notable.IsAlive || notable.VolunteerTypes == null)
+                        continue;
+
+                    for (int i = 0; i < notable.VolunteerTypes.Length; i++)
+                    {
+                        CharacterObject troop = notable.VolunteerTypes[i];
+                        if (troop != null && !troop.IsHero)
+                            observedTroops.Add(troop);
+                    }
+                }
+            }
+
+            var discoveredRoots = new HashSet<CharacterObject>();
+            if (observedTroops.Count > 0)
+            {
+                var reverseMap = BuildReverseTroopTreeMap();
+                foreach (CharacterObject troop in observedTroops)
+                {
+                    foreach (CharacterObject root in FindTroopRoots(troop, reverseMap))
+                        discoveredRoots.Add(root);
+                }
+            }
+
+            var list = discoveredRoots.ToList();
+            _cultureVolunteerRootCache[cultureId] = list;
+            return list;
+        }
+
+        private static Dictionary<CharacterObject, List<CharacterObject>> BuildReverseTroopTreeMap()
+        {
+            var reverseMap = new Dictionary<CharacterObject, List<CharacterObject>>();
+
+            foreach (CharacterObject troop in MBObjectManager.Instance.GetObjectTypeList<CharacterObject>())
+            {
+                if (troop == null || troop.IsHero || troop.UpgradeTargets == null) continue;
+
+                foreach (CharacterObject target in troop.UpgradeTargets)
+                {
+                    if (target == null || target.IsHero) continue;
+
+                    if (!reverseMap.TryGetValue(target, out var parents))
+                    {
+                        parents = new List<CharacterObject>();
+                        reverseMap[target] = parents;
+                    }
+
+                    if (!parents.Contains(troop))
+                        parents.Add(troop);
+                }
+            }
+
+            return reverseMap;
+        }
+
+        private static IEnumerable<CharacterObject> FindTroopRoots(
+            CharacterObject troop,
+            Dictionary<CharacterObject, List<CharacterObject>> reverseMap)
+        {
+            var roots = new HashSet<CharacterObject>();
+            var visited = new HashSet<CharacterObject>();
+            var stack = new Stack<CharacterObject>();
+
+            stack.Push(troop);
+            visited.Add(troop);
+
+            while (stack.Count > 0)
+            {
+                CharacterObject current = stack.Pop();
+                if (!reverseMap.TryGetValue(current, out var parents) || parents.Count == 0)
+                {
+                    roots.Add(current);
+                    continue;
+                }
+
+                foreach (CharacterObject parent in parents)
+                {
+                    if (parent != null && !visited.Contains(parent))
+                    {
+                        visited.Add(parent);
+                        stack.Push(parent);
+                    }
+                }
+            }
+
+            return roots;
+        }
+
         /// <summary>
-        /// BFS traversal of the troop upgrade tree, collecting T4-T6 non-hero troops.
+        /// BFS traversal of the troop upgrade tree, collecting troops of minTier..maxTier (non-hero).
         /// Uses a visited set to guard against infinite loops from circular UpgradeTargets.
         /// </summary>
-        private static void CollectTroopsFromTree(CharacterObject root, HashSet<CharacterObject> result)
+        private static void CollectTroopsFromTree(CharacterObject root, HashSet<CharacterObject> result, int minTier = 4, int maxTier = 6)
         {
             var visited = new HashSet<CharacterObject>();
             var queue = new Queue<CharacterObject>();
@@ -877,7 +1238,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 CharacterObject current = queue.Dequeue();
 
-                if (current.Tier >= 4 && current.Tier <= 6 && !current.IsHero)
+                if (current.Tier >= minTier && current.Tier <= maxTier && !current.IsHero)
                     result.Add(current);
 
                 if (current.UpgradeTargets == null) continue;
@@ -886,11 +1247,101 @@ namespace Byzantium1071.Campaign.Behaviors
                     if (target != null && !visited.Contains(target))
                     {
                         visited.Add(target);
-                        if (target.Tier <= 6) // Don't traverse beyond T6
+                        if (target.Tier <= maxTier) // Don't traverse beyond max
                             queue.Enqueue(target);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns tier-bucketed troops for diversified castle pool mode.
+        /// Buckets: "t2_basic", "t2_noble", "t3t4", "t5plus".
+        /// Cached per session for performance.
+        /// </summary>
+        private Dictionary<string, List<CharacterObject>> GetCultureDiversifiedTroops(CultureObject culture)
+        {
+            if (culture == null) return new Dictionary<string, List<CharacterObject>>();
+
+            string cultureId = culture.StringId;
+            if (_cultureDiversifiedCache.TryGetValue(cultureId, out var cached))
+                return cached;
+
+            var t2BasicSet = new HashSet<CharacterObject>();
+            var t2NobleSet = new HashSet<CharacterObject>();
+            var t3t4Set = new HashSet<CharacterObject>();
+            var t5PlusSet = new HashSet<CharacterObject>();
+
+            foreach (CharacterObject root in EnumerateCultureTroopRoots(culture))
+            {
+                var rootTroops = new HashSet<CharacterObject>();
+                CollectTroopsFromTree(root, rootTroops, minTier: 2, maxTier: 6);
+
+                bool isNobleRoot = culture.EliteBasicTroop != null && root == culture.EliteBasicTroop;
+                foreach (CharacterObject troop in rootTroops)
+                {
+                    if (troop.Tier == 2)
+                    {
+                        if (isNobleRoot) t2NobleSet.Add(troop);
+                        else t2BasicSet.Add(troop);
+                    }
+                    else if (troop.Tier >= 3 && troop.Tier <= 4)
+                    {
+                        t3t4Set.Add(troop);
+                    }
+                    else if (troop.Tier >= 5)
+                    {
+                        t5PlusSet.Add(troop);
+                    }
+                }
+            }
+
+            var buckets = new Dictionary<string, List<CharacterObject>>
+            {
+                ["t2_basic"] = t2BasicSet.ToList(),
+                ["t2_noble"] = t2NobleSet.ToList(),
+                ["t3t4"] = t3t4Set.ToList(),
+                ["t5plus"] = t5PlusSet.ToList()
+            };
+
+            _cultureDiversifiedCache[cultureId] = buckets;
+            return buckets;
+        }
+
+        internal (int SettlementsScanned, int BoardsChanged, int CulturesRefreshed) RebuildRecruitmentSources()
+        {
+            int settlementsScanned = 0;
+            int boardsChanged = 0;
+
+            foreach (Settlement settlement in Settlement.All)
+            {
+                if (settlement == null) continue;
+
+                settlementsScanned++;
+                if (B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes(settlement))
+                    boardsChanged++;
+            }
+
+            _cultureTroopCache.Clear();
+            _cultureDiversifiedCache.Clear();
+            _cultureVolunteerRootCache.Clear();
+
+            var cultures = Settlement.All
+                .Where(s => s?.Culture != null)
+                .Select(s => s.Culture)
+                .Distinct()
+                .ToList();
+
+            foreach (CultureObject culture in cultures)
+            {
+                _ = GetCultureEliteTroops(culture);
+                _ = GetCultureDiversifiedTroops(culture);
+            }
+
+            B1071_VerboseLog.Log("CastleRecruitment",
+                $"Recruitment source rebuild: settlements={settlementsScanned}, normalized={boardsChanged}, cultures={cultures.Count}.");
+
+            return (settlementsScanned, boardsChanged, cultures.Count);
         }
 
         // ══════════════════════════════════════════════════════════════════════════
@@ -907,6 +1358,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
         public int GetGoldCostForTier(int tier)
         {
+            if (tier <= 2) return Settings.CastleRecruitGoldT2;
+            if (tier == 3) return Settings.CastleRecruitGoldT3;
             if (tier == 4) return Settings.CastleRecruitGoldT4;
             if (tier == 5) return Settings.CastleRecruitGoldT5;
             return Settings.CastleRecruitGoldT6;
@@ -1145,26 +1598,53 @@ namespace Byzantium1071.Campaign.Behaviors
         // ══════════════════════════════════════════════════════════════════════════
 
         /// <summary>
+        /// Whether a faction can recruit from a castle based on the
+        /// <see cref="B1071_McmSettings.CastleRecruitmentAccess"/> setting.
+        /// Used by both player and AI paths for parity.
+        ///   0 = Open (any non-hostile),
+        ///   1 = Kingdom only (same MapFaction),
+        ///   2 = Owner clan + ruler clan only.
+        /// </summary>
+        private static bool CanFactionAccessCastleRecruitment(IFaction? recruiterFaction, Clan? recruiterClan, Settlement castle)
+        {
+            if (castle == null || !castle.IsCastle) return false;
+            if (castle.OwnerClan == null) return false;
+
+            // Owner clan always has access.
+            if (recruiterClan == castle.OwnerClan) return true;
+
+            IFaction? castleFaction = castle.OwnerClan.MapFaction;
+            if (recruiterFaction == null || castleFaction == null) return false;
+
+            // Hostile — never allowed.
+            if (FactionManager.IsAtWarAgainstFaction(recruiterFaction, castleFaction))
+                return false;
+
+            int accessLevel = B1071_McmSettings.Instance?.CastleRecruitmentAccess ?? 1;
+            switch (accessLevel)
+            {
+                case 0: // Open — any non-hostile
+                    return true;
+                case 2: // Restricted — owner clan + ruler clan only
+                    if (castle.OwnerClan.Kingdom != null && recruiterClan != null
+                        && recruiterClan == castle.OwnerClan.Kingdom.RulingClan)
+                        return true;
+                    return false;
+                default: // 1 — Kingdom only (same MapFaction)
+                    return recruiterFaction == castleFaction;
+            }
+        }
+
+        /// <summary>
         /// Whether the player can recruit from this castle.
-        /// Must not be at war with the castle's owner.
+        /// Delegates to the shared faction access check for parity with AI.
         /// </summary>
         public static bool CanPlayerAccessCastle(Settlement castle)
         {
-            if (castle == null || !castle.IsCastle) return false;
-
-            // Player's own castle — always allowed.
-            if (castle.OwnerClan == Clan.PlayerClan) return true;
-
-            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-            IFaction? castleFaction = castle.OwnerClan?.MapFaction;
-            if (playerFaction == null || castleFaction == null) return false;
-
-            // Hostile — not allowed.
-            if (FactionManager.IsAtWarAgainstFaction(playerFaction, castleFaction))
-                return false;
-
-            // Neutral or allied — allowed.
-            return true;
+            return CanFactionAccessCastleRecruitment(
+                Clan.PlayerClan?.MapFaction,
+                Clan.PlayerClan,
+                castle);
         }
 
         // ══════════════════════════════════════════════════════════════════════════
@@ -1336,19 +1816,17 @@ namespace Byzantium1071.Campaign.Behaviors
             if (settlement == null || !settlement.IsCastle) return;
             if (donatedPrisoners == null) return;
 
-            // Skip own-clan castles — no economic difference for same-clan deposits.
+            string castleId = settlement.StringId;
+
             Hero? depositorHero = donatingParty?.LeaderHero;
             if (depositorHero == null) return;
-            if (depositorHero.Clan == settlement.OwnerClan) return;
-
-            string castleId = settlement.StringId;
-            string heroId = depositorHero.StringId;
 
             // Group the flattened roster (one entry per soldier) by troop type.
             var grouped = new Dictionary<string, (CharacterObject Troop, int Count)>();
             foreach (FlattenedTroopRosterElement element in donatedPrisoners)
             {
                 if (element.Troop == null || element.Troop.IsHero) continue;
+
                 string troopId = element.Troop.StringId;
                 if (grouped.TryGetValue(troopId, out var existing))
                     grouped[troopId] = (existing.Troop, existing.Count + 1);
@@ -1356,11 +1834,39 @@ namespace Byzantium1071.Campaign.Behaviors
                     grouped[troopId] = (element.Troop, 1);
             }
 
-            int totalDeposited = 0;
+            int totalDeposited = grouped.Values.Sum(v => v.Count);
+            if (totalDeposited <= 0) return;
+
+            string heroId = depositorHero.StringId;
+            string partyId = donatingParty?.StringId ?? string.Empty;
+
+            // Skip economic FIFO on own-clan castles, but keep Roguery XP tracking so
+            // delayed castle auto-enslavement still credits the original depositor.
+            if (depositorHero.Clan == settlement.OwnerClan)
+            {
+                foreach (var kvp in grouped)
+                    RecordEnslavementXpDeposit(castleId, heroId, partyId, kvp.Key, kvp.Value.Count);
+
+                if (donatingParty != null && donatingParty.IsMainParty)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TaleWorlds.Localization.TextObject(
+                            "{=b1071_cr_deposited_own}Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. Low-tier will be auto-enslaved; elites held for conversion.")
+                            .SetTextVariable("COUNT", totalDeposited)
+                            .SetTextVariable("PLURAL", totalDeposited > 1 ? "s" : string.Empty)
+                            .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "castle")
+                            .ToString(),
+                        new Color(0.3f, 0.7f, 0.9f)));
+                }
+
+                B1071_VerboseLog.Log("CastleRecruitment",
+                    $"Same-clan deposit at {settlement.Name}: {donatingParty?.Name} deposited {totalDeposited} prisoner(s) (XP tracked, no economic FIFO).");
+                return;
+            }
             foreach (var kvp in grouped)
             {
                 RecordDeposit(castleId, heroId, kvp.Key, kvp.Value.Count);
-                totalDeposited += kvp.Value.Count;
+                RecordEnslavementXpDeposit(castleId, heroId, partyId, kvp.Key, kvp.Value.Count);
             }
 
             // Show consignment notification to the player.
@@ -1384,9 +1890,14 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             Settlement? nearest = null;
             float bestDist = float.MaxValue;
+            var faction = origin.MapFaction;
             foreach (Town town in Town.AllTowns)
             {
                 if (town.Settlement == null) continue;
+                // Same-faction filter: slaves sold within the same kingdom only.
+                // Prevents economic exploit where frontier castles drain enemy town gold.
+                // If faction is null (destroyed faction edge case), skip filter entirely.
+                if (faction != null && town.Settlement.MapFaction != faction) continue;
                 float dist = (origin.GetPosition2D - town.Settlement.GetPosition2D).LengthSquared;
                 if (dist < bestDist) { bestDist = dist; nearest = town.Settlement; }
             }
@@ -1412,6 +1923,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 var staleDepKeys = depDict.Keys.Where(k => !currentTroopIds.Contains(k)).ToList();
                 foreach (var key in staleDepKeys) depDict.Remove(key);
                 if (depDict.Count == 0) _depositorTracking.Remove(castleId);
+            }
+
+            if (_enslavementXpTracking.TryGetValue(castleId, out var xpDict))
+            {
+                var staleXpKeys = xpDict.Keys.Where(k => !currentTroopIds.Contains(k)).ToList();
+                foreach (var key in staleXpKeys) xpDict.Remove(key);
+                if (xpDict.Count == 0) _enslavementXpTracking.Remove(castleId);
             }
         }
 
@@ -1444,6 +1962,30 @@ namespace Byzantium1071.Campaign.Behaviors
             // when the same hero deposits the same troop type at the same castle
             // interleaved with deposits from other heroes.
             heroList.Add((heroStringId, count));
+        }
+
+        public void RecordEnslavementXpDeposit(
+            string castleId,
+            string heroStringId,
+            string? partyStringId,
+            string troopStringId,
+            int count)
+        {
+            if (string.IsNullOrEmpty(castleId) || string.IsNullOrEmpty(heroStringId)
+                || string.IsNullOrEmpty(troopStringId) || count <= 0) return;
+
+            if (!_enslavementXpTracking.TryGetValue(castleId, out var troopDict))
+            {
+                troopDict = new Dictionary<string, List<(string, string, int)>>();
+                _enslavementXpTracking[castleId] = troopDict;
+            }
+            if (!troopDict.TryGetValue(troopStringId, out var heroList))
+            {
+                heroList = new List<(string, string, int)>();
+                troopDict[troopStringId] = heroList;
+            }
+
+            heroList.Add((heroStringId, partyStringId ?? string.Empty, count));
         }
 
         /// <summary>
@@ -1489,6 +2031,98 @@ namespace Byzantium1071.Campaign.Behaviors
             if (troopDict.Count == 0) _depositorTracking.Remove(castleId);
 
             return result;
+        }
+
+        private List<(string HeroId, string PartyId, int Consumed)> ConsumeEnslavementXpEntries(
+            string castleId, string troopStringId, int count)
+        {
+            var result = new List<(string, string, int)>();
+            if (count <= 0) return result;
+
+            if (!_enslavementXpTracking.TryGetValue(castleId, out var troopDict)
+                || !troopDict.TryGetValue(troopStringId, out var heroList)
+                || heroList.Count == 0)
+            {
+                return result;
+            }
+
+            int remaining = count;
+            while (remaining > 0 && heroList.Count > 0)
+            {
+                var (heroId, partyId, available) = heroList[0];
+                int take = Math.Min(remaining, available);
+                result.Add((heroId, partyId, take));
+                remaining -= take;
+
+                if (take >= available)
+                    heroList.RemoveAt(0);
+                else
+                    heroList[0] = (heroId, partyId, available - take);
+            }
+
+            if (heroList.Count == 0) troopDict.Remove(troopStringId);
+            if (troopDict.Count == 0) _enslavementXpTracking.Remove(castleId);
+
+            return result;
+        }
+
+        private void AccumulateDelayedEnslavementRogueryXp(
+            string castleId,
+            CharacterObject troop,
+            int count,
+            Dictionary<string, TroopRoster> rostersByRecipient)
+        {
+            var xpEntries = ConsumeEnslavementXpEntries(castleId, troop.StringId, count);
+            foreach (var (heroId, partyId, consumed) in xpEntries)
+            {
+                if (string.IsNullOrEmpty(heroId) || consumed <= 0) continue;
+
+                string key = $"{heroId}|{partyId}";
+                if (!rostersByRecipient.TryGetValue(key, out var roster))
+                {
+                    roster = TroopRoster.CreateDummyTroopRoster();
+                    rostersByRecipient[key] = roster;
+                }
+
+                roster.AddToCounts(troop, consumed);
+            }
+        }
+
+        private void AwardDelayedEnslavementRogueryXp(
+            Dictionary<string, TroopRoster> rostersByRecipient,
+            string context)
+        {
+            foreach (var kvp in rostersByRecipient)
+            {
+                string key = kvp.Key;
+                int separator = key.IndexOf('|');
+                string heroId = separator >= 0 ? key.Substring(0, separator) : key;
+                string partyId = separator >= 0 ? key.Substring(separator + 1) : string.Empty;
+
+                Hero? hero = FindAliveHero(heroId);
+                if (hero == null) continue;
+
+                MobileParty? party = FindActiveMobileParty(partyId, hero);
+                B1071_SlaveEconomyBehavior.AwardPrisonerProcessingRogueryXp(
+                    party,
+                    hero,
+                    kvp.Value,
+                    context);
+            }
+        }
+
+        private static MobileParty? FindActiveMobileParty(string? partyStringId, Hero? fallbackHero)
+        {
+            if (!string.IsNullOrEmpty(partyStringId))
+            {
+                foreach (MobileParty party in MobileParty.All)
+                {
+                    if (party != null && party.StringId == partyStringId)
+                        return party;
+                }
+            }
+
+            return fallbackHero?.PartyBelongedTo;
         }
 
         /// <summary>

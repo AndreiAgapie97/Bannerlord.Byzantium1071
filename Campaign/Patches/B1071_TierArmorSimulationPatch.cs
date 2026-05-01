@@ -64,7 +64,7 @@ namespace Byzantium1071.Campaign.Patches
     ///
     ///     Example, T6 knight, MaxHP=180, base damage=60:
     ///       Vanilla:   60/180 = 33% chance gate fires per hit
-    ///       With -30%: 42/180 = 23% chance gate fires per hit
+    ///       With -24%: 45/180 = 25% chance gate fires per hit
     ///
     ///   Stacked with FatalityPatch (+25% T6 survival when gate fires), T6
     ///   troops now benefit from BOTH fewer kill-check triggers AND better
@@ -80,7 +80,7 @@ namespace Byzantium1071.Campaign.Patches
     ///   changes.
     ///
     /// Damage reduction per tier (additive negative factor applied in Postfix):
-    ///   T1 = 0%   T2 = -6%   T3 = -12%   T4 = -18%   T5 = -24%   T6+ = -30%
+    ///   T1 = 0%   T2 = 0%   T3 = -6%   T4 = -12%   T5 = -18%   T6+ = -24%
     ///
     /// Heroes excluded: their path uses AddHeroDamage (HP accumulation), not
     /// the single-hit RandomInt gate. They are near-invincible by default.
@@ -121,11 +121,26 @@ namespace Byzantium1071.Campaign.Patches
                 if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EnableTierArmorSimulation) return;
 
                 int tier = Math.Max(1, struckTroop.Tier);
-                if (tier < 2) return; // T1 gets no reduction
 
-                // T2 = -6%, T3 = -12%, T4 = -18%, T5 = -24%, T6+ = -30%
-                float armorFactor = -(tier - 1) * 0.06f;
-                if (armorFactor < -0.30f) armorFactor = -0.30f;
+                float armorFactor = 0f;
+                switch (tier)
+                {
+                    case 3:
+                        armorFactor = -0.06f;
+                        break;
+                    case 4:
+                        armorFactor = -0.12f;
+                        break;
+                    case 5:
+                        armorFactor = -0.18f;
+                        break;
+                    default:
+                        if (tier >= 6)
+                            armorFactor = -0.24f;
+                        break;
+                }
+
+                if (armorFactor == 0f) return; // T1-T2 get no reduction.
 
                 __result.AddFactor(armorFactor, _label);
             }

@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 0.2.7.2 — Everything you need to know, step by step.*
+*Version 1.0.0.1 — Everything you need to know, step by step.*
 
 ---
 
@@ -33,7 +33,7 @@ Once the mod is installed and you start a campaign, the following happens behind
 - Every town market is **seeded with 0–10 slaves** so the slave economy is visible from day one.
 - Every castle begins generating an **elite troop pool** from its culture (up to 20 troops).
 - **Tier-exponential army costs** kick in — hiring, upgrading, and paying troops costs more at higher tiers.
-- **Garrison wages** are discounted to 60% of field rates automatically.
+- **Garrison wages** are discounted to 80% of field rates automatically.
 - Non-bandit minor factions receive a "**Frontier Revenue**" stipend so they don't go bankrupt.
 - AI lords will automatically deposit prisoners at castles they visit.
 - UI/localized strings follow your game language automatically (**English + Simplified Chinese + French + German** included).
@@ -170,7 +170,7 @@ Castles now have their own recruitment system with **three sources of troops**.
 3. In the castle menu, look for: **🏰 Recruit troops (X available, Y pending)**
 4. **Click it** to open the castle recruitment screen.
 5. You'll see two types of troops:
-   - **Elite pool troops** — culture-matching T4/T5/T6 troops generated daily from the castle's manpower.
+   - **Elite pool troops** — culture-matching troops generated daily from the castle's manpower. By default T4–T6; with **Diversified Pool** enabled, also includes T2 levy, T2 noble, and T3–T4 troops.
    - **Converted prisoners** — T4+ prisoners that have finished their holding period.
 6. **Click individual troops to recruit them.** Each has a gold cost.
 7. **"Recruit All" buttons** — each section (Elite and Ready) has a "Recruit All" button that recruits all available troops of that type in one click.
@@ -179,6 +179,8 @@ Castles now have their own recruitment system with **three sources of troops**.
 
 | Source | Gold Cost | Manpower Cost |
 |--------|-----------|---------------|
+| Elite pool T2 (diversified) | 150 | Drains castle MP |
+| Elite pool T3 (diversified) | 400 | Drains castle MP |
 | Elite pool T4 | 1,200 | Drains castle MP |
 | Elite pool T5 | 2,500 | Drains castle MP |
 | Elite pool T6 | 5,000 | Drains castle MP |
@@ -198,15 +200,50 @@ Castles now have their own recruitment system with **three sources of troops**.
 ### Prisoner Holding Periods
 
 Prisoners don't convert instantly. They must be held:
-- **T4**: 7 days
-- **T5**: 14 days
-- **T6+**: 21 days
+- **T4**: 10 days
+- **T5**: 21 days
+- **T6+**: 35 days
 
 The menu shows pending prisoners with their progress. Check back later when they're ready.
 
 ### Neutral Castle Access
 
 By default, the mod **removes the vanilla bribe/clan-tier restriction** for entering neutral castles. You can walk right in and recruit. This can be turned off in MCM (`Open castle access`).
+
+### Access Restriction (New)
+
+The `Castle recruitment access` MCM setting controls who can recruit from a castle:
+
+| Value | Who Can Recruit |
+|-------|----------------|
+| 0 — Open | Anyone non-hostile |
+| 1 — Same faction | Only lords in the castle owner's kingdom (default) |
+| 2 — Clan + ruler | Only lords in the castle owner's clan or the ruling clan of the owner's kingdom |
+
+This applies identically to **player and AI**. AI lords that fail the restriction check skip castle recruitment entirely.
+
+### Diversified Pool (New)
+
+When `Enable diversified castle pool` is ON, the elite pool regenerates a **weighted mix** of troop tiers instead of only T4–T6:
+
+| Bucket | Default % | Contains |
+|--------|-----------|----------|
+| T2 Levy | 45% | Basic infantry/ranged of the castle's culture |
+| T2 Noble | 35% | Noble-line T2 troops (cavalry path) |
+| T3–T4 | 15% | Mid-tier troops |
+| T5+ | 5% | Elite and champion troops |
+
+All percentages are configurable in MCM. The pool header in the recruitment screen changes to **"Castle Levy (Diversified Pool)"** when active.
+
+Castle pools also supplement the vanilla culture roots with any troop trees currently present on same-culture volunteer boards. If you add a troop-tree mod mid-save and castle pools look stale, open **Campaign++ Compatibility** and click **Rebuild Sources**.
+
+### Dynamic Pool Capacity (New)
+
+When `Enable dynamic pool capacity` is ON, the pool cap scales with the castle's development:
+
+**Pool Cap = Base + (Prosperity × Scaling) + (Wall Level × Bonus)**
+
+Defaults: Base 5, Prosperity scaling 0.005, Wall bonus 3. A castle with 2000 prosperity and level-3 walls would have cap = 5 + 10 + 9 = 24.
 
 ---
 
@@ -219,7 +256,8 @@ You can dump your prisoners at castles for processing — they'll be enslaved (T
 1. **Enter the castle.**
 2. **Go to the dungeon** (castle menu → Manage Prisoners).
 3. **Use vanilla's "Donate prisoners"** option — it works as normal.
-4. The mod automatically tracks you as the depositor.
+4. You'll see a confirmation: *"Deposited X prisoners at [Castle]. Low-tier will be auto-enslaved; elites held for conversion."*
+5. At your own castle, you receive **100% of enslavement income** (no holding fee since you own it).
 
 ### At Neutral Castles
 
@@ -235,13 +273,16 @@ You only receive **influence** for donating prisoners when the castle belongs to
 
 ### What Happens to Your Deposited Prisoners
 
-- **T1–T3 prisoners**: Auto-enslaved daily to the nearest town. You receive **70% of the gold** (castle owner keeps 30%).
+- **T1–T3 prisoners**: Auto-enslaved daily to the nearest town. At your own castle you receive **100% of the gold**. At another clan's castle, you receive **70%** (castle owner keeps 30% holding fee).
+- **Roguery XP stays with the original captor**: When those low-tier prisoners are eventually auto-enslaved at a castle, Campaign++ credits Roguery XP to the depositor who captured them, not to the castle owner.
 - **T4+ prisoners**: Held for conversion. Once ready, whoever recruits them pays gold. You receive your depositor's share.
 - **Garrison absorption**: The castle garrison absorbs 1 ready prisoner/day automatically. The castle owner pays you your share.
+- **Affordability gate**: The nearest town must have enough gold to buy each slave. If the town runs out, remaining prisoners stay in the dungeon until the next day.
 
-You'll see **blue notification messages** in the game log summarizing your income:
+You'll see notification messages in the game log:
 
-> *"⚔️ Consignment from [Castle]: +Xg (Y prisoners enslaved at [Town], your 70% depositor share)"*
+- **Green (owner income):** *"[Castle] enslaved X prisoners — sold to [Town], treasury income +Yg."* — appears when your own castle processes prisoners.
+- **Blue (depositor income):** *"Consignment from [Castle]: +Xg (Y prisoners enslaved at [Town], your 70% depositor share)."* — appears when another clan's castle processes your deposited prisoners.
 
 ---
 
@@ -335,15 +376,16 @@ There are **three ways** to acquire slaves:
 2. **Travel to any town.**
 3. In the town menu, look for: **⛓ Enslave prisoners (X T1–3 eligible)**
 4. **Click it** to enter the slave trade submenu.
-5. Click **"Enslave prisoners"** — this converts all your non-hero prisoners at **Tier 3 or below** into Slave trade goods (1:1). Heroes and T4+ prisoners are never enslaved.
-6. A gold notification confirms: *"⛓ Enslaved X T1–3 prisoners. Slave goods in inventory: Y. Open the Trade screen to sell them to the market."*
+5. Click **"Enslave prisoners"** — by default this converts all your non-hero prisoners at **Tier 3 or below** into Slave trade goods (1:1). Heroes and T4+ prisoners are never enslaved.
+   - **Selection UI (new):** If `Enable slave conversion selection` is ON in MCM → Slave Economy, clicking enslave opens a **selection screen** where you pick exactly which prisoners to convert (useful with mods like Lowborn that add valuable low-tier troops). Use +/− buttons or Select All / Deselect All.
+6. A gold notification confirms: *"⛓ Enslaved X T1–3 prisoners. Slave goods in inventory: Y. Open the Trade screen to sell them to the market."* By default, the action also grants **Roguery XP matching vanilla prisoner sales**.
 
 > **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they become elite recruits after a waiting period) or ransom them at the town tavern.
 
 > **Tip:** The menu clearly shows how many prisoners are eligible (T1–3) and how many T4+ are kept. If you only have T4+ prisoners, the option appears greyed out with a tooltip explaining why.
 
 #### Method 3: Automatic (AI Lords)
-When AI lords enter a town, their T1–3 prisoners are automatically enslaved into the town market as slave goods via a Harmony Prefix that runs before vanilla's prisoner sell handler. The town pays the lord the current slave market price for each enslaved prisoner (gold is deducted from town treasury). If the town runs out of gold, remaining prisoners fall through to vanilla sell behavior. T4+ prisoners are left for vanilla behavior (ransomed at the tavern) or deposited at castles for recruitment conversion. This happens in the background — you'll see the slave count in town markets growing over time. The tier cap is the same for both player and AI (`CastlePrisonerAutoEnslaveTierMax` MCM setting, default 3).
+When AI lords enter a town, their T1–3 prisoners are automatically enslaved into the town market as slave goods via a Harmony Prefix that runs before vanilla's prisoner sell handler. The town pays the lord the current slave market price for each enslaved prisoner (gold is deducted from town treasury). If the town runs out of gold, remaining prisoners fall through to vanilla sell behavior. T4+ prisoners are left for vanilla behavior (ransomed at the tavern) or deposited at castles for recruitment conversion. This happens in the background — you'll see the slave count in town markets growing over time. The tier cap is the same for both player and AI (`CastlePrisonerAutoEnslaveTierMax` MCM setting, default 3), and the same Roguery XP rules apply there too.
 
 ### How to Sell Slaves
 
@@ -493,9 +535,9 @@ The mod makes higher-tier troops significantly more expensive:
 |-----------|-------------|
 | **Hire & upgrade** | Tier-exponential scaling (configurable: Vanilla / Light / Moderate / Severe) |
 | **Daily wages** | Same — higher tiers cost more to maintain |
-| **Garrison wages** | Discounted to **60% of field rates** (garrisons are cheaper to maintain) |
+| **Garrison wages** | Discounted to **80% of field rates** (garrisons are cheaper to maintain) |
 
-Default preset is **Moderate** for both hire costs and wages.
+Default preset is **Moderate** for hire and upgrade costs, and **Severe** for daily wages.
 
 ### Tier Survivability
 
@@ -504,11 +546,11 @@ Higher-tier troops are more likely to **survive autoresolve battles** as wounded
 | Tier | Survival Bonus | Damage Reduction |
 |------|---------------|-----------------|
 | T1 | +0% | 0% |
-| T2 | +5% | -6% |
-| T3 | +10% | -12% |
-| T4 | +15% | -18% |
-| T5 | +20% | -24% |
-| T6 | +25% | -30% |
+| T2 | +0% | 0% |
+| T3 | +5% | -6% |
+| T4 | +10% | -12% |
+| T5 | +15% | -18% |
+| T6 | +20% | -24% |
 
 This means your expensive elite troops are **less likely to die** in autoresolve — they're worth the investment.
 
@@ -554,6 +596,8 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Enable multi-front war relief | Diplomacy | ON | Lets a kingdom in true multi-front collapse seek peace earlier instead of waiting the full minimum |
 | Hotkey (0-6) | Overlay | 0 (M key) | Change the overlay toggle key |
 | Hire & upgrade cost preset | Army Economics | 2 (Moderate) | 0=Vanilla, 1=Light, 2=Moderate, 3=Severe |
+| Daily wage preset | Army Economics | 3 (Severe) | 0=Vanilla, 1=Light, 2=Moderate, 3=Severe |
+| Garrison wage % of field | Army Economics | 80 | Garrisons pay 80% of field wages (20% discount) |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
 | Slave cap per prosperity | Slave Economy | 0.03 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
@@ -649,6 +693,7 @@ At the top of the **Campaign++ Compatibility** MCM tab, the **Summary** group sh
 | **Core game systems** | Whether the food/volunteer/militia/prosperity models are intact (only meaningful after loading a campaign). |
 | **Tip** | Reminds you that loading a campaign triggers the full report and popup. |
 | **Open Full Report** | Re-opens the popup at any time. |
+| **Rebuild Sources** | Re-scans volunteer boards and refreshes castle recruitment caches after troop-tree mods change mid-save. |
 
 > **The "Report status" row is the quickest way to know if the MCM tab is showing fresh data.** If it says Partial, load any campaign and check back.
 
@@ -664,6 +709,24 @@ The MCM tab also shows a **Core Game Systems** section that checks whether any o
 ### Lazy-Loading Mods
 
 Some mods (like RBM) apply their Harmony patches at campaign load rather than at startup. Campaign++ detects these with a second scan that runs when a campaign is loaded — so even mods that patch lazily will appear in your report after you load a campaign.
+
+---
+
+## 15b. Known Mod Interactions
+
+Some third-party mods have specific interactions with Campaign++ systems. These are not bugs in Campaign++ but are documented here so you know what to expect.
+
+### Realms of Thrones (ROT)
+
+ROT's `HeroSpawnCampaignBehaviorPatches` may crash with a null reference when **Clan Survival (Protect Eliminated Clans)** is enabled. ROT assumes certain data exists on all clans, but clans rescued by Campaign++'s clan survival system may not have that data.
+
+**Workaround:** Disable **Protect Eliminated Clans** in MCM → Clan Survival, or report the null-check issue to the ROT mod author.
+
+### Retinues / Custom Troop Tree Mods
+
+Mods that add custom troop trees outside the vanilla culture tree (e.g. Retinues) are compatible with Campaign++. The tier cap system will leave custom-tree troops untouched on the volunteer board if they cannot be traced back to the culture's basic or elite root troop.
+
+If you add or remove one of these mods mid-save, use **Campaign++ Compatibility → Rebuild Sources** to re-scan volunteer boards and refresh the castle recruitment culture caches.
 
 ---
 

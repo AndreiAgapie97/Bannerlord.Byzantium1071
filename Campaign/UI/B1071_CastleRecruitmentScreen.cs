@@ -22,6 +22,13 @@ namespace Byzantium1071.Campaign.UI
         private GauntletLayer? _gauntletLayer;
         private B1071_CastleRecruitmentVM? _viewModel;
 
+        /// <summary>
+        /// True when this instance successfully initialised its Gauntlet layer.
+        /// If the constructor catches an exception and calls Cleanup(),
+        /// the layer is nulled out and IsAlive becomes false.
+        /// </summary>
+        public bool IsAlive => _gauntletLayer != null;
+
         private B1071_CastleRecruitmentScreen(ScreenBase parentScreen, Settlement castle)
         {
             _parentScreen = parentScreen;
@@ -79,6 +86,10 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         public static void OpenScreen(Settlement castle)
         {
+            // If a previous instance died (constructor exception → Cleanup), clear it.
+            if (_current != null && !_current.IsAlive)
+                _current = null;
+
             if (_current != null) return; // Already open.
 
             var screen = ScreenManager.TopScreen;
@@ -90,6 +101,10 @@ namespace Byzantium1071.Campaign.UI
             }
 
             _current = new B1071_CastleRecruitmentScreen(screen, castle);
+
+            // If construction failed, don't leave a dead singleton blocking future opens.
+            if (!_current.IsAlive)
+                _current = null;
         }
     }
 }

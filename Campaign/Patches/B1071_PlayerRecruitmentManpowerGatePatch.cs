@@ -154,8 +154,24 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(RecruitmentVM), "OnDone")]
     public static class B1071_PlayerRecruitmentOnDoneGatePatch
     {
-        private static bool Prefix(RecruitmentVM __instance)
+        private sealed class PlayerRecruitmentOnDoneState
         {
+            internal PlayerRecruitmentOnDoneState(Settlement settlement, MobileParty party)
+            {
+                Settlement = settlement;
+                Party = party;
+            }
+
+            internal Settlement Settlement { get; }
+            internal MobileParty Party { get; }
+            internal Dictionary<CharacterObject, int> RequestedCounts { get; } = new Dictionary<CharacterObject, int>();
+            internal Dictionary<CharacterObject, int> MemberCountsBefore { get; } = new Dictionary<CharacterObject, int>();
+        }
+
+        private static bool Prefix(RecruitmentVM __instance, out PlayerRecruitmentOnDoneState? __state)
+        {
+            __state = null;
+
             try
             {
                 if (__instance == null)
@@ -204,6 +220,7 @@ namespace Byzantium1071.Campaign.Patches
                         out int availableBefore,
                         out Settlement? pool))
                 {
+                    __state = CaptureState(settlement, party, troopsInCart);
                     return true;
                 }
 
@@ -219,6 +236,64 @@ namespace Byzantium1071.Campaign.Patches
                 return false;
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] PlayerRecruitmentOnDoneGatePatch error: {ex}"); return true; }
+        }
+
+        private static void Postfix(PlayerRecruitmentOnDoneState? __state)
+        {
+            try
+            {
+                if (__state == null)
+                    return;
+
+                B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+                if (behavior == null)
+                    return;
+
+                var recruitedCounts = new Dictionary<CharacterObject, int>();
+                foreach (KeyValuePair<CharacterObject, int> requestedCount in __state.RequestedCounts)
+                {
+                    CharacterObject troop = requestedCount.Key;
+                    int requestedAmount = requestedCount.Value;
+                    if (troop == null || requestedAmount <= 0)
+                        continue;
+
+                    int before = __state.MemberCountsBefore.TryGetValue(troop, out int storedBefore) ? storedBefore : 0;
+                    int after = __state.Party.MemberRoster.GetTroopCount(troop);
+                    int added = Math.Min(requestedAmount, Math.Max(0, after - before));
+                    if (added <= 0)
+                        continue;
+
+                    recruitedCounts[troop] = added;
+                }
+
+                if (recruitedCounts.Count > 0)
+                    behavior.ConsumePlayerVolunteerRecruitment(__state.Settlement, __state.Party, recruitedCounts);
+            }
+            catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] PlayerRecruitmentOnDoneGatePatch postfix error: {ex}"); }
+        }
+
+        private static PlayerRecruitmentOnDoneState CaptureState(
+            Settlement settlement,
+            MobileParty party,
+            IEnumerable<CharacterObject> troopsInCart)
+        {
+            var state = new PlayerRecruitmentOnDoneState(settlement, party);
+
+            foreach (CharacterObject troop in troopsInCart)
+            {
+                if (troop == null)
+                    continue;
+
+                if (state.RequestedCounts.TryGetValue(troop, out int count))
+                    state.RequestedCounts[troop] = count + 1;
+                else
+                    state.RequestedCounts[troop] = 1;
+
+                if (!state.MemberCountsBefore.ContainsKey(troop))
+                    state.MemberCountsBefore[troop] = party.MemberRoster.GetTroopCount(troop);
+            }
+
+            return state;
         }
     }
 }

@@ -1,8 +1,10 @@
 using Byzantium1071.Campaign.Settings;
+using Byzantium1071.Campaign.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.ObjectSystem;
@@ -686,28 +688,54 @@ namespace Byzantium1071.Campaign.Behaviors
             MobileParty? party = MobileParty.MainParty;
             if (_slaveItem == null || party == null) return;
 
-            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
-            int highTierBefore = CountAllNonHeroPrisoners() - CountEnslavablePrisoners();
-            int converted = ConvertPrisonersToSlaves(party);
+            // When selection UI is enabled, open the selection screen instead of bulk-converting.
+            if (Settings.EnableSlaveConversionSelection)
+            {
+                B1071_SlaveConversionScreen.OpenScreen(selections =>
+                {
+                    var (converted, soldRoster) = ConvertSelectedPrisonersToSlaves(party, selections);
+                    if (converted > 0)
+                    {
+                        ShowEnslaveResult(party, converted);
+                        AwardPrisonerProcessingRogueryXp(party, Hero.MainHero, soldRoster, "TownSelection");
+                    }
+                    GameMenu.SwitchToMenu("b1071_slave_trade_menu");
+                });
+                return;
+            }
+
+            // Legacy bulk path (selection UI disabled).
+            var (converted, soldRoster) = ConvertPrisonersToSlaves(party);
             if (converted > 0)
             {
-                string keptNote = highTierBefore > 0
-                    ? new TextObject("{=b1071_slave_enslave_kept} ({COUNT} T{TIER}+ kept - take to castle or ransom)")
-                        .SetTextVariable("COUNT", highTierBefore)
-                        .SetTextVariable("TIER", maxTier + 1)
-                        .ToString()
-                    : "";
-                InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_slave_enslaved_msg}Enslaved {COUNT} T1-{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
-                        .SetTextVariable("COUNT", converted)
-                        .SetTextVariable("MAXTIER", maxTier)
-                        .SetTextVariable("PLURAL", converted != 1 ? "s" : string.Empty)
-                        .SetTextVariable("KEPT", keptNote)
-                        .SetTextVariable("INV", party.ItemRoster.GetItemNumber(_slaveItem))
-                        .ToString(),
-                    new Color(0.83f, 0.67f, 0.05f)));
+                ShowEnslaveResult(party, converted);
+                AwardPrisonerProcessingRogueryXp(party, Hero.MainHero, soldRoster, "TownBulk");
             }
             GameMenu.SwitchToMenu("b1071_slave_trade_menu");
+        }
+
+        private void ShowEnslaveResult(MobileParty party, int converted)
+        {
+            int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
+            // Count only T4+ (non-enslavable) prisoners remaining.
+            // Using CountAll - CountEnslavable ensures that unselected T1-T3
+            // prisoners (from the selection UI) are not mis-reported as T4+.
+            int highTierAfter = CountAllNonHeroPrisoners() - CountEnslavablePrisoners();
+            string keptNote = highTierAfter > 0
+                ? new TextObject("{=b1071_slave_enslave_kept} ({COUNT} T{TIER}+ kept - take to castle or ransom)")
+                    .SetTextVariable("COUNT", highTierAfter)
+                    .SetTextVariable("TIER", maxTier + 1)
+                    .ToString()
+                : "";
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TextObject("{=b1071_slave_enslaved_msg}Enslaved {COUNT} T1-{MAXTIER} prisoner{PLURAL}.{KEPT} Slave goods in inventory: {INV}. Open the Trade screen to sell them to the market.")
+                    .SetTextVariable("COUNT", converted)
+                    .SetTextVariable("MAXTIER", maxTier)
+                    .SetTextVariable("PLURAL", converted != 1 ? "s" : string.Empty)
+                    .SetTextVariable("KEPT", keptNote)
+                    .SetTextVariable("INV", party.ItemRoster.GetItemNumber(_slaveItem))
+                    .ToString(),
+                new Color(0.83f, 0.67f, 0.05f)));
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────────
@@ -751,14 +779,66 @@ namespace Byzantium1071.Campaign.Behaviors
                ? (MobileParty.MainParty?.ItemRoster?.GetItemNumber(_slaveItem) ?? 0)
                : 0;
 
+        internal static float CalculateVanillaPrisonerSellRogueryXp(TroopRoster prisonerRoster)
+        {
+            if (prisonerRoster == null || prisonerRoster.Count <= 0) return 0f;
+
+            int tierSum = 0;
+            foreach (TroopRosterElement element in prisonerRoster.GetTroopRoster())
+            {
+                if (element.Character == null || element.Number <= 0) continue;
+                tierSum += element.Character.Tier * element.Number;
+            }
+
+            return tierSum * 2f;
+        }
+
+        internal static void AwardPrisonerProcessingRogueryXp(
+            MobileParty? sourceParty,
+            Hero? fallbackHero,
+            TroopRoster prisonerRoster,
+            string context)
+        {
+            if (prisonerRoster == null || prisonerRoster.Count <= 0) return;
+
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+            if (!settings.EnableSlaveEconomy || !settings.EnableEnslavementRogueryXp) return;
+
+            float multiplier = Math.Max(0f, settings.EnslavementRogueryXpMultiplier);
+            if (multiplier <= 0f) return;
+
+            Hero? partyRecipient = sourceParty?.GetEffectiveRoleHolder(PartyRole.PartyLeader);
+            bool partyRecipientMatchesFallback = fallbackHero == null || partyRecipient == fallbackHero;
+            if (sourceParty != null && partyRecipient != null
+                && partyRecipientMatchesFallback
+                && Math.Abs(multiplier - 1f) < 0.001f)
+            {
+                SkillLevelingManager.OnPrisonerSell(sourceParty, in prisonerRoster);
+                B1071_VerboseLog.Log("SlaveEconomy",
+                    $"Enslavement Roguery XP ({context}): vanilla prisoner-sell hook for {partyRecipient.Name} using party {sourceParty.Name}.");
+                return;
+            }
+
+            Hero? recipient = fallbackHero ?? partyRecipient;
+            if (recipient == null || recipient.IsDead) return;
+
+            float xp = CalculateVanillaPrisonerSellRogueryXp(prisonerRoster) * multiplier;
+            if (xp <= 0f) return;
+
+            recipient.AddSkillXp(DefaultSkills.Roguery, xp);
+            B1071_VerboseLog.Log("SlaveEconomy",
+                $"Enslavement Roguery XP ({context}): fallback {recipient.Name} +{xp:0.##} Roguery XP.");
+        }
+
         /// <summary>
         /// Converts non-hero party prisoners at or below CastlePrisonerAutoEnslaveTierMax
         /// to Slave ItemObjects (1:1). Heroes and T4+ prisoners are always skipped.
         /// Returns the number converted.
         /// </summary>
-        private int ConvertPrisonersToSlaves(MobileParty party)
+        private (int Converted, TroopRoster SoldRoster) ConvertPrisonersToSlaves(MobileParty party)
         {
-            if (_slaveItem == null) return 0;
+            TroopRoster soldRoster = TroopRoster.CreateDummyTroopRoster();
+            if (_slaveItem == null) return (0, soldRoster);
             int maxTier = Settings.CastlePrisonerAutoEnslaveTierMax;
             var enslavable = party.PrisonRoster
                 .GetTroopRoster()
@@ -772,10 +852,41 @@ namespace Byzantium1071.Campaign.Behaviors
                 int count = element.Number;
                 party.PrisonRoster.RemoveTroop(element.Character, count);
                 party.ItemRoster.AddToCounts(_slaveItem, count);
+                soldRoster.AddToCounts(element.Character, count);
                 total += count;
             }
             B1071_VerboseLog.Log("SlaveEconomy", $"Enslavement: {party.Name} converted {total} prisoner(s) to slave goods (max tier {maxTier}).");
-            return total;
+            return (total, soldRoster);
+        }
+
+        /// <summary>
+        /// Converts only the player-selected prisoners to slave goods.
+        /// Called when the slave conversion selection UI is enabled.
+        /// </summary>
+        private (int Converted, TroopRoster SoldRoster) ConvertSelectedPrisonersToSlaves(MobileParty party, Dictionary<CharacterObject, int> selections)
+        {
+            TroopRoster soldRoster = TroopRoster.CreateDummyTroopRoster();
+            if (_slaveItem == null || selections == null || selections.Count == 0) return (0, soldRoster);
+
+            int total = 0;
+            foreach (var kvp in selections)
+            {
+                CharacterObject character = kvp.Key;
+                int count = kvp.Value;
+                if (character == null || count <= 0) continue;
+                // Clamp to actual roster count to prevent over-removal.
+                int available = party.PrisonRoster.GetTroopCount(character);
+                int toConvert = Math.Min(count, available);
+                if (toConvert <= 0) continue;
+
+                party.PrisonRoster.RemoveTroop(character, toConvert);
+                party.ItemRoster.AddToCounts(_slaveItem, toConvert);
+                soldRoster.AddToCounts(character, toConvert);
+                total += toConvert;
+            }
+
+            B1071_VerboseLog.Log("SlaveEconomy", $"Selective enslavement: {party.Name} converted {total} prisoner(s) to slave goods.");
+            return (total, soldRoster);
         }
     }
 }

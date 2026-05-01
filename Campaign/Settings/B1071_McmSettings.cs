@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 11;
+        internal const int LATEST_PROFILE_VERSION = 14;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -206,6 +206,48 @@ namespace Byzantium1071.Campaign.Settings
 
             // ── Future migrations go here ──
             // if (SettingsProfileVersion < 12) { ... migrated += "..."; }
+
+            // ── Profile v12: castle recruitment restrictions, diversified pool, slave conversion selection ──
+            if (SettingsProfileVersion < 12)
+            {
+                CastleRecruitmentAccess = 1;
+                CastleRecruitGoldT2 = 150;
+                CastleRecruitGoldT3 = 400;
+                EnableDiversifiedCastlePool = true;
+                CastlePoolT2LevyPercent = 45;
+                CastlePoolT2NoblePercent = 35;
+                CastlePoolT3T4Percent = 15;
+                CastlePoolT5PlusPercent = 5;
+                EnableDynamicPoolCapacity = true;
+                CastleElitePoolBaseCapDynamic = 5;
+                CastleElitePoolProsperityScaling = 0.005f;
+                CastleElitePoolWallBonus = 3;
+                EnableSlaveConversionSelection = true;
+
+                migrated += "castle recruitment restrictions (kingdom-only), diversified pool (T2-T6), dynamic capacity, slave conversion selection UI. ";
+            }
+
+            // ── Profile v13: enslavement Roguery XP parity ──
+            if (SettingsProfileVersion < 13)
+            {
+                EnableEnslavementRogueryXp = true;
+                EnslavementRogueryXpMultiplier = 1.0f;
+
+                migrated += "enslavement Roguery XP parity enabled (1.0x vanilla prisoner-sell XP). ";
+            }
+
+            // ── Profile v14: publish-day elite replacement and wage pressure rebalance ──
+            if (SettingsProfileVersion < 14)
+            {
+                CastleRecruitT4Days = 10;
+                CastleRecruitT5Days = 21;
+                CastleRecruitT6Days = 35;
+                CastleEliteRegenMax = 2;
+                WagePreset = 3;
+                GarrisonWagePercent = 80;
+
+                migrated += "castle prisoner waits lengthened (T4/T5/T6+ = 10/21/35), elite regen max 3→2, wages set to Severe, garrison wage percent 60→80. ";
+            }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
@@ -398,11 +440,11 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Combat Realism ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}Enable tier survivability", Order = 0, HintText = "{=b1071_mcm_h_e1a2720769}Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+5%, T3=+10%, T4=+15%, T5=+20%, T6=+25% flat bonus to survival chance on top of Medicine-based base rate.")]
+        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}Enable tier survivability", Order = 0, HintText = "{=b1071_mcm_h_e1a2720769}Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6=+20% flat bonus to survival chance on top of Medicine-based base rate.")]
         public bool EnableTierSurvivability { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}Enable tier armor simulation", Order = 1, HintText = "{=b1071_mcm_h_54fe9937da}Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=-6%, T3=-12%, T4=-18%, T5=-24%, T6=-30%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check.")]
+        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}Enable tier armor simulation", Order = 1, HintText = "{=b1071_mcm_h_54fe9937da}Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=0%, T3=-6%, T4=-12%, T5=-18%, T6=-24%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check.")]
         public bool EnableTierArmorSimulation { get; set; } = true;
 
         // ─── Army Economics ───
@@ -412,16 +454,16 @@ namespace Byzantium1071.Campaign.Settings
         public int HireUpgradeCostPreset { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
-        [SettingPropertyInteger("{=b1071_mcm_t_757eae2c05}Daily wage preset", 0, 3, "0", Order = 1, HintText = "{=b1071_mcm_h_1306d0d841}Tier-exponential scaling for troop wages. 0=Vanilla | 1=Light (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Moderate (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Severe (T3+70%, T4+150%, T5+250%, T6+400%). Heroes/companions and CaravanGuards are excluded. Applies to AI and player equally.")]
-        public int WagePreset { get; set; } = 2;
+        [SettingPropertyInteger("{=b1071_mcm_t_757eae2c05}Daily wage preset", 0, 3, "0", Order = 1, HintText = "{=b1071_mcm_h_1306d0d841}Tier-exponential scaling for troop wages. 0=Vanilla | 1=Light (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Moderate (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Severe (T3+70%, T4+150%, T5+250%, T6+400%). Heroes/companions and CaravanGuards are excluded. Applies to AI and player equally. Default: 3.")]
+        public int WagePreset { get; set; } = 3;
 
         [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
         [SettingPropertyBool("{=b1071_mcm_t_ac67678bec}Enable garrison wage discount", Order = 2, HintText = "{=b1071_mcm_h_e85b2eeed7}Garrison parties pay a reduced wage relative to field troops. Historically accurate: garrison soldiers often received lower pay, supplemented by shelter and rations. Applies on top of vanilla perk and building discounts.")]
         public bool EnableGarrisonWageDiscount { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
-        [SettingPropertyInteger("{=b1071_mcm_t_2443dcece8}Garrison wage % of field", 10, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_c4e1a056bd}Garrison party total wage as a percentage of what the same troops would cost in a field party. 60 = garrison pays 60% (40% discount). 100 = no discount. Default: 60.")]
-        public int GarrisonWagePercent { get; set; } = 60;
+        [SettingPropertyInteger("{=b1071_mcm_t_2443dcece8}Garrison wage % of field", 10, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_c4e1a056bd}Garrison party total wage as a percentage of what the same troops would cost in a field party. 80 = garrison pays 80% (20% discount). 100 = no discount. Default: 80.")]
+        public int GarrisonWagePercent { get; set; } = 80;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_41c5ad1112}Enable verbose mod log", Order = -1, HintText = "{=b1071_mcm_h_3574df9fb7}Master switch: logs ALL mod activity (manpower, slaves, diplomacy, patches) to the Bannerlord rgl_log file. Superset of every other debug toggle. Performance cost — disable for normal play.")]
@@ -916,6 +958,18 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_44d1d0efcc}Slave price decay rate", 0.90f, 0.999f, "0.000", Order = 11, HintText = "{=b1071_mcm_h_de483c5153}Controls how steeply slave prices decrease per unit of stock. Price factor = decayRate ^ stock, clamped at 0.1 (floor = 30d at base value 300). Lower values = steeper price drop. At 0.98 (default): stock 10 = ~245d, stock 30 = ~164d, stock 50 = ~109d, stock 80 = ~60d. At 0.96: stock 30 = ~88d, stock 50 = ~39d (floor). Default: 0.98.")]
         public float SlavePriceDecayRate { get; set; } = 0.98f;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
+        [SettingPropertyBool("{=b1071_mcm_t_8c3e9a1b01}Enable slave conversion selection UI", Order = 12, HintText = "{=b1071_mcm_h_8c3e9a1b01}When enabled, the 'Enslave prisoners' option at towns opens a selection screen where you choose which prisoners to convert. When disabled, all eligible prisoners are converted in bulk (legacy behavior). Useful for players using Lowborn or similar mods who want to keep specific bandit prisoners for recruitment. Default: true.")]
+        public bool EnableSlaveConversionSelection { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
+        [SettingPropertyBool("{=b1071_mcm_t_7d1f6fd4d0}Grant Roguery XP for enslavement", Order = 13, HintText = "{=b1071_mcm_h_7d1f6fd4d0}When enabled, prisoner enslavement grants Roguery XP using Bannerlord's vanilla prisoner-sell formula. Immediate town enslavement uses the native party hook; delayed castle processing falls back to the original depositor if the party is gone. Default: true.")]
+        public bool EnableEnslavementRogueryXp { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_5e69a58b2a}Enslavement Roguery XP multiplier", 0f, 5f, "0.00", Order = 14, HintText = "{=b1071_mcm_h_5e69a58b2a}Scales the vanilla-equivalent Roguery XP granted when prisoners are enslaved. 1.0 = exact prisoner-sell XP. 0 disables XP while keeping the rest of the enslavement system unchanged. Default: 1.0.")]
+        public float EnslavementRogueryXpMultiplier { get; set; } = 1.0f;
+
         [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("{=b1071_mcm_t_28f7f149d6}[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "{=b1071_mcm_h_3ad968ac32}[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]
         public int SlaveConstructionBonusDays { get; set; } = 30;
@@ -1013,60 +1067,108 @@ namespace Byzantium1071.Campaign.Settings
         public int CastlePrisonerAutoEnslaveTierMax { get; set; } = 3;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 2, HintText = "{=b1071_mcm_h_e6b821a5cd}Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 7.")]
-        public int CastleRecruitT4Days { get; set; } = 7;
+        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 2, HintText = "{=b1071_mcm_h_e6b821a5cd}Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10.")]
+        public int CastleRecruitT4Days { get; set; } = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_f6d04613d7}Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 14.")]
-        public int CastleRecruitT5Days { get; set; } = 14;
+        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_f6d04613d7}Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 21.")]
+        public int CastleRecruitT5Days { get; set; } = 21;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 4, HintText = "{=b1071_mcm_h_adbcaeef5e}Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 21.")]
-        public int CastleRecruitT6Days { get; set; } = 21;
+        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 4, HintText = "{=b1071_mcm_h_adbcaeef5e}Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 35.")]
+        public int CastleRecruitT6Days { get; set; } = 35;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_ec59978b74}T4 recruitment gold cost", 100, 10000, "0", Order = 5, HintText = "{=b1071_mcm_h_34207cd11c}Gold cost to recruit a Tier 4 prisoner. Follows the tier-exponential philosophy: elite troops are expensive to turn. Default: 1200.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_a2b3c4d501}T2 recruitment gold cost (diversified pool)", 10, 2000, "0", Order = 5, HintText = "{=b1071_mcm_h_a2b3c4d501}Gold cost to recruit a Tier 2 troop from the castle's diversified pool. Only relevant when diversified pool is enabled. Default: 150.")]
+        public int CastleRecruitGoldT2 { get; set; } = 150;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_b3c4d5e602}T3 recruitment gold cost (diversified pool)", 50, 5000, "0", Order = 6, HintText = "{=b1071_mcm_h_b3c4d5e602}Gold cost to recruit a Tier 3 troop from the castle's diversified pool. Only relevant when diversified pool is enabled. Default: 400.")]
+        public int CastleRecruitGoldT3 { get; set; } = 400;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_ec59978b74}T4 recruitment gold cost", 100, 10000, "0", Order = 7, HintText = "{=b1071_mcm_h_34207cd11c}Gold cost to recruit a Tier 4 prisoner. Follows the tier-exponential philosophy: elite troops are expensive to turn. Default: 1200.")]
         public int CastleRecruitGoldT4 { get; set; } = 1200;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_4be2b0417a}T5 recruitment gold cost", 100, 20000, "0", Order = 6, HintText = "{=b1071_mcm_h_f7c27f4ab3}Gold cost to recruit a Tier 5 prisoner. Default: 2500.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_4be2b0417a}T5 recruitment gold cost", 100, 20000, "0", Order = 8, HintText = "{=b1071_mcm_h_f7c27f4ab3}Gold cost to recruit a Tier 5 prisoner. Default: 2500.")]
         public int CastleRecruitGoldT5 { get; set; } = 2500;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d1a68860bf}T6+ recruitment gold cost", 100, 50000, "0", Order = 7, HintText = "{=b1071_mcm_h_0c2dad9845}Gold cost to recruit a Tier 6+ prisoner. Default: 5000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_d1a68860bf}T6+ recruitment gold cost", 100, 50000, "0", Order = 9, HintText = "{=b1071_mcm_h_0c2dad9845}Gold cost to recruit a Tier 6+ prisoner. Default: 5000.")]
         public int CastleRecruitGoldT6 { get; set; } = 5000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("{=b1071_mcm_t_c7bb316b1f}Castle recruitment drains manpower", Order = 8, HintText = "{=b1071_mcm_h_797670870d}When enabled, recruiting a prisoner from a castle also drains the castle's manpower pool (same cost formula as normal recruitment). Creates a double gate: gold + manpower. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_c7bb316b1f}Castle recruitment drains manpower", Order = 10, HintText = "{=b1071_mcm_h_797670870d}When enabled, recruiting a prisoner from a castle also drains the castle's manpower pool (same cost formula as normal recruitment). Creates a double gate: gold + manpower. Default: true.")]
         public bool CastleRecruitDrainsManpower { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_f1cc63afd5}Elite pool max per castle", 5, 100, "0", Order = 9, HintText = "{=b1071_mcm_h_b68162ad3f}Maximum number of culture-based elite troops (T4-T6) a castle can hold at once. The pool regenerates daily from the castle's manpower. Default: 20.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_f1cc63afd5}Elite pool max per castle", 5, 100, "0", Order = 11, HintText = "{=b1071_mcm_h_b68162ad3f}Maximum number of culture-based elite troops (T4-T6) a castle can hold at once. The pool regenerates daily from the castle's manpower. Default: 20.")]
         public int CastleElitePoolMax { get; set; } = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_56b5b0c27f}Elite regen min per day", 0, 10, "0", Order = 10, HintText = "{=b1071_mcm_h_135ecd103e}Minimum elite troops regenerated per castle per day (at zero prosperity). Default: 1.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_56b5b0c27f}Elite regen min per day", 0, 10, "0", Order = 12, HintText = "{=b1071_mcm_h_135ecd103e}Minimum elite troops regenerated per castle per day (at zero prosperity). Default: 1.")]
         public int CastleEliteRegenMin { get; set; } = 1;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_c1b73707f8}Elite regen max per day", 1, 20, "0", Order = 11, HintText = "{=b1071_mcm_h_032b2ade51}Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 3.")]
-        public int CastleEliteRegenMax { get; set; } = 3;
+        [SettingPropertyInteger("{=b1071_mcm_t_c1b73707f8}Elite regen max per day", 1, 20, "0", Order = 13, HintText = "{=b1071_mcm_h_032b2ade51}Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 2.")]
+        public int CastleEliteRegenMax { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_3d3839675a}Elite regen manpower cost", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_bfe8e7545f}Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 1.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_3d3839675a}Elite regen manpower cost", 1, 100, "0", Order = 14, HintText = "{=b1071_mcm_h_bfe8e7545f}Manpower drained from the castle's pool for each elite troop regenerated. Higher = slower elite regen in low-manpower regions. Default: 1.")]
         public int CastleEliteManpowerCost { get; set; } = 1;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("{=b1071_mcm_t_8834e326bf}AI recruits from castle", Order = 13, HintText = "{=b1071_mcm_h_690a92479b}When enabled, AI lord parties visiting their own faction's castles recruit from both the elite pool and converted prisoners, paying gold per troop (same as player). No daily cap — lords fill to party limit. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_8834e326bf}AI recruits from castle", Order = 15, HintText = "{=b1071_mcm_h_690a92479b}When enabled, AI lord parties visiting their own faction's castles recruit from both the elite pool and converted prisoners, paying gold per troop (same as player). No daily cap — lords fill to party limit. Default: true.")]
         public bool CastleEliteAiRecruits { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_3f48d9a16f}Castle holding fee %", 5, 50, "0", Order = 14, HintText = "{=b1071_mcm_h_dcd4a0a12f}Commission the castle owner receives when another clan's prisoners are processed (enslaved or recruited). The depositing lord gets the remainder. Example: 30% fee on a 1,200g recruitment → owner gets 360g, depositor gets 840g. Default: 30.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_3f48d9a16f}Castle holding fee %", 5, 50, "0", Order = 16, HintText = "{=b1071_mcm_h_dcd4a0a12f}Commission the castle owner receives when another clan's prisoners are processed (enslaved or recruited). The depositing lord gets the remainder. Example: 30% fee on a 1,200g recruitment → owner gets 360g, depositor gets 840g. Default: 30.")]
         public int CastleHoldingFeePercent { get; set; } = 30;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("{=b1071_mcm_t_62895ca392}Open castle access (early game)", Order = 15, HintText = "{=b1071_mcm_h_5582afc84b}Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_62895ca392}Open castle access (early game)", Order = 17, HintText = "{=b1071_mcm_h_5582afc84b}Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true.")]
         public bool CastleOpenAccess { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_a1d5f3b201}Recruitment access restriction", 0, 2, "0", Order = 18, HintText = "{=b1071_mcm_h_a1d5f3b201}Controls who can recruit from castles. 0 = Open (any non-hostile lord, current behavior). 1 = Kingdom Only (must belong to same kingdom as castle owner). 2 = Clan + Ruler Only (only the castle owner's clan and the ruling clan of the kingdom). Same rules apply to player and AI (parity). Default: 1.")]
+        public int CastleRecruitmentAccess { get; set; } = 1;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("{=b1071_mcm_t_b2e6f4c302}Enable diversified castle pool", Order = 19, HintText = "{=b1071_mcm_h_b2e6f4c302}When enabled, castles generate a mix of troop tiers (T2-T6) instead of only T4-T6 elites. Reflects the medieval reality where professional soldiers made up 20-30%% of an army, with the rest being levies. When disabled, castles generate only T4-T6 (legacy behavior). Default: true.")]
+        public bool EnableDiversifiedCastlePool { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_c3f7a5d403}Pool T2 levy percent", 0, 100, "0", Order = 20, HintText = "{=b1071_mcm_h_c3f7a5d403}Percentage of daily castle pool regeneration allocated to T2 basic (levy) troops. The four tier percentages should sum to 100. Default: 45.")]
+        public int CastlePoolT2LevyPercent { get; set; } = 45;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_d4a8b6e504}Pool T2 noble percent", 0, 100, "0", Order = 21, HintText = "{=b1071_mcm_h_d4a8b6e504}Percentage of daily castle pool regeneration allocated to T2 noble line troops. Default: 35.")]
+        public int CastlePoolT2NoblePercent { get; set; } = 35;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_e5b9c7f605}Pool T3-T4 percent", 0, 100, "0", Order = 22, HintText = "{=b1071_mcm_h_e5b9c7f605}Percentage of daily castle pool regeneration allocated to T3-T4 troops. Default: 15.")]
+        public int CastlePoolT3T4Percent { get; set; } = 15;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_f6cad8a706}Pool T5+ percent", 0, 100, "0", Order = 23, HintText = "{=b1071_mcm_h_f6cad8a706}Percentage of daily castle pool regeneration allocated to T5-T6 elite troops. Default: 5.")]
+        public int CastlePoolT5PlusPercent { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyBool("{=b1071_mcm_t_a7dbe9b807}Enable dynamic pool capacity", Order = 24, HintText = "{=b1071_mcm_h_a7dbe9b807}When enabled, the castle elite pool capacity scales with prosperity and wall level instead of using a flat cap. Low-prosperity castles hold fewer troops; developed castles hold more. When disabled, the flat 'Elite pool max per castle' setting is used. Default: true.")]
+        public bool EnableDynamicPoolCapacity { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_b8ecfac908}Dynamic pool base cap", 1, 50, "0", Order = 25, HintText = "{=b1071_mcm_h_b8ecfac908}Minimum pool capacity regardless of prosperity (only used in dynamic mode). Default: 5.")]
+        public int CastleElitePoolBaseCapDynamic { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_c9fdabd009}Dynamic pool prosperity scaling", 0.001f, 0.05f, "0.000", Order = 26, HintText = "{=b1071_mcm_h_c9fdabd009}Pool capacity bonus per point of prosperity (only used in dynamic mode). E.g., at 0.005: P1500 = +7 troops. Default: 0.005.")]
+        public float CastleElitePoolProsperityScaling { get; set; } = 0.005f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_dafebce110}Dynamic pool wall level bonus", 0, 20, "0", Order = 27, HintText = "{=b1071_mcm_h_dafebce110}Pool capacity bonus per wall level (only used in dynamic mode). E.g., at 3: L2 walls = +6 troops. Default: 3.")]
+        public int CastleElitePoolWallBonus { get; set; } = 3;
 
         // ─── Village Investment (Patronage) ───
 

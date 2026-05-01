@@ -1,4 +1,5 @@
 using Byzantium1071.Campaign.Behaviors;
+using Byzantium1071.Campaign.Settings;
 using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -69,7 +70,9 @@ namespace Byzantium1071.Campaign.UI
         {
             GoldLabelText = L("b1071_ui_gold", "Gold:");
             ManpowerLabelText = L("b1071_ui_manpower", "Manpower:");
-            EliteHeaderText = L("b1071_cr_elite_header", "Elite Troops (Culture Pool)");
+            EliteHeaderText = (B1071_McmSettings.Instance?.EnableDiversifiedCastlePool ?? false)
+                ? L("b1071_cr_elite_header_div", "Castle Levy (Diversified Pool)")
+                : L("b1071_cr_elite_header", "Elite Troops (Culture Pool)");
             ReadyHeaderText = L("b1071_cr_ready_header", "Ready to Recruit (Prisoners)");
             PendingHeaderText = L("b1071_cr_pending_header", "Pending (Training)");
             TroopColumnText = L("b1071_ui_troop", "Troop");

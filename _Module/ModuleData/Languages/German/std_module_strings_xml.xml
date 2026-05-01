@@ -9,6 +9,16 @@
     <string id="b1071_cr_consignment_garrison" text="Sendung von {CASTLE}: +{GOLD}g ({COUNT} Gefangener{PLURAL} in Garnison aufgenommen, Ihr {SHARE}% Einlegeranteil)." />
     <string id="b1071_cr_deposit_label" text="Gefangene hinterlegen ({COUNT} verfügbar, {FEE}% Haltegebühr)" />
     <string id="b1071_cr_deposited_msg" text="{COUNT} Gefangene{PLURAL} bei {CASTLE} deponiert. Sie erhalten {SHARE} % des Bearbeitungseinkommens (Haltegebühr: {FEE} %)." />
+    <string id="b1071_cr_deposited_own" text="{COUNT} Gefangene{PLURAL} bei {CASTLE} deponiert. Niedrigstufige werden automatisch versklavt; Eliten zur Umwandlung festgehalten." />
+    <string id="b1071_cr_owner_enslave" text="{CASTLE} hat {COUNT} Gefangene{PLURAL} versklavt — verkauft an {TOWN}, Schatzkammer +{GOLD}{COIN}." />
+    <string id="b1071_cr_ai_deposit_arrived" text="{PARTY} hat {COUNT} Gefangene{PLURAL} bei {CASTLE} abgeliefert." />
+    <string id="b1071_cr_town_broke" text="{CASTLE}: {STUCK} niedrigstufige Gefangene{PLURAL} warten auf Versklavung — {TOWN} hat kein Gold mehr. Morgen wird es erneut versucht." />
+    <string id="b1071_cr_rebuild_no_campaign" text="Lade zuerst eine Kampagne, um die Rekrutierungsquellen von Campaign++ neu aufzubauen." />
+    <string id="b1071_cr_rebuild_done" text="Rekrutierungsquellen neu aufgebaut: {SETTLEMENTS} Siedlungen geprüft, {CHANGED} Freiwilligenliste{PLURAL} bereinigt, {CULTURES} Kultur-Cache{CPLURAL} aktualisiert." />
+    <string id="b1071_mcm_t_7d1f6fd4d0" text="Gaunerei-EP für Versklavung gewähren" />
+    <string id="b1071_mcm_h_7d1f6fd4d0" text="Wenn aktiviert, gewährt die Versklavung von Gefangenen Gaunerei-EP nach Bannerlords nativer Formel für Gefangenenverkauf. Sofortige Stadt-Versklavung nutzt den nativen Parteihaken; verzögerte Burg-Verarbeitung fällt auf den ursprünglichen Einlieferer zurück, wenn die Partei nicht mehr existiert. Standard: aktiviert." />
+    <string id="b1071_mcm_t_5e69a58b2a" text="Versklavungs-Gaunerei-EP-Multiplikator" />
+    <string id="b1071_mcm_h_5e69a58b2a" text="Skaliert die Gaunerei-EP in Höhe des nativen Gefangenenverkaufs, wenn Gefangene versklavt werden. 1.0 = exakte Gefangenenverkaufs-EP. 0 deaktiviert die EP, ohne das restliche Versklavungssystem zu ändern. Standard: 1.0." />
     <string id="b1071_cr_elite_header" text="Elitetruppen (Kulturpool)" />
     <string id="b1071_cr_manpower_block" text="Mannstärke: {TROOP} können nicht rekrutiert werden – {POOL} benötigt {COST}, nur noch {LEFT} übrig." />
         <string id="b1071_cr_tier_block" text="Freiwilligenobergrenze: {SETTLEMENT} ist eine {TYPE}; dort werden nur Freiwillige bis Stufe {CAP} gestellt. {TROOP} ist Stufe {TIER}." />
@@ -139,7 +149,7 @@
     <string id="b1071_qs_name_minor_faction" text="Wirtschaft der Kleinfraktion" />
     <string id="b1071_qs_hint_minor_faction" text="Kleinere Fraktionen, die keine Banditen sind, erhalten ein tägliches Gehalt, damit sie nicht bankrott gehen." />
     <string id="b1071_qs_name_garrison_wage" text="Garnisonslohnrabatt" />
-    <string id="b1071_qs_hint_garrison_wage" text="Garnisonstruppen kosten einen reduzierten Prozentsatz des Feldlohns (Standard 60 %)." />
+    <string id="b1071_qs_hint_garrison_wage" text="Garnisonstruppen kosten einen reduzierten Prozentsatz des Feldlohns (Standard 80 %)." />
     <string id="b1071_qs_name_castle_recruitment" text="Rekrutierung von Burgen" />
     <string id="b1071_qs_hint_castle_recruitment" text="Burgen erzeugen Elitetruppen aus Mannstärken und halten T4+-Gefangene zur Umwandlung fest." />
     <string id="b1071_qs_name_castle_access" text="Offener Zugang zum Schloss" />
@@ -311,7 +321,7 @@
     <string id="b1071_mcm_h_004483500d" text="Pool-Multiplikator bei voller Sicherheit (100). Beispiel: 120 = sichere Abwicklung erhält 120 % Bonus." />
     <string id="b1071_mcm_h_018c2990f0" text="Erzwingen Sie keinen Frieden mit einem Feind, der gerade eine Ihrer Städte/Burgen belagert." />
     <string id="b1071_mcm_h_027d8a0996" text="Altbestand-Einstellung für Speicher-/Konfigurationskompatibilität. Wird von der aktuellen Overlay-Oberfläche nicht verwendet." />
-    <string id="b1071_mcm_h_032b2ade51" text="Maximal regenerierte Elitetruppen pro Burg und Tag (bei maximalem Wohlstand). Der tatsächliche Betrag skaliert linear mit dem Wohlstand. Standard: 3." />
+    <string id="b1071_mcm_h_032b2ade51" text="Maximal regenerierte Elitetruppen pro Burg und Tag (bei maximalem Wohlstand). Der tatsächliche Betrag skaliert linear mit dem Wohlstand. Standard: 2." />
     <string id="b1071_mcm_h_03fd97c1a6" text="Dorfüberfälle akkumulieren anhaltende Verwüstung (0-100), die langsam abklingt. Verwüstete Dörfer erleiden ein verringertes Herdwachstum und die umliegenden Städte/Burgen leiden unter Wohlstands-, Ernährungs- und Sicherheitseinbußen." />
     <string id="b1071_mcm_h_0553e33580" text="Fügt kompakte Instrumentierungszeilen zur Registerkarte „Aktuelles Hauptbuch“ zum Ausgleich/Debuggen hinzu." />
     <string id="b1071_mcm_h_05edab757c" text="Absolutes Minimum an regenerierter Arbeitskraft pro Tag (Städte und Ersatz)." />
@@ -326,7 +336,7 @@
     <string id="b1071_mcm_h_0f079f126d" text="Einfluss, den Sie durch eine Großstadtinvestition erhalten (nur wenn die Stadt in Ihrem Königreich liegt). Standard: 50." />
     <string id="b1071_mcm_h_0faf392cd0" text="Wie stark sich die Regeneration zwischen Soft-Cap-Start und vollem Pool verlangsamt. 0 deaktiviert den Verlangsamungseffekt." />
     <string id="b1071_mcm_h_1257dd959e" text="Durch eine große Investition entsteht eine Beziehung zu jedem Dorf. Standard: 10." />
-    <string id="b1071_mcm_h_1306d0d841" text="Stufenexponentielle Skalierung der Truppenlöhne. 0=Vanille | 1=Licht (T3+20 %, T4+40 %, T5+70 %, T6+100 %) | 2=Moderat (T3+50 %, T4+100 %, T5+160 %, T6+250 %) | 3=Schwerwiegend (T3+70 %, T4+150 %, T5+250 %, T6+400 %). Helden/Gefährten und CaravanGuards sind ausgeschlossen. Gilt gleichermaßen für KI und Spieler." />
+    <string id="b1071_mcm_h_1306d0d841" text="Stufenexponentielle Skalierung der Truppenlöhne. 0=Vanille | 1=Licht (T3+20 %, T4+40 %, T5+70 %, T6+100 %) | 2=Moderat (T3+50 %, T4+100 %, T5+160 %, T6+250 %) | 3=Schwerwiegend (T3+70 %, T4+150 %, T5+250 %, T6+400 %). Helden/Gefährten und CaravanGuards sind ausgeschlossen. Gilt gleichermaßen für KI und Spieler. Standard: 3." />
     <string id="b1071_mcm_h_135ecd103e" text="Mindestens regenerierte Elitetruppen pro Burg und Tag (bei Null-Wohlstand). Standard: 1." />
     <string id="b1071_mcm_h_144e546603" text="Schlossspezifischer Regenerationsboden. Stellt Bauernabgaben aus umschlossenen Dörfern und der winzigen Zivilgemeinde der Burg dar. Dieses Rinnsal ist biologisch (nicht aus Städten). Standard: 1." />
     <string id="b1071_mcm_h_14cc7f2c2a" text="Jede Stadt erhält durch eine bescheidene Investition mehr Strom. Standard: 5." />
@@ -388,7 +398,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Protokolliert detaillierte Gründe für erzwungene Friedens- und War-Gate-Entscheidungen." />
     <string id="b1071_mcm_h_4e8aece026" text="Master-Umschaltung. Aktiviert das System der Dorfinvestitionen (Mäzenatentum) – geben Sie Gold in Dörfern für Herdwachstum, bedeutende Beziehungen, Einfluss und bedeutende Macht aus. KI-Lords investieren auch in ihre eigenen Dörfer. Standard: true." />
     <string id="b1071_mcm_h_4ed533a03f" text="Maximaler Gesamtbonus für die Friedensentscheidungsunterstützung im Bandmodus. Ersetzt die harte +200-Überschreibung." />
-    <string id="b1071_mcm_h_54fe9937da" text="Höherstufige Truppen erhalten bei der automatischen Auflösung einen verringerten simulierten Trefferschaden (T2=-6 %, T3=-12 %, T4=-18 %, T5=-24 %, T6=-30 %). Verringert die Wahrscheinlichkeit, dass das tödlich getroffene Tor pro Tick ausgelöst wird. Funktioniert mit der Überlebensfähigkeit der Stufe: weniger Unfallkontrollen UND bessere Überlebensrate bei jeder Kontrolle." />
+    <string id="b1071_mcm_h_54fe9937da" text="Höherstufige Truppen erhalten bei der automatischen Auflösung einen verringerten simulierten Trefferschaden (T2=0 %, T3=-6 %, T4=-12 %, T5=-18 %, T6=-24 %). Verringert die Wahrscheinlichkeit, dass das tödlich getroffene Tor pro Tick ausgelöst wird. Funktioniert mit der Überlebensfähigkeit der Stufe: weniger Unfallkontrollen UND bessere Überlebensrate bei jeder Kontrolle." />
     <string id="b1071_mcm_h_5582afc84b" text="Entfernt das Bestechungsgeld der Clanstufe (~800 g) für das Betreten der Hallen des Burgherrn und ermöglicht den Zutritt zu neutralen Burgen auch bei leicht negativen Besitzerbeziehungen. Feindliche Burgen und strafrechtliche Beschränkungen bleiben davon unberührt. Wird für die Unterbringung und Rekrutierung von Gefangenen zu Beginn des Spiels benötigt. Standard: true." />
     <string id="b1071_mcm_h_5807af4ea7" text="Wie lange bestehen die Wiederherstellungsstrafen im Zusammenhang mit Razzien?" />
     <string id="b1071_mcm_h_5921a54d23" text="Die Verwalter-Fertigkeit des Gouverneurs erhöht die Regeneration; Führung steigert die maximale Poolgröße." />
@@ -459,6 +469,7 @@
     <string id="b1071_mcm_h_a122e143ec" text="Verfolgt, welches Balanceprofil zuletzt angewendet wurde. Nicht manuell ändern – der Mod migriert dies automatisch beim Update." />
     <string id="b1071_mcm_h_a12501eade" text="Einfluss, der durch eine Großinvestition erlangt wird (nur wenn das Dorf in Ihrem Königreich liegt). Standard: 10." />
     <string id="b1071_mcm_h_a25f48c2d5" text="Goldkosten für eine großzügige Investition. Mittelklasse mit ausgewogenen Boni. Standard: 5000." />
+    <string id="b1071_mcm_h_a2b3c4d501" text="Goldkosten für die Rekrutierung eines Tier-2-Soldaten aus dem diversifizierten Burgpool. Nur relevant, wenn der diversifizierte Pool aktiviert ist. Standard: 150." />
     <string id="b1071_mcm_h_a3c2806b96" text="Prozentuale Chance, dass ein KI-Lord investiert, wenn er eine berechtigte Stadt betritt. Standard: 30." />
     <string id="b1071_mcm_h_a45f13eae8" text="Wie viele Tage dauert die Grand-Town-Investition? Dient auch als Abklingzeit. Standard: 60." />
     <string id="b1071_mcm_h_a4d717ad4f" text="Mindestspieltage zwischen zwei Stadtinvestitionen desselben KI-Lords. Verhindert Flächenbombardierungen jeder Stadt auf einer Reiseroute. Zum Deaktivieren auf 0 setzen. Standard: 5." />
@@ -471,12 +482,13 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Puffer unterhalb des Bandschwellenwerts, bevor er auf das untere Band zurückfällt. Verhindert schnelle Auf-/Ab-Schwingungen." />
     <string id="b1071_mcm_h_ad9b011697" text="Wenn diese Option aktiviert ist, investieren KI-Lords in die Dörfer ihrer eigenen Fraktion, wenn sie diese besuchen (sofern sie es sich leisten können). Verwendet die gleichen Stufenkosten und bietet die gleichen Boni. Standard: true." />
     <string id="b1071_mcm_h_adb939cb85" text="Nahrungsaufnahme pro Sklave und Tag. Schafft eine natürliche wirtschaftliche Obergrenze für das Horten von Sklaven. Bei 0,05: 50 Sklaven = -2,5 Nahrung/Tag, 100 Sklaven = -5,0 Nahrung/Tag (ungefähr die Produktion eines Dorfes), 200 Sklaven = -10,0 Nahrung/Tag (schwerwiegend). Historisch gesehen erhielten versklavte Arbeiter Subsistenzrationen, die denen von Garnisonstruppen vergleichbar waren (~0,04–0,06 Lebensmitteleinheiten). Zum Deaktivieren auf 0 setzen. Standard: 0,05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Tage muss ein Gefangener der Stufe 6+ festgehalten werden, bevor er rekrutiert werden kann. Truppen der Champion-Stufe widerstehen am längsten. Standard: 21." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Tage muss ein Gefangener der Stufe 6+ festgehalten werden, bevor er rekrutiert werden kann. Truppen der Champion-Stufe widerstehen am längsten. Standard: 35." />
     <string id="b1071_mcm_h_b00260dc2c" text="Zeigt eine Nachricht an, wenn ein KI-Lord in ein Dorf investiert, das Ihnen gehört. Hier können Sie sehen, wie das Patronagesystem in Ihrem Gebiet funktioniert. Standard: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Goldkosten für eine großartige Investition. Höchste Stufe mit den stärksten Boni und der längsten Laufzeit. Standard: 12000." />
     <string id="b1071_mcm_h_b170010cab" text="Frühling/Sommer fördert die Regeneration, der Winter beeinträchtigt sie." />
     <string id="b1071_mcm_h_b2d942d050" text="Pool % unter dem eine Krisenwarnung angezeigt wird." />
     <string id="b1071_mcm_h_b378426501" text="Wenn kleine Pools aktiviert sind, gilt poolSize = max(minTinyPool, poolSize / divisor)." />
+    <string id="b1071_mcm_h_b3c4d5e602" text="Goldkosten für die Rekrutierung eines Tier-3-Soldaten aus dem diversifizierten Burgpool. Nur relevant, wenn der diversifizierte Pool aktiviert ist. Standard: 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Täglicher Wohlstandswachstumsbonus durch eine großzügige Stadtinvestition. Standard: 1.0." />
     <string id="b1071_mcm_h_b41e07e2b2" text="Anzahl der Tage im Spiel, an denen ein geretteter Clan unabhängig bleibt, bevor er Söldnerdienste in Anspruch nimmt. Während dieser Zeit patrouillieren sie in der Nähe ihrer Heimatsiedlung. Standard: 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Feste Obergrenze für die tägliche Regeneration als Prozentsatz des maximalen Pools. Beispielsweise bedeutet 2,0, dass sich eine Stadt mit 3000 Pools höchstens 60 Mal pro Tag regeneriert (ca. 50 Tage bis sie voll ist)." />
@@ -490,7 +502,7 @@
     <string id="b1071_mcm_h_c12c656b6c" text="Lebensmittelvorratswert, bei dem der Lebensmittelmodifikator sein Maximum erreicht. Typisch: 20-40." />
     <string id="b1071_mcm_h_c31a7c497b" text="Erschöpfungsniveau, bei dem das Königreich in die Krisenzone eintritt (Kriegserklärungen blockiert, starker Friedensdruck). Standard: 85." />
     <string id="b1071_mcm_h_c3dadc496c" text="% des maximalen Pools bleiben erhalten, nachdem „Plünderung“ ausgewählt wurde." />
-    <string id="b1071_mcm_h_c4e1a056bd" text="Gesamtlohn der Garnisonsgruppe als Prozentsatz dessen, was die gleichen Truppen in einer Feldgruppe kosten würden. 60 = Garnison zahlt 60 % (40 % Rabatt). 100 = kein Rabatt. Standard: 60." />
+    <string id="b1071_mcm_h_c4e1a056bd" text="Gesamtlohn der Garnisonsgruppe als Prozentsatz dessen, was die gleichen Truppen in einer Feldgruppe kosten würden. 80 = Garnison zahlt 80 % (20 % Rabatt). 100 = kein Rabatt. Standard: 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Verkleinert alle Poolgrößen um den untenstehenden Divisor." />
     <string id="b1071_mcm_h_c6dedb0344" text="Master-Umschaltung. Wenn ein Königreich zerstört wird, werden berechtigte Clans gerettet statt vernichtet. Während einer Gnadenfrist werden sie zu unabhängigen Fraktionen und suchen dann Söldnerdienste in einem kulturbetonten Königreich. Standard: true." />
     <string id="b1071_mcm_h_c7d953daef" text="Jeder Gefechtsverlust verbraucht diese × 1 Mannkraft aus dem Heimatvorrat der Gruppe." />
@@ -530,11 +542,11 @@
         <string id="b1071_mcm_h_town_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett einer Stadt rekrutiert werden kann. Die Elite-Rekrutierung in Burgen bleibt unverändert; dies gilt nur für die Vanilla-Freiwilligenrekrutierung." />
         <string id="b1071_mcm_h_village_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett eines Dorfes rekrutiert werden kann. Verwendet nur den Typ der Herkunftssiedlung; die Mannstärke stammt weiterhin aus dem gebundenen Stadt- oder Burgpool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontaler Versatz vom linken Bildschirmrand für das Overlay-Hauptpanel." />
-    <string id="b1071_mcm_h_e1a2720769" text="Truppen höherer Stufen überleben eher als Verwundete, als dass sie bei der automatischen Auflösung sterben. T1=+0 %, T2=+5 %, T3=+10 %, T4=+15 %, T5=+20 %, T6=+25 % Pauschalbonus auf die Überlebenschance zusätzlich zum medikamentenbasierten Basissatz." />
+    <string id="b1071_mcm_h_e1a2720769" text="Truppen höherer Stufen überleben eher als Verwundete, als dass sie bei der automatischen Auflösung sterben. T1=+0 %, T2=+0 %, T3=+5 %, T4=+10 %, T5=+15 %, T6=+20 % Pauschalbonus auf die Überlebenschance zusätzlich zum medikamentenbasierten Basissatz." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Jeder bemerkenswerten Stadt wird durch eine Großinvestition mehr Macht verliehen. Standard: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Wie stark Königreiche gleicher Kultur bei der Zuweisung von Söldnerdiensten bevorzugt werden. Höhere Werte machen Kultur fast zur Pflicht. Bei 2,0 erzielen Königreiche gleicher Kultur eine dreifach höhere Punktzahl. Standard: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Einfluss, der durch eine bescheidene Investition erzielt wird (nur wenn das Dorf in Ihrem Königreich liegt). Standard: 2.5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Tage, die ein Häftling der Stufe 4 festgehalten werden muss, bevor er rekrutiert werden kann. Stellt die Zeit dar, die benötigt wird, um Widerstand zu brechen und Loyalität auszuhandeln. Standard: 7." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Tage, die ein Häftling der Stufe 4 festgehalten werden muss, bevor er rekrutiert werden kann. Stellt die Zeit dar, die benötigt wird, um Widerstand zu brechen und Loyalität auszuhandeln. Standard: 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garnisonsparteien zahlen im Vergleich zu Feldtruppen einen geringeren Lohn. Historisch korrekt: Garnisonssoldaten erhielten oft einen geringeren Lohn, ergänzt durch Unterkunft und Verpflegung. Gilt zusätzlich zu Vanilla-Vergünstigungen und Baurabatten." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Durch eine großzügige Investition können Beziehungen zu jedem Dorf aufgebaut werden. Standard: 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Erschöpfung durch den Angriff auf das Königreich nach der Belagerung." />
@@ -548,7 +560,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Der Malus für das Herdwachstum pro Tag wird bei Zerstörung 100 direkt auf das Dorf angewendet. Standard: 2,0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Tägliches Einkommen pro Clanstufe für kleinere Fraktionen, die derzeit unter Söldnerverträgen stehen. Niedriger als blockfreie Fraktionen, weil sie Vertragslöhne von ihrem Arbeitgeberkönigreich erhalten. Standard: 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Master-Umschaltung. Ermöglicht: (1) Erwerb von Sklaven durch Dorfraub, (2) Versklavung von Gefangenen im Menü „Gefangene versklaven“ der Stadt, (3) tägliche Stadtboni, solange Sklavenwaren auf dem zivilen Markt der Stadt erhältlich sind." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Tage muss ein Gefangener der Stufe 5 festgehalten werden, bevor er rekrutiert werden kann. Elitetruppen widerstehen länger. Standard: 14." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Tage muss ein Gefangener der Stufe 5 festgehalten werden, bevor er rekrutiert werden kann. Elitetruppen widerstehen länger. Standard: 21." />
     <string id="b1071_mcm_h_f786952c1d" text="Maximal zulässige Nennleistung durch städtische Investitionen. Der Investitionskraftbonus wird übersprungen, wenn er bereits auf oder über diesem Niveau liegt. Standard: 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Die Goldkosten für die Rekrutierung eines Gefangenen der Stufe 5. Standard: 2500." />
     <string id="b1071_mcm_h_f7e2549a92" text="Die Kriegserschöpfungsgewinne werden verstärkt, wenn die durchschnittliche Siedlungskraft eines Königreichs erschöpft ist. Spiegelt die Rückkopplungsschleife wider: Leere Pools bedeuten, dass Verluste stärker spürbar sind." />
@@ -710,6 +722,7 @@
     <string id="b1071_mcm_t_9f315112a8" text="Friedensbias (Low-Band)" />
     <string id="b1071_mcm_t_a04dd62ba7" text="Registerkarte „Hauptbuch-Standard“ (0-12)" />
     <string id="b1071_mcm_t_a052e9fa87" text="Regen-Strafteiler" />
+    <string id="b1071_mcm_t_a2b3c4d501" text="T2-Rekrutierungs-Goldkosten (diversifizierter Pool)" />
     <string id="b1071_mcm_t_a323f17518" text="Ermöglichen Sie die Sklavenwirtschaft" />
     <string id="b1071_mcm_t_a37290a213" text="Regenerationsobergrenze % des Pools/Tag" />
     <string id="b1071_mcm_t_a6a089949c" text="Aktivieren Sie Tooltips für die Mannstärke bei der Abrechnung" />
@@ -732,6 +745,7 @@
     <string id="b1071_mcm_t_b30e9966cb" text="Erschöpfter Schwellenwert %" />
     <string id="b1071_mcm_t_b324e36f0f" text="Aktivieren Sie die saisonale Regeneration" />
     <string id="b1071_mcm_t_b36bdd7507" text="Voreingestellte Miet- und Upgrade-Kosten" />
+    <string id="b1071_mcm_t_b3c4d5e602" text="T3-Rekrutierungs-Goldkosten (diversifizierter Pool)" />
     <string id="b1071_mcm_t_b418b27d7b" text="Maximaler kombinierter Wohlstandsabzug" />
     <string id="b1071_mcm_t_b496502413" text="Eroberung erschöpft behalten %" />
     <string id="b1071_mcm_t_b63e6d84dc" text="Großer Herdbonus/Tag" />
@@ -1047,5 +1061,39 @@ Keine Einträge gefunden." />
                 <string id="b1071_overlay_col_cas_ratio" text="Verhältnis" />
                 <string id="b1071_overlay_totals_bloodiest" text="Blutigster Krieg: {PAIR}" />
                 <string id="b1071_overlay_total_entries_cas" text="Kriege: {COUNT}" />
+                                <!-- v0.2.8: Slave conversion selection UI -->
+                                <string id="b1071_sc_title" text="Gefangene zur Versklavung auswählen (T1-{MAXTIER})" />
+                                <string id="b1071_sc_total" text="Gesamt" />
+                                <string id="b1071_sc_selected" text="Ausgewählt" />
+                                <string id="b1071_sc_confirm" text="Ausgewählte versklaven" />
+                                <string id="b1071_sc_select_all" text="Alle auswählen" />
+                                <string id="b1071_sc_deselect_all" text="Auswahl aufheben" />
+                                <string id="b1071_sc_total_selected" text="{COUNT} Gefangene{PLURAL} ausgewählt" />
+                                <string id="b1071_sc_open_fail" text="Sklavenumwandlungsbildschirm konnte nicht geöffnet werden: {ERR}" />
+                                <string id="b1071_sc_no_screen" text="Sklavenumwandlung: kein aktiver Bildschirm." />
+                                <string id="b1071_cr_elite_header_div" text="Burgaufgebot (diversifizierter Pool)" />
+                                <!-- v0.2.8: MCM new settings -->
+                                <string id="b1071_mcm_t_8c3e9a1b01" text="Auswahlbildschirm für Versklavung aktivieren" />
+                                <string id="b1071_mcm_h_8c3e9a1b01" text="Wenn aktiviert, öffnet die Stadtoption Gefangene versklaven einen Bildschirm zur Auswahl der umzuwandelnden Gefangenen. Wenn deaktiviert, werden alle geeigneten Gefangenen gesammelt umgewandelt. Standard: aktiviert." />
+                                <string id="b1071_mcm_t_a1d5f3b201" text="Zugriffsbeschränkung für Rekrutierung" />
+                                <string id="b1071_mcm_h_a1d5f3b201" text="Legt fest, wer aus Burgen rekrutieren darf. 0 = offen, 1 = nur Königreich, 2 = Besitzerclan + Herrscherclan. Dieselben Regeln gelten für Spieler und KI. Standard: 1." />
+                                <string id="b1071_mcm_t_b2e6f4c302" text="Diversifizierten Burgpool aktivieren" />
+                                <string id="b1071_mcm_h_b2e6f4c302" text="Wenn aktiviert, erzeugen Burgen eine Mischung aus T2-T6-Truppen statt nur T4-T6-Eliten. Standard: aktiviert." />
+                                <string id="b1071_mcm_t_c3f7a5d403" text="Pool T2-Aufgebot Prozent" />
+                                <string id="b1071_mcm_h_c3f7a5d403" text="Prozentsatz der täglichen Burgpool-Regeneration für T2-Basisaufgebote. Die vier Tier-Prozentsätze sollten zusammen 100 ergeben. Standard: 45." />
+                                <string id="b1071_mcm_t_d4a8b6e504" text="Pool T2-Adel Prozent" />
+                                <string id="b1071_mcm_h_d4a8b6e504" text="Prozentsatz der täglichen Burgpool-Regeneration für T2-Truppen der Adelslinie. Standard: 35." />
+                                <string id="b1071_mcm_t_e5b9c7f605" text="Pool T3-T4 Prozent" />
+                                <string id="b1071_mcm_h_e5b9c7f605" text="Prozentsatz der täglichen Burgpool-Regeneration für T3-T4-Truppen. Standard: 15." />
+                                <string id="b1071_mcm_t_f6cad8a706" text="Pool T5+ Prozent" />
+                                <string id="b1071_mcm_h_f6cad8a706" text="Prozentsatz der täglichen Burgpool-Regeneration für T5-T6-Elitetruppen. Standard: 5." />
+                                <string id="b1071_mcm_t_a7dbe9b807" text="Dynamische Poolkapazität aktivieren" />
+                                <string id="b1071_mcm_h_a7dbe9b807" text="Wenn aktiviert, skaliert die Burgpool-Kapazität mit Wohlstand und Mauerstufe, statt eine feste Obergrenze zu verwenden. Standard: aktiviert." />
+                                <string id="b1071_mcm_t_b8ecfac908" text="Dynamische Basiskapazität" />
+                                <string id="b1071_mcm_h_b8ecfac908" text="Mindestkapazität des Pools unabhängig vom Wohlstand, nur im dynamischen Modus verwendet. Standard: 5." />
+                                <string id="b1071_mcm_t_c9fdabd009" text="Dynamische Wohlstandsskalierung" />
+                                <string id="b1071_mcm_h_c9fdabd009" text="Poolkapazitätsbonus pro Wohlstandspunkt, nur im dynamischen Modus verwendet. Beispiel: 0,005 bei 1500 Wohlstand ergibt +7 Truppen. Standard: 0,005." />
+                                <string id="b1071_mcm_t_dafebce110" text="Dynamischer Mauerstufenbonus" />
+                                <string id="b1071_mcm_h_dafebce110" text="Poolkapazitätsbonus pro Mauerstufe, nur im dynamischen Modus verwendet. Beispiel: 3 bei Mauerstufe 2 ergibt +6 Truppen. Standard: 3." />
   </strings>
 </base>

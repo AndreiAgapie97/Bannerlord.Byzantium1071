@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Byzantium1071.Campaign.Behaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -40,6 +41,7 @@ namespace Byzantium1071.Campaign.Settings
 
         // Cached delegate so AddButton always gets the same instance.
         private static readonly Action _showReportDelegate = static () => ShowReportAction();
+        private static readonly Action _rebuildRecruitmentDelegate = static () => RebuildRecruitmentAction();
 
         // ── Public lifecycle ───────────────────────────────────────────────────────
 
@@ -183,6 +185,19 @@ namespace Byzantium1071.Campaign.Settings
                             b.SetHintText(
                                 L("b1071_compat_hint_open_report",
                                   "Reopens the same popup that appears automatically when you load a campaign. If 'Core game systems' above still reads 'Start a campaign to check', load a campaign first — the popup will appear on its own and the Core Systems section will fill in."));
+                        });
+
+                    g.AddButton("rebuild_recruitment",
+                        L("b1071_compat_button_rebuild_sources_full", "Rebuild Recruitment Sources"),
+                        new ProxyRef<Action>(() => _rebuildRecruitmentDelegate, v => { }),
+                        L("b1071_compat_button_rebuild_sources", "Rebuild Sources"),
+                        b =>
+                        {
+                            b.SetOrder(5);
+                            b.SetRequireRestart(false);
+                            b.SetHintText(
+                                L("b1071_compat_hint_rebuild_sources",
+                                  "Re-scans volunteer boards, re-applies Campaign++ volunteer sanitization, and clears the castle recruitment culture caches. Use this after troop-tree mods are added mid-save or when volunteer boards look stale."));
                         });
                 });
 
@@ -340,6 +355,38 @@ namespace Byzantium1071.Campaign.Settings
             {
                 TaleWorlds.Library.Debug.Print(
                     $"[Byzantium1071] CompatibilityFluentSettings.ShowReportAction error: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private static void RebuildRecruitmentAction()
+        {
+            try
+            {
+                if (TLCampaign.Current == null || B1071_CastleRecruitmentBehavior.Instance == null)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=b1071_cr_rebuild_no_campaign}Load a campaign first to rebuild Campaign++ recruitment sources.").ToString(),
+                        Colors.Yellow));
+                    return;
+                }
+
+                var (settlements, changedBoards, cultures) =
+                    B1071_CastleRecruitmentBehavior.Instance.RebuildRecruitmentSources();
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TextObject("{=b1071_cr_rebuild_done}Recruitment sources rebuilt: {SETTLEMENTS} settlements scanned, {CHANGED} volunteer board{PLURAL} normalized, {CULTURES} culture cache{CPLURAL} refreshed.")
+                        .SetTextVariable("SETTLEMENTS", settlements)
+                        .SetTextVariable("CHANGED", changedBoards)
+                        .SetTextVariable("PLURAL", changedBoards != 1 ? "s" : string.Empty)
+                        .SetTextVariable("CULTURES", cultures)
+                        .SetTextVariable("CPLURAL", cultures != 1 ? "s" : string.Empty)
+                        .ToString(),
+                    new Color(0.3f, 0.7f, 0.3f)));
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071] CompatibilityFluentSettings.RebuildRecruitmentAction error: {ex.GetType().Name}: {ex.Message}");
             }
         }
 

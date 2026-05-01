@@ -34,7 +34,7 @@ namespace Byzantium1071.Campaign.Patches
     ///   Garrison/siege note:
     ///     Garrison defenders often have no MobileParty (settlement party).
     ///     Vanilla base survival for them = 0% (no surgeon, no level bonus applied).
-    ///     This patch intentionally gives T6 garrison defenders +25% — elite
+    ///     This patch intentionally gives T6 garrison defenders +20% — elite
     ///     troops resist total wipe-outs even without a field surgeon.
     ///
     ///   Fast-path early exits (mirrors base method guard conditions):
@@ -42,8 +42,8 @@ namespace Byzantium1071.Campaign.Patches
     ///     • character.IsHero → skip, heroes unaffected (see above)
     ///
     /// Tier bonus (additive flat, on top of Medicine-based base rate):
-    ///   T1 = +0%   T2 = +5%   T3 = +10%
-    ///   T4 = +15%  T5 = +20%  T6+ = +25% (capped)
+    ///   T1 = +0%   T2 = +0%   T3 = +5%
+    ///   T4 = +10%  T5 = +15%  T6+ = +20% (capped)
     /// </summary>
     [HarmonyPatch(typeof(DefaultPartyHealingModel), nameof(DefaultPartyHealingModel.GetSurvivalChance))]
     public static class B1071_FatalityPatch
@@ -60,9 +60,9 @@ namespace Byzantium1071.Campaign.Patches
 
                 int tier = Math.Max(1, character.Tier);
 
-                // T1=+0%, T2=+5%, T3=+10%, T4=+15%, T5=+20%, T6+=+25%
-                float tierBonus = (tier - 1) * 0.05f;
-                if (tierBonus > 0.25f) tierBonus = 0.25f;
+                // T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6+=+20%
+                float tierBonus = Math.Max(0, tier - 2) * 0.05f;
+                if (tierBonus > 0.20f) tierBonus = 0.20f;
 
                 __result = Math.Min(1f, __result + tierBonus);
             }

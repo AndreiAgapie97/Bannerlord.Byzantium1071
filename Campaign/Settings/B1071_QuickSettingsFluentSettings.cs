@@ -109,7 +109,7 @@ namespace Byzantium1071.Campaign.Settings
                         3, () => s.EnableMinorFactionIncome, v => s.EnableMinorFactionIncome = v);
 
                     AddToggle(g, "qs_garrison_wage", L("b1071_qs_name_garrison_wage", "Garrison Wage Discount"),
-                        L("b1071_qs_hint_garrison_wage", "Garrison troops cost a reduced percentage of field wages (default 60%)."),
+                        L("b1071_qs_hint_garrison_wage", "Garrison troops cost a reduced percentage of field wages (default 80%)."),
                         4, () => s.EnableGarrisonWageDiscount, v => s.EnableGarrisonWageDiscount = v);
                 });
 

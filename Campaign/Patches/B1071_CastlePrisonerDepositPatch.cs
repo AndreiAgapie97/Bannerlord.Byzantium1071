@@ -10,6 +10,8 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 
 namespace Byzantium1071.Campaign.Patches
@@ -148,8 +150,24 @@ namespace Byzantium1071.Campaign.Patches
 
             // Record depositor for consignment income tracking.
             string? depositorHeroId = mobileParty.LeaderHero?.StringId;
+            string partyId = mobileParty.StringId ?? string.Empty;
 
             B1071_VerboseLog.Log("Prisoners", $"Castle deposit: {mobileParty.Name} deposited {totalQueued} prisoner(s) at {settlement.Name} (room={room}).");
+
+            // Notify player when an AI lord deposits prisoners at their castle.
+            if (totalQueued > 0 && settlement.Owner == Hero.MainHero)
+            {
+                string partyName = mobileParty.LeaderHero?.Name?.ToString()
+                    ?? mobileParty.Name?.ToString() ?? "An ally";
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TextObject("{=b1071_cr_ai_deposit_arrived}{PARTY} deposited {COUNT} prisoner{PLURAL} at {CASTLE}.")
+                        .SetTextVariable("PARTY", partyName)
+                        .SetTextVariable("COUNT", totalQueued)
+                        .SetTextVariable("PLURAL", totalQueued != 1 ? "s" : string.Empty)
+                        .SetTextVariable("CASTLE", settlement.Name?.ToString() ?? "castle")
+                        .ToString(),
+                    new Color(0.3f, 0.7f, 0.9f))); // Blue — informational, matches deposit family.
+            }
 
             if (!string.IsNullOrEmpty(depositorHeroId))
             {
@@ -157,7 +175,10 @@ namespace Byzantium1071.Campaign.Patches
                 if (behavior != null)
                 {
                     foreach (var (troop, count, _) in toDeposit)
+                    {
                         behavior.RecordDeposit(settlement.StringId, depositorHeroId!, troop.StringId, count);
+                        behavior.RecordEnslavementXpDeposit(settlement.StringId, depositorHeroId!, partyId, troop.StringId, count);
+                    }
                 }
             }
         }
@@ -196,6 +217,7 @@ namespace Byzantium1071.Campaign.Patches
             if (toEnslave.Count == 0) return;
 
             int totalEnslaved = 0;
+            TroopRoster soldRoster = TroopRoster.CreateDummyTroopRoster();
             foreach (var element in toEnslave)
             {
                 for (int unit = 0; unit < element.Number; unit++)
@@ -216,13 +238,21 @@ namespace Byzantium1071.Campaign.Patches
                             settlement, lordHero, slavePrice, disableNotification: true);
                     }
 
+                    soldRoster.AddToCounts(element.Character, 1);
                     totalEnslaved++;
                 }
             }
             done:;
 
             if (totalEnslaved > 0)
+            {
                 B1071_VerboseLog.Log("SlaveEconomy", $"Town enslavement: {mobileParty.Name} enslaved {totalEnslaved} prisoner(s) at {settlement.Name} @ {slavePrice}g each.");
+                B1071_SlaveEconomyBehavior.AwardPrisonerProcessingRogueryXp(
+                    mobileParty,
+                    lordHero,
+                    soldRoster,
+                    "AiTownAutoEnslave");
+            }
 
             // After this, roster contains only heroes + T4+ regulars + any T1-T3
             // the town couldn't afford. Vanilla's handler will sell/ransom those normally.

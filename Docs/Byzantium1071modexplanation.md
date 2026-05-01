@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 0.2.7.2  
+**Version:** 1.0.0.1
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.3.15)  
 **Mod ID:** `Byzantium1071`
 
@@ -51,7 +51,7 @@ The mod is designed to be **fully symmetric**: the same rules that limit *your* 
 
 Everything is configurable via the Mod Configuration Menu (MCM). If a feature is not to your taste, almost every system can be individually toggled.
 
-Localization uses Bannerlord's standard keyed `TextObject` workflow (`{=key}` + `SetTextVariable`) backed by language dictionaries in `_Module/ModuleData/Languages/` (English, Simplified Chinese, and French), so text follows the player's selected game language.
+Localization uses Bannerlord's standard keyed `TextObject` workflow (`{=key}` + `SetTextVariable`) backed by language dictionaries in `_Module/ModuleData/Languages/` (English, Simplified Chinese, French, and German), so text follows the player's selected game language.
 
 ---
 
@@ -253,13 +253,29 @@ Players access this via the castle game menu option "🏰 Recruit troops". AI lo
 
 ### Source 1: Elite Troop Pool
 
-Each castle generates T4/T5/T6 troops matching the settlement's culture. The elite pool:
+Each castle generates T4/T5/T6 troops matching the settlement's culture (or T2–T6 with diversified pool enabled). The elite pool:
 
-- Regenerates daily from the castle's manpower pool (1–3 troops/day based on prosperity)
+- Regenerates daily from the castle's manpower pool (1–2 troops/day based on prosperity)
 - Each regenerated troop costs `CastleEliteManpowerCost` (default: 1) manpower
-- Is capped per castle by `CastleElitePoolMax`
-- Consists of a random distribution of culture-specific troop types from both the basic and noble troop trees
-- Anyone visiting a non-hostile castle can recruit from the elite pool (both player and AI; only hostile castles are blocked)
+- Is capped per castle by `CastleElitePoolMax` (or dynamic formula when `EnableDynamicPoolCapacity` is ON)
+- Consists of a random distribution of culture-specific troop types from both the basic and noble troop trees, plus any additional troop roots currently present on same-culture volunteer boards
+- Access can be restricted via `CastleRecruitmentAccess`: 0 = open, 1 = same faction only (default), 2 = owner clan + ruling clan only — applied identically to player and AI
+
+#### Diversified Pool (optional)
+
+When `EnableDiversifiedCastlePool` is ON, the pool regenerates a weighted mix of tiers instead of only T4–T6:
+- **T2 Levy** (default 45%) — basic infantry/ranged of the castle's culture
+- **T2 Noble** (default 35%) — noble-line T2 troops
+- **T3–T4** (default 15%) — mid-tier troops
+- **T5+** (default 5%) — elite and champion troops
+
+#### Dynamic Pool Capacity (optional)
+
+When `EnableDynamicPoolCapacity` is ON, pool cap = `CastleElitePoolBaseCapDynamic` + (`prosperity` × `CastleElitePoolProsperityScaling`) + (`wallLevel` × `CastleElitePoolWallBonus`). Defaults: 5 + 0.005×prosperity + 3×walls.
+
+#### Recruitment Source Rebuild (v1.0.0.1)
+
+Because volunteer-board troop trees can be altered by other mods after a save already exists, Campaign++ now exposes a manual **Rebuild Recruitment Sources** action in the Compatibility tab. It re-sanitizes volunteer boards, clears the castle culture caches, and re-discovers supplemental troop roots from live same-culture settlements without wiping existing elite-pool stock.
 
 ### Source 2: Converted Prisoners
 
@@ -267,9 +283,9 @@ T4+ prisoners held at a castle for a configured number of days become recruitabl
 
 | Tier | Required Days (default) | Gold Cost (default) |
 |------|------------------------|---------------------|
-| T4   | 7 days                 | 1,200g              |
-| T5   | 14 days                | 2,500g              |
-| T6   | 21 days                | 5,000g              |
+| T4   | 10 days                | 1,200g              |
+| T5   | 21 days                | 2,500g              |
+| T6   | 35 days                | 5,000g              |
 
 - Day tracking is per troop *type* per castle (not per individual prisoner)
 - Once the waiting period is met, all prisoners of that type at that castle become ready simultaneously
@@ -283,7 +299,21 @@ T4+ prisoners still serving their waiting period. Visible in the recruitment scr
 
 T1–T3 prisoners at castles are automatically enslaved to the nearest town's slave market each day (requires Slave Economy enabled). This keeps the prison roster clean and feeds into the town-level slave economy system.
 
-**Enslavement income:** The castle owner receives the dynamic slave market price per enslaved prisoner. The price is obtained from `nearestTown.Town.GetItemPrice(_slaveItem)` — the same town that receives the slave goods. Gold is created via `GiveGoldAction.ApplyBetweenCharacters(null, owner, totalIncome, true)`. This makes even T1 prisoners valuable (slave market price may far exceed their ransom value).
+**Enslavement income:** The castle owner receives the dynamic slave market price per enslaved prisoner. The price is obtained from `nearestTown.Town.GetItemPrice(_slaveItem)` — the same town that receives the slave goods. Income is distributed through `DistributeIncome`:
+- **Same-clan / untracked prisoners:** 100% goes to the castle owner.
+- **Cross-clan depositor:** Split by the holding fee — depositor receives (100 − fee)%, owner receives fee%.
+- **Hostile depositor:** 100% goes to the castle owner (wartime forfeit).
+
+**Affordability gate:** Processing is per-unit. Before each enslavement, the nearest town's gold is checked against the slave price. If the town cannot afford the slave, ALL remaining enslavement stops for that day — prisoners stay in the dungeon. Towns with low gold may take several in-game days to process a large batch.
+
+**Roguery XP parity (v1.0.0.1):** Enslavement now grants the same Roguery XP Bannerlord awards for prisoner sales. Immediate town enslavement uses `SkillLevelingManager.OnPrisonerSell` whenever the original party still exists. Delayed castle processing stores the original depositor hero and party in a dedicated FIFO queue, then falls back to `Hero.AddSkillXp` with the exact vanilla-equivalent tier-sum formula if that party is gone.
+
+**Notifications (v1.0.0.1):**
+- **Owner income:** When the player's own castle enslaves prisoners, a green notification shows: "[Castle] enslaved X prisoners — sold to [Town], treasury income +Yg."
+- **Depositor income:** When a cross-clan castle processes the player's deposited prisoners, a blue notification shows the consignment share.
+- **Deposit confirmation:** When the player deposits prisoners at their own castle, a confirmation message appears: "Deposited X prisoners at [Castle]. Low-tier will be auto-enslaved; elites held for conversion."
+
+**Verbose logging:** Each castle's daily enslavement is logged with: candidate count, processed count, target town, slave price, town gold remaining, and a TOWN BROKE flag when the affordability gate halts processing.
 
 ### Access Rules
 
@@ -320,7 +350,7 @@ Player recruitment follows the same clan-based rules:
 
 Players can deposit prisoners at castles for processing through the consignment model:
 
-- **Own castle:** Use vanilla's "Manage prisoners" option (no consignment split — you already own the castle)
+- **Own castle:** Use vanilla's "Manage prisoners" option (no consignment split — you already own the castle). A deposit confirmation is shown: "Deposited X prisoners at [Castle]."
 - **Same-faction castle:** Use vanilla's "Donate prisoners" option in the dungeon menu. Our `OnPrisonerDonatedToSettlement` event hook records depositor tracking automatically.
 - **Neutral castle:** Vanilla's "Donate prisoners" doesn't show at neutral castles (requires same-faction). We add a custom dungeon menu option "⚔️ Deposit prisoners" that appears only at neutral castles. Uses the same vanilla `PartyScreenHelper.OpenScreenAsDonatePrisoners()` API — identical party screen and done handler.
 - **Hostile castle:** Blocked (player cannot access hostile castles)
@@ -375,6 +405,8 @@ The castle recruitment system uses a **consignment model** for prisoner income. 
 
 **Player deposit parity:** The behavior listens to `CampaignEvents.OnPrisonerDonatedToSettlementEvent` — the campaign event vanilla fires when the player uses the dungeon menu's "Donate prisoners" party screen. When the player deposits prisoners at another clan's castle, depositor tracking is established via `RecordDeposit`, giving the player their consignment share of all future income from those prisoners. Own-clan castles are skipped (same-clan economics make tracking unnecessary). An info message notifies the player of the consignment terms.
 
+**Same-clan delayed XP tracking:** Own-clan deposits still bypass economic FIFO, but they are now tracked in a separate delayed-enslavement XP queue so the original captor keeps the Roguery XP when those prisoners are auto-enslaved later.
+
 | Deposit Path | Who | Tracking |
 |---|---|---|
 | AI lord enters same-faction castle | AI | `B1071_CastlePrisonerDepositPatch` → `RecordDeposit` |
@@ -418,6 +450,7 @@ All castle recruitment data is saved with the campaign:
 
 - `_prisonerDaysHeld`: per-castle per-troop day counters (prisoner conversion tracking)
 - `_elitePool`: per-castle per-troop stock counts (culture elite pool)
+- `_enslavementXpTracking`: per-castle per-troop FIFO of original depositor hero + party for delayed Roguery XP attribution
 
 Both dictionaries are flattened into parallel lists for `SyncData` serialization. Stale entries are cleaned up when prisoners are fully recruited or removed from the prison roster.
 
@@ -427,7 +460,7 @@ Both dictionaries are flattened into parallel lists for `SyncData` serialization
 |---------|---------|-------------|
 | `EnableCastleRecruitment` | true | Master toggle for the entire system |
 | `CastlePrisonerAutoEnslaveTierMax` | 3 | Unified enslavement tier cap (player + AI). Controls all enslavement paths: player town menu, AI town entry, castle auto-enslave. T4+ must go to castle or ransom. |
-| `CastleRecruitT4Days` / `T5Days` / `T6Days` | 7 / 14 / 21 | Days before prisoners become recruitable |
+| `CastleRecruitT4Days` / `T5Days` / `T6Days` | 10 / 21 / 35 | Days before prisoners become recruitable |
 | `CastleRecruitGoldT4` / `T5` / `T6` | 1200 / 2500 / 5000 | Gold cost per recruit by tier |
 | `CastleElitePoolMax` | 20 | Maximum elite troops per castle |
 | `CastleEliteRegenMin` / `RegenMax` | 1 / 3 | Daily regen range (scales with prosperity) |
@@ -642,11 +675,11 @@ When `DefaultPartyHealingModel.GetSurvivalChance` would return a value < 1.0 for
 | Tier | Survival Bonus |
 |------|---------------|
 | T1   | +0%  |
-| T2   | +5%  |
-| T3   | +10% |
-| T4   | +15% |
-| T5   | +20% |
-| T6+  | +25% |
+| T2   | +0%  |
+| T3   | +5%  |
+| T4   | +10% |
+| T5   | +15% |
+| T6+  | +20% |
 
 **Effect**: Veterans are more likely to survive as wounded rather than die outright. Additive on top of vanilla base survival chance, capped at 100%.
 
@@ -657,11 +690,11 @@ In autoresolve, `DefaultCombatSimulationModel.SimulateHit` output is reduced for
 | Tier | Damage Reduction |
 |------|----------------|
 | T1   | −0%  |
-| T2   | −6%  |
-| T3   | −12% |
-| T4   | −18% |
-| T5   | −24% |
-| T6+  | −30% |
+| T2   | −0%  |
+| T3   | −6%  |
+| T4   | −12% |
+| T5   | −18% |
+| T6+  | −24% |
 
 **Effect**: Reduced damage lowers the probability of the fatal-hit gate firing per autoresolve tick. Combined with tier survivability: fewer casualty checks trigger AND better outcomes within each check.
 
@@ -703,7 +736,7 @@ Four presets control how much more veterans demand per day:
 | T5   | 12d/day | 20d    | 31d      | 42d    |
 | T6   | 17d/day | 34d    | 60d      | 85d    |
 
-Default: **Moderate**. 100 T6 troops at Moderate cost 6000 denars/day. Heroes and companions are excluded.
+Default: **Severe**. 100 T6 troops at Severe cost 8500 denars/day. Heroes and companions are excluded.
 
 **Caravan Guards wage exemption:** CaravanGuards are excluded from wage inflation entirely — they keep vanilla wages so caravan businesses remain profitable at all presets.
 
@@ -711,7 +744,7 @@ Default: **Moderate**. 100 T6 troops at Moderate cost 6000 denars/day. Heroes an
 
 ### Garrison Wage Discount
 
-Garrison parties pay a configurable percentage of field troop wages. Default **60%** (40% discount). Historically, garrison soldiers received reduced coin pay supplemented by shelter, rations, and equipment from the local lord.
+Garrison parties pay a configurable percentage of field troop wages. Default **80%** (20% discount). Historically, garrison soldiers received reduced coin pay supplemented by shelter, rations, and equipment from the local lord.
 
 The discount applies to the aggregate party wage total and stacks on top of vanilla's existing perk- and building-based garrison reductions. Togglable in MCM; the percentage is adjustable (10–100%).
 
@@ -787,7 +820,7 @@ All settings are in the Mod Configuration Menu. Key groups:
 | Recruitment Cost | Base cost per troop, culture discount, village volunteer tier max, town volunteer tier max |
 | Castle Recruitment | Enable/disable; prisoner tier threshold; T4/T5/T6 days and gold costs; elite pool max, regen range, manpower cost; AI recruit toggle |
 | Combat Realism | Enable/disable tier survivability; enable/disable tier armor simulation |
-| Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 60); garrison discount toggle |
+| Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 80); garrison discount toggle |
 | Overlay | Hotkey (M/N/K/F9-F12), panel position, default tab, rows per page |
 | War Effects | Enable/disable; raid/battle/siege/conquest drain %; conquest retain % |
 | Dynamic Conquest Protection | Enable toggle; depleted retain %, depleted threshold % |
@@ -933,6 +966,8 @@ Version-gated hard migration with notification:
 - **CavalryLogisticsOverhaul** (v1.2.0) — Fully compatible. No overlapping patch targets. Cavalry wage costs may compound (intentional — both mods make cavalry more expensive).
 - **Bannerlord.Diplomacy** (v1.0.1.50) — Compatible with caveats. See interaction map below.
 
+**Compatibility utility (v1.0.0.1):** The Campaign++ Compatibility tab now includes **Rebuild Recruitment Sources**, a safe manual refresh for volunteer-board sanitization and castle recruitment culture caches after troop-tree mods are added, removed, or updated mid-save.
+
 ### Bannerlord.Diplomacy Interaction Map (v0.2.7.2)
 
 Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five code paths can end a war:
@@ -1006,7 +1041,11 @@ Default divisor is 300: a 300-hearth village yields 1 slave per event; 600 heart
 
 **Prisoner enslavement (player)** — When in a town, the `⛓ Enslave prisoners` option appears in the town menu if you have non-hero prisoners. Selecting it converts all non-hero prisoners at **Tier 3 or below** to Slave goods (1:1). Heroes and T4+ prisoners cannot be enslaved — T4+ must be taken to a castle for recruitment conversion or ransomed at the tavern. The tier cap is controlled by the unified MCM setting `CastlePrisonerAutoEnslaveTierMax` (default 3), ensuring complete player/AI parity.
 
-**Prisoner enslavement (AI)** — When an AI lord party enters a town, **Tier 1–3** non-hero prisoners in their prison roster are automatically enslaved via the Harmony Prefix in `B1071_CastlePrisonerDepositPatch`. The town **buys** each slave at the current market price — gold is deducted from `Town.Gold` and paid to the lord via `GiveGoldAction.ApplyForSettlementToCharacter` (properly clamped, fires campaign events). If the town runs out of gold mid-batch, remaining T1–T3 prisoners stay with the lord and fall through to vanilla sell behavior (ransom gold). **Tier 4+ prisoners are not enslaved** — they are left for the vanilla ransom/release pipeline or deposited at castles for recruitment conversion. Both player and AI use the same `CastlePrisonerAutoEnslaveTierMax` setting. AI lords also deposit any slave items already in their inventory (from raids) into the town market on arrival.
+**Roguery XP parity** — Successful enslavement now grants Roguery XP equivalent to Bannerlord's vanilla prisoner-sale formula. The feature is controlled by `EnableEnslavementRogueryXp` and `EnslavementRogueryXpMultiplier` in MCM → Slave Economy.
+
+**Slave Conversion Selection UI (optional)** — When `EnableSlaveConversionSelection` is ON (MCM → Slave Economy), clicking enslave opens a selection screen instead of bulk-converting. Players see a list of eligible prisoners with +/− controls and Select All / Deselect All buttons, then confirm which prisoners to convert. This is particularly useful with mods like Lowborn that add valuable low-tier troops. When the toggle is OFF, the legacy bulk behavior is used.
+
+**Prisoner enslavement (AI)** — When an AI lord party enters a town, **Tier 1–3** non-hero prisoners in their prison roster are automatically enslaved via the Harmony Prefix in `B1071_CastlePrisonerDepositPatch`. The town **buys** each slave at the current market price — gold is deducted from `Town.Gold` and paid to the lord via `GiveGoldAction.ApplyForSettlementToCharacter` (properly clamped, fires campaign events). If the town runs out of gold mid-batch, remaining T1–T3 prisoners stay with the lord and fall through to vanilla sell behavior (ransom gold). **Tier 4+ prisoners are not enslaved** — they are left for the vanilla ransom/release pipeline or deposited at castles for recruitment conversion. Both player and AI use the same `CastlePrisonerAutoEnslaveTierMax` setting, and both now receive the same Roguery XP treatment as the player path. AI lords also deposit any slave items already in their inventory (from raids) into the town market on arrival.
 
 ### Starting slave stocks
 

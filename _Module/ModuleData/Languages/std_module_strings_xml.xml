@@ -9,6 +9,16 @@
     <string id="b1071_cr_consignment_garrison" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share)." />
     <string id="b1071_cr_deposit_label" text="⚔️ Deposit prisoners ({COUNT} available, {FEE}% holding fee)" />
     <string id="b1071_cr_deposited_msg" text="⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. You receive {SHARE}% of processing income (holding fee: {FEE}%)." />
+    <string id="b1071_cr_deposited_own" text="⚔️ Deposited {COUNT} prisoner{PLURAL} at {CASTLE}. Low-tier will be auto-enslaved; elites held for conversion." />
+    <string id="b1071_cr_owner_enslave" text="⚔️ {CASTLE} enslaved {COUNT} prisoner{PLURAL} — sold to {TOWN}, treasury income +{GOLD}{COIN}." />
+    <string id="b1071_cr_ai_deposit_arrived" text="⚔️ {PARTY} deposited {COUNT} prisoner{PLURAL} at {CASTLE}." />
+    <string id="b1071_cr_town_broke" text="⚔️ {CASTLE}: {STUCK} low-tier prisoner{PLURAL} await enslavement — {TOWN} ran out of gold. They will be retried tomorrow." />
+    <string id="b1071_cr_rebuild_no_campaign" text="Load a campaign first to rebuild Campaign++ recruitment sources." />
+    <string id="b1071_cr_rebuild_done" text="Recruitment sources rebuilt: {SETTLEMENTS} settlements scanned, {CHANGED} volunteer board{PLURAL} normalized, {CULTURES} culture cache{CPLURAL} refreshed." />
+    <string id="b1071_mcm_t_7d1f6fd4d0" text="Grant Roguery XP for enslavement" />
+    <string id="b1071_mcm_h_7d1f6fd4d0" text="When enabled, prisoner enslavement grants Roguery XP using Bannerlord's vanilla prisoner-sell formula. Immediate town enslavement uses the native party hook; delayed castle processing falls back to the original depositor if the party is gone. Default: true." />
+    <string id="b1071_mcm_t_5e69a58b2a" text="Enslavement Roguery XP multiplier" />
+    <string id="b1071_mcm_h_5e69a58b2a" text="Scales the vanilla-equivalent Roguery XP granted when prisoners are enslaved. 1.0 = exact prisoner-sell XP. 0 disables XP while keeping the rest of the enslavement system unchanged. Default: 1.0." />
     <string id="b1071_cr_elite_header" text="Elite Troops (Culture Pool)" />
     <string id="b1071_cr_manpower_block" text="Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left." />
       <string id="b1071_cr_tier_block" text="Volunteer cap: {SETTLEMENT} is a {TYPE}; it only provides volunteers up to tier {CAP}. {TROOP} is tier {TIER}." />
@@ -139,7 +149,7 @@
     <string id="b1071_qs_name_minor_faction" text="Minor Faction Economy" />
     <string id="b1071_qs_hint_minor_faction" text="Non-bandit minor factions receive a daily stipend so they don't go bankrupt." />
     <string id="b1071_qs_name_garrison_wage" text="Garrison Wage Discount" />
-    <string id="b1071_qs_hint_garrison_wage" text="Garrison troops cost a reduced percentage of field wages (default 60%)." />
+    <string id="b1071_qs_hint_garrison_wage" text="Garrison troops cost a reduced percentage of field wages (default 80%)." />
     <string id="b1071_qs_name_castle_recruitment" text="Castle Recruitment" />
     <string id="b1071_qs_hint_castle_recruitment" text="Castles generate elite troops from manpower and hold T4+ prisoners for conversion." />
     <string id="b1071_qs_name_castle_access" text="Open Castle Access" />
@@ -311,7 +321,7 @@
     <string id="b1071_mcm_h_004483500d" text="Pool multiplier at full security (100). E.g., 120 = safe settlement gets 120% bonus." />
     <string id="b1071_mcm_h_018c2990f0" text="Do not force peace with an enemy currently besieging one of your owned towns/castles." />
     <string id="b1071_mcm_h_027d8a0996" text="Legacy setting kept for save/config compatibility. Not used by current overlay UI." />
-    <string id="b1071_mcm_h_032b2ade51" text="Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 3." />
+    <string id="b1071_mcm_h_032b2ade51" text="Maximum elite troops regenerated per castle per day (at max prosperity). Actual amount scales linearly with prosperity. Default: 2." />
     <string id="b1071_mcm_h_03fd97c1a6" text="Village raids accumulate persistent devastation (0-100) that decays slowly. Devastated villages suffer reduced hearth growth, and their bound town/castle suffers prosperity, food, and security penalties." />
     <string id="b1071_mcm_h_0553e33580" text="Adds compact instrumentation rows to the Current ledger tab for balancing/debugging." />
     <string id="b1071_mcm_h_05edab757c" text="Absolute minimum manpower regenerated per day (towns and fallback)." />
@@ -326,7 +336,7 @@
     <string id="b1071_mcm_h_0f079f126d" text="Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50." />
     <string id="b1071_mcm_h_0faf392cd0" text="How strongly regen slows between soft-cap start and full pool. 0 disables slowdown effect." />
     <string id="b1071_mcm_h_1257dd959e" text="Relation gained with each village notable from a Grand investment. Default: 10." />
-    <string id="b1071_mcm_h_1306d0d841" text="Tier-exponential scaling for troop wages. 0=Vanilla | 1=Light (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Moderate (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Severe (T3+70%, T4+150%, T5+250%, T6+400%). Heroes/companions and CaravanGuards are excluded. Applies to AI and player equally." />
+    <string id="b1071_mcm_h_1306d0d841" text="Tier-exponential scaling for troop wages. 0=Vanilla | 1=Light (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Moderate (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Severe (T3+70%, T4+150%, T5+250%, T6+400%). Heroes/companions and CaravanGuards are excluded. Applies to AI and player equally. Default: 3." />
     <string id="b1071_mcm_h_135ecd103e" text="Minimum elite troops regenerated per castle per day (at zero prosperity). Default: 1." />
     <string id="b1071_mcm_h_144e546603" text="Castle-specific regen floor. Represents peasant levies from bound villages and the castle's tiny civilian community. This trickle is organic (not drawn from towns). Default: 1." />
     <string id="b1071_mcm_h_14cc7f2c2a" text="Power added to each town notable from a Modest investment. Default: 5." />
@@ -388,7 +398,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Logs detailed reasons for forced-peace and war-gate decisions." />
     <string id="b1071_mcm_h_4e8aece026" text="Master toggle. Enables the village investment (patronage) system — spend gold at villages for hearth growth, notable relations, influence, and notable power. AI lords also invest in their own villages. Default: true." />
     <string id="b1071_mcm_h_4ed533a03f" text="Maximum total bonus applied to peace decision support in band mode. Replaces the hard +200 override." />
-    <string id="b1071_mcm_h_54fe9937da" text="Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=-6%, T3=-12%, T4=-18%, T5=-24%, T6=-30%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check." />
+    <string id="b1071_mcm_h_54fe9937da" text="Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=0%, T3=-6%, T4=-12%, T5=-18%, T6=-24%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check." />
     <string id="b1071_mcm_h_5582afc84b" text="Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true." />
     <string id="b1071_mcm_h_5807af4ea7" text="How long raid-related recovery penalties persist." />
     <string id="b1071_mcm_h_5921a54d23" text="Governor Steward skill boosts regen; Leadership boosts max pool." />
@@ -459,6 +469,7 @@
     <string id="b1071_mcm_h_a122e143ec" text="Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update." />
     <string id="b1071_mcm_h_a12501eade" text="Influence gained from a Grand investment (only if village is in your kingdom). Default: 10." />
     <string id="b1071_mcm_h_a25f48c2d5" text="Gold cost for a Generous investment. Middle tier with balanced bonuses. Default: 5000." />
+    <string id="b1071_mcm_h_a2b3c4d501" text="Gold cost to recruit a Tier 2 troop from the castle's diversified pool. Only relevant when diversified pool is enabled. Default: 150." />
     <string id="b1071_mcm_h_a3c2806b96" text="Percentage chance that an AI lord will invest when entering an eligible town. Default: 30." />
     <string id="b1071_mcm_h_a45f13eae8" text="How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60." />
     <string id="b1071_mcm_h_a4d717ad4f" text="Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5." />
@@ -471,12 +482,13 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation." />
     <string id="b1071_mcm_h_ad9b011697" text="When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true." />
     <string id="b1071_mcm_h_adb939cb85" text="Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 21." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 35." />
     <string id="b1071_mcm_h_b00260dc2c" text="Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Gold cost for a Grand investment. Highest tier with the strongest bonuses and longest duration. Default: 12000." />
     <string id="b1071_mcm_h_b170010cab" text="Spring/summer boosts regen, winter penalizes it." />
     <string id="b1071_mcm_h_b2d942d050" text="Pool % below which a crisis alert is shown." />
     <string id="b1071_mcm_h_b378426501" text="If tiny pools are enabled, poolSize = max(minTinyPool, poolSize / divisor)." />
+    <string id="b1071_mcm_h_b3c4d5e602" text="Gold cost to recruit a Tier 3 troop from the castle's diversified pool. Only relevant when diversified pool is enabled. Default: 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Daily prosperity growth bonus from a Generous town investment. Default: 1.0." />
     <string id="b1071_mcm_h_b41e07e2b2" text="Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full)." />
@@ -490,7 +502,7 @@
     <string id="b1071_mcm_h_c12c656b6c" text="Food stock value at which food modifier reaches maximum. Typical: 20-40." />
     <string id="b1071_mcm_h_c31a7c497b" text="Exhaustion level at which kingdom enters Crisis band (war declarations blocked, strong peace pressure). Default: 85." />
     <string id="b1071_mcm_h_c3dadc496c" text="% of max pool retained after choosing Pillage." />
-    <string id="b1071_mcm_h_c4e1a056bd" text="Garrison party total wage as a percentage of what the same troops would cost in a field party. 60 = garrison pays 60% (40% discount). 100 = no discount. Default: 60." />
+    <string id="b1071_mcm_h_c4e1a056bd" text="Garrison party total wage as a percentage of what the same troops would cost in a field party. 80 = garrison pays 80% (20% discount). 100 = no discount. Default: 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Scales down all pool sizes by the divisor below." />
     <string id="b1071_mcm_h_c6dedb0344" text="Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true." />
     <string id="b1071_mcm_h_c7d953daef" text="Each battle casualty drains this × 1 manpower from the party's home pool." />
@@ -530,11 +542,11 @@
       <string id="b1071_mcm_h_town_vol_tier_max" text="Maximum troop tier that can be recruited from a town volunteer board. Castle elite recruitment is unaffected; this only applies to vanilla volunteer recruitment." />
       <string id="b1071_mcm_h_village_vol_tier_max" text="Maximum troop tier that can be recruited from a village volunteer board. Uses the source settlement type only; manpower still comes from the bound town or castle pool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontal offset from the left edge for the overlay root panel." />
-    <string id="b1071_mcm_h_e1a2720769" text="Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+5%, T3=+10%, T4=+15%, T5=+20%, T6=+25% flat bonus to survival chance on top of Medicine-based base rate." />
+    <string id="b1071_mcm_h_e1a2720769" text="Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6=+20% flat bonus to survival chance on top of Medicine-based base rate." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 7." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garrison parties pay a reduced wage relative to field troops. Historically accurate: garrison soldiers often received lower pay, supplemented by shelter and rations. Applies on top of vanilla perk and building discounts." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Relation gained with each village notable from a Generous investment. Default: 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Exhaustion gained by attacking kingdom after siege aftermath." />
@@ -548,7 +560,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Hearth growth penalty per day applied directly to the village at devastation 100. Default: 2.0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Daily income per clan tier for minor factions that are currently under mercenary contract. Lower than unaligned factions because they receive contract pay from their employer kingdom. Default: 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Master toggle. Enables: (1) village-raid slave acquisition, (2) prisoner enslavement at the town 'Enslave prisoners' menu, (3) daily town bonuses while Slave goods are present in the town's civilian market." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 14." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 21." />
     <string id="b1071_mcm_h_f786952c1d" text="Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Gold cost to recruit a Tier 5 prisoner. Default: 2500." />
     <string id="b1071_mcm_h_f7e2549a92" text="War exhaustion gains are amplified when a kingdom's average settlement manpower is depleted. Reflects the feedback loop: empty pools mean losses are felt more acutely." />
@@ -710,6 +722,7 @@
     <string id="b1071_mcm_t_9f315112a8" text="Peace bias (Low band)" />
     <string id="b1071_mcm_t_a04dd62ba7" text="Ledger default tab (0-12)" />
     <string id="b1071_mcm_t_a052e9fa87" text="Regen penalty divisor" />
+    <string id="b1071_mcm_t_a2b3c4d501" text="T2 recruitment gold cost (diversified pool)" />
     <string id="b1071_mcm_t_a323f17518" text="Enable slave economy" />
     <string id="b1071_mcm_t_a37290a213" text="Regen cap % of pool/day" />
     <string id="b1071_mcm_t_a6a089949c" text="Enable settlement manpower tooltips" />
@@ -732,6 +745,7 @@
     <string id="b1071_mcm_t_b30e9966cb" text="Depleted threshold %" />
     <string id="b1071_mcm_t_b324e36f0f" text="Enable seasonal regen" />
     <string id="b1071_mcm_t_b36bdd7507" text="Hire &amp; upgrade cost preset" />
+    <string id="b1071_mcm_t_b3c4d5e602" text="T3 recruitment gold cost (diversified pool)" />
     <string id="b1071_mcm_t_b418b27d7b" text="Max combined prosperity penalty" />
     <string id="b1071_mcm_t_b496502413" text="Conquest depleted retain %" />
     <string id="b1071_mcm_t_b63e6d84dc" text="Grand hearth bonus/day" />
@@ -1037,5 +1051,61 @@
     <string id="b1071_overlay_col_cas_ratio" text="Ratio" />
     <string id="b1071_overlay_totals_bloodiest" text="Bloodiest: {PAIR}" />
     <string id="b1071_overlay_total_entries_cas" text="Wars: {COUNT}" />
+    <!-- v0.2.8: Slave conversion selection UI -->
+    <string id="b1071_sc_title" text="Select Prisoners to Enslave (T1-{MAXTIER})" />
+    <string id="b1071_sc_total" text="Total" />
+    <string id="b1071_sc_selected" text="Selected" />
+    <string id="b1071_sc_confirm" text="Enslave Selected" />
+    <string id="b1071_sc_select_all" text="Select All" />
+    <string id="b1071_sc_deselect_all" text="Deselect All" />
+    <string id="b1071_sc_total_selected" text="{COUNT} prisoner{PLURAL} selected" />
+    <string id="b1071_sc_open_fail" text="Slave conversion screen failed to open: {ERR}" />
+    <string id="b1071_sc_no_screen" text="Slave conversion: no active screen." />
+    <!-- v0.2.8: Diversified castle pool header -->
+    <string id="b1071_cr_elite_header_div" text="Castle Levy (Diversified Pool)" />
+    <!-- v0.2.8: MCM new settings -->
+    <string id="b1071_mcm_t_sc_enable" text="Enable slave conversion selection" />
+    <string id="b1071_mcm_h_sc_enable" text="When enabled, shows a selection screen to pick which prisoners to enslave instead of bulk-converting all eligible. Useful when using mods like Lowborn that add value to low-tier troops. Default: true." />
+    <string id="b1071_mcm_t_cr_access" text="Castle recruitment access level" />
+    <string id="b1071_mcm_h_cr_access" text="Who can recruit from a castle's elite pool. 0 = Open (any non-hostile), 1 = Kingdom only (same faction), 2 = Owner clan + ruler clan only. AI uses the same rule for parity. Default: 1." />
+    <string id="b1071_mcm_t_b2e6f4c302" text="Enable diversified castle pool" />
+    <string id="b1071_mcm_h_b2e6f4c302" text="When enabled, castles generate a mix of troop tiers (T2-T6) instead of only T4-T6 elites. Reflects the medieval reality where professional soldiers made up 20-30% of an army, with the rest being levies. Default: true." />
+    <string id="b1071_mcm_t_cr_t2levy" text="Castle pool T2 levy %" />
+    <string id="b1071_mcm_h_cr_t2levy" text="Percentage of daily regen allocated to T2 basic (levy) troops. Default: 45." />
+    <string id="b1071_mcm_t_cr_t2noble" text="Castle pool T2 noble %" />
+    <string id="b1071_mcm_h_cr_t2noble" text="Percentage of daily regen allocated to T2 noble (elite tree) troops. Default: 35." />
+    <string id="b1071_mcm_t_cr_t3t4" text="Castle pool T3-T4 %" />
+    <string id="b1071_mcm_h_cr_t3t4" text="Percentage of daily regen allocated to T3-T4 mid-tier troops. Default: 15." />
+    <string id="b1071_mcm_t_cr_t5plus" text="Castle pool T5+ %" />
+    <string id="b1071_mcm_h_cr_t5plus" text="Percentage of daily regen allocated to T5-T6 elite troops. Default: 5." />
+    <string id="b1071_mcm_t_cr_dyncap" text="Enable dynamic pool capacity" />
+    <string id="b1071_mcm_h_cr_dyncap" text="When enabled, castle pool max capacity scales with prosperity and wall level instead of using a flat cap. Default: true." />
+    <string id="b1071_mcm_t_cr_dyncap_base" text="Dynamic cap base" />
+    <string id="b1071_mcm_h_cr_dyncap_base" text="Starting pool capacity before prosperity/wall bonuses. Default: 5." />
+    <string id="b1071_mcm_t_cr_dyncap_prosp" text="Dynamic cap prosperity scaling" />
+    <string id="b1071_mcm_h_cr_dyncap_prosp" text="Pool capacity added per prosperity point. E.g., 0.005 + 2000 prosperity = +10 capacity. Default: 0.005." />
+    <string id="b1071_mcm_t_cr_dyncap_wall" text="Dynamic cap wall bonus" />
+    <string id="b1071_mcm_h_cr_dyncap_wall" text="Pool capacity added per wall level. E.g., 3 per level × wall level 3 = +9 capacity. Default: 3." />
+    <!-- v0.2.8: Exact MCM keys used by settings attributes -->
+    <string id="b1071_mcm_t_8c3e9a1b01" text="Enable slave conversion selection UI" />
+    <string id="b1071_mcm_h_8c3e9a1b01" text="When enabled, the 'Enslave prisoners' option at towns opens a selection screen where you choose which prisoners to convert. When disabled, all eligible prisoners are converted in bulk. Default: true." />
+    <string id="b1071_mcm_t_a1d5f3b201" text="Recruitment access restriction" />
+    <string id="b1071_mcm_h_a1d5f3b201" text="Controls who can recruit from castles. 0 = Open, 1 = Kingdom Only, 2 = Clan + Ruler Only. Same rules apply to player and AI. Default: 1." />
+    <string id="b1071_mcm_t_c3f7a5d403" text="Pool T2 levy percent" />
+    <string id="b1071_mcm_h_c3f7a5d403" text="Percentage of daily castle pool regeneration allocated to T2 basic levy troops. The four tier percentages should sum to 100. Default: 45." />
+    <string id="b1071_mcm_t_d4a8b6e504" text="Pool T2 noble percent" />
+    <string id="b1071_mcm_h_d4a8b6e504" text="Percentage of daily castle pool regeneration allocated to T2 noble line troops. Default: 35." />
+    <string id="b1071_mcm_t_e5b9c7f605" text="Pool T3-T4 percent" />
+    <string id="b1071_mcm_h_e5b9c7f605" text="Percentage of daily castle pool regeneration allocated to T3-T4 troops. Default: 15." />
+    <string id="b1071_mcm_t_f6cad8a706" text="Pool T5+ percent" />
+    <string id="b1071_mcm_h_f6cad8a706" text="Percentage of daily castle pool regeneration allocated to T5-T6 elite troops. Default: 5." />
+    <string id="b1071_mcm_t_a7dbe9b807" text="Enable dynamic pool capacity" />
+    <string id="b1071_mcm_h_a7dbe9b807" text="When enabled, castle pool capacity scales with prosperity and wall level instead of using a flat cap. Default: true." />
+    <string id="b1071_mcm_t_b8ecfac908" text="Dynamic pool base cap" />
+    <string id="b1071_mcm_h_b8ecfac908" text="Minimum pool capacity regardless of prosperity, only used in dynamic mode. Default: 5." />
+    <string id="b1071_mcm_t_c9fdabd009" text="Dynamic pool prosperity scaling" />
+    <string id="b1071_mcm_h_c9fdabd009" text="Pool capacity bonus per point of prosperity, only used in dynamic mode. Example: 0.005 at 1500 prosperity adds 7 troops. Default: 0.005." />
+    <string id="b1071_mcm_t_dafebce110" text="Dynamic pool wall level bonus" />
+    <string id="b1071_mcm_h_dafebce110" text="Pool capacity bonus per wall level, only used in dynamic mode. Example: 3 at level 2 walls adds 6 troops. Default: 3." />
   </strings>
 </base>

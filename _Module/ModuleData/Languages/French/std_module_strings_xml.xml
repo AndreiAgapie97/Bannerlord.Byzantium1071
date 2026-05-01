@@ -9,6 +9,16 @@
     <string id="b1071_cr_consignment_garrison" text="Consignation de {CASTLE} : +{GOLD}g ({COUNT} prisonnier{PLURAL} absorbé par la garnison, votre part de déposant : {SHARE}%)." />
     <string id="b1071_cr_deposit_label" text="Déposer des prisonniers ({COUNT} disponibles, {FEE}% de frais de garde)" />
     <string id="b1071_cr_deposited_msg" text="{COUNT} prisonnier{PLURAL} déposés à {CASTLE}. Vous recevez {SHARE}% des revenus de traitement (frais de garde : {FEE}%)." />
+    <string id="b1071_cr_deposited_own" text="{COUNT} prisonnier{PLURAL} déposés à {CASTLE}. Les rangs bas seront automatiquement asservis ; les élites gardées pour conversion." />
+    <string id="b1071_cr_owner_enslave" text="{CASTLE} a asservi {COUNT} prisonnier{PLURAL} — vendus à {TOWN}, revenu du trésor +{GOLD}{COIN}." />
+    <string id="b1071_cr_ai_deposit_arrived" text="{PARTY} a déposé {COUNT} prisonnier{PLURAL} à {CASTLE}." />
+    <string id="b1071_cr_town_broke" text="{CASTLE} : {STUCK} prisonnier{PLURAL} de rang bas en attente d'asservissement — {TOWN} n'a plus d'or. Nouvelle tentative demain." />
+    <string id="b1071_cr_rebuild_no_campaign" text="Chargez d'abord une campagne pour reconstruire les sources de recrutement de Campaign++." />
+    <string id="b1071_cr_rebuild_done" text="Sources de recrutement reconstruites : {SETTLEMENTS} colonies analysées, {CHANGED} tableau{PLURAL} de recrues normalisé{PLURAL}, {CULTURES} cache{CPLURAL} de culture actualisé{CPLURAL}." />
+    <string id="b1071_mcm_t_7d1f6fd4d0" text="Accorder de l'XP de Roublardise à l'asservissement" />
+    <string id="b1071_mcm_h_7d1f6fd4d0" text="Quand cette option est activée, l'asservissement des prisonniers accorde de l'XP de Roublardise selon la formule native de vente de prisonniers de Bannerlord. L'asservissement immédiat en ville utilise le crochet natif du groupe ; le traitement différé au château revient au déposant d'origine si le groupe a disparu. Par défaut : activé." />
+    <string id="b1071_mcm_t_5e69a58b2a" text="Multiplicateur d'XP de Roublardise pour l'asservissement" />
+    <string id="b1071_mcm_h_5e69a58b2a" text="Multiplie l'XP de Roublardise équivalente à la formule native lorsque des prisonniers sont asservis. 1.0 = XP exacte de vente de prisonniers. 0 désactive l'XP sans changer le reste du système d'asservissement. Par défaut : 1.0." />
     <string id="b1071_cr_elite_header" text="Troupes d'élite (pool culturel)" />
     <string id="b1071_cr_manpower_block" text="Effectif : impossible de recruter {TROOP} — {POOL} a besoin de {COST}, il ne reste que {LEFT}." />
       <string id="b1071_cr_tier_block" text="Plafond des volontaires : {SETTLEMENT} est une {TYPE} ; elle ne fournit que des volontaires jusqu'au rang {CAP}. {TROOP} est de rang {TIER}." />
@@ -139,7 +149,7 @@
     <string id="b1071_qs_name_minor_faction" text="Économie des factions mineures" />
     <string id="b1071_qs_hint_minor_faction" text="Les factions mineures non bandites reçoivent une allocation quotidienne pour ne pas faire faillite." />
     <string id="b1071_qs_name_garrison_wage" text="Remise sur les salaires de la garnison" />
-    <string id="b1071_qs_hint_garrison_wage" text="Les troupes de garnison coûtent un pourcentage réduit du salaire sur le terrain (60 % par défaut)." />
+    <string id="b1071_qs_hint_garrison_wage" text="Les troupes de garnison coûtent un pourcentage réduit du salaire sur le terrain (80 % par défaut)." />
     <string id="b1071_qs_name_castle_recruitment" text="Recrutement du château" />
     <string id="b1071_qs_hint_castle_recruitment" text="Les châteaux génèrent des troupes d'élite à partir de la main-d'œuvre et détiennent des prisonniers T4+ pour conversion." />
     <string id="b1071_qs_name_castle_access" text="Accès ouvert au château" />
@@ -311,7 +321,7 @@
     <string id="b1071_mcm_h_004483500d" text="Multiplicateur de pool en pleine sécurité (100). Par exemple, 120 = un règlement sécurisé bénéficie d'un bonus de 120 %." />
     <string id="b1071_mcm_h_018c2990f0" text="Ne forcez pas la paix avec un ennemi qui assiège actuellement l'une de vos villes/châteaux." />
     <string id="b1071_mcm_h_027d8a0996" text="Paramètre hérité conservé pour la compatibilité de sauvegarde/configuration. Non utilisé par l'interface utilisateur de superposition actuelle." />
-    <string id="b1071_mcm_h_032b2ade51" text="Nombre maximum de troupes d'élite régénérées par château et par jour (à prospérité maximale). Le montant réel évolue linéairement avec la prospérité. Par défaut : 3." />
+    <string id="b1071_mcm_h_032b2ade51" text="Nombre maximum de troupes d'élite régénérées par château et par jour (à prospérité maximale). Le montant réel évolue linéairement avec la prospérité. Par défaut : 2." />
     <string id="b1071_mcm_h_03fd97c1a6" text="Les raids de village accumulent une dévastation persistante (0-100) qui se dégrade lentement. Les villages dévastés subissent une croissance réduite du foyer, et leur ville/château lié subit des pénalités de prospérité, de nourriture et de sécurité." />
     <string id="b1071_mcm_h_0553e33580" text="Ajoute des lignes d'instrumentation compactes à l'onglet Grand livre actuel pour l'équilibrage/débogage." />
     <string id="b1071_mcm_h_05edab757c" text="Effectif minimum absolu régénéré par jour (villes et repli)." />
@@ -326,7 +336,7 @@
     <string id="b1071_mcm_h_0f079f126d" text="Influence obtenue grâce à un investissement dans une grande ville (uniquement si la ville se trouve dans votre royaume). Par défaut : 50." />
     <string id="b1071_mcm_h_0faf392cd0" text="L'intensité avec laquelle la régénération ralentit entre le démarrage progressif et le pool complet. 0 désactive l’effet de ralentissement." />
     <string id="b1071_mcm_h_1257dd959e" text="Relation tissée avec chaque village notable grâce à un Grand investissement. Par défaut : 10." />
-    <string id="b1071_mcm_h_1306d0d841" text="Mise à l'échelle exponentielle des salaires des troupes. 0=Vanille | 1=Lumière (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Modéré (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Sévère (T3+70 %, T4+150 %, T5+250 %, T6+400 %). Les héros/compagnons et CaravanGuards sont exclus. S'applique également à l'IA et au joueur." />
+    <string id="b1071_mcm_h_1306d0d841" text="Mise à l'échelle exponentielle des salaires des troupes. 0=Vanille | 1=Lumière (T3+20%, T4+40%, T5+70%, T6+100%) | 2=Modéré (T3+50%, T4+100%, T5+160%, T6+250%) | 3=Sévère (T3+70 %, T4+150 %, T5+250 %, T6+400 %). Les héros/compagnons et CaravanGuards sont exclus. S'applique également à l'IA et au joueur. Par défaut : 3." />
     <string id="b1071_mcm_h_135ecd103e" text="Minimum de troupes d'élite régénérées par château et par jour (à prospérité nulle). Par défaut : 1." />
     <string id="b1071_mcm_h_144e546603" text="Sol de régénération spécifique au château. Représente les prélèvements paysans des villages liés et de la petite communauté civile du château. Ce filet est organique (non puisé dans les villes). Par défaut : 1." />
     <string id="b1071_mcm_h_14cc7f2c2a" text="Puissance ajoutée à chaque ville grâce à un investissement modeste. Par défaut : 5." />
@@ -388,7 +398,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Enregistre les raisons détaillées des décisions de paix forcée et de guerre." />
     <string id="b1071_mcm_h_4e8aece026" text="Bascule principale. Permet le système d'investissement villageois (patronage) : dépensez de l'or dans les villages pour la croissance du foyer, les relations notables, l'influence et le pouvoir notable. Les seigneurs de l'IA investissent également dans leurs propres villages. Par défaut : vrai." />
     <string id="b1071_mcm_h_4ed533a03f" text="Bonus total maximum appliqué à l’aide à la décision de paix en mode bande. Remplace la dérogation matérielle +200." />
-    <string id="b1071_mcm_h_54fe9937da" text="Les troupes de niveau supérieur reçoivent des dégâts simulés réduits en résolution automatique (T2=-6 %, T3=-12 %, T4=-18 %, T5=-24 %, T6=-30 %). Réduit la probabilité que la porte fatale se déclenche par tick. Fonctionne avec la capacité de survie de niveau : moins de contrôles de pertes ET une meilleure survie à chaque contrôle." />
+    <string id="b1071_mcm_h_54fe9937da" text="Les troupes de niveau supérieur reçoivent des dégâts simulés réduits en résolution automatique (T2=0 %, T3=-6 %, T4=-12 %, T5=-18 %, T6=-24 %). Réduit la probabilité que la porte fatale se déclenche par tick. Fonctionne avec la capacité de survie de niveau : moins de contrôles de pertes ET une meilleure survie à chaque contrôle." />
     <string id="b1071_mcm_h_5582afc84b" text="Supprime le pot-de-vin au niveau du clan (~ 800 po) pour entrer dans les salles des seigneurs du château et permet l'entrée dans les châteaux neutres même avec des relations légèrement négatives avec les propriétaires. Les châteaux hostiles et les restrictions basées sur la criminalité ne sont pas affectés. Nécessaire pour le dépôt et le recrutement des prisonniers en début de partie. Par défaut : vrai." />
     <string id="b1071_mcm_h_5807af4ea7" text="Combien de temps les pénalités de récupération liées au raid persistent." />
     <string id="b1071_mcm_h_5921a54d23" text="La compétence du gouverneur steward augmente la régénération ; Le leadership augmente le pool maximum." />
@@ -459,6 +469,7 @@
     <string id="b1071_mcm_h_a122e143ec" text="Suit le profil de solde appliqué pour la dernière fois. Ne modifiez pas manuellement – ​​le mod migre cela automatiquement lors de la mise à jour." />
     <string id="b1071_mcm_h_a12501eade" text="Influence obtenue grâce à un investissement majeur (uniquement si le village se trouve dans votre royaume). Par défaut : 10." />
     <string id="b1071_mcm_h_a25f48c2d5" text="Coût de l'or pour un investissement généreux. Niveau intermédiaire avec des bonus équilibrés. Par défaut : 5 000." />
+    <string id="b1071_mcm_h_a2b3c4d501" text="Coût en or pour recruter un soldat de niveau 2 depuis le vivier diversifié du château. Pertinent uniquement lorsque le vivier diversifié est activé. Par défaut : 150." />
     <string id="b1071_mcm_h_a3c2806b96" text="Pourcentage de chance qu'un seigneur IA investisse en entrant dans une ville éligible. Par défaut : 30." />
     <string id="b1071_mcm_h_a45f13eae8" text="Combien de jours dure l'investissement dans la grande ville. Sert également de temps de recharge. Par défaut : 60." />
     <string id="b1071_mcm_h_a4d717ad4f" text="Jours minimum de jeu entre deux investissements dans une ville par le même seigneur IA. Empêche les bombardements en tapis sur chaque ville située sur un itinéraire de voyage. Réglez sur 0 pour désactiver. Par défaut : 5." />
@@ -471,12 +482,13 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Tampon en dessous du seuil de bande avant de revenir à la bande inférieure. Empêche les oscillations rapides vers le haut et vers le bas." />
     <string id="b1071_mcm_h_ad9b011697" text="Lorsque cette option est activée, les seigneurs de l'IA investissent dans les villages de leur propre faction lorsqu'ils leur rendent visite (s'ils en ont les moyens). Utilise les mêmes coûts de niveau et offre les mêmes bonus. Par défaut : vrai." />
     <string id="b1071_mcm_h_adb939cb85" text="Nourriture consommée par esclave et par jour. Crée un plafond économique naturel sur la thésaurisation des esclaves. À 0,05 : 50 esclaves = -2,5 nourriture/jour, 100 esclaves = -5,0 nourriture/jour (environ la production d'un village), 200 esclaves = -10,0 nourriture/jour (sévère). Historiquement, les travailleurs réduits en esclavage recevaient des rations de subsistance comparables à celles des troupes de garnison (~ 0,04 à 0,06 unités de nourriture). Réglez sur 0 pour désactiver. Par défaut : 0,05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Jours pendant lesquels un prisonnier de niveau 6+ doit être détenu avant de pouvoir être recruté. Les troupes de niveau Champion résistent le plus longtemps. Par défaut : 21." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Jours pendant lesquels un prisonnier de niveau 6+ doit être détenu avant de pouvoir être recruté. Les troupes de niveau Champion résistent le plus longtemps. Par défaut : 35." />
     <string id="b1071_mcm_h_b00260dc2c" text="Affiche un message lorsqu'un seigneur IA investit dans un village que vous possédez. Vous permet de voir le système de favoritisme fonctionnant sur votre territoire. Par défaut : vrai." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Coût en or pour un investissement important. Niveau le plus élevé avec les bonus les plus élevés et la durée la plus longue. Par défaut : 12 000." />
     <string id="b1071_mcm_h_b170010cab" text="Le printemps/été booste la régénération, l’hiver la pénalise." />
     <string id="b1071_mcm_h_b2d942d050" text="% de pool en dessous duquel une alerte de crise est affichée." />
     <string id="b1071_mcm_h_b378426501" text="Si de petits pools sont activés, poolSize = max(minTinyPool, poolSize / divisor)." />
+    <string id="b1071_mcm_h_b3c4d5e602" text="Coût en or pour recruter un soldat de niveau 3 depuis le vivier diversifié du château. Pertinent uniquement lorsque le vivier diversifié est activé. Par défaut : 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Bonus de croissance de prospérité quotidien provenant d’un investissement généreux dans la ville. Par défaut : 1.0." />
     <string id="b1071_mcm_h_b41e07e2b2" text="Nombre de jours en jeu pendant lesquels un clan sauvé reste indépendant avant de solliciter le service mercenaire. Pendant cette période, ils patrouillent à proximité de leur campement d'origine. Par défaut : 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Plafond strict sur la régénération quotidienne en pourcentage de la réserve maximale. Par exemple, 2,0 signifie qu'une ville avec une réserve de 3 000 se régénère au maximum à 60/jour (~50 jours pour remplir)." />
@@ -490,7 +502,7 @@
     <string id="b1071_mcm_h_c12c656b6c" text="Valeur du stock alimentaire à laquelle le modificateur alimentaire atteint son maximum. Typique : 20-40." />
     <string id="b1071_mcm_h_c31a7c497b" text="Niveau d'épuisement auquel le royaume entre en bande de crise (déclarations de guerre bloquées, forte pression de paix). Par défaut : 85." />
     <string id="b1071_mcm_h_c3dadc496c" text="% du pool maximum conservé après avoir choisi Pillage." />
-    <string id="b1071_mcm_h_c4e1a056bd" text="Salaire total du groupe de garnison en pourcentage de ce que coûteraient les mêmes troupes dans un groupe de campagne. 60 = la garnison paie 60 % (40 % de réduction). 100 = pas de réduction. Par défaut : 60." />
+    <string id="b1071_mcm_h_c4e1a056bd" text="Salaire total du groupe de garnison en pourcentage de ce que coûteraient les mêmes troupes dans un groupe de campagne. 80 = la garnison paie 80 % (20 % de réduction). 100 = pas de réduction. Par défaut : 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Réduit toutes les tailles de pool par le diviseur ci-dessous." />
     <string id="b1071_mcm_h_c6dedb0344" text="Bascule principale. Lorsqu'un royaume est détruit, les clans éligibles sont sauvés au lieu d'être anéantis. Ils deviennent des factions indépendantes pendant une période de grâce, puis recherchent le service mercenaire dans un royaume pondéré par leur culture. Par défaut : vrai." />
     <string id="b1071_mcm_h_c7d953daef" text="Chaque perte au combat draine cette main-d'œuvre × 1 de la réserve du groupe." />
@@ -530,11 +542,11 @@
       <string id="b1071_mcm_h_town_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'une ville. Le recrutement d'élite des châteaux n'est pas affecté ; ceci ne s'applique qu'au recrutement de volontaires vanilla." />
       <string id="b1071_mcm_h_village_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'un village. Utilise uniquement le type de la colonie source ; les effectifs proviennent toujours de la réserve de la ville ou du château lié." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Décalage horizontal par rapport au bord gauche pour le panneau racine de superposition." />
-    <string id="b1071_mcm_h_e1a2720769" text="Les troupes de rang supérieur ont plus de chances de survivre en étant blessées plutôt que de mourir en résolution automatique. T1=+0 %, T2=+5 %, T3=+10 %, T4=+15 %, T5=+20 %, T6=+25 % de bonus fixe aux chances de survie en plus du taux de base basé sur les médicaments." />
+    <string id="b1071_mcm_h_e1a2720769" text="Les troupes de rang supérieur ont plus de chances de survivre en étant blessées plutôt que de mourir en résolution automatique. T1=+0 %, T2=+0 %, T3=+5 %, T4=+10 %, T5=+15 %, T6=+20 % de bonus fixe aux chances de survie en plus du taux de base basé sur les médicaments." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Puissance ajoutée à chaque ville notable grâce à un grand investissement. Par défaut : 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Dans quelle mesure les royaumes de même culture sont-ils préférés lors de l'affectation de services mercenaires ? Des valeurs plus élevées rendent la culture presque obligatoire. À 2,0, les royaumes de même culture obtiennent un score 3 fois plus élevé. Par défaut : 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence obtenue grâce à un investissement modeste (uniquement si le village se trouve dans votre royaume). Par défaut : 2,5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Jours pendant lesquels un prisonnier de niveau 4 doit être détenu avant de pouvoir être recruté. Représente le temps nécessaire pour briser la résistance et négocier la loyauté. Par défaut : 7." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Jours pendant lesquels un prisonnier de niveau 4 doit être détenu avant de pouvoir être recruté. Représente le temps nécessaire pour briser la résistance et négocier la loyauté. Par défaut : 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Les troupes de garnison paient un salaire réduit par rapport aux troupes de campagne. Historiquement exact : les soldats de la garnison recevaient souvent un salaire inférieur, complété par un abri et des rations. S'applique en plus des avantages vanille et des réductions sur les bâtiments." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Relation tissée avec chaque village notable grâce à un investissement généreux. Par défaut : 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Épuisement obtenu en attaquant le royaume après le siège." />
@@ -548,7 +560,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Pénalité de croissance du foyer par jour appliquée directement au village lorsque la dévastation est de 100. Par défaut : 2,0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Revenu quotidien par niveau de clan pour les factions mineures actuellement sous contrat de mercenaire. Inférieur aux factions non alignées car elles reçoivent une rémunération contractuelle de leur royaume employeur. Par défaut : 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Bascule principale. Permet : (1) l'acquisition d'esclaves lors d'un raid dans un village, (2) l'esclavage de prisonniers dans le menu « Asserver les prisonniers » de la ville, (3) les bonus quotidiens de la ville lorsque des marchandises d'esclaves sont présentes sur le marché civil de la ville." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Jours pendant lesquels un prisonnier de niveau 5 doit être détenu avant de pouvoir être recruté. Les troupes d'élite résistent plus longtemps. Par défaut : 14." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Jours pendant lesquels un prisonnier de niveau 5 doit être détenu avant de pouvoir être recruté. Les troupes d'élite résistent plus longtemps. Par défaut : 21." />
     <string id="b1071_mcm_h_f786952c1d" text="Puissance notable maximale autorisée via l'investissement de la ville. Le bonus de pouvoir d’investissement est ignoré s’il est déjà atteint ou supérieur à ce niveau. Par défaut : 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Coût en or pour recruter un prisonnier de niveau 5. Par défaut : 2 500." />
     <string id="b1071_mcm_h_f7e2549a92" text="Les gains d'épuisement de guerre sont amplifiés lorsque la main-d'œuvre moyenne des colonies d'un royaume est faible. Cela reflète une boucle de rétroaction : des réserves vides signifient des pertes ressenties plus fortement." />
@@ -710,6 +722,7 @@
     <string id="b1071_mcm_t_9f315112a8" text="Biais de paix (bande basse)" />
     <string id="b1071_mcm_t_a04dd62ba7" text="Onglet par défaut du grand livre (0-12)" />
     <string id="b1071_mcm_t_a052e9fa87" text="Diviseur de pénalité de régénération" />
+    <string id="b1071_mcm_t_a2b3c4d501" text="Coût en or de recrutement T2 (vivier diversifié)" />
     <string id="b1071_mcm_t_a323f17518" text="Permettre l’économie esclavagiste" />
     <string id="b1071_mcm_t_a37290a213" text="Plafond de régénération % de la réserve/jour" />
     <string id="b1071_mcm_t_a6a089949c" text="Activer les info-bulles de la main-d'œuvre en matière d'établissement" />
@@ -732,6 +745,7 @@
     <string id="b1071_mcm_t_b30e9966cb" text="Seuil épuisé %" />
     <string id="b1071_mcm_t_b324e36f0f" text="Activer la régénération saisonnière" />
     <string id="b1071_mcm_t_b36bdd7507" text="Coût d'embauche et de mise à niveau prédéfini" />
+    <string id="b1071_mcm_t_b3c4d5e602" text="Coût en or de recrutement T3 (vivier diversifié)" />
     <string id="b1071_mcm_t_b418b27d7b" text="Pénalité de prospérité combinée maximale" />
     <string id="b1071_mcm_t_b496502413" text="Conquête épuisée conserver %" />
     <string id="b1071_mcm_t_b63e6d84dc" text="Bonus grand foyer/jour" />
@@ -1036,5 +1050,39 @@
     <string id="b1071_overlay_col_cas_ratio" text="Ratio" />
     <string id="b1071_overlay_totals_bloodiest" text="La plus sanglante : {PAIR}" />
     <string id="b1071_overlay_total_entries_cas" text="Guerres : {COUNT}" />
+    <!-- v0.2.8: Slave conversion selection UI -->
+    <string id="b1071_sc_title" text="Choisir les prisonniers à asservir (T1-{MAXTIER})" />
+    <string id="b1071_sc_total" text="Total" />
+    <string id="b1071_sc_selected" text="Sélectionnés" />
+    <string id="b1071_sc_confirm" text="Asservir la sélection" />
+    <string id="b1071_sc_select_all" text="Tout sélectionner" />
+    <string id="b1071_sc_deselect_all" text="Tout désélectionner" />
+    <string id="b1071_sc_total_selected" text="{COUNT} prisonnier{PLURAL} sélectionné{PLURAL}" />
+    <string id="b1071_sc_open_fail" text="Impossible d'ouvrir l'écran de conversion des esclaves : {ERR}" />
+    <string id="b1071_sc_no_screen" text="Conversion des esclaves : aucun écran actif." />
+    <string id="b1071_cr_elite_header_div" text="Levée du château (pool diversifié)" />
+    <!-- v0.2.8: MCM new settings -->
+    <string id="b1071_mcm_t_8c3e9a1b01" text="Activer l'écran de sélection d'asservissement" />
+    <string id="b1071_mcm_h_8c3e9a1b01" text="Quand cette option est activée, l'option Asservir les prisonniers en ville ouvre un écran où choisir les prisonniers à convertir. Sinon, tous les prisonniers admissibles sont convertis en lot. Par défaut : activé." />
+    <string id="b1071_mcm_t_a1d5f3b201" text="Restriction d'accès au recrutement" />
+    <string id="b1071_mcm_h_a1d5f3b201" text="Contrôle qui peut recruter dans les châteaux. 0 = ouvert, 1 = royaume seulement, 2 = clan propriétaire + clan dirigeant seulement. Les mêmes règles s'appliquent au joueur et à l'IA. Par défaut : 1." />
+    <string id="b1071_mcm_t_b2e6f4c302" text="Activer le pool de château diversifié" />
+    <string id="b1071_mcm_h_b2e6f4c302" text="Quand cette option est activée, les châteaux génèrent un mélange de rangs T2-T6 au lieu des seules élites T4-T6. Par défaut : activé." />
+    <string id="b1071_mcm_t_c3f7a5d403" text="Pourcentage de levées T2 du pool" />
+    <string id="b1071_mcm_h_c3f7a5d403" text="Part de la régénération quotidienne du pool de château allouée aux levées de base T2. Les quatre pourcentages devraient totaliser 100. Par défaut : 45." />
+    <string id="b1071_mcm_t_d4a8b6e504" text="Pourcentage de nobles T2 du pool" />
+    <string id="b1071_mcm_h_d4a8b6e504" text="Part de la régénération quotidienne du pool de château allouée aux troupes de lignée noble T2. Par défaut : 35." />
+    <string id="b1071_mcm_t_e5b9c7f605" text="Pourcentage T3-T4 du pool" />
+    <string id="b1071_mcm_h_e5b9c7f605" text="Part de la régénération quotidienne du pool de château allouée aux troupes T3-T4. Par défaut : 15." />
+    <string id="b1071_mcm_t_f6cad8a706" text="Pourcentage T5+ du pool" />
+    <string id="b1071_mcm_h_f6cad8a706" text="Part de la régénération quotidienne du pool de château allouée aux troupes d'élite T5-T6. Par défaut : 5." />
+    <string id="b1071_mcm_t_a7dbe9b807" text="Activer la capacité dynamique du pool" />
+    <string id="b1071_mcm_h_a7dbe9b807" text="Quand cette option est activée, la capacité du pool de château varie avec la prospérité et le niveau des murailles au lieu d'utiliser un plafond fixe. Par défaut : activé." />
+    <string id="b1071_mcm_t_b8ecfac908" text="Capacité de base dynamique" />
+    <string id="b1071_mcm_h_b8ecfac908" text="Capacité minimale du pool indépendamment de la prospérité, utilisée seulement en mode dynamique. Par défaut : 5." />
+    <string id="b1071_mcm_t_c9fdabd009" text="Échelle de prospérité dynamique" />
+    <string id="b1071_mcm_h_c9fdabd009" text="Bonus de capacité du pool par point de prospérité, utilisé seulement en mode dynamique. Exemple : 0,005 avec 1500 de prospérité ajoute 7 troupes. Par défaut : 0,005." />
+    <string id="b1071_mcm_t_dafebce110" text="Bonus dynamique de niveau de muraille" />
+    <string id="b1071_mcm_h_dafebce110" text="Bonus de capacité du pool par niveau de muraille, utilisé seulement en mode dynamique. Exemple : 3 avec des murailles de niveau 2 ajoute 6 troupes. Par défaut : 3." />
   </strings>
 </base>

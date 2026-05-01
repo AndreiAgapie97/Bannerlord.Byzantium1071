@@ -857,14 +857,15 @@ namespace Byzantium1071.Campaign.Settings
         private static bool IsNativeAssembly(string? assemblyName)
         {
             if (string.IsNullOrEmpty(assemblyName)) return false;
-             return assemblyName.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("CustomBattle", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("NavalDLC", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("BirthAndDeath", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("Multiplayer", StringComparison.OrdinalIgnoreCase) ||
-                 assemblyName.StartsWith("Native", StringComparison.OrdinalIgnoreCase);
+            string name = assemblyName!;
+            return name.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("CustomBattle", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("NavalDLC", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("BirthAndDeath", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("Multiplayer", StringComparison.OrdinalIgnoreCase) ||
+                name.StartsWith("Native", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

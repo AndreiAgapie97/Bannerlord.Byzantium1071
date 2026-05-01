@@ -102,7 +102,7 @@ namespace Byzantium1071.Campaign.Patches
     /// Garrison parties:
     ///   • Hire cost: same as field troops of the same tier (standard tier factor).
     ///   • Daily wage: reduced by GarrisonWagePercent% of field wage via the
-    ///     GetTotalWage patch (B1071_GarrisonWagePatch). Default 60% = 40% discount.
+    ///     GetTotalWage patch (B1071_GarrisonWagePatch). Default 80% = 20% discount.
     ///
     /// ──────────────────────────────────────────────────────────────────────
     /// PRESET REFERENCE TABLE
@@ -292,7 +292,7 @@ namespace Byzantium1071.Campaign.Patches
     ///   This patch extends those discounts with a configurable flat multiplier.
     ///
     /// MCM: "Garrison wage % of field" (Army Economics group)
-    ///   60 = garrison party pays 60% of what field troops pay (40% discount).
+    ///   80 = garrison party pays 80% of what field troops pay (20% discount).
     ///   100 = no discount (vanilla + our WagePatch behaviour applies).
     /// </summary>
     [HarmonyPatch(typeof(DefaultPartyWageModel), nameof(DefaultPartyWageModel.GetTotalWage))]

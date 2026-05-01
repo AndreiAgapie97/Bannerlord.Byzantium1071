@@ -1,5 +1,107 @@
 # Campaign++ — Changelog
 
+## [1.0.0.1] — 2026-05-01
+
+### Feature — Roguery XP Parity For Enslavement
+
+**Enslaving prisoners now grants the same Roguery XP formula Bannerlord uses for prisoner sales.**
+
+- **Immediate town enslavement:** Player and AI town enslavement now award Roguery XP through Bannerlord's native `SkillLevelingManager.OnPrisonerSell` hook whenever the original party still exists, matching vanilla prisoner-sale attribution.
+- **Delayed castle processing:** Castle auto-enslavement now stores the original depositor hero and party in a dedicated FIFO queue, so prisoners dumped at castles can still credit the original captor days later when they are finally processed.
+- **Safe fallback:** If the original party no longer exists, Campaign++ falls back to `Hero.AddSkillXp` using the exact vanilla-equivalent tier-sum formula instead of silently dropping the XP.
+- **Config:** Added `Grant Roguery XP for enslavement` and `Enslavement Roguery XP multiplier` to MCM → Slave Economy. Migration v13 seeds safe defaults (enabled, 1.0×).
+
+### Feature — Recruitment Source Rebuild And Custom Tree Expansion
+
+**Castle pools now discover live volunteer trees, and the Compatibility tab can rebuild those sources mid-save.**
+
+- **Problem:** Castle pool generation only walked `culture.BasicTroop` and `culture.EliteBasicTroop`, so troop-tree mods that injected additional volunteer roots into live settlements were invisible to castle recruitment.
+- **Fix:** Culture caches now supplement the vanilla roots with troop roots discovered from current same-culture volunteer boards, broadening castle pools toward what the player actually sees in the world.
+- **Utility:** The Campaign++ Compatibility tab now includes `Rebuild Sources`, which re-sanitizes volunteer boards and refreshes castle recruitment caches after adding or removing troop-tree mods mid-save.
+- **Safety:** Existing elite-pool stock and prisoner timers are preserved. The rebuild only refreshes volunteer-derived caches and board normalization.
+
+### Feature — Slave Conversion Selection UI
+
+**Players can now choose which prisoners to enslave instead of bulk-converting all eligible captives.**
+
+- **Problem:** When enslaving prisoners at a town, the mod converted every prisoner at or below the auto-enslave tier. Players using mods like Lowborn (which add valuable low-tier troops) lost those troops without any choice.
+- **Fix:** A new selection screen lists all eligible prisoners with +/− controls and Select All / Deselect All. Players pick exactly which prisoners to convert.
+- **Toggle:** `EnableSlaveConversionSelection` (MCM → Slave Economy). Disabled = legacy bulk behavior.
+- **Parity:** AI auto-enslavement is unaffected (it still bulk-converts, matching vanilla AI behavior for settlements).
+- **Safety:** No new SyncData. Screen lifecycle hardened with `IsAlive` guard to prevent dead-singleton lockout.
+
+### Feature — Castle Recruitment Rebalancing
+
+**Castle elite pools now support diversified tier composition, dynamic capacity, and faction access restrictions.**
+
+- **Diversified Pool:** When `EnableDiversifiedCastlePool` is on, the pool regenerates a weighted mix of T2 levy, T2 noble, T3–T4, and T5+ troops (configurable percentages via MCM). This prevents late-game snowballing where castles produce only top-tier elites.
+- **Dynamic Capacity:** When `EnableDynamicPoolCapacity` is on, the pool cap scales with settlement prosperity and wall level: `base + prosperity × scaling + wallLevel × bonus`. Well-developed castles hold more troops.
+- **Access Restriction:** `CastleRecruitmentAccess` setting (0 = open, 1 = same faction only, 2 = owner clan + ruling clan only). Applied identically to player and AI via shared `CanFactionAccessCastleRecruitment()` helper.
+- **T2/T3 Gold Costs:** New MCM settings `CastleRecruitGoldT2` (default 150) and `CastleRecruitGoldT3` (default 400) added so diversified pool troops have appropriate pricing.
+- **Publish balance defaults:** Migration v14 lengthens prisoner conversion waits to T4/T5/T6+ = 10/21/35 days, lowers `CastleEliteRegenMax` from 3 to 2, sets daily wages to the current Severe preset, and changes garrison wages from 60% to 80% of field wages.
+- **Parity:** AI uses the same restriction check, same gold costs, and same pool composition.
+- **Safety:** New pool entries use existing `_elitePool` SyncData (troop StringIds). T2–T3 entries are harmless on mod removal. Dynamic capacity is runtime-only (no new saved state). MCM migration v12 sets safe defaults.
+
+### Fix — Screen Lifecycle Hardening
+
+**Castle recruitment and slave conversion screens no longer permanently lock out if initialization fails.**
+
+- **Problem:** If the Gauntlet layer constructor threw an exception, Cleanup() cleared internal state but the static `_current` reference kept pointing to the dead instance, blocking all future opens.
+- **Fix:** Added `IsAlive` property (true when gauntlet layer is non-null) and post-construction guard in `OpenScreen()` — if `!IsAlive` after construction, `_current` is reset to null.
+- **Scope:** Applied to both `B1071_CastleRecruitmentScreen` and `B1071_SlaveConversionScreen`.
+
+### Fix — Custom Troop Trees (Retinues) Wiping Volunteer Boards
+
+**Villages/towns no longer show empty volunteer slots when using mods that add troop trees outside the vanilla culture tree.**
+
+- **Problem:** `SanitizeSettlementVolunteerTypes` used BFS from `culture.BasicTroop` / `culture.EliteBasicTroop` to find a legal-tier ancestor. Troops from modded trees (e.g. Retinues) have roots outside these two, so BFS returned null, and the slot was zeroed out.
+- **Fix:** When `FindHighestAllowedAncestor` returns null (troop cannot be traced to a vanilla culture root), the slot is now left untouched instead of being cleared. The recruit-time tier gate still prevents actual recruitment of over-cap troops.
+- **Scope:** `B1071_RecruitmentTierGateHelper.SanitizeSettlementVolunteerTypes`. Affects any mod that adds custom troop trees.
+
+### Fix — Prisoner Recruitment Consuming Manpower and Deleting Troops
+
+**Recruiting prisoners at a settlement with 0 manpower no longer causes the recruited troops to vanish.**
+
+- **Problem:** `OnUnitRecruitedFallback` fired for ALL recruitment types (volunteers, prisoners, tavern hires) and called `ConsumeManpower`. Prisoner recruitment should cost zero manpower, but when the pool was empty, `ConsumeManpower` removed the just-recruited troop from the party roster — effectively deleting it.
+- **Fix:** Player volunteer carts are now handled at `RecruitmentVM.OnDone`: the patch captures cart troops before vanilla commits, compares party roster counts after the commit, and drains manpower only for troops that were actually added. `OnUnitRecruitedFallback` no longer guesses source context for player recruits, so prisoners/tavern/other hires are skipped safely.
+- **Scope:** `B1071_PlayerRecruitmentManpowerGatePatch` and `B1071_ManpowerBehavior.OnUnitRecruitedFallback`.
+
+### Docs — Realms of Thrones (ROT) Compatibility Note
+
+**Documented a known interaction between ROT's `HeroSpawnCampaignBehaviorPatches` and Campaign++'s Clan Survival system.**
+
+- ROT may crash with a null reference when iterating clans rescued by our `NormalizeRebelClan` logic. This is a null-check gap in ROT, not a Campaign++ bug. Workaround: disable Protect Eliminated Clans, or report to ROT author.
+
+### Fix — Castle Auto-Enslavement Silent Notifications
+
+**Castle owners now see notifications when their castle auto-enslaves prisoners and when depositing at own castles.**
+
+- **Problem 1:** When the player deposited prisoners at their own castle, `OnPrisonerDonatedToSettlement` silently skipped same-clan deposits — no confirmation message, no feedback that the deposit was registered.
+- **Fix 1:** Same-clan deposits now show a deposit confirmation: "Deposited X prisoners at [Castle]. Low-tier will be auto-enslaved; elites held for conversion."
+- **Problem 2:** `AutoEnslaveLowTierPrisoners` only showed notifications for cross-clan depositor shares. When the player owns the castle, they received gold as owner but saw no message — prisoners appeared to vanish.
+- **Fix 2:** Added owner income notification: "[Castle] enslaved X prisoners — sold to [Town], treasury income +Yg." Green color distinguishes owner income from the blue depositor share messages.
+- **Problem 3:** Zero verbose logging in `AutoEnslaveLowTierPrisoners` made it impossible to diagnose processing issues (which town received slaves, whether the town ran out of gold, how many were processed).
+- **Fix 3:** Added summary verbose log per castle per day: candidate count, processed count, target town, slave price, town gold remaining, and a TOWN BROKE flag when the affordability gate halts processing.
+- **Scope:** `B1071_CastleRecruitmentBehavior.AutoEnslaveLowTierPrisoners` and `OnPrisonerDonatedToSettlement`. No save data changes.
+
+### Fix — Castle Slave Routing Exploits Enemy Town Gold
+
+**`FindNearestTown` now restricts slave routing to the castle's own faction.**
+
+- **Problem:** `AutoEnslaveLowTierPrisoners` used `FindNearestTown` without a faction filter. Frontier castles near enemy towns could drain enemy gold via `GiveGoldAction.ApplyForSettlementToCharacter` — an unintended economic exploit.
+- **Fix:** Added `origin.MapFaction` filter to `FindNearestTown`. Only same-faction towns receive slaves. If the faction has no towns, returns null and prisoners wait in dungeon (retried daily). Mirrors the same-faction constraint already used by manpower supply chain.
+- **Scope:** `B1071_CastleRecruitmentBehavior.FindNearestTown`. Single caller: `AutoEnslaveLowTierPrisoners`.
+
+### Fix — Town Broke Notification and AI Deposit Visibility
+
+**Player-owned castles now surface two previously invisible events.**
+
+- **Problem 1:** When the nearest town ran out of gold during auto-enslavement, remaining T1-T3 prisoners stayed in the dungeon with no player feedback. Players couldn't tell why prisoners weren't being processed.
+- **Fix 1:** Yellow warning notification: "[Castle]: X low-tier prisoners await enslavement — [Town] ran out of gold. They will be retried tomorrow." Only shown for player-owned castles.
+- **Problem 2:** When AI lords deposited prisoners at the player's castle via `B1071_CastlePrisonerDepositPatch`, only a verbose log was written — no player notification of who deposited or when.
+- **Fix 2:** Blue informational notification: "[Lord] deposited X prisoners at [Castle]." Fires in the Harmony prefix, inside the existing try-catch (fail-open).
+- **Scope:** `AutoEnslaveLowTierPrisoners` (town-broke warning), `HandleCastleDeposit` in `B1071_CastlePrisonerDepositPatch` (AI deposit notification). No save data changes.
+
 ## [0.2.7.2] — 2026-03-06
 
 ### Feature — Tiered Volunteer Recruitment
@@ -1826,13 +1928,13 @@ Castles now offer a dedicated recruitment screen with three independent troop so
   | Tier | Damage reduction |
   |------|-----------------|
   | T1 | 0% |
-  | T2 | -6% |
-  | T3 | -12% |
-  | T4 | -18% |
-  | T5 | -24% |
-  | T6+ | -30% |
+  | T2 | 0% |
+  | T3 | -6% |
+  | T4 | -12% |
+  | T5 | -18% |
+  | T6+ | -24% |
 - **Combined effect with existing `B1071_FatalityPatch`:**
-  - T6: gate fires ~30% less often (armor) *and* +25% survival when it does fire (survivability) — two independent layers of protection.
+  - T6: gate fires ~24% less often (armor) *and* +20% survival when it does fire (survivability) — two independent layers of protection.
   - Heroes excluded from both patches (different death resolution path, near-invincible by baseline).
 - **Scope — autoresolve only:** `DefaultCombatSimulationModel.SimulateHit` is not called during live battles. In live combat, damage uses actual weapon/armor stats from the Mission engine; the existing `GetSurvivalChance` Postfix (`FatalityPatch`) covers live-battle aftermath (wound vs. kill determination). Frequent T6 wounds in live battle against small bandit groups is a positioning effect (elite troops engage the most enemies, absorbing the most hits) and is not addressable without mission AI changes.
 - **MCM:** Toggle `Combat Realism → Enable tier armor simulation` (default: on). Independent of `Enable tier survivability`.
