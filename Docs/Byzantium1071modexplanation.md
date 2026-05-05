@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.0.1
+**Version:** 1.0.1.2
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.3.15)  
 **Mod ID:** `Byzantium1071`
 
@@ -837,14 +837,14 @@ All settings are in the Mod Configuration Menu. Key groups:
 
 ### Quick Settings Tab (v0.2.6.0)
 
-A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 21 system master toggles in 5 groups:
+A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 22 system master toggles in 5 groups:
 
 | Group | Toggles |
 |-------|---------|
 | Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
 | Recruitment & Military | Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival |
-| Province & Governance | Governance Strain, Frontier Devastation, Castle Supply Chain |
+| Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
 | Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
 
 All toggles use `ProxyRef<bool>` wrappers around `B1071_McmSettings.Instance` — changing a Quick Settings toggle changes the corresponding full-tab setting and vice versa. Built by `B1071_QuickSettingsFluentSettings` using the same FluentGlobalSettings pattern as the Compatibility tab.
@@ -1195,6 +1195,18 @@ Every town and castle accumulates **governance strain** from war events (raids, 
 
 Strain decays at 0.3/day during peacetime. A +10 raid strain takes ~33 days to fully decay. Penalties scale linearly from 0 at strain 0 to the configured maximum at the strain cap (default 100).
 
+### Provincial Stabilization
+
+Same-faction lords can actively stabilize strained towns and castles. The action is available from the settlement menu when governance strain is present and the settlement is not under siege.
+
+| Tier | Cost | Immediate effect | Temporary recovery |
+|------|------|------------------|--------------------|
+| Emergency Relief | 1,500g | -10 strain | +0.6 loyalty/day, +0.4 security/day for 5 days |
+| Placate Local Elites | 4,000g | -20 strain | +1.0 loyalty/day, +0.7 security/day for 7 days |
+| Grant Amnesty | 9,000g | -35 strain | +1.5 loyalty/day, +1.0 security/day for 10 days |
+
+Each tier also adds extra governance strain decay while active. Duration doubles as cooldown. AI lords use the same rules when strain is high and they can afford the action safely.
+
 ### MCM settings (Provincial Governance group)
 
 | Setting | Default | Effect |
@@ -1205,6 +1217,7 @@ Strain decays at 0.3/day during peacetime. A +10 raid strain takes ~33 days to f
 | Max security penalty | 2.0 | Security penalty/day at full strain |
 | Max prosperity penalty | 1.0 | Prosperity penalty/day at full strain |
 | Strain cap | 100 | Maximum strain a settlement can accumulate |
+| Enable provincial stabilization | On | Gold-funded strain reduction plus temporary loyalty/security recovery |
 
 ---
 
@@ -1592,5 +1605,5 @@ Currently filtered identifiers: `taleworlds`, `butterlib`, `butlib`, `.mcm`, `mo
 | `B1071_CompatibilityChecker.cs` | Core scanner, risk scoring, text helpers, popup builder |
 | `B1071_CompatibilityFluentSettings.cs` | MCM tab builder, clipboard helper |
 | `B1071_CompatibilityBehavior.cs` | CampaignBehaviorBase bridge for model scan |
-| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 21 ProxyRef-backed system toggles in 5 groups |
+| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 22 ProxyRef-backed system toggles in 5 groups |
 

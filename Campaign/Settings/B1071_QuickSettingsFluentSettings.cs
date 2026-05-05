@@ -145,16 +145,20 @@ namespace Byzantium1071.Campaign.Settings
                     g.SetGroupOrder(3);
 
                     AddToggle(g, "qs_governance", L("b1071_qs_name_governance", "Governance Strain"),
-                        L("b1071_qs_hint_governance", "Owning many distant settlements reduces loyalty, security, and prosperity of far-flung holdings."),
+                        L("b1071_qs_hint_governance", "Wars, sieges, raids, and conquest create settlement strain. High strain reduces loyalty, security, and prosperity; stabilization actions can help recovery."),
                         0, () => s.EnableGovernanceStrain, v => s.EnableGovernanceStrain = v);
+
+                    AddToggle(g, "qs_governance_stabilization", L("b1071_qs_name_governance_stabilization", "Provincial Stabilization"),
+                        L("b1071_qs_hint_governance_stabilization", "Spend gold at strained towns and castles to reduce governance strain and fund temporary loyalty/security recovery."),
+                        1, () => s.EnableGovernanceStabilization, v => s.EnableGovernanceStabilization = v);
 
                     AddToggle(g, "qs_devastation", L("b1071_qs_name_devastation", "Frontier Devastation"),
                         L("b1071_qs_hint_devastation", "Raids cause persistent hearth, prosperity, security, and food penalties that decay slowly."),
-                        1, () => s.EnableFrontierDevastation, v => s.EnableFrontierDevastation = v);
+                        2, () => s.EnableFrontierDevastation, v => s.EnableFrontierDevastation = v);
 
                     AddToggle(g, "qs_castle_supply", L("b1071_qs_name_castle_supply", "Castle Supply Chain"),
                         L("b1071_qs_hint_castle_supply", "Castle regen above the local trickle is transferred from the nearest same-faction town, not created from nothing."),
-                        2, () => s.EnableCastleSupplyChain, v => s.EnableCastleSupplyChain = v);
+                        3, () => s.EnableCastleSupplyChain, v => s.EnableCastleSupplyChain = v);
                 });
 
                 // ── Immersion & Modifiers ──────────────────────────────────────────

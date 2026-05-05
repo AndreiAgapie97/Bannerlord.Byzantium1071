@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.0.1 — Everything you need to know, step by step.*
+*Version 1.0.1.2 — Everything you need to know, step by step.*
 
 ---
 
@@ -448,6 +448,7 @@ Wars, raids, and sieges accumulate **governance strain** on your settlements (0�
 
 - Strain decays at 0.3/day (~33 days for +10 strain to decay).
 - At high strain: **up to -3 loyalty/day, -2 security/day, -1 prosperity/day**.
+- Same-faction lords can fund **Provincial Stabilization** at strained towns and castles: Emergency Relief, Placate Local Elites, or Grant Amnesty. These spend gold to reduce strain immediately and add temporary loyalty/security recovery.
 
 ### Delayed Recovery
 
@@ -566,14 +567,14 @@ This means your expensive elite troops are **less likely to die** in autoresolve
 
 ### Quick Settings Tab
 
-The **Campaign++ - Quick Settings** tab gathers all 21 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
+The **Campaign++ - Quick Settings** tab gathers all 22 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
 
 | Group | Toggles |
 |-------|---------|
 | Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
 | Recruitment & Military | Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival |
-| Province & Governance | Governance Strain, Frontier Devastation, Castle Supply Chain |
+| Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
 | Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
 
 All toggles are mirrors of the corresponding settings in the full tab — changing one changes the other.

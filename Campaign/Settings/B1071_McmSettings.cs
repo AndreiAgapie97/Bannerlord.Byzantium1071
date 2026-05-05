@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 14;
+        internal const int LATEST_PROFILE_VERSION = 15;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -247,6 +247,40 @@ namespace Byzantium1071.Campaign.Settings
                 GarrisonWagePercent = 80;
 
                 migrated += "castle prisoner waits lengthened (T4/T5/T6+ = 10/21/35), elite regen max 3→2, wages set to Severe, garrison wage percent 60→80. ";
+            }
+
+            // ── Profile v15: provincial stabilization recovery action ──
+            if (SettingsProfileVersion < 15)
+            {
+                EnableGovernanceStabilization = true;
+                GovernanceStabilizationNotifyPlayer = true;
+                GovernanceStabilizationAiEnabled = true;
+                GovernanceStabilizationAiStrainThreshold = 25f;
+                GovernanceStabilizationAiGoldMultiplier = 10;
+                GovernanceStabilizationAiHeroCooldownDays = 7;
+
+                GovernanceStabilizationCostDonative = 1500;
+                GovernanceStabilizationDurationDonative = 5;
+                GovernanceStabilizationStrainDonative = 10f;
+                GovernanceStabilizationLoyaltyDonative = 0.6f;
+                GovernanceStabilizationSecurityDonative = 0.4f;
+                GovernanceStabilizationDecayDonative = 0.2f;
+
+                GovernanceStabilizationCostElites = 4000;
+                GovernanceStabilizationDurationElites = 7;
+                GovernanceStabilizationStrainElites = 20f;
+                GovernanceStabilizationLoyaltyElites = 1.0f;
+                GovernanceStabilizationSecurityElites = 0.7f;
+                GovernanceStabilizationDecayElites = 0.4f;
+
+                GovernanceStabilizationCostAmnesty = 9000;
+                GovernanceStabilizationDurationAmnesty = 10;
+                GovernanceStabilizationStrainAmnesty = 35f;
+                GovernanceStabilizationLoyaltyAmnesty = 1.5f;
+                GovernanceStabilizationSecurityAmnesty = 1.0f;
+                GovernanceStabilizationDecayAmnesty = 0.7f;
+
+                migrated += "provincial stabilization enabled (gold-funded strain reduction plus temporary loyalty/security recovery). ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1025,6 +1059,102 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_b418b27d7b}Max combined prosperity penalty", -20f, 0f, "0.0", Order = 6, HintText = "{=b1071_mcm_h_fa1ea63b89}Floor for the combined daily prosperity penalty from Governance Strain + Devastated Hinterlands. Prevents runaway settlement death spirals when both systems stack. Default: -8.0.")]
         public float MaxCombinedModProsperityPenalty { get; set; } = -8.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyBool("{=b1071_mcm_t_govstab_enable}Enable provincial stabilization", Order = 7, HintText = "{=b1071_mcm_h_govstab_enable}Allows lords to spend gold at same-faction towns and castles to reduce governance strain and fund temporary loyalty/security recovery. Default: true.")]
+        public bool EnableGovernanceStabilization { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyBool("{=b1071_mcm_t_govstab_notify}Notify player of AI stabilization", Order = 8, HintText = "{=b1071_mcm_h_govstab_notify}Shows a message when an AI lord funds stabilization in one of the player's settlements. Default: true.")]
+        public bool GovernanceStabilizationNotifyPlayer { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyBool("{=b1071_mcm_t_govstab_ai_enable}AI uses provincial stabilization", Order = 9, HintText = "{=b1071_mcm_h_govstab_ai_enable}Allows AI lords to fund stabilization when governance strain is high and they have enough gold. Default: true.")]
+        public bool GovernanceStabilizationAiEnabled { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_ai_threshold}AI strain threshold", 0f, 100f, "0", Order = 10, HintText = "{=b1071_mcm_h_govstab_ai_threshold}Minimum governance strain before AI lords consider funding stabilization. Default: 25.")]
+        public float GovernanceStabilizationAiStrainThreshold { get; set; } = 25f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_ai_gold_mult}AI gold safety multiplier", 1, 30, "0", Order = 11, HintText = "{=b1071_mcm_h_govstab_ai_gold_mult}AI lords only use a tier if their gold is greater than cost multiplied by this value. Default: 10.")]
+        public int GovernanceStabilizationAiGoldMultiplier { get; set; } = 10;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_ai_cooldown}AI hero cooldown days", 0, 30, "0", Order = 12, HintText = "{=b1071_mcm_h_govstab_ai_cooldown}Minimum days between stabilization actions by the same AI lord. Default: 7.")]
+        public int GovernanceStabilizationAiHeroCooldownDays { get; set; } = 7;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_cost_donative}Emergency Relief cost", 0, 100000, "0", Order = 13, HintText = "{=b1071_mcm_h_govstab_cost_donative}Gold cost for the low-tier stabilization action. Default: 1500.")]
+        public int GovernanceStabilizationCostDonative { get; set; } = 1500;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_duration_donative}Emergency Relief duration", 1, 60, "0", Order = 14, HintText = "{=b1071_mcm_h_govstab_duration_donative}Days of loyalty/security recovery from Emergency Relief. Duration also acts as cooldown. Default: 5.")]
+        public int GovernanceStabilizationDurationDonative { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_strain_donative}Emergency Relief strain reduction", 0f, 100f, "0.0", Order = 15, HintText = "{=b1071_mcm_h_govstab_strain_donative}Immediate governance strain removed by Emergency Relief. Default: 10.")]
+        public float GovernanceStabilizationStrainDonative { get; set; } = 10f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_loyalty_donative}Emergency Relief loyalty/day", 0f, 10f, "0.0", Order = 16, HintText = "{=b1071_mcm_h_govstab_loyalty_donative}Daily loyalty recovery while Emergency Relief is active. Default: 0.6.")]
+        public float GovernanceStabilizationLoyaltyDonative { get; set; } = 0.6f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_security_donative}Emergency Relief security/day", 0f, 10f, "0.0", Order = 17, HintText = "{=b1071_mcm_h_govstab_security_donative}Daily security recovery while Emergency Relief is active. Default: 0.4.")]
+        public float GovernanceStabilizationSecurityDonative { get; set; } = 0.4f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_decay_donative}Emergency Relief extra decay", 0f, 10f, "0.0", Order = 18, HintText = "{=b1071_mcm_h_govstab_decay_donative}Extra daily governance strain decay while Emergency Relief is active. Default: 0.2.")]
+        public float GovernanceStabilizationDecayDonative { get; set; } = 0.2f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_cost_elites}Placate Local Elites cost", 0, 100000, "0", Order = 19, HintText = "{=b1071_mcm_h_govstab_cost_elites}Gold cost for the mid-tier stabilization action. Default: 4000.")]
+        public int GovernanceStabilizationCostElites { get; set; } = 4000;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_duration_elites}Placate Local Elites duration", 1, 60, "0", Order = 20, HintText = "{=b1071_mcm_h_govstab_duration_elites}Days of loyalty/security recovery from Placating Local Elites. Duration also acts as cooldown. Default: 7.")]
+        public int GovernanceStabilizationDurationElites { get; set; } = 7;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_strain_elites}Placate Local Elites strain reduction", 0f, 100f, "0.0", Order = 21, HintText = "{=b1071_mcm_h_govstab_strain_elites}Immediate governance strain removed by Placating Local Elites. Default: 20.")]
+        public float GovernanceStabilizationStrainElites { get; set; } = 20f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_loyalty_elites}Placate Local Elites loyalty/day", 0f, 10f, "0.0", Order = 22, HintText = "{=b1071_mcm_h_govstab_loyalty_elites}Daily loyalty recovery while Placate Local Elites is active. Default: 1.0.")]
+        public float GovernanceStabilizationLoyaltyElites { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_security_elites}Placate Local Elites security/day", 0f, 10f, "0.0", Order = 23, HintText = "{=b1071_mcm_h_govstab_security_elites}Daily security recovery while Placate Local Elites is active. Default: 0.7.")]
+        public float GovernanceStabilizationSecurityElites { get; set; } = 0.7f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_decay_elites}Placate Local Elites extra decay", 0f, 10f, "0.0", Order = 24, HintText = "{=b1071_mcm_h_govstab_decay_elites}Extra daily governance strain decay while Placate Local Elites is active. Default: 0.4.")]
+        public float GovernanceStabilizationDecayElites { get; set; } = 0.4f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_cost_amnesty}Grant Amnesty cost", 0, 100000, "0", Order = 25, HintText = "{=b1071_mcm_h_govstab_cost_amnesty}Gold cost for the high-tier stabilization action. Default: 9000.")]
+        public int GovernanceStabilizationCostAmnesty { get; set; } = 9000;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyInteger("{=b1071_mcm_t_govstab_duration_amnesty}Grant Amnesty duration", 1, 60, "0", Order = 26, HintText = "{=b1071_mcm_h_govstab_duration_amnesty}Days of loyalty/security recovery from Grant Amnesty. Duration also acts as cooldown. Default: 10.")]
+        public int GovernanceStabilizationDurationAmnesty { get; set; } = 10;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_strain_amnesty}Grant Amnesty strain reduction", 0f, 100f, "0.0", Order = 27, HintText = "{=b1071_mcm_h_govstab_strain_amnesty}Immediate governance strain removed by Grant Amnesty. Default: 35.")]
+        public float GovernanceStabilizationStrainAmnesty { get; set; } = 35f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_loyalty_amnesty}Grant Amnesty loyalty/day", 0f, 10f, "0.0", Order = 28, HintText = "{=b1071_mcm_h_govstab_loyalty_amnesty}Daily loyalty recovery while Grant Amnesty is active. Default: 1.5.")]
+        public float GovernanceStabilizationLoyaltyAmnesty { get; set; } = 1.5f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_security_amnesty}Grant Amnesty security/day", 0f, 10f, "0.0", Order = 29, HintText = "{=b1071_mcm_h_govstab_security_amnesty}Daily security recovery while Grant Amnesty is active. Default: 1.0.")]
+        public float GovernanceStabilizationSecurityAmnesty { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_71a953b560}Provincial Governance", GroupOrder = 20)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_govstab_decay_amnesty}Grant Amnesty extra decay", 0f, 10f, "0.0", Order = 30, HintText = "{=b1071_mcm_h_govstab_decay_amnesty}Extra daily governance strain decay while Grant Amnesty is active. Default: 0.7.")]
+        public float GovernanceStabilizationDecayAmnesty { get; set; } = 0.7f;
 
         // ─── Frontier Devastation ───
 

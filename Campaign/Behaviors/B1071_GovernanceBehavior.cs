@@ -78,6 +78,21 @@ namespace Byzantium1071.Campaign.Behaviors
         public float GetStrainForTown(Town town)
             => town?.Settlement != null ? GetStrain(town.Settlement) : 0f;
 
+        /// <summary>Reduces governance strain for the given settlement.</summary>
+        public void ReduceStrain(Settlement settlement, float amount)
+        {
+            if (settlement == null || amount <= 0f) return;
+
+            string key = settlement.StringId;
+            float current = _strainBySettlement.TryGetValue(key, out float val) ? val : 0f;
+            float next = Math.Max(0f, current - amount);
+
+            if (next <= 0f)
+                _strainBySettlement.Remove(key);
+            else
+                _strainBySettlement[key] = next;
+        }
+
         // ── CampaignBehaviorBase ──────────────────────────────────────────
 
         public override void RegisterEvents()
@@ -116,7 +131,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 string key = settlement.StringId;
                 if (!_strainBySettlement.TryGetValue(key, out float strain) || strain <= 0f) return;
 
-                float decay = Settings.GovernanceStrainDecayPerDay;
+                float decay = Settings.GovernanceStrainDecayPerDay
+                    + (B1071_GovernanceStabilizationBehavior.Instance?.GetActiveStrainDecayBonus(settlement) ?? 0f);
                 strain = Math.Max(0f, strain - decay);
 
                 if (strain <= 0f)

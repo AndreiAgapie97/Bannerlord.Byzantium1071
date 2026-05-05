@@ -23,6 +23,7 @@ namespace Byzantium1071.Campaign.Patches
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         private static readonly TextObject _label = new TextObject("{=b1071_gov_strain}Governance Strain");
+        private static readonly TextObject _stabilizationLabel = new TextObject("{=b1071_gov_stabilization}Provincial Stabilization");
 
         public static void Postfix(Town town, ref ExplainedNumber __result)
         {
@@ -35,13 +36,18 @@ namespace Byzantium1071.Campaign.Patches
                 if (behavior == null) return;
 
                 float strain = behavior.GetStrainForTown(town);
-                if (strain <= 0f) return;
+                if (strain > 0f)
+                {
+                    float cap = Math.Max(1f, Settings.GovernanceStrainCap);
+                    float penalty = -(strain / cap) * Settings.GovernanceMaxLoyaltyPenalty;
 
-                float cap = Math.Max(1f, Settings.GovernanceStrainCap);
-                float penalty = -(strain / cap) * Settings.GovernanceMaxLoyaltyPenalty;
+                    if (penalty < 0f)
+                        __result.Add(penalty, _label);
+                }
 
-                if (penalty < 0f)
-                    __result.Add(penalty, _label);
+                float recovery = B1071_GovernanceStabilizationBehavior.Instance?.GetActiveLoyaltyBonus(town) ?? 0f;
+                if (recovery > 0f)
+                    __result.Add(recovery, _stabilizationLabel);
             }
             catch (Exception ex)
             {

@@ -143,6 +143,7 @@ namespace Byzantium1071
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
+            B1071_GovernanceStabilizationBehavior.Instance = null;
             B1071_DevastationBehavior.Instance = null;
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
@@ -171,6 +172,7 @@ namespace Byzantium1071
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
+            B1071_GovernanceStabilizationBehavior.Instance = null;
             B1071_DevastationBehavior.Instance = null;
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
@@ -249,6 +251,7 @@ namespace Byzantium1071
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_SlaveEconomyBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceBehavior());
+                starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceStabilizationBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_DevastationBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CastleRecruitmentBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_VillageInvestmentBehavior());

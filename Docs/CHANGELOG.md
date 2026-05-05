@@ -1,5 +1,17 @@
 # Campaign++ — Changelog
 
+## [1.0.1.2] — 2026-05-05
+
+### Feature — Provincial Stabilization
+
+**Newly conquered towns and castles now have an active recovery path instead of relying only on slow strain decay.**
+
+- **Settlement action:** Same-faction lords can fund stabilization at strained towns and castles through a settlement menu action.
+- **Three tiers:** Emergency Relief, Placate Local Elites, and Grant Amnesty spend gold to immediately reduce governance strain.
+- **Recovery bonus:** Active stabilization adds temporary daily loyalty and security recovery, and can speed governance strain decay while the program lasts.
+- **AI parity:** AI lords use the same system when strain is high and they have enough gold, with a configurable safety multiplier and cooldown.
+- **Config:** Added provincial stabilization controls to MCM → Provincial Governance and Quick Settings. Migration v15 enables safe defaults.
+
 ## [1.0.0.1] — 2026-05-01
 
 ### Feature — Roguery XP Parity For Enslavement

@@ -161,7 +161,7 @@
     <string id="b1071_qs_name_clan_survival" text="Clan Survival" />
     <string id="b1071_qs_hint_clan_survival" text="Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service." />
     <string id="b1071_qs_name_governance" text="Governance Strain" />
-    <string id="b1071_qs_hint_governance" text="Owning many distant settlements reduces loyalty, security, and prosperity of far-flung holdings." />
+    <string id="b1071_qs_hint_governance" text="Wars, sieges, raids, and conquest create settlement strain. High strain reduces loyalty, security, and prosperity; stabilization actions can help recovery." />
     <string id="b1071_qs_name_devastation" text="Frontier Devastation" />
     <string id="b1071_qs_hint_devastation" text="Raids cause persistent hearth, prosperity, security, and food penalties that decay slowly." />
     <string id="b1071_qs_name_castle_supply" text="Castle Supply Chain" />
@@ -183,6 +183,72 @@
     <string id="b1071_dev_villages" text="Devastated Villages" />
     <string id="b1071_frontier_rev" text="Frontier Revenue" />
     <string id="b1071_gov_strain" text="Governance Strain" />
+    <string id="b1071_gov_stabilization" text="Provincial Stabilization" />
+    <string id="b1071_gs_enter" text="Stabilize province" />
+    <string id="b1071_gs_enter_active" text="Stabilize province  (active - {DAYS} days remaining)" />
+    <string id="b1071_gs_enter_need" text="Stabilize province  (need {COST}d)" />
+    <string id="b1071_gs_tip_active" text="A stabilization program is already active here." />
+    <string id="b1071_gs_tip_need" text="You need at least {COST} denars for Emergency Relief." />
+    <string id="b1071_gs_tip_need_exact" text="You need {COST} denars for this stabilization program." />
+    <string id="b1071_gs_body" text="Provincial Stabilization - {SETTLEMENT}\n\nGovernance strain: {STRAIN}   |   Owner: {OWNER}   |   Active program: {ACTIVE}\n\nFund a stabilization program to reduce governance strain immediately and support daily loyalty and security recovery. Duration also serves as cooldown." />
+    <string id="b1071_gs_tier_donative" text="Emergency Relief" />
+    <string id="b1071_gs_tier_elites" text="Placate Local Elites" />
+    <string id="b1071_gs_tier_amnesty" text="Grant Amnesty" />
+    <string id="b1071_gs_tier_label" text="{TIER}  ({COST}d - -{STRAIN} strain, +{LOYALTY} loyalty/day, +{SECURITY} security/day, {DAYS} days)" />
+    <string id="b1071_gs_player_msg" text="{TIER} at {SETTLEMENT}: -{COST}d, strain {BEFORE}->{AFTER}, +{LOYALTY} loyalty/day and +{SECURITY} security/day for {DAYS} days." />
+    <string id="b1071_gs_ai_note" text="{LORD} stabilized {SETTLEMENT} with {TIER}." />
+    <string id="b1071_yes_days" text="{DAYS} days" />
+    <string id="b1071_none" text="none" />
+    <string id="b1071_qs_name_governance_stabilization" text="Provincial Stabilization" />
+    <string id="b1071_qs_hint_governance_stabilization" text="Spend gold at strained towns and castles to reduce governance strain and fund temporary loyalty/security recovery." />
+    <string id="b1071_mcm_t_govstab_enable" text="Enable provincial stabilization" />
+    <string id="b1071_mcm_h_govstab_enable" text="Allows lords to spend gold at same-faction towns and castles to reduce governance strain and fund temporary loyalty/security recovery. Default: true." />
+    <string id="b1071_mcm_t_govstab_notify" text="Notify player of AI stabilization" />
+    <string id="b1071_mcm_h_govstab_notify" text="Shows a message when an AI lord funds stabilization in one of the player's settlements. Default: true." />
+    <string id="b1071_mcm_t_govstab_ai_enable" text="AI uses provincial stabilization" />
+    <string id="b1071_mcm_h_govstab_ai_enable" text="Allows AI lords to fund stabilization when governance strain is high and they have enough gold. Default: true." />
+    <string id="b1071_mcm_t_govstab_ai_threshold" text="AI strain threshold" />
+    <string id="b1071_mcm_h_govstab_ai_threshold" text="Minimum governance strain before AI lords consider funding stabilization. Default: 25." />
+    <string id="b1071_mcm_t_govstab_ai_gold_mult" text="AI gold safety multiplier" />
+    <string id="b1071_mcm_h_govstab_ai_gold_mult" text="AI lords only use a tier if their gold is greater than cost multiplied by this value. Default: 10." />
+    <string id="b1071_mcm_t_govstab_ai_cooldown" text="AI hero cooldown days" />
+    <string id="b1071_mcm_h_govstab_ai_cooldown" text="Minimum days between stabilization actions by the same AI lord. Default: 7." />
+    <string id="b1071_mcm_t_govstab_cost_donative" text="Emergency Relief cost" />
+    <string id="b1071_mcm_h_govstab_cost_donative" text="Gold cost for the low-tier stabilization action. Default: 1500." />
+    <string id="b1071_mcm_t_govstab_duration_donative" text="Emergency Relief duration" />
+    <string id="b1071_mcm_h_govstab_duration_donative" text="Days of loyalty/security recovery from Emergency Relief. Duration also acts as cooldown. Default: 5." />
+    <string id="b1071_mcm_t_govstab_strain_donative" text="Emergency Relief strain reduction" />
+    <string id="b1071_mcm_h_govstab_strain_donative" text="Immediate governance strain removed by Emergency Relief. Default: 10." />
+    <string id="b1071_mcm_t_govstab_loyalty_donative" text="Emergency Relief loyalty/day" />
+    <string id="b1071_mcm_h_govstab_loyalty_donative" text="Daily loyalty recovery while Emergency Relief is active. Default: 0.6." />
+    <string id="b1071_mcm_t_govstab_security_donative" text="Emergency Relief security/day" />
+    <string id="b1071_mcm_h_govstab_security_donative" text="Daily security recovery while Emergency Relief is active. Default: 0.4." />
+    <string id="b1071_mcm_t_govstab_decay_donative" text="Emergency Relief extra decay" />
+    <string id="b1071_mcm_h_govstab_decay_donative" text="Extra daily governance strain decay while Emergency Relief is active. Default: 0.2." />
+    <string id="b1071_mcm_t_govstab_cost_elites" text="Placate Local Elites cost" />
+    <string id="b1071_mcm_h_govstab_cost_elites" text="Gold cost for the mid-tier stabilization action. Default: 4000." />
+    <string id="b1071_mcm_t_govstab_duration_elites" text="Placate Local Elites duration" />
+    <string id="b1071_mcm_h_govstab_duration_elites" text="Days of loyalty/security recovery from Placating Local Elites. Duration also acts as cooldown. Default: 7." />
+    <string id="b1071_mcm_t_govstab_strain_elites" text="Placate Local Elites strain reduction" />
+    <string id="b1071_mcm_h_govstab_strain_elites" text="Immediate governance strain removed by Placating Local Elites. Default: 20." />
+    <string id="b1071_mcm_t_govstab_loyalty_elites" text="Placate Local Elites loyalty/day" />
+    <string id="b1071_mcm_h_govstab_loyalty_elites" text="Daily loyalty recovery while Placate Local Elites is active. Default: 1.0." />
+    <string id="b1071_mcm_t_govstab_security_elites" text="Placate Local Elites security/day" />
+    <string id="b1071_mcm_h_govstab_security_elites" text="Daily security recovery while Placate Local Elites is active. Default: 0.7." />
+    <string id="b1071_mcm_t_govstab_decay_elites" text="Placate Local Elites extra decay" />
+    <string id="b1071_mcm_h_govstab_decay_elites" text="Extra daily governance strain decay while Placate Local Elites is active. Default: 0.4." />
+    <string id="b1071_mcm_t_govstab_cost_amnesty" text="Grant Amnesty cost" />
+    <string id="b1071_mcm_h_govstab_cost_amnesty" text="Gold cost for the high-tier stabilization action. Default: 9000." />
+    <string id="b1071_mcm_t_govstab_duration_amnesty" text="Grant Amnesty duration" />
+    <string id="b1071_mcm_h_govstab_duration_amnesty" text="Days of loyalty/security recovery from Grant Amnesty. Duration also acts as cooldown. Default: 10." />
+    <string id="b1071_mcm_t_govstab_strain_amnesty" text="Grant Amnesty strain reduction" />
+    <string id="b1071_mcm_h_govstab_strain_amnesty" text="Immediate governance strain removed by Grant Amnesty. Default: 35." />
+    <string id="b1071_mcm_t_govstab_loyalty_amnesty" text="Grant Amnesty loyalty/day" />
+    <string id="b1071_mcm_h_govstab_loyalty_amnesty" text="Daily loyalty recovery while Grant Amnesty is active. Default: 1.5." />
+    <string id="b1071_mcm_t_govstab_security_amnesty" text="Grant Amnesty security/day" />
+    <string id="b1071_mcm_h_govstab_security_amnesty" text="Daily security recovery while Grant Amnesty is active. Default: 1.0." />
+    <string id="b1071_mcm_t_govstab_decay_amnesty" text="Grant Amnesty extra decay" />
+    <string id="b1071_mcm_h_govstab_decay_amnesty" text="Extra daily governance strain decay while Grant Amnesty is active. Default: 0.7." />
     <string id="b1071_item_slaves" text="Slaves" />
     <string id="b1071_itemcat_slaves" text="Slaves{@Plural}groups of slaves{\@}" />
     <string id="b1071_lbl_garrison_discount" text="B1071 Garrison Discount" />
