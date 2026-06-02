@@ -1,0 +1,88 @@
+<Prefab>
+  <Window>
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" DoNotPassEventsToChildren="false">
+      <Children>
+        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
+        <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="900" SuggestedHeight="560" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <Children>
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="35" MarginRight="20" MarginTop="16" MarginBottom="16" StackLayout.LayoutMethod="VerticalBottomToTop">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="42" MarginRight="15">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="24" Brush.FontColor="#E8DBBFFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@TitleText" />
+                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="32" SuggestedHeight="32" HorizontalAlignment="Right" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" Command.Click="ExecuteClose">
+                      <Children>
+                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="18" Brush.FontColor="#D0C2A5FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="X" />
+                      </Children>
+                    </ButtonWidget>
+                  </Children>
+                </Widget>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="2" MarginTop="6" MarginBottom="8" Sprite="Encyclopedia\list_divider" AlphaFactor="0.85" />
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="26" MarginBottom="8">
+                  <Children>
+                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" HorizontalAlignment="Left" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#D4B870FF" Text="@SummaryText" />
+                    <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" HorizontalAlignment="Right" StackLayout.LayoutMethod="HorizontalLeftToRight">
+                      <Children>
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#D4B870FF" Text="@GoldLabelText" />
+                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#FFD700FF" Text="@GoldText" />
+                      </Children>
+                    </ListPanel>
+                  </Children>
+                </Widget>
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="4" StackLayout.LayoutMethod="HorizontalLeftToRight" IsVisible="@HasCohorts">
+                  <Children>
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="320" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Left" Text="@TroopColumnText" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="45" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Center" Text="@TierColumnText" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="60" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Center" Text="@AgeColumnText" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="90" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Center" Text="@RemainingColumnText" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="110" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Center" Text="@CostColumnText" />
+                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="90" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="13" Brush.FontColor="#9F947DFF" Brush.TextHorizontalAlignment="Center" Text="@StatusColumnText" />
+                  </Children>
+                </ListPanel>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="410" IsVisible="@HasCohorts">
+                  <Children>
+                    <ScrollbarWidget Id="DemobScrollbar" HeightSizePolicy="StretchToParent" WidthSizePolicy="Fixed" SuggestedWidth="8" AlignmentAxis="Vertical" HorizontalAlignment="Right" VerticalAlignment="Top" MinValue="0" MaxValue="100" MarginTop="2" MarginBottom="2" Sprite="scrollbar_9" Handle="DemobScrollbarHandle">
+                      <Children>
+                        <Widget Id="DemobScrollbarHandle" WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="8" SuggestedHeight="40" HorizontalAlignment="Right" Sprite="scroll_button_9" />
+                      </Children>
+                    </ScrollbarWidget>
+                    <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MouseScrollAxis="Vertical" VerticalScrollbar="..\DemobScrollbar" AutoHideScrollBars="true" MarginRight="14" ClipRect="DemobClipRect" InnerPanel="DemobClipRect\DemobInnerPanel">
+                      <Children>
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Id="DemobClipRect" ClipContents="true">
+                          <Children>
+                            <ListPanel DataSource="{Cohorts}" Id="DemobInnerPanel" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalBottomToTop">
+                              <ItemTemplate>
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" MarginBottom="1" StackLayout.LayoutMethod="HorizontalLeftToRight">
+                                  <Children>
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="320" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Left" Brush.TextVerticalAlignment="Center" Text="@Name" />
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="45" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@Tier" />
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="60" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@Age" />
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="90" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@Remaining" />
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="110" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#FFD700FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@ExtendCost" />
+                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="90" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@StatusText" />
+                                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="78" SuggestedHeight="24" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanExtend" Command.Click="ExecuteExtend">
+                                      <Children>
+                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="13" Brush.FontColor="#99BBFFFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@ExtendText" />
+                                      </Children>
+                                    </ButtonWidget>
+                                  </Children>
+                                </ListPanel>
+                              </ItemTemplate>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+                      </Children>
+                    </ScrollablePanel>
+                  </Children>
+                </Widget>
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="16" Brush.FontColor="#D4B870FF" Brush.TextHorizontalAlignment="Center" Text="@NoCohortsText" IsVisible="@HasNoCohorts" />
+              </Children>
+            </ListPanel>
+          </Children>
+        </Widget>
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>
