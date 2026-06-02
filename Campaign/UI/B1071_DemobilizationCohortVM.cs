@@ -51,9 +51,11 @@ namespace Byzantium1071.Campaign.UI
                 _statusText = new TextObject("{=b1071_demob_status_serving}Serving").ToString();
 
             _extendHint = _canExtend
-                ? new HintViewModel(new TextObject("{=b1071_demob_extend_hint}Pay {COST}g to extend this soldier by the configured number of days.")
+                ? new HintViewModel(new TextObject("{=b1071_demob_extend_hint}Pay {COST}g to extend this soldier once by the configured number of days.")
                     .SetTextVariable("COST", row.ExtendCost))
-                : new HintViewModel(new TextObject("{=b1071_demob_extend_hint_blocked}Not enough gold or service extension unavailable."));
+                : new HintViewModel(row.HasBeenExtended
+                    ? new TextObject("{=b1071_demob_extend_hint_used}This soldier has already used his one allowed service extension.")
+                    : new TextObject("{=b1071_demob_extend_hint_blocked}Not enough gold for this service extension."));
         }
 
         public void ExecuteExtend()

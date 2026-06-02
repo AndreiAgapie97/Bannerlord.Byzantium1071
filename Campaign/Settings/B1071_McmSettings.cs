@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 15;
+        internal const int LATEST_PROFILE_VERSION = 19;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -281,6 +281,74 @@ namespace Byzantium1071.Campaign.Settings
                 GovernanceStabilizationDecayAmnesty = 0.7f;
 
                 migrated += "provincial stabilization enabled (gold-funded strain reduction plus temporary loyalty/security recovery). ";
+            }
+
+            // ── Profile v16: troop service and demobilization ──
+            if (SettingsProfileVersion < 16)
+            {
+                EnableDemobilizationSystem = true;
+                EnableDemobilizationHotkey = true;
+                DemobilizationHotkeyChoice = 0;
+                DemobilizationIntensityPreset = 1;
+                DemobilizationWarningLeadDays = 7;
+                DemobilizationWarningPopup = true;
+                DemobilizationNotifyPlayer = true;
+                DemobilizationExtensionDays = 14;
+                DemobilizationExtensionGoldPerTierDay = 5;
+                DemobilizationDailyCapPercent = 20;
+                DemobilizationMaxDailyDepartures = 15;
+
+                migrated += "troop service demobilization enabled (7-day warnings, medium Bannerlord-year thresholds, paid soldier extension). ";
+            }
+
+            // ── Profile v17: revised Moderate troop-service baseline ──
+            if (SettingsProfileVersion < 17)
+            {
+                bool customDefaultsStillLegacy =
+                    DemobilizationT1ServiceDays == 24 &&
+                    DemobilizationT2ServiceDays == 35 &&
+                    DemobilizationT3ServiceDays == 49 &&
+                    DemobilizationT4ServiceDays == 70 &&
+                    DemobilizationT5ServiceDays == 105 &&
+                    DemobilizationT6ServiceDays == 140;
+
+                if (customDefaultsStillLegacy)
+                {
+                    DemobilizationT1ServiceDays = 21;
+                    DemobilizationT2ServiceDays = 32;
+                    DemobilizationT3ServiceDays = 45;
+                    DemobilizationT4ServiceDays = 63;
+                    DemobilizationT5ServiceDays = 84;
+                    DemobilizationT6ServiceDays = 112;
+                }
+
+                migrated += "troop service custom-day defaults aligned with the revised Moderate baseline. ";
+            }
+
+            // ── Profile v18: troop-service extension parity and one-time limits ──
+            if (SettingsProfileVersion < 18)
+            {
+                if (DemobilizationExtensionDays == 14)
+                    DemobilizationExtensionDays = 21;
+
+                DemobilizationAiExtensionsEnabled = true;
+                DemobilizationAiExtensionGoldBufferMultiplier = 10;
+
+                migrated += "troop service extensions are one-time per soldier, AI can pay for extensions, and the default extension is now 21 days when still on the old 14-day value. ";
+            }
+
+            // ── Profile v19: softer troop-service defaults and promotion grace ──
+            if (SettingsProfileVersion < 19)
+            {
+                DemobilizationWarningLeadDays = 14;
+                DemobilizationDailyCapPercent = 15;
+                DemobilizationMaxDailyDepartures = 10;
+                DemobilizationAiExtensionGoldBufferMultiplier = 5;
+                EnableDemobilizationSeasonality = false;
+                EnableDemobilizationCrisisCompression = false;
+                DemobilizationPromotionBonusDays = 5;
+
+                migrated += "troop service softened (14-day warning lead, lower daily departures, 5x AI extension buffer, optional season/crisis pressure off by default, 5-day promotion grace). ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1003,6 +1071,108 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_5e69a58b2a}Enslavement Roguery XP multiplier", 0f, 5f, "0.00", Order = 14, HintText = "{=b1071_mcm_h_5e69a58b2a}Scales the vanilla-equivalent Roguery XP granted when prisoners are enslaved. 1.0 = exact prisoner-sell XP. 0 disables XP while keeping the rest of the enslavement system unchanged. Default: 1.0.")]
         public float EnslavementRogueryXpMultiplier { get; set; } = 1.0f;
+
+        // ─── Troop Service / Demobilization ───
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_enable}Enable troop demobilization", Order = 0, HintText = "{=b1071_mcm_h_demob_enable}Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: true.")]
+        public bool EnableDemobilizationSystem { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_preset}Intensity preset", 0, 3, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_preset}0=Light, 1=Moderate, 2=Harsh, 3=Custom. Thresholds use Bannerlord days; one in-game year is about 84 days. Default: Moderate.")]
+        public int DemobilizationIntensityPreset { get; set; } = 1;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_hotkey_enable}Enable service screen hotkey", Order = 2, HintText = "{=b1071_mcm_h_demob_hotkey_enable}Allows opening the troop service screen from the campaign map. Default: true.")]
+        public bool EnableDemobilizationHotkey { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_hotkey}Service screen hotkey", 0, 3, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_hotkey}0=F9, 1=F10, 2=F11, 3=F12. Default: F9.")]
+        public int DemobilizationHotkeyChoice { get; set; } = 0;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_warning}Warning lead days", 1, 21, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_warning}Warns the player when main-party soldiers are this many days from leaving. Default: 14.")]
+        public int DemobilizationWarningLeadDays { get; set; } = 14;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_popup}Show warning popup", Order = 5, HintText = "{=b1071_mcm_h_demob_popup}Shows a popup with an Open Service button only when the earliest main-party soldier reaches the warning lead day or day 0. Default: true.")]
+        public bool DemobilizationWarningPopup { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_notify}Show daily warning messages", Order = 6, HintText = "{=b1071_mcm_h_demob_notify}Shows a daily warning message when main-party soldiers are close to leaving. Default: true.")]
+        public bool DemobilizationNotifyPlayer { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_days}Extension days", 1, 42, "0", Order = 7, HintText = "{=b1071_mcm_h_demob_extend_days}How many Bannerlord days a paid service extension adds to one selected soldier. Each soldier can only be extended once. Default: 21.")]
+        public int DemobilizationExtensionDays { get; set; } = 21;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_cost}Extension gold per tier-day", 0, 100, "0", Order = 8, HintText = "{=b1071_mcm_h_demob_extend_cost}Cost formula per soldier: troop tier x extension days x this value. Default: 5.")]
+        public int DemobilizationExtensionGoldPerTierDay { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_ai_extend}AI can pay for extensions", Order = 9, HintText = "{=b1071_mcm_h_demob_ai_extend}Allows AI lord field parties to buy the same one-time paid service extension before soldiers leave. Uses the same cost formula and excludes garrisons, militia, caravans, villagers, and bandits. Default: true.")]
+        public bool DemobilizationAiExtensionsEnabled { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_ai_buffer}AI extension treasury buffer", 1, 50, "0", Order = 10, HintText = "{=b1071_mcm_h_demob_ai_buffer}AI only extends a soldier if the lord has more gold than extension cost times this multiplier. 5 keeps a treasury cushion while allowing more AI retention. Default: 5.")]
+        public int DemobilizationAiExtensionGoldBufferMultiplier { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_promotion_bonus}Promotion bonus days", 0, 10, "0", Order = 11, HintText = "{=b1071_mcm_h_demob_promotion_bonus}How many service-age days a genuine troop upgrade removes from the promoted soldier. This never resets age below 0 and does not refresh one-time extensions. Default: 5.")]
+        public int DemobilizationPromotionBonusDays { get; set; } = 5;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_pct}Daily departure cap %", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_daily_pct}Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Default: 15.")]
+        public int DemobilizationDailyCapPercent { get; set; } = 15;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_max}Max departures per party/day", 1, 200, "0", Order = 13, HintText = "{=b1071_mcm_h_demob_daily_max}Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 10.")]
+        public int DemobilizationMaxDailyDepartures { get; set; } = 10;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_seasonal}Enable service seasonality", Order = 14, HintText = "{=b1071_mcm_h_demob_seasonal}Optional realism pressure. Lightly adjusts service thresholds by Bannerlord season, which can shift soldiers closer to or farther from departure. Default: false.")]
+        public bool EnableDemobilizationSeasonality { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_spring}Spring/summer service %", 50, 150, "0", Order = 15, HintText = "{=b1071_mcm_h_demob_spring}Threshold multiplier in spring and summer. 110 means troops serve 10% longer. Default: 110.")]
+        public int DemobilizationSpringSummerThresholdPercent { get; set; } = 110;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_winter}Winter service %", 50, 150, "0", Order = 16, HintText = "{=b1071_mcm_h_demob_winter}Threshold multiplier in winter. 90 means troops rotate out 10% sooner. Default: 90.")]
+        public int DemobilizationWinterThresholdPercent { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_crisis_enable}Enable crisis compression", Order = 17, HintText = "{=b1071_mcm_h_demob_crisis_enable}Optional realism pressure. When a kingdom is in the manpower pressure Crisis band, field troops rotate out sooner. Default: false.")]
+        public bool EnableDemobilizationCrisisCompression { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_crisis_pct}Crisis service %", 50, 150, "0", Order = 18, HintText = "{=b1071_mcm_h_demob_crisis_pct}Threshold multiplier while a kingdom is in Crisis. 90 means troops rotate out 10% sooner. Default: 90.")]
+        public int DemobilizationCrisisThresholdPercent { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t1}Custom T1 service days", 1, 300, "0", Order = 0, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT1ServiceDays { get; set; } = 21;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t2}Custom T2 service days", 1, 300, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT2ServiceDays { get; set; } = 32;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t3}Custom T3 service days", 1, 300, "0", Order = 2, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT3ServiceDays { get; set; } = 45;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t4}Custom T4 service days", 1, 300, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT4ServiceDays { get; set; } = 63;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t5}Custom T5 service days", 1, 300, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT5ServiceDays { get; set; } = 84;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_t6}Custom T6 service days", 1, 300, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
+        public int DemobilizationT6ServiceDays { get; set; } = 112;
 
         [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("{=b1071_mcm_t_28f7f149d6}[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "{=b1071_mcm_h_3ad968ac32}[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]

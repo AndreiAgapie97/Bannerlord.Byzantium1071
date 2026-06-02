@@ -137,6 +137,10 @@ namespace Byzantium1071.Campaign.Settings
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),
                         L("b1071_qs_hint_clan_survival", "Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service."),
                         4, () => s.EnableClanSurvival, v => s.EnableClanSurvival = v);
+
+                    AddToggle(g, "qs_demobilization", L("b1071_qs_name_demobilization", "Troop Service"),
+                        L("b1071_qs_hint_demobilization", "Field troops rotate out after long service. Warnings and the service screen show which main-party soldiers are close to leaving."),
+                        5, () => s.EnableDemobilizationSystem, v => s.EnableDemobilizationSystem = v);
                 });
 
                 // ── Province & Governance ──────────────────────────────────────────

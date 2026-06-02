@@ -27,10 +27,40 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private const string LogTag = "Demobilization";
 
+        private const int MinimumTransferReserveDays = 14;
+
         private sealed class CohortEntry
         {
             public int JoinDay;
             public int Count;
+            public bool HasBeenExtended;
+        }
+
+        private sealed class TransferReserveEntry
+        {
+            public int JoinDay;
+            public int StoredDay;
+            public int Count;
+            public bool HasBeenExtended;
+        }
+
+        private sealed class OverdueCandidate
+        {
+            public string TroopId = string.Empty;
+            public CharacterObject Troop = null!;
+            public CohortEntry Cohort = null!;
+            public int JoinDay;
+            public int ThresholdDays;
+        }
+
+        private sealed class AiExtensionCandidate
+        {
+            public string TroopId = string.Empty;
+            public CharacterObject Troop = null!;
+            public CohortEntry Cohort = null!;
+            public int JoinDay;
+            public int RemainingDays;
+            public int Cost;
         }
 
         public sealed class CohortView
@@ -47,6 +77,7 @@ namespace Byzantium1071.Campaign.Behaviors
             public int ExtendCost;
             public bool IsWarning;
             public bool IsOverdue;
+            public bool HasBeenExtended;
             public bool CanExtend;
         }
 
@@ -56,10 +87,20 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, List<string>> _upgradePathCache
             = new Dictionary<string, List<string>>();
 
+        private readonly Dictionary<string, List<TransferReserveEntry>> _transferReserve
+            = new Dictionary<string, List<TransferReserveEntry>>();
+
         private List<string>? _savedPartyIds;
         private List<string>? _savedTroopIds;
         private List<int>? _savedJoinDays;
         private List<int>? _savedCounts;
+        private List<bool>? _savedExtendedFlags;
+
+        private List<string>? _savedReserveTroopIds;
+        private List<int>? _savedReserveJoinDays;
+        private List<int>? _savedReserveStoredDays;
+        private List<int>? _savedReserveCounts;
+        private List<bool>? _savedReserveExtendedFlags;
 
         private int _lastWarningDay = -1;
 
@@ -68,6 +109,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.OnTroopRecruitedEvent.AddNonSerializedListener(this, OnTroopRecruited);
+            CampaignEvents.OnUnitRecruitedEvent.AddNonSerializedListener(this, OnUnitRecruited);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -76,6 +118,12 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedTroopIds ??= new List<string>();
             _savedJoinDays ??= new List<int>();
             _savedCounts ??= new List<int>();
+            _savedExtendedFlags ??= new List<bool>();
+            _savedReserveTroopIds ??= new List<string>();
+            _savedReserveJoinDays ??= new List<int>();
+            _savedReserveStoredDays ??= new List<int>();
+            _savedReserveCounts ??= new List<int>();
+            _savedReserveExtendedFlags ??= new List<bool>();
 
             if (!dataStore.IsLoading)
             {
@@ -83,6 +131,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedTroopIds.Clear();
                 _savedJoinDays.Clear();
                 _savedCounts.Clear();
+                _savedExtendedFlags.Clear();
+                _savedReserveTroopIds.Clear();
+                _savedReserveJoinDays.Clear();
+                _savedReserveStoredDays.Clear();
+                _savedReserveCounts.Clear();
+                _savedReserveExtendedFlags.Clear();
 
                 foreach (var partyKvp in _serviceCohorts)
                 {
@@ -97,7 +151,24 @@ namespace Byzantium1071.Campaign.Behaviors
                                 _savedTroopIds.Add(troopKvp.Key);
                                 _savedJoinDays.Add(cohort.JoinDay);
                                 _savedCounts.Add(1);
+                                _savedExtendedFlags.Add(cohort.HasBeenExtended);
                             }
+                        }
+                    }
+                }
+
+                foreach (var reserveKvp in _transferReserve)
+                {
+                    foreach (TransferReserveEntry entry in reserveKvp.Value)
+                    {
+                        int soldiers = Math.Max(0, entry.Count);
+                        for (int i = 0; i < soldiers; i++)
+                        {
+                            _savedReserveTroopIds.Add(reserveKvp.Key);
+                            _savedReserveJoinDays.Add(entry.JoinDay);
+                            _savedReserveStoredDays.Add(entry.StoredDay);
+                            _savedReserveCounts.Add(1);
+                            _savedReserveExtendedFlags.Add(entry.HasBeenExtended);
                         }
                     }
                 }
@@ -107,15 +178,28 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("b1071_demob_troopIds", ref _savedTroopIds);
             dataStore.SyncData("b1071_demob_joinDays", ref _savedJoinDays);
             dataStore.SyncData("b1071_demob_counts", ref _savedCounts);
+            dataStore.SyncData("b1071_demob_extendedFlags", ref _savedExtendedFlags);
+            dataStore.SyncData("b1071_demob_reserveTroopIds", ref _savedReserveTroopIds);
+            dataStore.SyncData("b1071_demob_reserveJoinDays", ref _savedReserveJoinDays);
+            dataStore.SyncData("b1071_demob_reserveStoredDays", ref _savedReserveStoredDays);
+            dataStore.SyncData("b1071_demob_reserveCounts", ref _savedReserveCounts);
+            dataStore.SyncData("b1071_demob_reserveExtendedFlags", ref _savedReserveExtendedFlags);
 
             _savedPartyIds ??= new List<string>();
             _savedTroopIds ??= new List<string>();
             _savedJoinDays ??= new List<int>();
             _savedCounts ??= new List<int>();
+            _savedExtendedFlags ??= new List<bool>();
+            _savedReserveTroopIds ??= new List<string>();
+            _savedReserveJoinDays ??= new List<int>();
+            _savedReserveStoredDays ??= new List<int>();
+            _savedReserveCounts ??= new List<int>();
+            _savedReserveExtendedFlags ??= new List<bool>();
 
             if (dataStore.IsLoading)
             {
                 _serviceCohorts.Clear();
+                _transferReserve.Clear();
                 int n = Math.Min(_savedPartyIds.Count,
                     Math.Min(_savedTroopIds.Count, Math.Min(_savedJoinDays.Count, _savedCounts.Count)));
 
@@ -124,6 +208,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     string partyId = _savedPartyIds[i];
                     string troopId = _savedTroopIds[i];
                     int count = _savedCounts[i];
+                    bool hasBeenExtended = i < _savedExtendedFlags.Count && _savedExtendedFlags[i];
                     if (string.IsNullOrEmpty(partyId) || string.IsNullOrEmpty(troopId) || count <= 0) continue;
 
                     if (!_serviceCohorts.TryGetValue(partyId, out var troopDict))
@@ -143,19 +228,50 @@ namespace Byzantium1071.Campaign.Behaviors
                         cohorts.Add(new CohortEntry
                         {
                             JoinDay = _savedJoinDays[i],
-                            Count = 1
+                            Count = 1,
+                            HasBeenExtended = hasBeenExtended
                         });
                     }
                 }
 
-                B1071_VerboseLog.Log(LogTag, $"Loaded {CountTrackedSoldiers()} tracked soldier service entr{(CountTrackedSoldiers() == 1 ? "y" : "ies")} across {_serviceCohorts.Count} part{(_serviceCohorts.Count == 1 ? "y" : "ies")}.");
+                int reserveCount = Math.Min(_savedReserveTroopIds.Count,
+                    Math.Min(_savedReserveJoinDays.Count, Math.Min(_savedReserveStoredDays.Count, _savedReserveCounts.Count)));
+
+                for (int i = 0; i < reserveCount; i++)
+                {
+                    string troopId = _savedReserveTroopIds[i];
+                    int count = _savedReserveCounts[i];
+                    bool hasBeenExtended = i < _savedReserveExtendedFlags.Count && _savedReserveExtendedFlags[i];
+                    if (string.IsNullOrEmpty(troopId) || count <= 0) continue;
+
+                    if (!_transferReserve.TryGetValue(troopId, out var entries))
+                    {
+                        entries = new List<TransferReserveEntry>();
+                        _transferReserve[troopId] = entries;
+                    }
+
+                    for (int soldier = 0; soldier < count; soldier++)
+                    {
+                        entries.Add(new TransferReserveEntry
+                        {
+                            JoinDay = _savedReserveJoinDays[i],
+                            StoredDay = _savedReserveStoredDays[i],
+                            Count = 1,
+                            HasBeenExtended = hasBeenExtended
+                        });
+                    }
+                }
+
+                B1071_VerboseLog.Log(LogTag, $"Loaded {CountTrackedSoldiers()} tracked soldier service entr{(CountTrackedSoldiers() == 1 ? "y" : "ies")} across {_serviceCohorts.Count} part{(_serviceCohorts.Count == 1 ? "y" : "ies")}; transferReserve={CountReservedSoldiers()}.");
             }
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
         {
             Instance = this;
+            _lastWarningDay = -1;
             CleanupStalePartyData();
+            CleanupTransferReserve(GetToday());
             B1071_VerboseLog.Log(LogTag, $"Session launched. trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}, enabled={Settings.EnableDemobilizationSystem}.");
         }
 
@@ -165,14 +281,68 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 if (!Settings.EnableDemobilizationSystem || amount <= 0 || troop == null || troop.IsHero) return;
 
+                if (recruiterHero == null)
+                {
+                    B1071_VerboseLog.Log(LogTag, $"OnTroopRecruited skipped: recruiterHero=null, troop={troop.StringId}, soldiers={amount}.");
+                    return;
+                }
+
                 MobileParty? party = recruiterHero.PartyBelongedTo;
                 if (party == null || !IsEligibleFieldParty(party)) return;
 
-                AddFreshCohort(party, troop, amount, GetToday());
+                AddFreshCohort(party, troop, amount, GetToday(), "event");
             }
             catch (Exception ex)
             {
                 B1071_VerboseLog.Log(LogTag, $"OnTroopRecruited skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private void OnUnitRecruited(CharacterObject troop, int amount)
+        {
+            try
+            {
+                if (!Settings.EnableDemobilizationSystem || amount <= 0 || troop == null || troop.IsHero) return;
+
+                MobileParty? mainParty = MobileParty.MainParty;
+                if (mainParty == null || !IsEligibleFieldParty(mainParty)) return;
+
+                AddFreshCohort(mainParty, troop, amount, GetToday(), "unit_event");
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"OnUnitRecruited skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        public int RegisterDirectRecruitment(MobileParty party, CharacterObject troop, int amount, string source)
+        {
+            try
+            {
+                if (!Settings.EnableDemobilizationSystem || amount <= 0 || !IsTrackableTroop(troop)) return 0;
+                if (party == null || party.MemberRoster == null || !IsEligibleFieldParty(party)) return 0;
+
+                string partyId = GetPartyId(party);
+                if (string.IsNullOrEmpty(partyId)) return 0;
+
+                int currentCount = party.MemberRoster.GetTroopCount(troop);
+                if (currentCount <= 0) return 0;
+
+                int trackedCount = GetTrackedTroopCount(partyId, troop.StringId);
+                int missing = Math.Min(amount, Math.Max(0, currentCount - trackedCount));
+                if (missing <= 0)
+                {
+                    B1071_VerboseLog.Log(LogTag, $"Direct recruit service registration skipped: source={source}, party={PartyLogName(party)}, troop={troop.StringId}, requested={amount}, roster={currentCount}, tracked={trackedCount}.");
+                    return 0;
+                }
+
+                AddFreshCohort(party, troop, missing, GetToday(), source);
+                return missing;
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"RegisterDirectRecruitment skipped: source={source}, {ex.GetType().Name}: {ex.Message}");
+                return 0;
             }
         }
 
@@ -184,19 +354,27 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 int today = GetToday();
                 CleanupStalePartyData();
+                CleanupTransferReserve(today);
 
-                int processed = 0;
+                var eligibleParties = new List<MobileParty>();
                 foreach (MobileParty party in MobileParty.All)
                 {
                     if (!IsEligibleFieldParty(party)) continue;
+                    eligibleParties.Add(party);
+                }
 
-                    processed++;
-                    ReconcileParty(party, today);
+                foreach (MobileParty party in eligibleParties)
+                    ReconcileParty(party, today, addNewlyObserved: false);
+
+                foreach (MobileParty party in eligibleParties)
+                {
+                    ReconcileParty(party, today, addNewlyObserved: true);
+                    TryApplyAiExtensions(party, today);
                     RetireOverdueCohorts(party, today);
                 }
 
                 ShowMainPartyWarningIfNeeded(today);
-                B1071_VerboseLog.Log(LogTag, $"Daily tick day={today}: processedParties={processed}, trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}.");
+                B1071_VerboseLog.Log(LogTag, $"Daily tick day={today}: processedParties={eligibleParties.Count}, trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}, transferReserve={CountReservedSoldiers()}.");
             }
             catch (Exception ex)
             {
@@ -243,7 +421,8 @@ namespace Byzantium1071.Campaign.Behaviors
                         ExtendCost = GetExtensionCost(troop, cohort.Count),
                         IsWarning = remaining <= Settings.DemobilizationWarningLeadDays,
                         IsOverdue = remaining <= 0,
-                        CanExtend = Hero.MainHero != null && Hero.MainHero.Gold >= GetExtensionCost(troop, cohort.Count)
+                        HasBeenExtended = cohort.HasBeenExtended,
+                        CanExtend = !cohort.HasBeenExtended && Hero.MainHero != null && Hero.MainHero.Gold >= GetExtensionCost(troop, cohort.Count)
                     });
                 }
             }
@@ -278,6 +457,14 @@ namespace Byzantium1071.Campaign.Behaviors
                 int cost = GetExtensionCost(troop, cohort.Count);
                 if (cost < 0 || Hero.MainHero == null) return false;
 
+                if (cohort.HasBeenExtended)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=b1071_demob_extend_used}This soldier has already used his one allowed service extension.")
+                            .ToString(), Colors.Red));
+                    return false;
+                }
+
                 if (Hero.MainHero.Gold < cost)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
@@ -290,6 +477,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (cost > 0)
                     GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, cost, disableNotification: true);
                 cohort.JoinDay += Math.Max(1, Settings.DemobilizationExtensionDays);
+                cohort.HasBeenExtended = true;
 
                 B1071_VerboseLog.Log(LogTag, $"Extended service: party={partyId}, troop={troopId}, entry={cohortIndex}, days={Math.Max(1, Settings.DemobilizationExtensionDays)}, cost={cost}, newJoinDay={cohort.JoinDay}.");
 
@@ -312,6 +500,11 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void ReconcileParty(MobileParty party, int today)
         {
+            ReconcileParty(party, today, addNewlyObserved: true);
+        }
+
+        private void ReconcileParty(MobileParty party, int today, bool addNewlyObserved)
+        {
             if (party.MemberRoster == null) return;
 
             string partyId = GetPartyId(party);
@@ -324,8 +517,9 @@ namespace Byzantium1071.Campaign.Behaviors
             Dictionary<string, int> currentCounts = GetRosterCounts(party.MemberRoster);
             NormalizeIndividualEntries(troopDict);
             CarryUpgradeServiceForward(party, troopDict, currentCounts);
-            RemoveMissingTrackedTroops(party, troopDict, currentCounts);
-            AddNewlyObservedTroops(party, troopDict, currentCounts, today);
+            RemoveMissingTrackedTroops(party, troopDict, currentCounts, today);
+            if (addNewlyObserved)
+                AddNewlyObservedTroops(party, troopDict, currentCounts, today);
             RemoveEmptyEntries(partyId);
         }
 
@@ -353,21 +547,22 @@ namespace Byzantium1071.Campaign.Behaviors
                         int targetGain = GetCount(currentCounts, targetId) - GetCount(trackedTotals, targetId);
                         if (targetGain <= 0) continue;
 
-                        int moved = MoveOldestCohorts(troopDict, sourceId, targetId, Math.Min(missing, targetGain));
+                        int promotionBonusDays = Math.Max(0, Settings.DemobilizationPromotionBonusDays);
+                        int moved = MoveOldestCohorts(troopDict, sourceId, targetId, Math.Min(missing, targetGain), promotionBonusDays, GetToday());
                         if (moved <= 0) continue;
 
                         movedAny = true;
                         trackedTotals[sourceId] = GetCount(trackedTotals, sourceId) - moved;
                         trackedTotals[targetId] = GetCount(trackedTotals, targetId) + moved;
                         missing -= moved;
-                        B1071_VerboseLog.Log(LogTag, $"Upgrade carryover: party={PartyLogName(party)}, {sourceId}->{targetId}, soldiers={moved}.");
+                        B1071_VerboseLog.Log(LogTag, $"Upgrade carryover: party={PartyLogName(party)}, {sourceId}->{targetId}, soldiers={moved}, promotionBonusDays={promotionBonusDays}.");
                     }
                 }
             }
             while (movedAny && guard < 8);
         }
 
-        private void RemoveMissingTrackedTroops(MobileParty party, Dictionary<string, List<CohortEntry>> troopDict, Dictionary<string, int> currentCounts)
+        private void RemoveMissingTrackedTroops(MobileParty party, Dictionary<string, List<CohortEntry>> troopDict, Dictionary<string, int> currentCounts, int today)
         {
             Dictionary<string, int> trackedTotals = BuildTrackedTotals(troopDict);
             var troopIds = new List<string>(troopDict.Keys);
@@ -376,8 +571,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 int excess = GetCount(trackedTotals, troopId) - GetCount(currentCounts, troopId);
                 if (excess > 0)
                 {
-                    RemoveOldestCohorts(troopDict, troopId, excess);
-                    B1071_VerboseLog.Log(LogTag, $"Roster reconciliation removed stale service entries: party={PartyLogName(party)}, troop={troopId}, soldiers={excess}.");
+                    int reserved = MoveOldestCohortsToTransferReserve(troopDict, troopId, excess, today);
+                    B1071_VerboseLog.Log(LogTag, $"Roster reconciliation reserved missing service entries: party={PartyLogName(party)}, troop={troopId}, soldiers={reserved}, reserve={CountReservedSoldiers()}.");
                 }
             }
         }
@@ -396,9 +591,115 @@ namespace Byzantium1071.Campaign.Behaviors
                     troopDict[kvp.Key] = cohorts;
                 }
 
-                AddIndividualEntries(cohorts, today, fresh);
-                B1071_VerboseLog.Log(LogTag, $"Observed new service soldiers: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={fresh}, joinDay={today}.");
+                bool hadTrackedCohortsBeforeRestore = cohorts.Count > 0;
+                int restored = RestoreTransferReserveEntries(kvp.Key, cohorts, fresh, today);
+                int newSoldiers = fresh - restored;
+
+                if (restored > 0)
+                {
+                    B1071_VerboseLog.Log(LogTag, $"Restored transferred service entries: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={restored}, reserve={CountReservedSoldiers()}.");
+                    if (!hadTrackedCohortsBeforeRestore)
+                        B1071_VerboseLog.Log(LogTag, $"Reserve restore into previously untracked troop type: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={restored}, requestedFresh={fresh}.");
+                }
+
+                if (newSoldiers > 0)
+                {
+                    AddIndividualEntries(cohorts, today, newSoldiers);
+                    B1071_VerboseLog.Log(LogTag, $"Observed new service soldiers: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={newSoldiers}, joinDay={today}.");
+                }
             }
+        }
+
+        private void TryApplyAiExtensions(MobileParty party, int today)
+        {
+            if (!Settings.DemobilizationAiExtensionsEnabled) return;
+            if (party == MobileParty.MainParty) return;
+
+            Hero? leader = party.LeaderHero;
+            if (leader == null || leader.Gold <= 0) return;
+
+            string partyId = GetPartyId(party);
+            if (!_serviceCohorts.TryGetValue(partyId, out var troopDict)) return;
+
+            int warningLead = Math.Max(0, Settings.DemobilizationWarningLeadDays);
+            var candidates = new List<AiExtensionCandidate>();
+
+            foreach (var troopKvp in troopDict)
+            {
+                CharacterObject? troop = ResolveTroop(troopKvp.Key);
+                if (troop == null) continue;
+
+                int threshold = GetServiceThresholdDays(troop, party);
+                foreach (CohortEntry cohort in troopKvp.Value)
+                {
+                    if (cohort.Count <= 0 || cohort.HasBeenExtended) continue;
+
+                    int age = Math.Max(0, today - cohort.JoinDay);
+                    int remaining = threshold - age;
+                    if (remaining > warningLead) continue;
+
+                    for (int unit = 0; unit < cohort.Count; unit++)
+                    {
+                        candidates.Add(new AiExtensionCandidate
+                        {
+                            TroopId = troopKvp.Key,
+                            Troop = troop,
+                            Cohort = cohort,
+                            JoinDay = cohort.JoinDay,
+                            RemainingDays = remaining,
+                            Cost = GetExtensionCost(troop, 1)
+                        });
+                    }
+                }
+            }
+
+            if (candidates.Count == 0) return;
+
+            candidates.Sort((a, b) =>
+            {
+                int compare = a.RemainingDays.CompareTo(b.RemainingDays);
+                if (compare != 0) return compare;
+                compare = a.JoinDay.CompareTo(b.JoinDay);
+                if (compare != 0) return compare;
+                return string.Compare(a.TroopId, b.TroopId, StringComparison.Ordinal);
+            });
+
+            int cap = Math.Max(1, Settings.DemobilizationMaxDailyDepartures);
+            int extended = 0;
+            int spent = 0;
+            string firstTroopName = string.Empty;
+            int extensionDays = Math.Max(1, Settings.DemobilizationExtensionDays);
+
+            foreach (AiExtensionCandidate candidate in candidates)
+            {
+                if (extended >= cap) break;
+                if (candidate.Cohort.Count <= 0 || candidate.Cohort.HasBeenExtended) continue;
+                if (!CanAiAffordExtension(leader, candidate.Cost)) continue;
+
+                if (candidate.Cost > 0)
+                    GiveGoldAction.ApplyBetweenCharacters(leader, null, candidate.Cost, disableNotification: true);
+
+                candidate.Cohort.JoinDay += extensionDays;
+                candidate.Cohort.HasBeenExtended = true;
+                extended++;
+                spent += candidate.Cost;
+
+                if (string.IsNullOrEmpty(firstTroopName))
+                    firstTroopName = candidate.Troop.Name?.ToString() ?? candidate.TroopId;
+            }
+
+            if (extended > 0)
+            {
+                B1071_VerboseLog.Log(LogTag, $"AI extended service: party={PartyLogName(party)}, hero={leader.Name?.ToString() ?? leader.StringId}, soldiers={extended}, spent={spent}, days={extensionDays}, buffer={Math.Max(1, Settings.DemobilizationAiExtensionGoldBufferMultiplier)}x, firstTroop={firstTroopName}.");
+            }
+        }
+
+        private static bool CanAiAffordExtension(Hero hero, int cost)
+        {
+            if (cost <= 0) return true;
+            int bufferMultiplier = Math.Max(1, Settings.DemobilizationAiExtensionGoldBufferMultiplier);
+            long requiredGold = (long)cost * bufferMultiplier;
+            return hero.Gold > requiredGold;
         }
 
         private void RetireOverdueCohorts(MobileParty party, int today)
@@ -410,11 +711,15 @@ namespace Byzantium1071.Campaign.Behaviors
             int retiredTotal = 0;
             string firstTroopName = string.Empty;
 
+            var overdueByTroop = new Dictionary<string, int>();
+            var thresholdByTroop = new Dictionary<string, int>();
+            var troopCapByTroop = new Dictionary<string, int>();
+            var retiredByTroop = new Dictionary<string, int>();
+            var candidates = new List<OverdueCandidate>();
+
             var troopIds = new List<string>(troopDict.Keys);
             foreach (string troopId in troopIds)
             {
-                if (retiredTotal >= partyCap) break;
-
                 CharacterObject? troop = ResolveTroop(troopId);
                 if (troop == null) continue;
                 if (!troopDict.TryGetValue(troopId, out var cohorts)) continue;
@@ -424,28 +729,61 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (overdueForTroop <= 0) continue;
 
                 int troopCap = Math.Max(1, overdueForTroop * Math.Max(1, Settings.DemobilizationDailyCapPercent) / 100);
-                int retiredFromTroop = 0;
-                for (int i = 0; i < cohorts.Count && retiredTotal < partyCap && retiredFromTroop < troopCap; i++)
+                overdueByTroop[troopId] = overdueForTroop;
+                thresholdByTroop[troopId] = threshold;
+                troopCapByTroop[troopId] = troopCap;
+
+                for (int i = 0; i < cohorts.Count; i++)
                 {
                     CohortEntry cohort = cohorts[i];
                     if (cohort.Count <= 0) continue;
                     if (today - cohort.JoinDay < threshold) continue;
 
-                    int retireNow = Math.Min(cohort.Count, Math.Min(troopCap - retiredFromTroop, partyCap - retiredTotal));
-                    int removed = RemoveTroopsFromRoster(party, troop, retireNow);
-                    if (removed <= 0) continue;
-
-                    cohort.Count -= removed;
-                    retiredTotal += removed;
-                    retiredFromTroop += removed;
-                    if (string.IsNullOrEmpty(firstTroopName))
-                        firstTroopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
+                    for (int unit = 0; unit < cohort.Count; unit++)
+                    {
+                        candidates.Add(new OverdueCandidate
+                        {
+                            TroopId = troopId,
+                            Troop = troop,
+                            Cohort = cohort,
+                            JoinDay = cohort.JoinDay,
+                            ThresholdDays = threshold
+                        });
+                    }
                 }
+            }
 
-                if (retiredFromTroop > 0)
-                {
-                    B1071_VerboseLog.Log(LogTag, $"Retired service soldiers: party={PartyLogName(party)}, troop={troopId}, soldiers={retiredFromTroop}, overdue={overdueForTroop}, threshold={threshold}, troopCap={troopCap}, partyCap={partyCap}.");
-                }
+            candidates.Sort((a, b) =>
+            {
+                int compare = a.JoinDay.CompareTo(b.JoinDay);
+                if (compare != 0) return compare;
+                compare = string.Compare(a.TroopId, b.TroopId, StringComparison.Ordinal);
+                if (compare != 0) return compare;
+                return a.ThresholdDays.CompareTo(b.ThresholdDays);
+            });
+
+            foreach (OverdueCandidate candidate in candidates)
+            {
+                if (retiredTotal >= partyCap) break;
+                if (candidate.Cohort.Count <= 0) continue;
+
+                int troopRetired = GetCount(retiredByTroop, candidate.TroopId);
+                if (troopRetired >= GetCount(troopCapByTroop, candidate.TroopId)) continue;
+
+                int removed = RemoveTroopsFromRoster(party, candidate.Troop, 1);
+                if (removed <= 0) continue;
+
+                candidate.Cohort.Count -= removed;
+                retiredTotal += removed;
+                retiredByTroop[candidate.TroopId] = troopRetired + removed;
+                if (string.IsNullOrEmpty(firstTroopName))
+                    firstTroopName = candidate.Troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
+            }
+
+            foreach (var kvp in retiredByTroop)
+            {
+                if (kvp.Value <= 0) continue;
+                B1071_VerboseLog.Log(LogTag, $"Retired service soldiers: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={kvp.Value}, overdue={GetCount(overdueByTroop, kvp.Key)}, threshold={GetCount(thresholdByTroop, kvp.Key)}, troopCap={GetCount(troopCapByTroop, kvp.Key)}, partyCap={partyCap}.");
             }
 
             RemoveEmptyEntries(partyId);
@@ -472,12 +810,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void ShowMainPartyWarningIfNeeded(int today)
         {
-            if (!Settings.DemobilizationNotifyPlayer || _lastWarningDay == today) return;
+            if (_lastWarningDay == today) return;
+            if (!Settings.DemobilizationNotifyPlayer && !Settings.DemobilizationWarningPopup) return;
 
             List<CohortView> rows = GetMainPartyCohortsForUi();
             CohortView? earliest = null;
             int warningCount = 0;
             int warningMen = 0;
+            bool shouldShowPopup = false;
+            int popupLead = Math.Max(0, Settings.DemobilizationWarningLeadDays);
 
             foreach (CohortView row in rows)
             {
@@ -486,6 +827,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 warningMen += row.Count;
                 if (earliest == null || row.RemainingDays < earliest.RemainingDays)
                     earliest = row;
+
+                if (row.RemainingDays == popupLead || row.RemainingDays == 0)
+                    shouldShowPopup = true;
             }
 
             if (earliest == null) return;
@@ -504,19 +848,31 @@ namespace Byzantium1071.Campaign.Behaviors
                 .SetTextVariable("DPLURAL", Math.Abs(earliest.RemainingDays) == 1 ? string.Empty : "s")
                 .ToString();
 
-            InformationManager.DisplayMessage(new InformationMessage(warning, new Color(0.9f, 0.7f, 0.25f)));
+            bool sentMessage = false;
+            bool sentPopup = false;
 
-            if (!Settings.DemobilizationWarningPopup) return;
+            if (Settings.DemobilizationNotifyPlayer)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(warning, new Color(0.9f, 0.7f, 0.25f)));
+                sentMessage = true;
+            }
 
-            InformationManager.ShowInquiry(new InquiryData(
-                titleText: new TextObject("{=b1071_demob_warning_title}Troops Near Demobilization").ToString(),
-                text: warning,
-                isAffirmativeOptionShown: true,
-                isNegativeOptionShown: true,
-                affirmativeText: new TextObject("{=b1071_demob_open_service}Open Service").ToString(),
-                negativeText: new TextObject("{=b1071_ui_ok}OK").ToString(),
-                affirmativeAction: B1071_DemobilizationScreen.OpenScreen,
-                negativeAction: null));
+            if (Settings.DemobilizationWarningPopup && shouldShowPopup)
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    titleText: new TextObject("{=b1071_demob_warning_title}Troops Near Demobilization").ToString(),
+                    text: warning,
+                    isAffirmativeOptionShown: true,
+                    isNegativeOptionShown: true,
+                    affirmativeText: new TextObject("{=b1071_demob_open_service}Open Service").ToString(),
+                    negativeText: new TextObject("{=b1071_ui_ok}OK").ToString(),
+                    affirmativeAction: B1071_DemobilizationScreen.OpenScreen,
+                    negativeAction: null));
+                sentPopup = true;
+            }
+
+            if (sentMessage || sentPopup)
+                B1071_VerboseLog.Log(LogTag, $"Player warning issued: soldiers={warningMen}, nearestTroop={troopName}, remaining={earliest.RemainingDays}, message={sentMessage}, popup={sentPopup}.");
         }
 
         private Dictionary<string, int> GetRosterCounts(TroopRoster roster)
@@ -548,7 +904,7 @@ namespace Byzantium1071.Campaign.Behaviors
             return troop != null && !troop.IsHero;
         }
 
-        private void AddFreshCohort(MobileParty party, CharacterObject troop, int amount, int today)
+        private void AddFreshCohort(MobileParty party, CharacterObject troop, int amount, int today, string source)
         {
             if (!IsTrackableTroop(troop) || amount <= 0) return;
             string partyId = GetPartyId(party);
@@ -565,7 +921,18 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             AddIndividualEntries(cohorts, today, amount);
-            B1071_VerboseLog.Log(LogTag, $"Recruit event tracked service soldiers: party={PartyLogName(party)}, troop={troop.StringId}, soldiers={amount}, joinDay={today}.");
+            B1071_VerboseLog.Log(LogTag, $"Fresh service soldiers registered: source={source}, party={PartyLogName(party)}, troop={troop.StringId}, soldiers={amount}, joinDay={today}.");
+        }
+
+        private int GetTrackedTroopCount(string partyId, string troopId)
+        {
+            if (!_serviceCohorts.TryGetValue(partyId, out var troopDict)) return 0;
+            if (!troopDict.TryGetValue(troopId, out var cohorts)) return 0;
+
+            int total = 0;
+            foreach (CohortEntry cohort in cohorts)
+                total += Math.Max(0, cohort.Count);
+            return total;
         }
 
         private int RemoveTroopsFromRoster(MobileParty party, CharacterObject troop, int requested)
@@ -648,12 +1015,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
             switch (tier)
             {
-                case 1: return 24;
-                case 2: return 35;
-                case 3: return 49;
-                case 4: return 70;
-                case 5: return 105;
-                default: return 140;
+                case 1: return 21;
+                case 2: return 32;
+                case 3: return 45;
+                case 4: return 63;
+                case 5: return 84;
+                default: return 112;
             }
         }
 
@@ -740,16 +1107,16 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 var split = new List<CohortEntry>();
                 foreach (CohortEntry entry in original)
-                    AddIndividualEntries(split, entry.JoinDay, entry.Count);
+                    AddIndividualEntries(split, entry.JoinDay, entry.Count, entry.HasBeenExtended);
 
                 troopDict[troopId] = split;
             }
         }
 
-        private static void AddIndividualEntries(List<CohortEntry> entries, int joinDay, int count)
+        private static void AddIndividualEntries(List<CohortEntry> entries, int joinDay, int count, bool hasBeenExtended = false)
         {
             for (int i = 0; i < count; i++)
-                entries.Add(new CohortEntry { JoinDay = joinDay, Count = 1 });
+                entries.Add(new CohortEntry { JoinDay = joinDay, Count = 1, HasBeenExtended = hasBeenExtended });
         }
 
         private static int CountOverdueSoldiers(List<CohortEntry> cohorts, int today, int threshold)
@@ -780,7 +1147,121 @@ namespace Byzantium1071.Campaign.Behaviors
             return total;
         }
 
-        private static int MoveOldestCohorts(Dictionary<string, List<CohortEntry>> troopDict, string fromTroopId, string toTroopId, int count)
+        private int CountReservedSoldiers()
+        {
+            int total = 0;
+            foreach (var kvp in _transferReserve)
+            {
+                foreach (TransferReserveEntry entry in kvp.Value)
+                    total += Math.Max(0, entry.Count);
+            }
+
+            return total;
+        }
+
+        private int MoveOldestCohortsToTransferReserve(Dictionary<string, List<CohortEntry>> troopDict, string troopId, int count, int today)
+        {
+            if (count <= 0 || !troopDict.TryGetValue(troopId, out var cohorts)) return 0;
+            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries))
+            {
+                reserveEntries = new List<TransferReserveEntry>();
+                _transferReserve[troopId] = reserveEntries;
+            }
+
+            int remaining = count;
+            int moved = 0;
+            for (int i = 0; i < cohorts.Count && remaining > 0; i++)
+            {
+                CohortEntry cohort = cohorts[i];
+                if (cohort.Count <= 0) continue;
+
+                int take = Math.Min(cohort.Count, remaining);
+                cohort.Count -= take;
+                remaining -= take;
+                moved += take;
+
+                reserveEntries.Add(new TransferReserveEntry
+                {
+                    JoinDay = cohort.JoinDay,
+                    StoredDay = today,
+                    Count = take,
+                    HasBeenExtended = cohort.HasBeenExtended
+                });
+            }
+
+            cohorts.RemoveAll(c => c.Count <= 0);
+            SortTransferReserve(troopId);
+            return moved;
+        }
+
+        private int RestoreTransferReserveEntries(string troopId, List<CohortEntry> cohorts, int count, int today)
+        {
+            if (count <= 0 || !_transferReserve.TryGetValue(troopId, out var reserveEntries)) return 0;
+
+            CleanupTransferReserve(troopId, today);
+            if (!_transferReserve.TryGetValue(troopId, out reserveEntries)) return 0;
+
+            int remaining = count;
+            int restored = 0;
+            for (int i = 0; i < reserveEntries.Count && remaining > 0; i++)
+            {
+                TransferReserveEntry entry = reserveEntries[i];
+                if (entry.Count <= 0) continue;
+
+                int take = Math.Min(entry.Count, remaining);
+                entry.Count -= take;
+                remaining -= take;
+                restored += take;
+                AddIndividualEntries(cohorts, entry.JoinDay, take, entry.HasBeenExtended);
+            }
+
+            reserveEntries.RemoveAll(e => e.Count <= 0);
+            if (reserveEntries.Count == 0)
+                _transferReserve.Remove(troopId);
+
+            return restored;
+        }
+
+        private void CleanupTransferReserve(int today)
+        {
+            var troopIds = new List<string>(_transferReserve.Keys);
+            foreach (string troopId in troopIds)
+                CleanupTransferReserve(troopId, today);
+        }
+
+        private void CleanupTransferReserve(string troopId, int today)
+        {
+            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries)) return;
+
+            int retentionDays = GetTransferReserveRetentionDays();
+            reserveEntries.RemoveAll(e => e.Count <= 0 || today - e.StoredDay > retentionDays);
+            if (reserveEntries.Count == 0)
+            {
+                _transferReserve.Remove(troopId);
+                return;
+            }
+
+            SortTransferReserve(troopId);
+        }
+
+        private void SortTransferReserve(string troopId)
+        {
+            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries)) return;
+
+            reserveEntries.Sort((a, b) =>
+            {
+                int compare = a.JoinDay.CompareTo(b.JoinDay);
+                if (compare != 0) return compare;
+                return a.StoredDay.CompareTo(b.StoredDay);
+            });
+        }
+
+        private static int GetTransferReserveRetentionDays()
+        {
+            return Math.Max(MinimumTransferReserveDays, Math.Max(Settings.DemobilizationWarningLeadDays, Settings.DemobilizationExtensionDays));
+        }
+
+        private static int MoveOldestCohorts(Dictionary<string, List<CohortEntry>> troopDict, string fromTroopId, string toTroopId, int count, int serviceDayBonus, int today)
         {
             if (count <= 0 || !troopDict.TryGetValue(fromTroopId, out var fromList)) return 0;
             if (!troopDict.TryGetValue(toTroopId, out var toList))
@@ -796,7 +1277,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (source.Count <= 0) continue;
                 int take = Math.Min(source.Count, count - moved);
                 source.Count -= take;
-                AddIndividualEntries(toList, source.JoinDay, take);
+                int adjustedJoinDay = source.JoinDay;
+                if (serviceDayBonus > 0 && source.JoinDay < today)
+                    adjustedJoinDay = Math.Min(today, source.JoinDay + serviceDayBonus);
+                AddIndividualEntries(toList, adjustedJoinDay, take, source.HasBeenExtended);
                 moved += take;
             }
 

@@ -144,6 +144,7 @@ namespace Byzantium1071
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
             B1071_GovernanceStabilizationBehavior.Instance = null;
+            B1071_DemobilizationBehavior.Instance = null;
             B1071_DevastationBehavior.Instance = null;
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
@@ -152,6 +153,7 @@ namespace Byzantium1071
             Byzantium1071.Campaign.Patches.B1071_ClanSurvivalPatch._alreadyRescued.Clear();
             B1071_DevastationBehavior.ResetDynamicPatchFlag();
             B1071_OverlayController.Reset();
+            B1071_DemobilizationScreen.Reset();
 
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
@@ -173,6 +175,7 @@ namespace Byzantium1071
             B1071_SlaveEconomyBehavior.Instance = null;
             B1071_GovernanceBehavior.Instance = null;
             B1071_GovernanceStabilizationBehavior.Instance = null;
+            B1071_DemobilizationBehavior.Instance = null;
             B1071_DevastationBehavior.Instance = null;
             B1071_CastleRecruitmentBehavior.Instance = null;
             B1071_VillageInvestmentBehavior.Instance = null;
@@ -180,6 +183,7 @@ namespace Byzantium1071
             B1071_ClanSurvivalBehavior.Instance = null;
             Byzantium1071.Campaign.Patches.B1071_ClanSurvivalPatch._alreadyRescued.Clear();
             B1071_OverlayController.Reset();
+            B1071_DemobilizationScreen.Reset();
             _exceptionCounts.Clear();
         }
 
@@ -249,6 +253,7 @@ namespace Byzantium1071
             {
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CompatibilityBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
+                starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_DemobilizationBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_SlaveEconomyBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_GovernanceStabilizationBehavior());
@@ -270,6 +275,7 @@ namespace Byzantium1071
             try
             {
                 B1071_OverlayController.Tick(dt);
+                B1071_DemobilizationScreen.Tick(dt);
             }
             catch (System.Exception ex)
             {

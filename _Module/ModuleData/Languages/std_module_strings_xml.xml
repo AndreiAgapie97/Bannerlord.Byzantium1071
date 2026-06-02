@@ -4,6 +4,80 @@
     <tag language="English" />
   </tags>
   <strings>
+    <string id="b1071_demob_age" text="Age" />
+    <string id="b1071_demob_extend" text="Extend" />
+    <string id="b1071_demob_extend_cost" text="Extend Cost" />
+    <string id="b1071_demob_extend_done" text="Extended service for {COUNT} {TROOP} by {DAYS} days for {COST}g." />
+    <string id="b1071_demob_extend_hint" text="Pay {COST}g to extend this soldier once by the configured number of days." />
+    <string id="b1071_demob_extend_hint_blocked" text="Not enough gold for this service extension." />
+    <string id="b1071_demob_extend_hint_used" text="This soldier has already used his one allowed service extension." />
+    <string id="b1071_demob_extend_no_gold" text="Not enough gold to extend service. Need {COST}g." />
+    <string id="b1071_demob_extend_used" text="This soldier has already used his one allowed service extension." />
+    <string id="b1071_demob_no_campaign" text="Load a campaign before opening troop service." />
+    <string id="b1071_demob_no_cohorts" text="No tracked soldiers yet. Existing troops are enrolled when the system next reconciles your party." />
+    <string id="b1071_demob_no_screen" text="Troop service: no active screen." />
+    <string id="b1071_demob_open_fail" text="Service screen failed to open: {ERR}" />
+    <string id="b1071_demob_open_service" text="Open Service" />
+    <string id="b1071_demob_remaining" text="Days Left" />
+    <string id="b1071_demob_retired_main" text="{COUNT} soldier{PLURAL} completed service and left your party. First group: {TROOP}." />
+    <string id="b1071_demob_status_due" text="Due" />
+    <string id="b1071_demob_status_serving" text="Serving" />
+    <string id="b1071_demob_status_warning" text="Warning" />
+    <string id="b1071_demob_summary" text="{SOLDIERS} soldier service record{SPLURAL} tracked. {WARNINGS} soldier{WPLURAL} within the warning window." />
+    <string id="b1071_demob_title" text="Troop Service" />
+    <string id="b1071_demob_unavailable" text="Troop service is not available in this campaign." />
+    <string id="b1071_demob_warning_text" text="{MEN} service soldier{MPLURAL} will begin leaving within {LEAD} days. Earliest: {TROOP}, {DAYS} day{DPLURAL} remaining." />
+    <string id="b1071_demob_warning_title" text="Troops Near Demobilization" />
+    <string id="b1071_mcm_g_demob" text="Troop Service" />
+    <string id="b1071_mcm_g_demob_custom" text="Troop Service - Custom Days" />
+    <string id="b1071_mcm_t_demob_enable" text="Enable troop demobilization" />
+    <string id="b1071_mcm_h_demob_enable" text="Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: true." />
+    <string id="b1071_mcm_t_demob_preset" text="Intensity preset" />
+    <string id="b1071_mcm_h_demob_preset" text="0=Light, 1=Moderate, 2=Harsh, 3=Custom. Thresholds use Bannerlord days; one in-game year is about 84 days. Default: Moderate." />
+    <string id="b1071_mcm_t_demob_hotkey_enable" text="Enable service screen hotkey" />
+    <string id="b1071_mcm_h_demob_hotkey_enable" text="Allows opening the troop service screen from the campaign map. Default: true." />
+    <string id="b1071_mcm_t_demob_hotkey" text="Service screen hotkey" />
+    <string id="b1071_mcm_h_demob_hotkey" text="0=F9, 1=F10, 2=F11, 3=F12. Default: F9." />
+    <string id="b1071_mcm_t_demob_warning" text="Warning lead days" />
+    <string id="b1071_mcm_h_demob_warning" text="Warns the player when main-party soldiers are this many days from leaving. Default: 14." />
+    <string id="b1071_mcm_t_demob_popup" text="Show warning popup" />
+    <string id="b1071_mcm_h_demob_popup" text="Shows a popup with an Open Service button only when the earliest main-party soldier reaches the warning lead day or day 0. Default: true." />
+    <string id="b1071_mcm_t_demob_notify" text="Show daily warning messages" />
+    <string id="b1071_mcm_h_demob_notify" text="Shows a daily warning message when main-party soldiers are close to leaving. Default: true." />
+    <string id="b1071_mcm_t_demob_extend_days" text="Extension days" />
+    <string id="b1071_mcm_h_demob_extend_days" text="How many Bannerlord days a paid service extension adds to one selected soldier. Each soldier can only be extended once. Default: 21." />
+    <string id="b1071_mcm_t_demob_extend_cost" text="Extension gold per tier-day" />
+    <string id="b1071_mcm_h_demob_extend_cost" text="Cost formula per soldier: troop tier x extension days x this value. Default: 5." />
+    <string id="b1071_mcm_t_demob_ai_extend" text="AI can pay for extensions" />
+    <string id="b1071_mcm_h_demob_ai_extend" text="Allows AI lord field parties to buy the same one-time paid service extension before soldiers leave. Uses the same cost formula and excludes garrisons, militia, caravans, villagers, and bandits. Default: true." />
+    <string id="b1071_mcm_t_demob_ai_buffer" text="AI extension treasury buffer" />
+    <string id="b1071_mcm_h_demob_ai_buffer" text="AI only extends a soldier if the lord has more gold than extension cost times this multiplier. 5 keeps a treasury cushion while allowing more AI retention. Default: 5." />
+    <string id="b1071_mcm_t_demob_promotion_bonus" text="Promotion bonus days" />
+    <string id="b1071_mcm_h_demob_promotion_bonus" text="How many service-age days a genuine troop upgrade removes from the promoted soldier. This never resets age below 0 and does not refresh one-time extensions. Default: 5." />
+    <string id="b1071_mcm_t_demob_daily_pct" text="Daily departure cap %" />
+    <string id="b1071_mcm_h_demob_daily_pct" text="Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Default: 15." />
+    <string id="b1071_mcm_t_demob_daily_max" text="Max departures per party/day" />
+    <string id="b1071_mcm_h_demob_daily_max" text="Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 10." />
+    <string id="b1071_mcm_t_demob_seasonal" text="Enable service seasonality" />
+    <string id="b1071_mcm_h_demob_seasonal" text="Optional realism pressure. Lightly adjusts service thresholds by Bannerlord season, which can shift soldiers closer to or farther from departure. Default: false." />
+    <string id="b1071_mcm_t_demob_spring" text="Spring/summer service %" />
+    <string id="b1071_mcm_h_demob_spring" text="Threshold multiplier in spring and summer. 110 means troops serve 10% longer. Default: 110." />
+    <string id="b1071_mcm_t_demob_winter" text="Winter service %" />
+    <string id="b1071_mcm_h_demob_winter" text="Threshold multiplier in winter. 90 means troops rotate out 10% sooner. Default: 90." />
+    <string id="b1071_mcm_t_demob_crisis_enable" text="Enable crisis compression" />
+    <string id="b1071_mcm_h_demob_crisis_enable" text="Optional realism pressure. When a kingdom is in the manpower pressure Crisis band, field troops rotate out sooner. Default: false." />
+    <string id="b1071_mcm_t_demob_crisis_pct" text="Crisis service %" />
+    <string id="b1071_mcm_h_demob_crisis_pct" text="Threshold multiplier while a kingdom is in Crisis. 90 means troops rotate out 10% sooner. Default: 90." />
+    <string id="b1071_mcm_t_demob_t1" text="Custom T1 service days" />
+    <string id="b1071_mcm_t_demob_t2" text="Custom T2 service days" />
+    <string id="b1071_mcm_t_demob_t3" text="Custom T3 service days" />
+    <string id="b1071_mcm_t_demob_t4" text="Custom T4 service days" />
+    <string id="b1071_mcm_t_demob_t5" text="Custom T5 service days" />
+    <string id="b1071_mcm_t_demob_t6" text="Custom T6 service days" />
+    <string id="b1071_mcm_h_demob_custom" text="Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days." />
+    <string id="b1071_ui_ok" text="OK" />
+    <string id="b1071_qs_name_demobilization" text="Troop Service" />
+    <string id="b1071_qs_hint_demobilization" text="Field troops rotate out after long service. Warnings and the service screen show which main-party soldiers are close to leaving." />
     <string id="b1071_cr_consignment_ai" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share)." />
     <string id="b1071_cr_consignment_enslave" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share)." />
     <string id="b1071_cr_consignment_garrison" text="⚔️ Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share)." />

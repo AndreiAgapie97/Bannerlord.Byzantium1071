@@ -4,6 +4,80 @@
     <tag language="German" />
   </tags>
   <strings>
+        <string id="b1071_demob_age" text="Alter" />
+        <string id="b1071_demob_extend" text="Verlängern" />
+        <string id="b1071_demob_extend_cost" text="Verlängerungskosten" />
+        <string id="b1071_demob_extend_done" text="Dienst für {COUNT} {TROOP} um {DAYS} Tage für {COST}g verlängert." />
+        <string id="b1071_demob_extend_hint" text="Zahle {COST}g, um diesen Soldaten einmal um die eingestellte Zahl von Tagen zu verlängern." />
+        <string id="b1071_demob_extend_hint_blocked" text="Nicht genug Gold für diese Dienstverlängerung." />
+        <string id="b1071_demob_extend_hint_used" text="Dieser Soldat hat seine einzige erlaubte Dienstverlängerung bereits genutzt." />
+        <string id="b1071_demob_extend_no_gold" text="Nicht genug Gold, um den Dienst zu verlängern. Benötigt {COST}g." />
+        <string id="b1071_demob_extend_used" text="Dieser Soldat hat seine einzige erlaubte Dienstverlängerung bereits genutzt." />
+        <string id="b1071_demob_no_campaign" text="Lade eine Kampagne, bevor du den Truppendienst öffnest." />
+        <string id="b1071_demob_no_cohorts" text="Noch keine Soldaten erfasst. Bestehende Truppen werden bei der nächsten Synchronisierung deiner Gruppe eingetragen." />
+        <string id="b1071_demob_no_screen" text="Truppendienst: kein aktiver Bildschirm." />
+        <string id="b1071_demob_open_fail" text="Dienstbildschirm konnte nicht geöffnet werden: {ERR}" />
+        <string id="b1071_demob_open_service" text="Dienst öffnen" />
+        <string id="b1071_demob_remaining" text="Tage übrig" />
+        <string id="b1071_demob_retired_main" text="{COUNT} Soldat{PLURAL} haben ihren Dienst beendet und deine Gruppe verlassen. Erste Gruppe: {TROOP}." />
+        <string id="b1071_demob_status_due" text="Fällig" />
+        <string id="b1071_demob_status_serving" text="Im Dienst" />
+        <string id="b1071_demob_status_warning" text="Warnung" />
+        <string id="b1071_demob_summary" text="{SOLDIERS} Soldaten-Diensteintrag{SPLURAL} erfasst. {WARNINGS} Soldat{WPLURAL} im Warnfenster." />
+        <string id="b1071_demob_title" text="Truppendienst" />
+        <string id="b1071_demob_unavailable" text="Truppendienst ist in dieser Kampagne nicht verfügbar." />
+        <string id="b1071_demob_warning_text" text="{MEN} Dienstsoldat{MPLURAL} beginnt innerhalb von {LEAD} Tagen zu gehen. Früheste: {TROOP}, {DAYS} Tag{DPLURAL} verbleibend." />
+        <string id="b1071_demob_warning_title" text="Truppen nahe der Demobilisierung" />
+        <string id="b1071_mcm_g_demob" text="Truppendienst" />
+        <string id="b1071_mcm_g_demob_custom" text="Truppendienst - eigene Tage" />
+        <string id="b1071_mcm_t_demob_enable" text="Truppendemobilisierung aktivieren" />
+        <string id="b1071_mcm_h_demob_enable" text="Hauptschalter. Feldtruppen dienen eine einstellbare Zahl von Bannerlord-Tagen, bevor sie nach und nach gehen. Gilt für Spieler- und KI-Feldgruppen. Standard: aktiviert." />
+        <string id="b1071_mcm_t_demob_preset" text="Intensitätsvorgabe" />
+        <string id="b1071_mcm_h_demob_preset" text="0=Leicht, 1=Moderat, 2=Hart, 3=Benutzerdefiniert. Schwellen nutzen Bannerlord-Tage; ein Spieljahr dauert etwa 84 Tage. Standard: Moderat." />
+        <string id="b1071_mcm_t_demob_hotkey_enable" text="Dienstbildschirm-Hotkey aktivieren" />
+        <string id="b1071_mcm_h_demob_hotkey_enable" text="Erlaubt das Öffnen des Truppendienst-Bildschirms von der Kampagnenkarte. Standard: aktiviert." />
+        <string id="b1071_mcm_t_demob_hotkey" text="Dienstbildschirm-Hotkey" />
+        <string id="b1071_mcm_h_demob_hotkey" text="0=F9, 1=F10, 2=F11, 3=F12. Standard: F9." />
+        <string id="b1071_mcm_t_demob_warning" text="Warnvorlauf in Tagen" />
+        <string id="b1071_mcm_h_demob_warning" text="Warnt den Spieler, wenn Soldaten der Hauptgruppe so viele Tage vor dem Abgang stehen. Standard: 14." />
+        <string id="b1071_mcm_t_demob_popup" text="Warnfenster anzeigen" />
+        <string id="b1071_mcm_h_demob_popup" text="Zeigt ein Fenster mit Dienst öffnen nur dann an, wenn der zuerst fällige Soldat der Hauptgruppe den Warnschwellen-Tag oder Tag 0 erreicht. Standard: aktiviert." />
+        <string id="b1071_mcm_t_demob_notify" text="Tägliche Warnmeldungen anzeigen" />
+        <string id="b1071_mcm_h_demob_notify" text="Zeigt täglich eine Warnung, wenn Soldaten der Hauptgruppe kurz vor dem Abgang stehen. Standard: aktiviert." />
+        <string id="b1071_mcm_t_demob_extend_days" text="Verlängerungstage" />
+        <string id="b1071_mcm_h_demob_extend_days" text="Wie viele Bannerlord-Tage eine bezahlte Dienstverlängerung einem ausgewählten Soldaten hinzufügt. Jeder Soldat kann nur einmal verlängert werden. Standard: 21." />
+        <string id="b1071_mcm_t_demob_extend_cost" text="Gold pro Stufe-Tag" />
+        <string id="b1071_mcm_h_demob_extend_cost" text="Kostenformel je Soldat: Truppenstufe x Verlängerungstage x dieser Wert. Standard: 5." />
+        <string id="b1071_mcm_t_demob_ai_extend" text="KI kann Verlängerungen bezahlen" />
+        <string id="b1071_mcm_h_demob_ai_extend" text="Erlaubt KI-Lord-Feldgruppen, dieselbe einmalige bezahlte Dienstverlängerung vor dem Abgang von Soldaten zu kaufen. Nutzt dieselbe Kostenformel und schließt Garnisonen, Miliz, Karawanen, Dorfbewohner und Banditen aus. Standard: aktiviert." />
+        <string id="b1071_mcm_t_demob_ai_buffer" text="KI-Goldpuffer für Verlängerungen" />
+        <string id="b1071_mcm_h_demob_ai_buffer" text="Die KI verlängert einen Soldaten nur, wenn der Lord mehr Gold besitzt als die Verlängerungskosten mal diesem Multiplikator. 5 erhält einen Geldpuffer und erlaubt mehr KI-Bindung. Standard: 5." />
+        <string id="b1071_mcm_t_demob_promotion_bonus" text="Beförderungsbonus-Tage" />
+        <string id="b1071_mcm_h_demob_promotion_bonus" text="Wie viele Dienstalter-Tage eine echte Truppenaufwertung vom beförderten Soldaten abzieht. Setzt das Alter nie unter 0 und erneuert keine einmaligen Verlängerungen. Standard: 5." />
+        <string id="b1071_mcm_t_demob_daily_pct" text="Tägliche Abgangsgrenze %" />
+        <string id="b1071_mcm_h_demob_daily_pct" text="Maximaler Prozentsatz fälliger Soldaten eines Truppentyps, der an einem Tag gehen kann. Standard: 15." />
+        <string id="b1071_mcm_t_demob_daily_max" text="Max. Abgänge pro Gruppe/Tag" />
+        <string id="b1071_mcm_h_demob_daily_max" text="Harte Grenze, wie viele Truppen eine Gruppe pro Tag verlassen können. Die KI nutzt denselben Wert als tägliches Verlängerungslimit. Standard: 10." />
+        <string id="b1071_mcm_t_demob_seasonal" text="Dienstsaisonalität aktivieren" />
+        <string id="b1071_mcm_h_demob_seasonal" text="Optionaler Realismusdruck. Passt Dienstschwellen leicht an die Bannerlord-Jahreszeit an und kann Soldaten näher an den Abgang bringen oder davon entfernen. Standard: deaktiviert." />
+        <string id="b1071_mcm_t_demob_spring" text="Frühjahr/Sommer Dienst %" />
+        <string id="b1071_mcm_h_demob_spring" text="Schwellenmultiplikator im Frühjahr und Sommer. 110 bedeutet 10% längerer Dienst. Standard: 110." />
+        <string id="b1071_mcm_t_demob_winter" text="Winterdienst %" />
+        <string id="b1071_mcm_h_demob_winter" text="Schwellenmultiplikator im Winter. 90 bedeutet 10% früherer Abgang. Standard: 90." />
+        <string id="b1071_mcm_t_demob_crisis_enable" text="Krisenverkürzung aktivieren" />
+        <string id="b1071_mcm_h_demob_crisis_enable" text="Optionaler Realismusdruck. Wenn ein Königreich im Mannstärke-Krisenband ist, rotieren Feldtruppen früher heraus. Standard: deaktiviert." />
+        <string id="b1071_mcm_t_demob_crisis_pct" text="Krisendienst %" />
+        <string id="b1071_mcm_h_demob_crisis_pct" text="Schwellenmultiplikator in der Krise. 90 bedeutet 10% früherer Abgang. Standard: 90." />
+        <string id="b1071_mcm_t_demob_t1" text="Eigene T1-Diensttage" />
+        <string id="b1071_mcm_t_demob_t2" text="Eigene T2-Diensttage" />
+        <string id="b1071_mcm_t_demob_t3" text="Eigene T3-Diensttage" />
+        <string id="b1071_mcm_t_demob_t4" text="Eigene T4-Diensttage" />
+        <string id="b1071_mcm_t_demob_t5" text="Eigene T5-Diensttage" />
+        <string id="b1071_mcm_t_demob_t6" text="Eigene T6-Diensttage" />
+        <string id="b1071_mcm_h_demob_custom" text="Nur bei benutzerdefinierter Intensität verwendet. Werte sind Bannerlord-Tage; ein Spieljahr dauert etwa 84 Tage." />
+        <string id="b1071_qs_name_demobilization" text="Truppendienst" />
+        <string id="b1071_qs_hint_demobilization" text="Feldtruppen rotieren nach langem Dienst heraus. Warnungen und der Dienstbildschirm zeigen, welche Soldaten der Hauptgruppe bald gehen." />
+        <string id="b1071_ui_ok" text="OK" />
     <string id="b1071_cr_consignment_ai" text="Sendung von {CASTLE}: +{GOLD}g ({COUNT} Ihres von KI-Lords rekrutierten Gefangenen{PLURAL}, Ihr {SHARE}% Einlegeranteil)." />
     <string id="b1071_cr_consignment_enslave" text="Sendung von {CASTLE}: +{GOLD}g ({COUNT} Gefangener{PLURAL} versklavt bei {TOWN}, Ihr {SHARE}% Einlegeranteil)." />
     <string id="b1071_cr_consignment_garrison" text="Sendung von {CASTLE}: +{GOLD}g ({COUNT} Gefangener{PLURAL} in Garnison aufgenommen, Ihr {SHARE}% Einlegeranteil)." />

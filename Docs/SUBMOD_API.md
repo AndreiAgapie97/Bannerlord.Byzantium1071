@@ -388,4 +388,4 @@ namespace MyPopulationMod.Campaign
 
 ---
 
-**Last updated:** v0.2.7.2 (March 2026)
+**Last updated:** v1.0.1.2 (May 2026)

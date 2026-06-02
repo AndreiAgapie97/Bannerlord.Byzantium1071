@@ -10,6 +10,7 @@
 2. [The Overlay Ledger (Press M)](#2-the-overlay-ledger-press-m)
 3. [Manpower — The Core Resource](#3-manpower--the-core-resource)
 4. [Recruiting Volunteers (Villages & Towns)](#4-recruiting-volunteers-villages--towns)
+4A. [Troop Service & Demobilization](#4a-troop-service--demobilization)
 5. [Castle Recruitment — Elite Troops & Prisoners](#5-castle-recruitment--elite-troops--prisoners)
 6. [Depositing Prisoners at Castles](#6-depositing-prisoners-at-castles)
 7. [Village Investment (Patronage)](#7-village-investment-patronage)
@@ -156,6 +157,35 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 - **Recruit All and Done are still checked too.** The button/path gates remain as a defensive fallback if another mod injects an over-cap troop into the screen.
 - **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
+
+---
+
+## 4A. Troop Service & Demobilization
+
+Field troops now have a service life. After enough Bannerlord days in the field, some soldiers finish their term and leave the party gradually instead of serving forever.
+
+### What Counts
+
+- Your **main party** is tracked in detail and shown in the service screen.
+- AI lord and mercenary field parties follow the same rules.
+- Garrisons, militia, caravans, villagers, bandits, and prisoners are not part of this system.
+
+### How to Read It
+
+- Press the configured **Troop Service hotkey** on the campaign map (default: F9) to open the service screen.
+- The screen shows each tracked soldier, how long he has served, how many days remain, and the gold cost to extend him.
+- When soldiers are close to leaving, the game can show a daily warning message and, by default, a popup with an **Open Service** button when the earliest soldier reaches the 14-day warning lead or day 0.
+
+### How to Manage It
+
+- Pay to extend a specific soldier if you need him for the next campaign season. Each soldier can only be extended once.
+- AI lord field parties can also pay for one-time extensions, using the same cost formula, if the lord has enough spare gold. Garrisons and militia never use this system.
+- Use the MCM preset to choose Light, Moderate, Harsh, or Custom service lengths.
+- One Bannerlord year is about 84 days, so a 45-day service term is a little over half a year in game time.
+- Moving troops between field parties or briefly parking them outside the party no longer resets their service age; short transfers keep the original service record.
+- Newly recruited castle elites and converted prisoners start with age 0 when they join a field party.
+- Promoting a soldier gives him a small service grace period by default, reducing his service age by 5 days without resetting him to age 0.
+- The default balance is conservative: 14-day warnings, 15% daily troop-type departure cap, 10 maximum departures per party per day, and season/crisis pressure disabled unless you enable those realism toggles in MCM.
 
 ---
 

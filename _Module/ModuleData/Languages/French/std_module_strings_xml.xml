@@ -4,6 +4,80 @@
     <tag language="French" />
   </tags>
   <strings>
+    <string id="b1071_demob_age" text="Age" />
+    <string id="b1071_demob_extend" text="Prolonger" />
+    <string id="b1071_demob_extend_cost" text="Coût de prolongation" />
+    <string id="b1071_demob_extend_done" text="Service prolongé pour {COUNT} {TROOP} de {DAYS} jours pour {COST}g." />
+    <string id="b1071_demob_extend_hint" text="Payer {COST}g pour prolonger une fois ce soldat du nombre de jours configuré." />
+    <string id="b1071_demob_extend_hint_blocked" text="Or insuffisant pour cette prolongation de service." />
+    <string id="b1071_demob_extend_hint_used" text="Ce soldat a déjà utilisé son unique prolongation de service autorisée." />
+    <string id="b1071_demob_extend_no_gold" text="Or insuffisant pour prolonger le service. Il faut {COST}g." />
+    <string id="b1071_demob_extend_used" text="Ce soldat a déjà utilisé son unique prolongation de service autorisée." />
+    <string id="b1071_demob_no_campaign" text="Chargez une campagne avant d'ouvrir le service des troupes." />
+    <string id="b1071_demob_no_cohorts" text="Aucun soldat suivi pour l'instant. Les troupes existantes seront enregistrées lors de la prochaine synchronisation de votre groupe." />
+    <string id="b1071_demob_no_screen" text="Service des troupes : pas d'écran actif." />
+    <string id="b1071_demob_open_fail" text="Impossible d'ouvrir l'écran de service : {ERR}" />
+    <string id="b1071_demob_open_service" text="Ouvrir le service" />
+    <string id="b1071_demob_remaining" text="Jours restants" />
+    <string id="b1071_demob_retired_main" text="{COUNT} soldat{PLURAL} ont terminé leur service et quitté votre groupe. Premier groupe : {TROOP}." />
+    <string id="b1071_demob_status_due" text="Échu" />
+    <string id="b1071_demob_status_serving" text="En service" />
+    <string id="b1071_demob_status_warning" text="Avertissement" />
+    <string id="b1071_demob_summary" text="{SOLDIERS} fiche{SPLURAL} de service suivie{SPLURAL}. {WARNINGS} soldat{WPLURAL} dans la fenêtre d'avertissement." />
+    <string id="b1071_demob_title" text="Service des troupes" />
+    <string id="b1071_demob_unavailable" text="Le service des troupes n'est pas disponible dans cette campagne." />
+    <string id="b1071_demob_warning_text" text="{MEN} soldat{MPLURAL} en service commencera à partir dans les {LEAD} jours. Plus proche : {TROOP}, {DAYS} jour{DPLURAL} restant." />
+    <string id="b1071_demob_warning_title" text="Troupes proches de la démobilisation" />
+    <string id="b1071_mcm_g_demob" text="Service des troupes" />
+    <string id="b1071_mcm_g_demob_custom" text="Service des troupes - jours personnalisés" />
+    <string id="b1071_mcm_t_demob_enable" text="Activer la démobilisation des troupes" />
+    <string id="b1071_mcm_h_demob_enable" text="Interrupteur principal. Les troupes de campagne servent un nombre configurable de jours Bannerlord avant de partir progressivement. S'applique au joueur et à l'IA. Par défaut : activé." />
+    <string id="b1071_mcm_t_demob_preset" text="Préréglage d'intensité" />
+    <string id="b1071_mcm_h_demob_preset" text="0=Léger, 1=Modéré, 2=Dur, 3=Personnalisé. Les seuils utilisent les jours Bannerlord ; une année de jeu dure environ 84 jours. Par défaut : Modéré." />
+    <string id="b1071_mcm_t_demob_hotkey_enable" text="Activer le raccourci de l'écran de service" />
+    <string id="b1071_mcm_h_demob_hotkey_enable" text="Permet d'ouvrir l'écran de service des troupes depuis la carte de campagne. Par défaut : activé." />
+    <string id="b1071_mcm_t_demob_hotkey" text="Raccourci de l'écran de service" />
+    <string id="b1071_mcm_h_demob_hotkey" text="0=F9, 1=F10, 2=F11, 3=F12. Par défaut : F9." />
+    <string id="b1071_mcm_t_demob_warning" text="Jours d'avertissement" />
+    <string id="b1071_mcm_h_demob_warning" text="Avertit le joueur quand les soldats du groupe principal sont à ce nombre de jours du départ. Par défaut : 14." />
+    <string id="b1071_mcm_t_demob_popup" text="Afficher la fenêtre d'avertissement" />
+    <string id="b1071_mcm_h_demob_popup" text="Affiche une fenêtre avec un bouton Ouvrir le service seulement quand le soldat le plus proche du groupe principal atteint le seuil d'avertissement ou le jour 0. Par défaut : activé." />
+    <string id="b1071_mcm_t_demob_notify" text="Afficher les messages quotidiens" />
+    <string id="b1071_mcm_h_demob_notify" text="Affiche un message quotidien quand des soldats du groupe principal sont proches du départ. Par défaut : activé." />
+    <string id="b1071_mcm_t_demob_extend_days" text="Jours de prolongation" />
+    <string id="b1071_mcm_h_demob_extend_days" text="Nombre de jours Bannerlord ajoutés par une prolongation payée sur un soldat. Chaque soldat ne peut être prolongé qu'une fois. Par défaut : 21." />
+    <string id="b1071_mcm_t_demob_extend_cost" text="Or de prolongation par rang-jour" />
+    <string id="b1071_mcm_h_demob_extend_cost" text="Formule par soldat : rang x jours de prolongation x cette valeur. Par défaut : 5." />
+    <string id="b1071_mcm_t_demob_ai_extend" text="L'IA peut payer les prolongations" />
+    <string id="b1071_mcm_h_demob_ai_extend" text="Autorise les groupes de campagne des seigneurs IA à acheter la même prolongation de service payante et unique avant le départ des soldats. Utilise la même formule de coût et exclut garnisons, milices, caravanes, villageois et bandits. Par défaut : activé." />
+    <string id="b1071_mcm_t_demob_ai_buffer" text="Réserve d'or IA pour prolongation" />
+    <string id="b1071_mcm_h_demob_ai_buffer" text="L'IA ne prolonge un soldat que si le seigneur possède plus d'or que le coût de prolongation multiplié par ce facteur. 5 garde une réserve tout en permettant plus de rétention IA. Par défaut : 5." />
+    <string id="b1071_mcm_t_demob_promotion_bonus" text="Jours bonus de promotion" />
+    <string id="b1071_mcm_h_demob_promotion_bonus" text="Nombre de jours d'âge de service retirés au soldat promu lors d'une vraie amélioration de troupe. Ne remet jamais l'âge sous 0 et ne rafraîchit pas les prolongations uniques. Par défaut : 5." />
+    <string id="b1071_mcm_t_demob_daily_pct" text="Plafond quotidien de départ %" />
+    <string id="b1071_mcm_h_demob_daily_pct" text="Pourcentage maximum de soldats échus d'un même type pouvant partir en un jour. Par défaut : 15." />
+    <string id="b1071_mcm_t_demob_daily_max" text="Départs max par groupe/jour" />
+    <string id="b1071_mcm_h_demob_daily_max" text="Plafond absolu du nombre de troupes pouvant quitter un groupe en un jour. L'IA utilise la même valeur comme plafond quotidien de prolongation. Par défaut : 10." />
+    <string id="b1071_mcm_t_demob_seasonal" text="Activer la saisonnalité du service" />
+    <string id="b1071_mcm_h_demob_seasonal" text="Pression réaliste optionnelle. Ajuste légèrement les seuils de service selon la saison Bannerlord, ce qui peut rapprocher ou éloigner les départs. Par défaut : désactivé." />
+    <string id="b1071_mcm_t_demob_spring" text="Service printemps/été %" />
+    <string id="b1071_mcm_h_demob_spring" text="Multiplicateur de seuil au printemps et en été. 110 signifie 10% de service en plus. Par défaut : 110." />
+    <string id="b1071_mcm_t_demob_winter" text="Service hiver %" />
+    <string id="b1071_mcm_h_demob_winter" text="Multiplicateur de seuil en hiver. 90 signifie un départ 10% plus tôt. Par défaut : 90." />
+    <string id="b1071_mcm_t_demob_crisis_enable" text="Activer la compression de crise" />
+    <string id="b1071_mcm_h_demob_crisis_enable" text="Pression réaliste optionnelle. Quand un royaume est dans la bande de crise de pression de main-d'œuvre, les troupes de campagne partent plus tôt. Par défaut : désactivé." />
+    <string id="b1071_mcm_t_demob_crisis_pct" text="Service en crise %" />
+    <string id="b1071_mcm_h_demob_crisis_pct" text="Multiplicateur de seuil quand un royaume est en crise. 90 signifie un départ 10% plus tôt. Par défaut : 90." />
+    <string id="b1071_mcm_t_demob_t1" text="Jours de service T1 personnalisés" />
+    <string id="b1071_mcm_t_demob_t2" text="Jours de service T2 personnalisés" />
+    <string id="b1071_mcm_t_demob_t3" text="Jours de service T3 personnalisés" />
+    <string id="b1071_mcm_t_demob_t4" text="Jours de service T4 personnalisés" />
+    <string id="b1071_mcm_t_demob_t5" text="Jours de service T5 personnalisés" />
+    <string id="b1071_mcm_t_demob_t6" text="Jours de service T6 personnalisés" />
+    <string id="b1071_mcm_h_demob_custom" text="Utilisé seulement si le préréglage est Personnalisé. Les valeurs sont des jours Bannerlord ; une année de jeu dure environ 84 jours." />
+    <string id="b1071_qs_name_demobilization" text="Service des troupes" />
+    <string id="b1071_qs_hint_demobilization" text="Les troupes de campagne partent après un long service. Les avertissements et l'écran de service indiquent les soldats proches du départ." />
+    <string id="b1071_ui_ok" text="OK" />
     <string id="b1071_cr_consignment_ai" text="Consignation de {CASTLE} : +{GOLD}g ({COUNT} de vos prisonnier{PLURAL} recruté par les seigneurs IA, votre part de déposant : {SHARE}%)." />
     <string id="b1071_cr_consignment_enslave" text="Consignation de {CASTLE} : +{GOLD}g ({COUNT} prisonnier{PLURAL} asservi à {TOWN}, votre part de déposant : {SHARE}%)." />
     <string id="b1071_cr_consignment_garrison" text="Consignation de {CASTLE} : +{GOLD}g ({COUNT} prisonnier{PLURAL} absorbé par la garnison, votre part de déposant : {SHARE}%)." />

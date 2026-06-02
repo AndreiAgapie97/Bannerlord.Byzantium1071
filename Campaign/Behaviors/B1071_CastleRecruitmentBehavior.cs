@@ -845,6 +845,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
 
                         party.MemberRoster.AddToCounts(troop, take);
+                        B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, take, "castle_elite_ai");
 
                         // Gold: same-clan = free, cross-clan = pay castle owner.
                         if (!isSameClan)
@@ -889,6 +890,7 @@ namespace Byzantium1071.Campaign.Behaviors
                                 // Prisoner recruitment costs zero manpower (by design).
 
                                 party.MemberRoster.AddToCounts(troop, 1);
+                                B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, 1, "castle_prisoner_ai");
                                 prisonRoster.RemoveTroop(troop, 1);
 
                                 var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, 1);
@@ -1099,7 +1101,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // CharacterHelper.GetTroopTree to prevent infinite loops from
             // circular UpgradeTargets in modded troop trees.
             foreach (CharacterObject root in EnumerateCultureTroopRoots(culture))
-                CollectTroopsFromTree(root, result);
+                CollectTroopsFromTree(root, result, expectedCulture: culture);
 
             var list = result.ToList();
             _cultureTroopCache[cultureId] = list;
@@ -1142,7 +1144,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     for (int i = 0; i < notable.VolunteerTypes.Length; i++)
                     {
                         CharacterObject troop = notable.VolunteerTypes[i];
-                        if (troop != null && !troop.IsHero)
+                        if (troop != null && !troop.IsHero && troop.Culture == culture)
                             observedTroops.Add(troop);
                     }
                 }
@@ -1227,7 +1229,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// BFS traversal of the troop upgrade tree, collecting troops of minTier..maxTier (non-hero).
         /// Uses a visited set to guard against infinite loops from circular UpgradeTargets.
         /// </summary>
-        private static void CollectTroopsFromTree(CharacterObject root, HashSet<CharacterObject> result, int minTier = 4, int maxTier = 6)
+        private static void CollectTroopsFromTree(CharacterObject root, HashSet<CharacterObject> result, int minTier = 4, int maxTier = 6, CultureObject? expectedCulture = null)
         {
             var visited = new HashSet<CharacterObject>();
             var queue = new Queue<CharacterObject>();
@@ -1238,7 +1240,8 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 CharacterObject current = queue.Dequeue();
 
-                if (current.Tier >= minTier && current.Tier <= maxTier && !current.IsHero)
+                if (current.Tier >= minTier && current.Tier <= maxTier && !current.IsHero
+                    && (expectedCulture == null || current.Culture == expectedCulture))
                     result.Add(current);
 
                 if (current.UpgradeTargets == null) continue;
@@ -1275,7 +1278,7 @@ namespace Byzantium1071.Campaign.Behaviors
             foreach (CharacterObject root in EnumerateCultureTroopRoots(culture))
             {
                 var rootTroops = new HashSet<CharacterObject>();
-                CollectTroopsFromTree(root, rootTroops, minTier: 2, maxTier: 6);
+                CollectTroopsFromTree(root, rootTroops, minTier: 2, maxTier: 6, expectedCulture: culture);
 
                 bool isNobleRoot = culture.EliteBasicTroop != null && root == culture.EliteBasicTroop;
                 foreach (CharacterObject troop in rootTroops)
@@ -1504,6 +1507,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             prisonRoster.RemoveTroop(troop, 1);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
+            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_prisoner_player");
 
             if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
                 castleDict.Remove(troop.StringId);
@@ -1547,6 +1551,7 @@ namespace Byzantium1071.Campaign.Behaviors
             poolDict[troopId] = available - 1;
             if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
+            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_elite_player");
 
             if (Settings.CastleRecruitDrainsManpower)
                 B1071_ManpowerBehavior.Instance?.ConsumeManpowerPublic(castle, troop, 1);

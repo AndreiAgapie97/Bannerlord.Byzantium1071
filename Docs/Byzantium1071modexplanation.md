@@ -17,6 +17,7 @@
 7. [AI Recruitment Gate — The same rules apply to AI](#7-ai-recruitment-gate)
 8. [Garrison Auto-Recruitment Cap — Garrison limits](#8-garrison-auto-recruitment)
 9. [Castle Recruitment — Elite pools, prisoner conversion, and AI recruitment](#9-castle-recruitment)
+9A. [Troop Service — Demobilization and soldier rotation](#9a-troop-service)
 10. [War Effects — How wars drain pools](#10-war-effects)
 11. [Delayed Recovery — Post-war recovery penalties](#11-delayed-recovery)
 12. [War Exhaustion — The fatigue of prolonged conflict](#12-war-exhaustion)
@@ -481,6 +482,42 @@ Both dictionaries are flattened into parallel lists for `SyncData` serialization
 **FIFO depositor tracking fix:** RecordDeposit now always appends new entries instead of consolidating same-hero entries. This preserves strict FIFO ordering when the same lord deposits the same troop type at the same castle with interleaved deposits from other lords. Prevents over-crediting earlier depositors when processing stops midway (e.g., town runs out of gold).
 
 **Removed CastleEliteAiMaxPerDay MCM setting:** This legacy setting was never used in code — AI lords were already uncapped, recruiting up to their party limit. Setting removed from MCM entirely.
+
+---
+
+## 9A. Troop Service
+
+Troop Service adds a campaign-level rotation pressure to field armies. Soldiers are tracked as individual FIFO service records by party, troop type, and join day. When a soldier reaches his configured service threshold, he can leave during the daily tick.
+
+Short troop transfers preserve service age through a bounded transfer reserve, so moving soldiers between field parties or briefly parking them outside the party does not reset their service term. The reserve expires after the greater of 14 days, the warning lead, or the paid-extension duration to avoid permanent save growth from genuine battle losses. Direct castle recruitment paths explicitly register their added soldiers as fresh service entries, so newly recruited castle elites and converted prisoners start at age 0 instead of being matched against old reserve records.
+
+This is intentionally tied to Bannerlord's calendar, not real-world days. A Bannerlord year is about 84 days, so service thresholds are tuned in raw in-game days and exposed in MCM presets: Light, Moderate, Harsh, and Custom.
+
+### Scope
+
+- Player main party: fully tracked and visible in the Troop Service screen.
+- AI lord and mercenary field parties: same departure and paid-extension logic for parity.
+- Excluded: garrisons, militia, caravans, villagers, bandits, and prisoners.
+
+### Player visibility
+
+The player can open the Troop Service screen from the campaign map with the configured hotkey (default: F9). The screen lists each active main-party soldier record, showing troop, tier, service age, days remaining, warning status, and extension cost.
+
+The system warns the player before departures. By default, soldiers within 14 days of leaving trigger a daily notification, while the popup appears only when the earliest soldier reaches the warning lead day or day 0.
+
+### Paid extension
+
+Each visible soldier can be extended individually, once. AI lord field parties can also buy the same one-time extension during daily service processing if the lord has enough spare gold after the configured treasury buffer. The default extension length is 21 Bannerlord days.
+
+Genuine troop upgrades preserve service history but subtract the configured promotion bonus from service age, defaulting to 5 days. This rewards promotion without allowing upgrade loops to reset a veteran to age 0, and the one-time extension flag remains attached to the soldier record.
+
+The default cost formula is:
+
+```text
+troop tier x extension days x gold-per-tier-day
+```
+
+This is a gold sink only; demobilized soldiers do not refund manpower. The intent is to make long campaigns demand reserves and timing, while still giving field commanders an emergency lever when an army must stay in the field a little longer. The default balance now favors predictability: 14-day warnings, a 15% daily troop-type departure cap, 10 maximum departures per party per day, a 5x AI extension treasury buffer, and season/crisis pressure disabled unless enabled in MCM. Garrisons and militia are intentionally outside the feature and never demobilize or buy extensions through this system.
 
 ---
 

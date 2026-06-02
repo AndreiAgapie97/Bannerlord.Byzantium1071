@@ -4,6 +4,80 @@
     <tag language="Chinese" />
   </tags>
   <strings>
+    <string id="b1071_demob_age" text="服役天数" />
+    <string id="b1071_demob_extend" text="延长" />
+    <string id="b1071_demob_extend_cost" text="延长费用" />
+    <string id="b1071_demob_extend_done" text="已为 {COUNT} 名 {TROOP} 延长服役 {DAYS} 天，花费 {COST}g。" />
+    <string id="b1071_demob_extend_hint" text="支付 {COST}g，将这名士兵的服役期延长一次，增加设定天数。" />
+    <string id="b1071_demob_extend_hint_blocked" text="金币不足，无法延长这名士兵的服役。" />
+    <string id="b1071_demob_extend_hint_used" text="这名士兵已经用过唯一一次服役延长。" />
+    <string id="b1071_demob_extend_no_gold" text="金币不足，无法延长服役。需要 {COST}g。" />
+    <string id="b1071_demob_extend_used" text="这名士兵已经用过唯一一次服役延长。" />
+    <string id="b1071_demob_no_campaign" text="请先载入战役，再打开部队服役界面。" />
+    <string id="b1071_demob_no_cohorts" text="尚无已追踪士兵。系统下次同步你的队伍时会登记现有部队。" />
+    <string id="b1071_demob_no_screen" text="部队服役：没有活动界面。" />
+    <string id="b1071_demob_open_fail" text="服役界面无法打开：{ERR}" />
+    <string id="b1071_demob_open_service" text="打开服役" />
+    <string id="b1071_demob_remaining" text="剩余天数" />
+    <string id="b1071_demob_retired_main" text="{COUNT} 名士兵已完成服役并离开你的队伍。第一批：{TROOP}。" />
+    <string id="b1071_demob_status_due" text="到期" />
+    <string id="b1071_demob_status_serving" text="服役中" />
+    <string id="b1071_demob_status_warning" text="警告" />
+    <string id="b1071_demob_summary" text="已追踪 {SOLDIERS} 条士兵服役记录。{WARNINGS} 名士兵处于警告期。" />
+    <string id="b1071_demob_title" text="部队服役" />
+    <string id="b1071_demob_unavailable" text="此战役中无法使用部队服役功能。" />
+    <string id="b1071_demob_warning_text" text="{MEN} 名服役士兵将在 {LEAD} 天内开始离队。最早：{TROOP}，剩余 {DAYS} 天。" />
+    <string id="b1071_demob_warning_title" text="部队即将复员" />
+    <string id="b1071_mcm_g_demob" text="部队服役" />
+    <string id="b1071_mcm_g_demob_custom" text="部队服役 - 自定义天数" />
+    <string id="b1071_mcm_t_demob_enable" text="启用部队复员" />
+    <string id="b1071_mcm_h_demob_enable" text="总开关。野战部队服役可配置的 Bannerlord 天数后会逐渐离队。适用于玩家和 AI 野战队伍。默认：开启。" />
+    <string id="b1071_mcm_t_demob_preset" text="强度预设" />
+    <string id="b1071_mcm_h_demob_preset" text="0=轻度，1=中等，2=严苛，3=自定义。阈值使用 Bannerlord 天数；游戏内一年约 84 天。默认：中等。" />
+    <string id="b1071_mcm_t_demob_hotkey_enable" text="启用服役界面快捷键" />
+    <string id="b1071_mcm_h_demob_hotkey_enable" text="允许从战役地图打开部队服役界面。默认：开启。" />
+    <string id="b1071_mcm_t_demob_hotkey" text="服役界面快捷键" />
+    <string id="b1071_mcm_h_demob_hotkey" text="0=F9，1=F10，2=F11，3=F12。默认：F9。" />
+    <string id="b1071_mcm_t_demob_warning" text="提前警告天数" />
+    <string id="b1071_mcm_h_demob_warning" text="主队伍士兵距离离队还有这么多天时警告玩家。默认：14。" />
+    <string id="b1071_mcm_t_demob_popup" text="显示警告弹窗" />
+    <string id="b1071_mcm_h_demob_popup" text="仅当主队伍中最早到期的士兵到达警告提前天数或第0天时，显示带有打开服役按钮的弹窗。默认：开启。" />
+    <string id="b1071_mcm_t_demob_notify" text="显示每日警告消息" />
+    <string id="b1071_mcm_h_demob_notify" text="主队伍士兵接近离队时显示每日警告消息。默认：开启。" />
+    <string id="b1071_mcm_t_demob_extend_days" text="延长天数" />
+    <string id="b1071_mcm_h_demob_extend_days" text="一次付费延长为选中士兵增加的 Bannerlord 天数。每名士兵只能延长一次。默认：21。" />
+    <string id="b1071_mcm_t_demob_extend_cost" text="每阶每天延长金币" />
+    <string id="b1071_mcm_h_demob_extend_cost" text="每名士兵费用公式：兵阶 x 延长天数 x 此数值。默认：5。" />
+    <string id="b1071_mcm_t_demob_ai_extend" text="AI 可支付延长服役" />
+    <string id="b1071_mcm_h_demob_ai_extend" text="允许 AI 领主野战队伍在士兵离队前购买同样的一次性付费服役延长。使用相同费用公式，并排除驻军、民兵、商队、村民和强盗。默认：开启。" />
+    <string id="b1071_mcm_t_demob_ai_buffer" text="AI 延长服役金库缓冲" />
+    <string id="b1071_mcm_h_demob_ai_buffer" text="只有当领主金币高于延长费用乘以此倍率时，AI 才会延长士兵服役。5 会保留金库缓冲，同时让 AI 更容易保留部队。默认：5。" />
+    <string id="b1071_mcm_t_demob_promotion_bonus" text="晋升奖励天数" />
+    <string id="b1071_mcm_h_demob_promotion_bonus" text="真正升级兵种时，从晋升士兵的服役年龄中扣除的天数。不会把年龄降到 0 以下，也不会刷新一次性延长。默认：5。" />
+    <string id="b1071_mcm_t_demob_daily_pct" text="每日离队上限 %" />
+    <string id="b1071_mcm_h_demob_daily_pct" text="同一兵种中到期士兵每天最多可离开的比例。默认：15。" />
+    <string id="b1071_mcm_t_demob_daily_max" text="每队每日最大离队人数" />
+    <string id="b1071_mcm_h_demob_daily_max" text="一支队伍一天内可离开的硬上限。AI 也用此数值作为每日延长服役上限。默认：10。" />
+    <string id="b1071_mcm_t_demob_seasonal" text="启用服役季节性" />
+    <string id="b1071_mcm_h_demob_seasonal" text="可选的真实性压力。按 Bannerlord 季节轻微调整服役阈值，可能让士兵更接近或远离离队时间。默认：关闭。" />
+    <string id="b1071_mcm_t_demob_spring" text="春/夏服役 %" />
+    <string id="b1071_mcm_h_demob_spring" text="春季和夏季阈值倍率。110 表示多服役 10%。默认：110。" />
+    <string id="b1071_mcm_t_demob_winter" text="冬季服役 %" />
+    <string id="b1071_mcm_h_demob_winter" text="冬季阈值倍率。90 表示提前 10% 离队。默认：90。" />
+    <string id="b1071_mcm_t_demob_crisis_enable" text="启用危机压缩" />
+    <string id="b1071_mcm_h_demob_crisis_enable" text="可选的真实性压力。王国处于人力压力危机档时，野战部队更早轮换离队。默认：关闭。" />
+    <string id="b1071_mcm_t_demob_crisis_pct" text="危机服役 %" />
+    <string id="b1071_mcm_h_demob_crisis_pct" text="王国处于危机时的阈值倍率。90 表示提前 10% 离队。默认：90。" />
+    <string id="b1071_mcm_t_demob_t1" text="自定义 T1 服役天数" />
+    <string id="b1071_mcm_t_demob_t2" text="自定义 T2 服役天数" />
+    <string id="b1071_mcm_t_demob_t3" text="自定义 T3 服役天数" />
+    <string id="b1071_mcm_t_demob_t4" text="自定义 T4 服役天数" />
+    <string id="b1071_mcm_t_demob_t5" text="自定义 T5 服役天数" />
+    <string id="b1071_mcm_t_demob_t6" text="自定义 T6 服役天数" />
+    <string id="b1071_mcm_h_demob_custom" text="仅在强度预设为自定义时使用。数值为 Bannerlord 天数；游戏内一年约 84 天。" />
+    <string id="b1071_qs_name_demobilization" text="部队服役" />
+    <string id="b1071_qs_hint_demobilization" text="野战部队长期服役后会轮换离队。警告和服役界面会显示主队伍中接近离队的士兵。" />
+    <string id="b1071_ui_ok" text="OK" />
     <string id="b1071_cr_consignment_ai" text="Consignment from {CASTLE}: +{GOLD}g ({COUNT} of your prisoner{PLURAL} recruited by AI lords, your {SHARE}% depositor share)." />
     <string id="b1071_cr_consignment_enslave" text="Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} enslaved at {TOWN}, your {SHARE}% depositor share)." />
     <string id="b1071_cr_consignment_garrison" text="Consignment from {CASTLE}: +{GOLD}g ({COUNT} prisoner{PLURAL} absorbed into garrison, your {SHARE}% depositor share)." />

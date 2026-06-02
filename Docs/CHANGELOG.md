@@ -1,6 +1,6 @@
 # Campaign++ — Changelog
 
-## [1.0.1.2] — 2026-05-05
+## [1.0.1.2] — 2026-05-09
 
 ### Feature — Provincial Stabilization
 
@@ -11,6 +11,40 @@
 - **Recovery bonus:** Active stabilization adds temporary daily loyalty and security recovery, and can speed governance strain decay while the program lasts.
 - **AI parity:** AI lords use the same system when strain is high and they have enough gold, with a configurable safety multiplier and cooldown.
 - **Config:** Added provincial stabilization controls to MCM → Provincial Governance and Quick Settings. Migration v15 enables safe defaults.
+
+### Feature — Troop Service And Demobilization
+
+**Field armies now track individual soldier service, warn before departures, and let player and AI field parties buy one-time extensions.**
+
+- **Individual soldier tracking:** Troop Service tracks FIFO service records per soldier instead of grouped cohorts, with parity across player and AI field parties.
+- **New UI and hotkey:** Added the Troop Service screen, player warnings, Quick Settings toggle, and localized strings across EN, ZH, FR, and DE.
+- **Direct recruit coverage:** Main-party recruitment now covers both vanilla recruit-event paths and direct castle recruitment paths, so new field-party soldiers always get a fresh service record.
+- **AI parity:** AI lord field parties can buy the same one-time paid extensions before daily retirements, using the same gold formula and treasury buffer rules.
+- **Verbose diagnostics:** Added detailed Troop Service logging for registration, reserve restoration, warnings, extensions, and retirements so live playtests can confirm behavior cleanly.
+
+### Fix — Troop Service Thresholds And Warning Flow
+
+**Moderate troop service now rotates faster at the top end, warning popups honor their own toggle, and capped departures remove the oldest overdue soldiers first.**
+
+- **Moderate preset retuned:** T1–T6 now use 21 / 32 / 45 / 63 / 84 / 112 Bannerlord days instead of 24 / 35 / 49 / 70 / 105 / 140. Light and Harsh remain unchanged as the wider gameplay bookends, and legacy hidden Custom-day defaults are migrated only when they still match the old baseline.
+- **Popup decoupled from daily messages:** Disabling daily warning messages no longer suppresses the separate warning popup toggle.
+- **Oldest-first retirements:** When daily departure caps bite, the system now removes the oldest overdue individual soldiers across the whole party instead of consuming the cap in troop-dictionary order.
+- **Transfer reserve added:** Short troop transfers preserve service age instead of resetting demobilization timers, with a bounded reserve window to prevent permanent save growth from battle losses.
+- **Recruit-event guard:** Troop Service now safely skips rare Bannerlord recruitment events that arrive without a recruiter hero instead of logging null-reference soft-fails.
+- **Extension parity:** AI lord field parties can now pay the same gold cost to extend warning or overdue soldiers before daily retirements, using a configurable 10x treasury buffer by default.
+- **One-time extensions:** Each soldier service entry can only be extended once, and the used-extension flag persists through save/load, upgrades, and short transfer reserve restoration.
+- **Extension length retuned:** The default paid extension is now 21 Bannerlord days when existing settings still match the old 14-day default.
+- **Culture pool containment:** Castle recruitment culture caches now ignore foreign-culture volunteer-board contamination when discovering supplemental troop roots, preventing already-mixed boards from spreading into another culture's castle pool.
+
+### Fix — Troop Service Recruit Age And Softer Defaults
+
+**Fresh castle recruits now enter service at age 0, promoted soldiers receive a small grace period, and default demobilization pressure is gentler for live campaigns.**
+
+- **Fresh recruit age fixed:** Castle elite and castle prisoner recruitment now register direct roster additions with Troop Service immediately, so new player and AI field-party recruits start with today's join day instead of inheriting stale transfer-reserve age.
+- **Promotion grace:** Genuine troop upgrades now remove 5 service-age days by default, capped so a promoted soldier can never become younger than age 0. One-time extension state still carries through upgrades.
+- **Softer defaults:** New profile v19 retunes warning lead to 14 days, daily departure cap to 15%, max party departures to 10, and AI extension treasury buffer to 5x.
+- **Optional pressure toggles:** Seasonality and manpower-crisis compression are now off by default, keeping the baseline predictable while leaving both realism levers available in MCM.
+- **Diagnostics:** Transfer-reserve restoration now logs when it restores soldiers into a previously untracked troop type, making stale-age investigations clearer in playtest logs.
 
 ## [1.0.0.1] — 2026-05-01
 
