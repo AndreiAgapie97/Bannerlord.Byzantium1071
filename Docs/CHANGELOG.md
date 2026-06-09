@@ -1,5 +1,20 @@
 # Campaign++ — Changelog
 
+## [1.0.2.0] — 2026-06-02
+
+### Fix — Bannerlord 1.4.5 Compatibility
+
+**Updated Campaign++ for game version 1.4.5. Custom menus render correctly again, and the Troop Service screen has a reliable way to open.**
+
+- **Upside-down menus fixed:** Game 1.4.5 corrected the direction of Gauntlet vertical list layouts, which had flipped every Campaign++ custom panel — the M-key overlay/ledger and the Castle Recruitment, Demobilization (Troop Service), and Slave Conversion screens. All custom prefabs were re-aligned so they render right-side-up again.
+- **Troop Service screen access:** Added a "Manage troop service" option to town, castle, and village menus so the screen can always be opened, independent of the F9 hotkey (which game 1.4.5 can intercept). Added diagnostic logging around the hotkey and screen-open path.
+- **Dependencies:** Updated required versions to the 1.4.5-compatible Harmony 2.4.2, ButterLib 2.10.4, UIExtenderEx 2.13.2, and MCM 5.11.4, and rebuilt against them.
+- **Compatibility popup:** Fixed module enumeration against game 1.4.5's changed `ModuleHelper` API so non-Harmony mods appear in the Campaign++ compatibility list again.
+
+### Note — Troop Service Extension (clarification, not a change)
+
+A soldier's service term is based on troop **tier** (plus season/crisis settings), **not age**. Each soldier's service can be extended **once**, and only if you can afford the gold cost; an already-extended or unaffordable soldier shows a disabled "Extend" button with a tooltip explaining why. The Age column is informational only.
+
 ## [1.0.1.2] — 2026-05-09
 
 ### Feature — Provincial Stabilization

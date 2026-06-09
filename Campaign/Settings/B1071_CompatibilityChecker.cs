@@ -730,7 +730,15 @@ namespace Byzantium1071.Campaign.Settings
             try
             {
                 Type? helperType = Type.GetType("TaleWorlds.ModuleManager.ModuleHelper, TaleWorlds.ModuleManager", throwOnError: false);
-                MethodInfo? getModules = helperType?.GetMethod("GetModules", BindingFlags.Public | BindingFlags.Static);
+                if (helperType == null) return;
+
+                // Game 1.3.x exposed a parameterless GetModules(); game 1.4.x changed it to
+                // GetModules(Func<ModuleInfo,bool>), so invoking the old way throws. Prefer a
+                // parameterless GetModules() if present, else fall back to the parameterless
+                // GetModulesForLauncher() (added in 1.4.x). Both return IEnumerable<ModuleInfo>.
+                MethodInfo? getModules =
+                    helperType.GetMethod("GetModules", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null)
+                    ?? helperType.GetMethod("GetModulesForLauncher", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
                 if (getModules == null) return;
 
                 object? raw = getModules.Invoke(null, null);

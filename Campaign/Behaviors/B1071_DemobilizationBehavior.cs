@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -272,7 +273,40 @@ namespace Byzantium1071.Campaign.Behaviors
             _lastWarningDay = -1;
             CleanupStalePartyData();
             CleanupTransferReserve(GetToday());
+            RegisterMenus(starter);
             B1071_VerboseLog.Log(LogTag, $"Session launched. trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}, enabled={Settings.EnableDemobilizationSystem}.");
+        }
+
+        // ── Settlement menu entry point ───────────────────────────────────────────
+        // Hotkey-independent way to open the troop-service screen, mirroring the
+        // castle-recruitment menu option. Ensures the feature is reachable even when
+        // the configured hotkey is consumed by the engine (e.g. F9 on game 1.4.5).
+        private void RegisterMenus(CampaignGameStarter starter)
+        {
+            foreach (string menu in new[] { "town", "castle", "village" })
+            {
+                starter.AddGameMenuOption(
+                    menu,
+                    "b1071_demob_manage_" + menu,
+                    "{=b1071_demob_menu}Manage troop service",
+                    DemobMenuCondition,
+                    DemobMenuConsequence,
+                    isLeave: false,
+                    index: 4);
+            }
+        }
+
+        private bool DemobMenuCondition(MenuCallbackArgs args)
+        {
+            if (!Settings.EnableDemobilizationSystem || MobileParty.MainParty == null)
+                return false;
+            args.optionLeaveType = GameMenuOption.LeaveType.Manage;
+            return true;
+        }
+
+        private void DemobMenuConsequence(MenuCallbackArgs args)
+        {
+            B1071_DemobilizationScreen.OpenScreen();
         }
 
         private void OnTroopRecruited(Hero recruiterHero, Settlement recruitmentSettlement, Hero recruitmentSource, CharacterObject troop, int amount)

@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.1.2</Version>
-    <AssemblyVersion>1.0.1.2</AssemblyVersion>
-    <FileVersion>1.0.1.2</FileVersion>
-    <InformationalVersion>1.0.1.2</InformationalVersion>
+    <Version>1.0.2.0</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+    <InformationalVersion>1.0.2.0</InformationalVersion>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -68,9 +68,9 @@
     <PackageReference Include="Lib.Harmony" Version="2.3.3" IncludeAssets="compile" />
     <PackageReference Include="Harmony.Extensions" Version="3.2.0.77" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageReference Include="BUTR.Harmony.Analyzer" Version="1.0.1.50" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
-    <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.12.0" IncludeAssets="compile" />
-    <PackageReference Include="Bannerlord.ButterLib" Version="2.9.18" IncludeAssets="compile" />
-    <PackageReference Include="Bannerlord.MCM" Version="5.10.2" IncludeAssets="compile" />
+    <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.13.2" IncludeAssets="compile" />
+    <PackageReference Include="Bannerlord.ButterLib" Version="2.10.4" IncludeAssets="compile" />
+    <PackageReference Include="Bannerlord.MCM" Version="5.11.4" IncludeAssets="compile" />
   </ItemGroup>
 
 </Project>

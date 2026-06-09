@@ -14,7 +14,7 @@ namespace Byzantium1071.Campaign.Patches
 {
     // NOTE: "ApplyInternal" is a private method in RecruitmentCampaignBehavior; nameof() cannot be used.
     // If Bannerlord renames this method in a future patch, this Harmony patch will silently not apply.
-    // Verified against v1.3.15 TaleWorlds.CampaignSystem.dll. Re-verify after game updates.
+    // Verified against v1.4.5 TaleWorlds.CampaignSystem.dll (signature unchanged since v1.3.15). Re-verify after game updates.
     [HarmonyPatch(typeof(RecruitmentCampaignBehavior), "ApplyInternal")]
     public static class B1071_AiRecruitmentManpowerGatePatch
     {

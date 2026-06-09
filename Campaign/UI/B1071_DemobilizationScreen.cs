@@ -49,8 +49,12 @@ namespace Byzantium1071.Campaign.UI
             if (!settings.EnableDemobilizationSystem || !settings.EnableDemobilizationHotkey) return;
             if (TaleWorlds.CampaignSystem.Campaign.Current == null || MobileParty.MainParty == null) return;
 
-            if (Input.IsKeyPressed(GetConfiguredHotkey(settings.DemobilizationHotkeyChoice)))
+            InputKey hotkey = GetConfiguredHotkey(settings.DemobilizationHotkeyChoice);
+            if (Input.IsKeyPressed(hotkey))
+            {
+                B1071_VerboseLog.Log("Demobilization", $"Service hotkey {hotkey} detected; opening screen.");
                 OpenScreen();
+            }
         }
 
         private static InputKey GetConfiguredHotkey(int choice)
@@ -112,9 +116,13 @@ namespace Byzantium1071.Campaign.UI
                 return;
             }
 
+            B1071_VerboseLog.Log("Demobilization", $"Opening service screen on top screen '{screen.GetType().Name}'.");
             _current = new B1071_DemobilizationScreen(screen);
             if (!_current.IsAlive)
+            {
                 _current = null;
+                B1071_VerboseLog.Log("Demobilization", "Service screen failed to initialise (Gauntlet layer null after construction).");
+            }
         }
 
         internal static void Reset()
