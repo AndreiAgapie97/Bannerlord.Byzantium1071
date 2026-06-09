@@ -41,7 +41,7 @@ namespace Byzantium1071.Campaign.Patches
     /// Bandit factions are excluded (they skip DailyTickClan entirely).
     ///
     /// MCM: "Minor Faction Economy" group with master toggle and per-tier amounts.
-    /// Verified against v1.3.15.
+    /// Verified against v1.4.5 (signature unchanged since v1.3.15).
     /// </summary>
     [HarmonyPatch(typeof(DefaultClanFinanceModel), "CalculateClanIncomeInternal")]
     public static class B1071_MinorFactionIncomePatch

@@ -1235,5 +1235,26 @@ Keine Einträge gefunden." />
                                 <string id="b1071_mcm_h_c9fdabd009" text="Poolkapazitätsbonus pro Wohlstandspunkt, nur im dynamischen Modus verwendet. Beispiel: 0,005 bei 1500 Wohlstand ergibt +7 Truppen. Standard: 0,005." />
                                 <string id="b1071_mcm_t_dafebce110" text="Dynamischer Mauerstufenbonus" />
                                 <string id="b1071_mcm_h_dafebce110" text="Poolkapazitätsbonus pro Mauerstufe, nur im dynamischen Modus verwendet. Beispiel: 3 bei Mauerstufe 2 ergibt +6 Truppen. Standard: 3." />
+                                <!-- v0.2.8: Readable-ID aliases for castle recruitment and slave conversion MCM settings -->
+                                <string id="b1071_mcm_t_sc_enable" text="Auswahlbildschirm für Versklavung aktivieren" />
+                                <string id="b1071_mcm_h_sc_enable" text="Wenn aktiviert, öffnet die Stadtoption Gefangene versklaven einen Bildschirm zur Auswahl der umzuwandelnden Gefangenen. Wenn deaktiviert, werden alle geeigneten Gefangenen gesammelt umgewandelt. Standard: aktiviert." />
+                                <string id="b1071_mcm_t_cr_access" text="Zugriffsbeschränkung für Rekrutierung" />
+                                <string id="b1071_mcm_h_cr_access" text="Legt fest, wer aus Burgen rekrutieren darf. 0 = offen, 1 = nur Königreich, 2 = Besitzerclan + Herrscherclan. Dieselben Regeln gelten für Spieler und KI. Standard: 1." />
+                                <string id="b1071_mcm_t_cr_t2levy" text="Pool T2-Aufgebot Prozent" />
+                                <string id="b1071_mcm_h_cr_t2levy" text="Prozentsatz der täglichen Burgpool-Regeneration für T2-Basisaufgebote. Die vier Tier-Prozentsätze sollten zusammen 100 ergeben. Standard: 45." />
+                                <string id="b1071_mcm_t_cr_t2noble" text="Pool T2-Adelige Prozent" />
+                                <string id="b1071_mcm_h_cr_t2noble" text="Prozentsatz der täglichen Burgpool-Regeneration für adelige T2-Truppen (Elitebaum). Standard: 35." />
+                                <string id="b1071_mcm_t_cr_t3t4" text="Pool T3-T4 Prozent" />
+                                <string id="b1071_mcm_h_cr_t3t4" text="Prozentsatz der täglichen Burgpool-Regeneration für mittelstufige T3-T4-Truppen. Standard: 15." />
+                                <string id="b1071_mcm_t_cr_t5plus" text="Pool T5+ Prozent" />
+                                <string id="b1071_mcm_h_cr_t5plus" text="Prozentsatz der täglichen Burgpool-Regeneration für Elite-T5-T6-Truppen. Standard: 5." />
+                                <string id="b1071_mcm_t_cr_dyncap" text="Dynamische Poolkapazität aktivieren" />
+                                <string id="b1071_mcm_h_cr_dyncap" text="Wenn aktiviert, skaliert die Burgpool-Kapazität mit Wohlstand und Mauerstufe, statt eine feste Obergrenze zu verwenden. Standard: aktiviert." />
+                                <string id="b1071_mcm_t_cr_dyncap_base" text="Dynamische Basiskapazität" />
+                                <string id="b1071_mcm_h_cr_dyncap_base" text="Mindestkapazität des Pools unabhängig vom Wohlstand, nur im dynamischen Modus verwendet. Standard: 5." />
+                                <string id="b1071_mcm_t_cr_dyncap_prosp" text="Dynamische Wohlstandsskalierung" />
+                                <string id="b1071_mcm_h_cr_dyncap_prosp" text="Poolkapazitätsbonus pro Wohlstandspunkt, nur im dynamischen Modus verwendet. Beispiel: 0,005 bei 1500 Wohlstand ergibt +7 Truppen. Standard: 0,005." />
+                                <string id="b1071_mcm_t_cr_dyncap_wall" text="Dynamischer Mauerstufenbonus" />
+                                <string id="b1071_mcm_h_cr_dyncap_wall" text="Poolkapazitätsbonus pro Mauerstufe, nur im dynamischen Modus verwendet. Beispiel: 3 bei Mauerstufe 2 ergibt +6 Truppen. Standard: 3." />
   </strings>
 </base>

@@ -15,7 +15,7 @@ namespace Byzantium1071.Campaign.Patches
     /// Appears as "Governance Strain" in the loyalty tooltip.
     ///
     /// Verified: DefaultSettlementLoyaltyModel.CalculateLoyaltyChange(Town, bool)
-    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.3.15.
+    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.4.5 (unchanged since v1.3.15).
     /// </summary>
     [HarmonyPatch(typeof(DefaultSettlementLoyaltyModel), nameof(DefaultSettlementLoyaltyModel.CalculateLoyaltyChange))]
     public static class B1071_GovernanceLoyaltyPatch

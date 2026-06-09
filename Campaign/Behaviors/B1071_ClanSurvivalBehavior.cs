@@ -308,7 +308,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 //   Concern: a kingdom could recruit this clan before wars are cleared, causing
                 //   the new kingdom's leader to lose relations for "accepting a clan at war."
                 //
-                //   This does NOT happen, verified by decompiling vanilla (v1.3.15):
+                //   This does NOT happen, verified by decompiling vanilla (v1.4.5, unchanged since v1.3.15):
                 //
                 //   1. DiplomaticBartersBehavior.DailyTickClan guards against it:
                 //      AI will NOT recruit a clan that has wars misaligned with the kingdom

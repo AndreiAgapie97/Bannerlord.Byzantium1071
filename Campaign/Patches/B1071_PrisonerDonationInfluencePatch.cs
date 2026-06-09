@@ -27,8 +27,8 @@ namespace Byzantium1071.Campaign.Patches
     /// This affects both player AND AI equally (AI rarely triggers this path, but
     /// if they did, the same rule applies).
     ///
-    /// NOTE: The target method is private. Verified against v1.3.15
-    /// TaleWorlds.CampaignSystem.dll. Re-verify after game updates.
+    /// NOTE: The target method is private. Verified against v1.4.5
+    /// TaleWorlds.CampaignSystem.dll (signature unchanged since v1.3.15). Re-verify after game updates.
     /// </summary>
     [HarmonyPatch(typeof(InfluenceGainCampaignBehavior), "OnPrisonerDonatedToSettlement")]
     public static class B1071_PrisonerDonationInfluencePatch

@@ -158,7 +158,7 @@ namespace Byzantium1071.Campaign.Patches
     /// DefaultPartyWageModel.GetTroopRecruitmentCost and GetCharacterWage
     /// are public virtual methods on the abstract base class — identified by
     /// nameof() at compile time. Should be stable across minor Bannerlord patches.
-    /// Verified against v1.3.15.
+    /// Verified against v1.4.5 (signature unchanged since v1.3.15).
     /// </summary>
 
     // ── Hire Cost ─────────────────────────────────────────────────────────

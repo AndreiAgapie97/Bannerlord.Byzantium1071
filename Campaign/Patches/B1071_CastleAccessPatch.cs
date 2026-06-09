@@ -11,7 +11,7 @@ namespace Byzantium1071.Campaign.Patches
     /// the castle recruitment system (prisoner deposit, elite pool, recruit UI)
     /// from early game onward.
     ///
-    /// VANILLA RESTRICTIONS (decompiled from DefaultSettlementAccessModel v1.3.15):
+    /// VANILLA RESTRICTIONS (decompiled from DefaultSettlementAccessModel v1.4.5, unchanged since v1.3.15):
     ///
     /// 1. CanMainHeroEnterCastle — SETTLEMENT ENTRY:
     ///    - Neutral + owner relation &lt; 0  → NoAccess (completely blocked)

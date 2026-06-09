@@ -150,7 +150,7 @@ namespace Byzantium1071.Campaign.Patches
     }
 
     // NOTE: "OnDone" is a private method in RecruitmentVM; nameof() cannot be used.
-    // Verified against v1.3.15 TaleWorlds.CampaignSystem.ViewModelCollection.dll. Re-verify after game updates.
+    // Verified against v1.4.5 TaleWorlds.CampaignSystem.ViewModelCollection.dll (signature unchanged since v1.3.15). Re-verify after game updates.
     [HarmonyPatch(typeof(RecruitmentVM), "OnDone")]
     public static class B1071_PlayerRecruitmentOnDoneGatePatch
     {

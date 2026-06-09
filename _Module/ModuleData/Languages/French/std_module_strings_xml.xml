@@ -1224,5 +1224,26 @@
     <string id="b1071_mcm_h_c9fdabd009" text="Bonus de capacité du pool par point de prospérité, utilisé seulement en mode dynamique. Exemple : 0,005 avec 1500 de prospérité ajoute 7 troupes. Par défaut : 0,005." />
     <string id="b1071_mcm_t_dafebce110" text="Bonus dynamique de niveau de muraille" />
     <string id="b1071_mcm_h_dafebce110" text="Bonus de capacité du pool par niveau de muraille, utilisé seulement en mode dynamique. Exemple : 3 avec des murailles de niveau 2 ajoute 6 troupes. Par défaut : 3." />
+    <!-- v0.2.8: Readable-ID aliases for castle recruitment and slave conversion MCM settings -->
+    <string id="b1071_mcm_t_sc_enable" text="Activer l'écran de sélection d'asservissement" />
+    <string id="b1071_mcm_h_sc_enable" text="Quand cette option est activée, l'option Asservir les prisonniers en ville ouvre un écran où choisir les prisonniers à convertir. Sinon, tous les prisonniers admissibles sont convertis en lot. Par défaut : activé." />
+    <string id="b1071_mcm_t_cr_access" text="Restriction d'accès au recrutement" />
+    <string id="b1071_mcm_h_cr_access" text="Contrôle qui peut recruter dans les châteaux. 0 = ouvert, 1 = royaume seulement, 2 = clan propriétaire + clan dirigeant seulement. Les mêmes règles s'appliquent au joueur et à l'IA. Par défaut : 1." />
+    <string id="b1071_mcm_t_cr_t2levy" text="Pourcentage de levées T2 du pool" />
+    <string id="b1071_mcm_h_cr_t2levy" text="Part de la régénération quotidienne du pool de château allouée aux levées de base T2. Les quatre pourcentages devraient totaliser 100. Par défaut : 45." />
+    <string id="b1071_mcm_t_cr_t2noble" text="Pourcentage de nobles T2 du pool" />
+    <string id="b1071_mcm_h_cr_t2noble" text="Part de la régénération quotidienne du pool de château allouée aux troupes nobles T2 (arbre d'élite). Par défaut : 35." />
+    <string id="b1071_mcm_t_cr_t3t4" text="Pourcentage T3-T4 du pool" />
+    <string id="b1071_mcm_h_cr_t3t4" text="Part de la régénération quotidienne du pool de château allouée aux troupes de rang moyen T3-T4. Par défaut : 15." />
+    <string id="b1071_mcm_t_cr_t5plus" text="Pourcentage T5+ du pool" />
+    <string id="b1071_mcm_h_cr_t5plus" text="Part de la régénération quotidienne du pool de château allouée aux troupes d'élite T5-T6. Par défaut : 5." />
+    <string id="b1071_mcm_t_cr_dyncap" text="Activer la capacité dynamique du pool" />
+    <string id="b1071_mcm_h_cr_dyncap" text="Quand cette option est activée, la capacité du pool de château varie avec la prospérité et le niveau des murailles au lieu d'utiliser un plafond fixe. Par défaut : activé." />
+    <string id="b1071_mcm_t_cr_dyncap_base" text="Capacité de base dynamique" />
+    <string id="b1071_mcm_h_cr_dyncap_base" text="Capacité minimale du pool indépendamment de la prospérité, utilisée seulement en mode dynamique. Par défaut : 5." />
+    <string id="b1071_mcm_t_cr_dyncap_prosp" text="Échelle de prospérité dynamique" />
+    <string id="b1071_mcm_h_cr_dyncap_prosp" text="Bonus de capacité du pool par point de prospérité, utilisé seulement en mode dynamique. Exemple : 0,005 avec 1500 de prospérité ajoute 7 troupes. Par défaut : 0,005." />
+    <string id="b1071_mcm_t_cr_dyncap_wall" text="Bonus dynamique de niveau de muraille" />
+    <string id="b1071_mcm_h_cr_dyncap_wall" text="Bonus de capacité du pool par niveau de muraille, utilisé seulement en mode dynamique. Exemple : 3 avec des murailles de niveau 2 ajoute 6 troupes. Par défaut : 3." />
   </strings>
 </base>

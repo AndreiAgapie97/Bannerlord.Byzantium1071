@@ -198,8 +198,8 @@ Campaign++ uses Harmony to patch vanilla Bannerlord classes. If your submod also
 ### Fragile Patch Targets (Private/internal)
 
 Campaign++ patches these private methods. Document your dependency version:
-- `RecruitmentCampaignBehavior.ApplyInternal` (v1.3.15 specific, no nameof)
-- `RecruitmentVM.RefreshScreen` / `RefreshPartyProperties` (v1.3.15 specific)
+- `RecruitmentCampaignBehavior.ApplyInternal` (v1.4.5 specific, no nameof)
+- `RecruitmentVM.RefreshScreen` / `RefreshPartyProperties` (v1.4.5 specific)
 - Several private DefaultSettlementGarrisonModel overloads
 
 **If you patch private methods, pin to the Bannerlord version via `Campaign++/SubModule.xml` compatibility tag and re-test after each game update.**

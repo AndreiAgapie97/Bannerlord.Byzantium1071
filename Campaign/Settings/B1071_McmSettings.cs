@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 19;
+        internal const int LATEST_PROFILE_VERSION = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -349,6 +349,14 @@ namespace Byzantium1071.Campaign.Settings
                 DemobilizationPromotionBonusDays = 5;
 
                 migrated += "troop service softened (14-day warning lead, lower daily departures, 5x AI extension buffer, optional season/crisis pressure off by default, 5-day promotion grace). ";
+            }
+
+            // ── Profile v20: troop service disabled by default for new users ──
+            if (SettingsProfileVersion < 20)
+            {
+                EnableDemobilizationSystem = false;
+
+                migrated += "troop service toggled off by default. Enable via MCM → Troop Service or Quick Settings. ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1075,8 +1083,8 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Troop Service / Demobilization ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyBool("{=b1071_mcm_t_demob_enable}Enable troop demobilization", Order = 0, HintText = "{=b1071_mcm_h_demob_enable}Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: true.")]
-        public bool EnableDemobilizationSystem { get; set; } = true;
+        [SettingPropertyBool("{=b1071_mcm_t_demob_enable}Enable troop demobilization", Order = 0, HintText = "{=b1071_mcm_h_demob_enable}Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: false.")]
+        public bool EnableDemobilizationSystem { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_preset}Intensity preset", 0, 3, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_preset}0=Light, 1=Moderate, 2=Harsh, 3=Custom. Thresholds use Bannerlord days; one in-game year is about 84 days. Default: Moderate.")]

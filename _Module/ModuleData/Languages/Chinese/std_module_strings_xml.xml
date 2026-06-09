@@ -1224,5 +1224,26 @@
     <string id="b1071_mcm_h_c9fdabd009" text="每点繁荣度提供的兵池容量加成，仅在动态模式中使用。例如：0.005在1500繁荣度时增加7名容量。默认：0.005。" />
     <string id="b1071_mcm_t_dafebce110" text="动态兵池城墙等级加成" />
     <string id="b1071_mcm_h_dafebce110" text="每级城墙提供的兵池容量加成，仅在动态模式中使用。例如：数值3且2级城墙增加6名容量。默认：3。" />
+    <!-- v0.2.8: Readable-ID aliases for castle recruitment and slave conversion MCM settings -->
+    <string id="b1071_mcm_t_sc_enable" text="启用奴役选择界面" />
+    <string id="b1071_mcm_h_sc_enable" text="启用后，城镇的奴役囚犯选项会打开选择界面，让你选择要转化的囚犯。禁用时，所有符合条件的囚犯会批量转化。默认：开启。" />
+    <string id="b1071_mcm_t_cr_access" text="招募访问限制" />
+    <string id="b1071_mcm_h_cr_access" text="控制谁能从城堡招募。0 = 开放，1 = 仅王国，2 = 所有者家族 + 统治者家族。玩家和AI使用同样规则。默认：1。" />
+    <string id="b1071_mcm_t_cr_t2levy" text="兵池T2征召兵百分比" />
+    <string id="b1071_mcm_h_cr_t2levy" text="每日城堡兵池再生分配给T2基础征召兵的百分比。四项百分比建议合计为100。默认：45。" />
+    <string id="b1071_mcm_t_cr_t2noble" text="兵池T2贵族兵百分比" />
+    <string id="b1071_mcm_h_cr_t2noble" text="每日城堡兵池再生分配给T2贵族（精英树）部队的百分比。默认：35。" />
+    <string id="b1071_mcm_t_cr_t3t4" text="兵池T3-T4百分比" />
+    <string id="b1071_mcm_h_cr_t3t4" text="每日城堡兵池再生分配给T3-T4中级部队的百分比。默认：15。" />
+    <string id="b1071_mcm_t_cr_t5plus" text="兵池T5+百分比" />
+    <string id="b1071_mcm_h_cr_t5plus" text="每日城堡兵池再生分配给T5-T6精英部队的百分比。默认：5。" />
+    <string id="b1071_mcm_t_cr_dyncap" text="启用动态兵池容量" />
+    <string id="b1071_mcm_h_cr_dyncap" text="启用后，城堡兵池容量会随繁荣度和城墙等级缩放，而不是使用固定上限。默认：开启。" />
+    <string id="b1071_mcm_t_cr_dyncap_base" text="动态兵池基础上限" />
+    <string id="b1071_mcm_h_cr_dyncap_base" text="无论繁荣度如何都保留的最低兵池容量，仅在动态模式中使用。默认：5。" />
+    <string id="b1071_mcm_t_cr_dyncap_prosp" text="动态兵池繁荣度缩放" />
+    <string id="b1071_mcm_h_cr_dyncap_prosp" text="每点繁荣度提供的兵池容量加成，仅在动态模式中使用。例如：0.005在1500繁荣度时增加7名容量。默认：0.005。" />
+    <string id="b1071_mcm_t_cr_dyncap_wall" text="动态兵池城墙等级加成" />
+    <string id="b1071_mcm_h_cr_dyncap_wall" text="每级城墙提供的兵池容量加成，仅在动态模式中使用。例如：数值3且2级城墙增加6名容量。默认：3。" />
   </strings>
 </base>

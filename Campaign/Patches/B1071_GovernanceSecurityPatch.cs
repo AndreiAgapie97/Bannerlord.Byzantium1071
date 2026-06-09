@@ -15,7 +15,7 @@ namespace Byzantium1071.Campaign.Patches
     /// Appears as "Governance Strain" in the security tooltip.
     ///
     /// Verified: DefaultSettlementSecurityModel.CalculateSecurityChange(Town, bool)
-    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.3.15.
+    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.4.5 (unchanged since v1.3.15).
     /// </summary>
     [HarmonyPatch(typeof(DefaultSettlementSecurityModel), nameof(DefaultSettlementSecurityModel.CalculateSecurityChange))]
     public static class B1071_GovernanceSecurityPatch

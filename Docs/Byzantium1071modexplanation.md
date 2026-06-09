@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
 **Version:** 1.0.1.2
-**Target Game:** Mount & Blade II: Bannerlord (tested on v1.3.15)  
+**Target Game:** Mount & Blade II: Bannerlord (tested on v1.4.5)  
 **Mod ID:** `Byzantium1071`
 
 ---

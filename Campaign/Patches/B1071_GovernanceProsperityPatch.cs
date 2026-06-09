@@ -15,7 +15,7 @@ namespace Byzantium1071.Campaign.Patches
     /// Appears as "Governance Strain" in the prosperity tooltip.
     ///
     /// Verified: DefaultSettlementProsperityModel.CalculateProsperityChange(Town, bool)
-    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.3.15.
+    /// returns ExplainedNumber — Postfix modifies via ref __result. v1.4.5 (unchanged since v1.3.15).
     ///
     /// NOTE: This is a SEPARATE Postfix from B1071_SlaveProsperityPatch.
     /// Multiple Harmony Postfixes on the same method are executed in order

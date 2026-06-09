@@ -53,8 +53,8 @@ namespace Byzantium1071.Campaign.Patches
     /// After this prefix, the party's prison roster contains only heroes (at castles)
     /// or heroes + T4+ regulars (at towns). Vanilla still runs and handles what remains.
     ///
-    /// NOTE: "OnSettlementEntered" is a private method. Verified against v1.3.15
-    /// TaleWorlds.CampaignSystem.dll. Re-verify after game updates.
+    /// NOTE: "OnSettlementEntered" is a private method. Verified against v1.4.5
+    /// TaleWorlds.CampaignSystem.dll (signature unchanged since v1.3.15). Re-verify after game updates.
     /// </summary>
     [HarmonyPatch(typeof(PartiesSellPrisonerCampaignBehavior), "OnSettlementEntered")]
     public static class B1071_CastlePrisonerDepositPatch

@@ -28,7 +28,7 @@ namespace Byzantium1071.Campaign.Patches
     /// (no cap — prosperity gain is already very small at default settings)
     ///
     /// Verified: DefaultSettlementProsperityModel.CalculateProsperityChange(Town, bool)
-    ///           returns ExplainedNumber (struct → ref required in Postfix) — v1.3.15
+    ///           returns ExplainedNumber (struct → ref required in Postfix) — v1.4.5 (unchanged since v1.3.15)
     /// </summary>
     [HarmonyPatch(typeof(DefaultSettlementProsperityModel), "CalculateProsperityChange")]
     public static class B1071_SlaveProsperityPatch

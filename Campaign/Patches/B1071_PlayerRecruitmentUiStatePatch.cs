@@ -11,8 +11,8 @@ using TaleWorlds.Localization;
 namespace Byzantium1071.Campaign.Patches
 {
     // NOTE: "RefreshScreen" was private in v1.3.14 but became public in v1.3.15; Harmony patches both fine.
-    // "RefreshPartyProperties" is still private in v1.3.15.
-    // Verified against v1.3.15 TaleWorlds.CampaignSystem.ViewModelCollection.dll. Re-verify after game updates.
+    // "RefreshPartyProperties" is still private in v1.3.15 (also fine in v1.4.5).
+    // Verified against v1.4.5 TaleWorlds.CampaignSystem.ViewModelCollection.dll (signature unchanged). Re-verify after game updates.
     [HarmonyPatch(typeof(RecruitmentVM), "RefreshScreen")]
     public static class B1071_PlayerRecruitmentUiRefreshScreenPatch
     {
