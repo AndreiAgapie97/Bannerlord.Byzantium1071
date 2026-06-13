@@ -407,8 +407,19 @@ namespace Byzantium1071.Campaign.UI
                 // binding update, so a timer-based approach cannot work — the keypress is
                 // seen here before SetSearchQuery() is ever called.  F-key hotkeys
                 // (choices 3-6) are unambiguous and always fire regardless of active tab.
-                if (!IsCharacterHotkey(Settings.OverlayHotkeyChoice) || _activeTab != B1071LedgerTab.Search)
+                InputKey configuredKey = GetConfiguredHotkey();
+                bool isCharKey = IsCharacterHotkey(Settings.OverlayHotkeyChoice);
+                bool onSearchTab = _activeTab == B1071LedgerTab.Search;
+                B1071_VerboseLog.Log("Overlay", string.Format("Hotkey {0} detected (charKey={1}, searchTab={2}, visible={3})", configuredKey, isCharKey, onSearchTab, _isVisible));
+                if (!isCharKey || !onSearchTab)
+                {
+                    B1071_VerboseLog.Log("Overlay", string.Format("ToggleVisibility -> _isVisible will become {0}", !_isVisible));
                     ToggleVisibility();
+                }
+                else
+                {
+                    B1071_VerboseLog.Log("Overlay", "Hotkey suppressed - character key blocked on Search tab");
+                }
             }
 
             if (!_isVisible || !_isExpanded)

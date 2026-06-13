@@ -16,7 +16,7 @@ namespace Byzantium1071.Campaign.UI
             "<ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"VerticalBottomToTop\">" +
             "<Children>" +
             // Toggle button
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\">" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"124\" SuggestedHeight=\"32\" Brush=\"MapInfoBarExtendButtonBrush\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ToggleVisibility\">" +
             "<Children>" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
@@ -656,6 +656,13 @@ namespace Byzantium1071.Campaign.UI
 
             OnPropertyChangedWithValue(B1071PanelExpanded, nameof(B1071PanelExpanded));
             OnPropertyChangedWithValue(B1071ToggleText, nameof(B1071ToggleText));
+        }
+
+        [DataSourceMethod]
+        public void ExecuteB1071ToggleVisibility()
+        {
+            B1071_OverlayController.ToggleVisibility();
+            SyncFromController(notifyAll: true);
         }
 
         [DataSourceMethod]
