@@ -126,6 +126,106 @@ namespace Byzantium1071
 
             TaleWorlds.Library.Debug.Print($"[Byzantium1071] Harmony patches applied: {ok}, failed: {failed}");
             B1071_SessionAudit.SetHarmonyPatchResults(ok, failed);
+
+            // Post-patch verification: confirm fragile string-based patches actually took effect.
+            // Harmony.CreateClassProcessor().Patch() does NOT throw when a target method is
+            // missing — it silently skips the patch. This check catches silent failures.
+            VerifyCriticalPatches(harmony);
+        }
+
+        /// <summary>
+        /// Verifies that all fragile string-based Harmony patches successfully attached
+        /// to their target methods. These patches target private methods by name and can
+        /// silently fail if Bannerlord renames or removes the method.
+        /// </summary>
+        private static void VerifyCriticalPatches(Harmony harmony)
+        {
+            // Each entry: (assembly-qualified type name, method name, parameter types, description)
+            var targets = new (string TypeName, string MethodName, Type[]? ParamTypes, string Description)[]
+            {
+                // -- Private methods (fragile: target by string name) --
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.RecruitmentCampaignBehavior",
+                 "ApplyInternal", null,
+                 "AI Recruitment Manpower Gate"),
+                ("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM",
+                 "OnDone", null,
+                 "Player Recruitment Cart Gate"),
+                ("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM",
+                 "RefreshPartyProperties", null,
+                 "Player Recruitment UI State"),
+                ("TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel",
+                 "CalculateClanIncomeInternal", null,
+                 "Minor Faction Income"),
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior",
+                 "OnSettlementEntered", null,
+                 "Castle Prisoner Deposit"),
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.InfluenceGainCampaignBehavior",
+                 "OnPrisonerDonatedToSettlement", null,
+                 "Prisoner Donation Influence"),
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior",
+                 "DailyTickSettlement", null,
+                 "Castle Prisoner Retention"),
+            };
+
+            int verified = 0;
+            int missing = 0;
+
+            foreach (var (typeName, methodName, paramTypes, description) in targets)
+            {
+                try
+                {
+                    // AccessTools.TypeByName searches all loaded assemblies, not just mscorlib.
+                    var type = HarmonyLib.AccessTools.TypeByName(typeName);
+
+                    if (type == null)
+                    {
+                        missing++;
+                        TaleWorlds.Library.Debug.Print(
+                            $"[Byzantium1071][PatchVerify] MISSING TYPE: {typeName} ({description})");
+                        continue;
+                    }
+
+                    var method = HarmonyLib.AccessTools.Method(type, methodName, paramTypes);
+                    if (method == null)
+                    {
+                        missing++;
+                        TaleWorlds.Library.Debug.Print(
+                            $"[Byzantium1071][PatchVerify] MISSING METHOD: {typeName}.{methodName} ({description})");
+                        continue;
+                    }
+
+                    var patchInfo = Harmony.GetPatchInfo(method);
+                    if (patchInfo == null ||
+                        (patchInfo.Prefixes.Count == 0 && patchInfo.Postfixes.Count == 0 &&
+                         patchInfo.Transpilers.Count == 0 && patchInfo.Finalizers.Count == 0))
+                    {
+                        missing++;
+                        TaleWorlds.Library.Debug.Print(
+                            $"[Byzantium1071][PatchVerify] NOT PATCHED: {typeName}.{methodName} ({description}) — " +
+                            $"method exists but no Harmony patches attached");
+                    }
+                    else
+                    {
+                        verified++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    missing++;
+                    TaleWorlds.Library.Debug.Print(
+                        $"[Byzantium1071][PatchVerify] ERROR checking {description}: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            TaleWorlds.Library.Debug.Print(
+                $"[Byzantium1071][PatchVerify] Critical patches verified: {verified}, missing: {missing}");
+
+            if (missing > 0)
+            {
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071][PatchVerify] WARNING: {missing} critical patch(es) are missing. " +
+                    $"Game version may be incompatible — some Campaign++ features will be disabled.");
+            }
         }
 
         protected override void OnSubModuleUnloaded()

@@ -1,5 +1,16 @@
 # Campaign++ — Changelog
 
+## [1.0.2.2] — 2026-07-30
+
+### Compatibility — Bannerlord 1.4.7 Verified
+
+**Campaign++ verified fully compatible with Bannerlord v1.4.7.** No breaking API changes detected across all 30 Harmony patches and 4 reflection paths.
+
+- **All patch targets verified:** All 14 fragile string-based patch targets confirmed present with identical signatures. `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` changed visibility from public to private but Harmony's string-based lookup handles this transparently.
+- **Harmony startup self-check:** Added `VerifyCriticalPatches()` — runs after patching and confirms all 7 fragile private-method targets actually have patches attached. Catches silent failures (missing methods) immediately at launch rather than mid-campaign.
+- **Reflection paths verified:** `Clan.IsMinorFaction`, `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation`, and `ItemObject.ItemCategory` all confirmed unchanged.
+- **No code changes required** — this is a verification-only update confirming compatibility.
+
 ## [1.0.2.0] — 2026-06-02
 
 ### Fix — Bannerlord 1.4.5 Compatibility
