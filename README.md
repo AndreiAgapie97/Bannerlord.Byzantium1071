@@ -8,8 +8,9 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ## At a glance
 
-- **Current version:** 1.0.2.2  
-- **Target game:** Bannerlord v1.4.7 (tested)  
+- **Current version:** 1.0.2.3  
+- **Target game:** Bannerlord v1.4.8 (tested)  
+- **Warsails (NavalDLC):** v1.2.8 verified compatible (optional — not required)  
 - **Module ID:** `Byzantium1071`
 
 ---
@@ -111,12 +112,16 @@ Search supports heroes, settlements, armies, clans, kingdoms, and market data.
 
 ## Dependencies
 
-Required:
+Required (all four must be installed and enabled *before* Campaign++ — the module will not load without them):
 
-- `Bannerlord.Harmony` >= 2.3.3
-- `Bannerlord.ButterLib` >= 2.9.18
-- `Bannerlord.UIExtenderEx` >= 2.12.0
-- `Bannerlord.MBOptionScreen` (MCM) >= 5.10.2
+- `Bannerlord.Harmony` >= 2.4.2
+- `Bannerlord.ButterLib` >= 2.10.4
+- `Bannerlord.UIExtenderEx` >= 2.13.2
+- `Bannerlord.MBOptionScreen` (MCM) >= 5.11.4
+
+Optional:
+
+- `NavalDLC` (Warsails) — supported, not required. Campaign++ references no Warsails assemblies.
 
 ---
 
@@ -154,6 +159,8 @@ Campaign++ includes a runtime compatibility system that:
 - groups and reports results in a startup popup and full MCM tab.
 
 Known tested in project docs: Economy Overhaul, Cavalry Logistics Overhaul.
+
+**Warsails (NavalDLC):** Warsails replaces ten of the campaign models Campaign++ hooks, but each replacement is a thin decorator that delegates to the vanilla `Default*` model, so Campaign++'s patches still run through the delegation chain. The compatibility scanner treats `NavalDLC` as a first-party assembly and does not report these as third-party model replacements.
 
 ---
 

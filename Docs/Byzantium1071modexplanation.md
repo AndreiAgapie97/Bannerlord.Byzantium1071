@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.2.2
-**Target Game:** Mount & Blade II: Bannerlord (tested on v1.4.7)  
+**Version:** 1.0.2.3
+**Target Game:** Mount & Blade II: Bannerlord (tested on v1.4.8; Warsails/NavalDLC v1.2.8 verified)  
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -992,11 +992,15 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
+**Game version:** verified against Bannerlord **v1.4.8** (and Warsails/NavalDLC **v1.2.8**). See the "Game Version Verification" subsection below for what is checked on each game update.
+
 **Required dependencies** (must load before this mod):
-- `Bannerlord.Harmony` ≥ v2.3.3
-- `Bannerlord.ButterLib` ≥ v2.9.18
-- `Bannerlord.UIExtenderEx` ≥ v2.12.0
-- `Bannerlord.MBOptionScreen` (MCM) ≥ v5.10.2
+- `Bannerlord.Harmony` ≥ v2.4.2
+- `Bannerlord.ButterLib` ≥ v2.10.4
+- `Bannerlord.UIExtenderEx` ≥ v2.13.2
+- `Bannerlord.MBOptionScreen` (MCM) ≥ v5.11.4
+
+All four are declared as `DependedModules` in `SubModule.xml`. If any is missing from `Modules/`, Campaign++ will not load at all — game updates sometimes clear third-party modules, so re-check this list after every Bannerlord patch.
 
 **Confirmed compatible mods:**
 - **Bannerlord.EconomyOverhaul** (v1.1.6) — Full compatibility. 23/23 B1071 systems work. EO’s food model replacement is handled via runtime dynamic patching; volunteer model converted to Harmony Postfix to avoid AddModel collision. EO’s village-level slave system and B1071’s town-level slave system are completely independent and complementary.
@@ -1021,13 +1025,57 @@ Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five c
 
 **No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
+### Warsails (NavalDLC) Interaction Map (v1.2.8)
+
+Warsails registers roughly sixty campaign models of its own, ten of which sit on systems Campaign++ patches:
+
+| Model | Warsails replacement | Campaign++ still applies? |
+|---|---|---|
+| `SettlementProsperityModel` | `NavalDLCSettlementProsperityModel` | **Yes** |
+| `SettlementSecurityModel` | `NavalDLCSettlementSecurityModel` | **Yes** |
+| `SettlementGarrisonModel` | `NavalDLCSettlementGarrisonModel` | **Yes** |
+| `SettlementMilitiaModel` | `NavalDLCSettlementMilitiaModel` | **Yes** (see caveat) |
+| `PartyWageModel` | `NavalDLCPartyWageModel` | **Yes** |
+| `SettlementAccessModel` | `NavalDLCSettlementAccessModel` | **Yes** |
+| `CombatSimulationModel` | `NavalDLCCombatSimulationModel` | **Yes** |
+| `PartyHealingModel` | `NavalDLCPartyHealingModel` | **Yes** |
+| `ClanFinanceModel` | `NavalDLCClanFinanceModel` | **Yes** |
+| `BuildingConstructionModel` | `NavalDLCBuildingConstructionModel` | **Yes** |
+
+These derive from the abstract base rather than the vanilla `Default*` type, which would normally bypass our patches. They do not: each is a **thin decorator** that forwards through `((MBGameModel<T>)this).BaseModel.Method(...)`, so execution still reaches the `Default*` implementation where Campaign++'s Harmony patches are attached.
+
+Models Warsails does **not** replace (still plain vanilla `Default*`): `SettlementFoodModel`, `SettlementLoyaltyModel`, `VolunteerModel`, `TradeItemPriceFactorModel`.
+
+`CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload in v1.2.8. The troop-vs-troop overload Campaign++ patches is unchanged and still resolves unambiguously.
+
+**Known caveat — militia perk bonus:** `B1071_ManpowerMilitiaModel` derives from `DefaultSettlementMilitiaModel` and calls `base.CalculateMilitiaChange()`. Because official modules load first, Campaign++'s model is registered last and therefore sits outermost in the chain, so that `base.` call goes straight to the vanilla model and skips `NavalDLCSettlementMilitiaModel`'s port-town Boatswain perk bonus. Gameplay-only, no crash; would be resolved by converting the model to a Harmony postfix or resolving `BaseModel` at runtime.
+
 **Patches that touch private methods** (fragile on game updates):
 - `RecruitmentCampaignBehavior.ApplyInternal` — private, string name
 - `RecruitmentVM.OnDone` — private, string name
 - `RecruitmentVM.RefreshScreen` — private, string name
 - `RecruitmentVM.RefreshPartyProperties` — private, string name
+- `DefaultClanFinanceModel.CalculateClanIncomeInternal` — private, string name
+- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` — private, string name
+- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` — private, string name
 
-If Bannerlord renames any of these methods, the corresponding patch will silently not apply. Patches on public methods use `nameof()` and have compile-time safety.
+If Bannerlord renames any of these methods, the corresponding patch will silently not apply. `VerifyCriticalPatches()` runs after patching at startup and logs any target that failed to attach, so this surfaces at launch rather than mid-campaign. Patches on public methods use `nameof()` and have compile-time safety.
+
+### Game Version Verification
+
+Each game update is verified by resolving every patch target and reflection path against the new assemblies, not just by recompiling — Harmony binds prefix/postfix parameters **by name**, so a renamed parameter compiles fine and then throws at patch time.
+
+The checklist per update:
+
+1. Release build against the new game DLLs.
+2. Resolve all `[HarmonyPatch]` targets — signature match, overload ambiguity, and parameter names.
+3. Resolve all reflection paths (`Clan.IsMinorFaction` / `IsRebelClan`, `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation`, `ItemObject.ItemCategory` and its backing field, `MapEvent.IsRaid` / `MapEventSettlement` / `EventType`, the `CampaignTime` members, `ModuleHelper.GetModules`).
+4. Confirm the MapBar UIExtender XPath anchors still exist in `SandBox/GUI/Prefabs/Map/MapBar.xml`.
+5. Confirm the `town` / `castle` / `village` game menu IDs are unchanged.
+6. Confirm Gauntlet vertical-stack layout direction has not flipped again (see the v1.4.5 fix).
+7. Check whether any newly shipped first-party model replaces a patched `Default*` type, and whether it delegates via `BaseModel`.
+
+**v1.4.8 / Warsails v1.2.8 result:** 44 Harmony patch methods and 16 reflection paths resolved with no breaking changes; UI anchors, menu IDs, and layout direction unchanged. No code changes were required.
 
 **Save compatibility**: All mod state is stored in campaign saves. Loading a save from a version of the mod without certain features (e.g., an older save without war exhaustion data) will gracefully default to empty dictionaries and zero values. Upgrading from 0.1.5.x to 0.1.6.0 requires no new campaign.
 

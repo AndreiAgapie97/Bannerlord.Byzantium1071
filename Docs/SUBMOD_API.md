@@ -198,11 +198,20 @@ Campaign++ uses Harmony to patch vanilla Bannerlord classes. If your submod also
 ### Fragile Patch Targets (Private/internal)
 
 Campaign++ patches these private methods. Document your dependency version:
-- `RecruitmentCampaignBehavior.ApplyInternal` (v1.4.7 verified, no nameof)
-- `RecruitmentVM.RefreshScreen` / `RefreshPartyProperties` (v1.4.7 verified)
+- `RecruitmentCampaignBehavior.ApplyInternal` (v1.4.8 verified, no nameof)
+- `RecruitmentVM.OnDone` / `RefreshScreen` / `RefreshPartyProperties` (v1.4.8 verified)
+- `DefaultClanFinanceModel.CalculateClanIncomeInternal` (v1.4.8 verified)
+- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` (v1.4.8 verified)
+- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` (v1.4.8 verified)
 - Several private DefaultSettlementGarrisonModel overloads
 
-**If you patch private methods, pin to the Bannerlord version via `Campaign++/SubModule.xml` compatibility tag and re-test after each game update.**
+**If you patch private methods, pin to the Bannerlord version via `Campaign++/SubModule.xml` compatibility tag and re-test after each game update.** Note that Harmony binds prefix/postfix parameters by **name**, so a game update that renames a parameter will compile cleanly and then throw at patch time — verify parameter names, not just signatures.
+
+### Warsails (NavalDLC) and model decorators
+
+Warsails replaces ten campaign models Campaign++ hooks (prosperity, security, garrison, militia, party wage, settlement access, combat simulation, party healing, clan finance, building construction). Each replacement is a thin decorator that forwards through `((MBGameModel<T>)this).BaseModel.Method(...)`, so patches attached to the vanilla `Default*` type still execute.
+
+If your submod patches any of these models, patch the `Default*` type rather than the `NavalDLC*` type — that keeps the submod working whether or not Warsails is installed. Campaign++ references no Warsails assemblies and does not require the DLC.
 
 ### Best Practice: Postfix Over Prefix
 

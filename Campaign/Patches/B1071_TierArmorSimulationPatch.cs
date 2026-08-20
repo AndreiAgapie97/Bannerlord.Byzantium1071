@@ -86,10 +86,12 @@ namespace Byzantium1071.Campaign.Patches
     /// the single-hit RandomInt gate. They are near-invincible by default.
     ///
     /// VERSION NOTE: DefaultCombatSimulationModel.SimulateHit verified against
-    /// Bannerlord v1.4.5 (signature unchanged since v1.3.15). The 8-param overload is identified by:
+    /// Bannerlord v1.4.8 (signature unchanged since v1.3.15). The 8-param overload is identified by:
     ///   (CharacterObject, CharacterObject, PartyBase, PartyBase,
     ///    float, MapEvent, float, float)
-    /// The ship-vs-ship overload uses different types and is not affected.
+    /// The ship-vs-ship overload (Ship, Ship, PartyBase, PartyBase, SiegeEngineType,
+    /// float, MapEvent, out int) added alongside Warsails uses different types, so the
+    /// explicit argumentTypes array above still resolves the troop overload unambiguously.
     /// Reverify the overload signature after Bannerlord patches.
     /// </summary>
     [HarmonyPatch(typeof(DefaultCombatSimulationModel),

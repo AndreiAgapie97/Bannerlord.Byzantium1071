@@ -1,6 +1,15 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.1.2 — Everything you need to know, step by step.*
+*Version 1.0.2.3 — Everything you need to know, step by step.*
+
+**Game version:** Bannerlord **v1.4.8**. The Warsails (NavalDLC) expansion **v1.2.8** is supported but not required — Campaign++ works with or without it.
+
+**Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
+
+- Harmony (2.4.2 or newer)
+- ButterLib (2.10.4 or newer)
+- UIExtenderEx (2.13.2 or newer)
+- Mod Configuration Menu / MCM (5.11.4 or newer)
 
 ---
 
@@ -746,6 +755,12 @@ Some mods (like RBM) apply their Harmony patches at campaign load rather than at
 ## 15b. Known Mod Interactions
 
 Some third-party mods have specific interactions with Campaign++ systems. These are not bugs in Campaign++ but are documented here so you know what to expect.
+
+### Warsails (Naval DLC)
+
+Fully compatible — no action needed. Warsails swaps in its own versions of several campaign systems Campaign++ also modifies (prosperity, security, garrison, militia, wages, clan finance and others), but each one still hands the calculation back to the base game, so Campaign++'s changes continue to apply on top. Warsails is never reported as a conflict in the compatibility report, and Campaign++ works whether or not you own the DLC.
+
+One small exception: in port towns, the Boatswain perk's militia bonus from Warsails is not applied while Campaign++'s militia system is active. This affects militia growth only, nothing else.
 
 ### Realms of Thrones (ROT)
 

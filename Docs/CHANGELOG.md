@@ -1,5 +1,18 @@
 # Campaign++ — Changelog
 
+## [1.0.2.3] — 2026-08-17
+
+### Compatibility — Bannerlord 1.4.8 / Warsails 1.2.8 Verified
+
+**Campaign++ verified fully compatible with Bannerlord v1.4.8 and the Warsails (NavalDLC) v1.2.8 update.** No breaking API changes found — 44 Harmony patch methods and 16 reflection paths all resolve against the new assemblies with identical signatures and parameter names.
+
+- **All patch targets verified:** Every patch target resolves unambiguously, including the 14 fragile string-named private methods (`RecruitmentCampaignBehavior.ApplyInternal`, `DefaultClanFinanceModel.CalculateClanIncomeInternal`, `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement`, `RecruitmentVM.OnDone` / `RefreshPartyProperties`, and others). Parameter names — which Harmony binds by name — are unchanged.
+- **Reflection paths verified:** `Clan.IsMinorFaction` / `IsRebelClan`, `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation`, `ItemObject.ItemCategory` (and its backing field), `MapEvent.IsRaid` / `MapEventSettlement` / `EventType`, all five `CampaignTime` members, and `ModuleHelper.GetModules` all confirmed present.
+- **Warsails compatibility:** Warsails replaces ten of the campaign models Campaign++ hooks (prosperity, security, garrison, militia, party wage, settlement access, combat simulation, party healing, clan finance, building construction). All of them are thin decorators that delegate to the vanilla `Default*` model, so Campaign++'s patches still run. `CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload; the troop overload Campaign++ patches is untouched and still resolves without ambiguity.
+- **No false compatibility warnings:** The compatibility checker already treats `NavalDLC` as a native assembly, so Warsails' model replacements do not raise "replaced by another mod" popups.
+- **UI and menus verified:** Both MapBar injection anchors (`ListPanel[@Id='MapBar']` and `MapInfoBarWidget[@Id='InfoBarWidget']`) are still present in 1.4.8's `SandBox/GUI/Prefabs/Map/MapBar.xml`, and the `town` / `castle` / `village` game menu IDs are unchanged. Gauntlet layout direction is unchanged from 1.4.7, so the 1.4.5 vertical-stack fix still holds.
+- **No code changes required** — this is a verification-only update confirming compatibility.
+
 ## [1.0.2.2] — 2026-07-30
 
 ### Compatibility — Bannerlord 1.4.7 Verified
