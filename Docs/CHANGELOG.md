@@ -1,5 +1,53 @@
 # Campaign++ — Changelog
 
+## [1.0.2.5] — 2026-08-20
+
+### Fix — Tier Armor Simulation Silently Dead on Bannerlord v1.5.0
+
+**Game v1.5.0 inserted a parameter into `DefaultCombatSimulationModel.SimulateHit`, so `B1071_TierArmorSimulationPatch` stopped attaching and the feature quietly did nothing.**
+
+- **Root cause:** the troop-vs-troop overload went from 8 to 9 parameters — a new `TaleWorlds.Core.BattleEnvironment` enum was inserted in position 7, between `MapEvent battle` and `float strikerSideMorale`. The patch pins the overload with an explicit `argumentTypes` array (necessary, because Warsails added a ship-vs-ship `SimulateHit` overload), and that 8-type array no longer matched anything.
+- **Impact — no crash, no save damage.** `PatchAssemblySafely` applies each patch class inside its own try/catch, so the failure was caught and logged as `Harmony patch skipped: B1071_TierArmorSimulationPatch` while every other patch attached normally. The only symptom was tier armor having no effect.
+- **Why the startup self-check missed it:** `VerifyCriticalPatches` only covers patches that resolve private methods by string name. `SimulateHit` is public and resolved via `nameof`, so it was never on that list. The class doc comment now flags this array as the first thing to check if tier armor stops working after a game update.
+- **Fix:** added `typeof(BattleEnvironment)` in position 7 of the array, plus the `TaleWorlds.Core` using. The BUTR Harmony Analyzer confirms it: `BHA0001` for `SimulateHit` is gone, and a clean rebuild produces 0 errors.
+
+### Change — Elite Survivability Consolidated Into a Single Preset
+
+**Players reported elite troops dying far too slowly in autoresolve, even after the tuning pass a few versions ago.**
+
+- **Root cause — two systems rewarding tier, multiplying together.** `B1071_TierArmorSimulationPatch` reduces simulated hit damage, which controls how *often* the fatal-hit gate fires. `B1071_FatalityPatch` raises survival chance, which decides kill-vs-wound *when* it does fire. They were tuned independently and stacked:
+
+  | Tier | Damage reduction | Survival bonus |
+  |------|-----------------|----------------|
+  | T3   | −6%             | +5pp           |
+  | T4   | −12%            | +10pp          |
+  | T5   | −18%            | +15pp          |
+  | T6+  | −24%            | +20pp          |
+
+  A T6 troop took roughly a quarter fewer fatal-hit checks *and* survived far more of the checks it did get. The earlier nerf only moved one of the two levers, so the compounding stayed. Vanilla raising base survival rates in v1.4.0 pushed it further.
+- **Fix:** both curves now come from one source, `B1071_CombatRealismTuning`, driven by a new `Combat Realism → Elite survivability preset` setting (0–3). They can no longer be tuned apart.
+
+  | Preset | Damage reduction (T3/T4/T5/T6+) | Survival bonus (T3/T4/T5/T6+) |
+  |--------|--------------------------------|-------------------------------|
+  | 0 — Vanilla  | untouched              | untouched                     |
+  | 1 — Light *(default)* | −3 / −6 / −9 / −12%  | +2 / +4 / +6 / +8pp   |
+  | 2 — Moderate | −5 / −10 / −15 / −20%  | +3 / +6 / +9 / +12pp          |
+  | 3 — Strong   | −6 / −12 / −18 / −24%  | +5 / +10 / +15 / +20pp        |
+
+  Preset 3 reproduces the pre-v1.0.2.5 values exactly, for players who liked them. T1–T2 receive nothing at any preset, heroes are unaffected by both systems, and everything applies symmetrically to AI and player.
+- **Shipped default is 1 (Light),** applied to existing configs as well as new ones — the preset is a new MCM key, so a config written by an older version has no stored value and falls through to the default.
+- **Settings profile v21** covers the one case where that would be wrong: a player who had deliberately switched *both* tier toggles off is migrated to preset **0 (Vanilla)** rather than being silently opted back in. Everyone else gets 1, with a migration message pointing at preset 3 for the old values.
+- **These two changes had to ship together.** The armor half was dead on v1.5.0; repairing it without re-tuning would have restored the full stacked curve and made the complaint worse.
+- **Legacy settings:** `Enable tier survivability` and `Enable tier armor simulation` moved to the **Legacy** group and are no longer read by anything. They are kept only so existing MCM configs still deserialize, matching how `TiersPerExtraCost` and `CostMultiplierPercent` were retired.
+- **Quick Settings:** the two `Recruitment & Military` toggles are replaced by a single `Elite Survivability` 0–3 setting.
+
+### Compatibility — Bannerlord v1.5.0 / Warsails (NavalDLC) v1.3.0
+
+- Every Harmony patch target and reflection path was re-resolved against the v1.5.0 assemblies. `DefaultCombatSimulationModel.SimulateHit` was the **only** breaking change; everything else resolved with unchanged signatures.
+- The naval `SimulateHit` overload (`Ship`, `Ship`, `PartyBase`, `PartyBase`, `SiegeEngineType`, `float`, `MapEvent`, `ref int`) remains unpatched, and its parameter types are distinct enough that the explicit array still selects the troop overload unambiguously.
+- `NavalDLC` is already on the `IsNativeAssembly` whitelist, so its model replacements do not raise false "game system replaced" warnings.
+- Warsails remains **optional** — Campaign++ behaves identically without it.
+
 ## [1.0.2.4] — 2026-08-20
 
 ### Fix — Villages Filling With Unrecruitable Volunteers (Troop Overhaul Mods)

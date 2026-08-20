@@ -1,10 +1,10 @@
 using System;
-using Byzantium1071.Campaign.Settings;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
@@ -79,19 +79,27 @@ namespace Byzantium1071.Campaign.Patches
     ///   (they engage the most enemies) — not addressable without mission AI
     ///   changes.
     ///
-    /// Damage reduction per tier (additive negative factor applied in Postfix):
-    ///   T1 = 0%   T2 = 0%   T3 = -6%   T4 = -12%   T5 = -18%   T6+ = -24%
+    /// Damage reduction per tier comes from B1071_CombatRealismTuning, driven by the
+    /// EliteSurvivabilityPreset setting. At the default Light preset:
+    ///   T1 = 0%   T2 = 0%   T3 = -3%   T4 = -6%   T5 = -9%   T6+ = -12%
+    /// Preset 3 restores the pre-v1.0.2.5 curve (-6/-12/-18/-24%). See that class for
+    /// why the two tier systems must be tuned as one.
     ///
     /// Heroes excluded: their path uses AddHeroDamage (HP accumulation), not
     /// the single-hit RandomInt gate. They are near-invincible by default.
     ///
     /// VERSION NOTE: DefaultCombatSimulationModel.SimulateHit verified against
-    /// Bannerlord v1.4.8 (signature unchanged since v1.3.15). The 8-param overload is identified by:
+    /// Bannerlord v1.5.0. The troop-vs-troop overload is identified by:
     ///   (CharacterObject, CharacterObject, PartyBase, PartyBase,
-    ///    float, MapEvent, float, float)
+    ///    float, MapEvent, BattleEnvironment, float, float)
+    /// ⚠ v1.5.0 INSERTED the BattleEnvironment parameter in position 7. The previous
+    /// 8-type array silently stopped resolving, so this patch did not attach at all on
+    /// 1.5.0 until v1.0.2.5 — the class-level try/catch in PatchAssemblySafely swallowed
+    /// it and the feature went quietly dead. If tier armor ever stops having an effect
+    /// after a game update, check this array against the live signature FIRST.
     /// The ship-vs-ship overload (Ship, Ship, PartyBase, PartyBase, SiegeEngineType,
-    /// float, MapEvent, out int) added alongside Warsails uses different types, so the
-    /// explicit argumentTypes array above still resolves the troop overload unambiguously.
+    /// float, MapEvent, ref int) added alongside Warsails uses different types, so the
+    /// explicit argumentTypes array below still resolves the troop overload unambiguously.
     /// Reverify the overload signature after Bannerlord patches.
     /// </summary>
     [HarmonyPatch(typeof(DefaultCombatSimulationModel),
@@ -104,6 +112,7 @@ namespace Byzantium1071.Campaign.Patches
             typeof(PartyBase),        // struckParty
             typeof(float),            // strikerAdvantage
             typeof(MapEvent),         // battle
+            typeof(BattleEnvironment),// battleEnvironment (added in Bannerlord v1.5.0)
             typeof(float),            // strikerSideMorale
             typeof(float),            // struckSideMorale
         })]
@@ -120,29 +129,10 @@ namespace Byzantium1071.Campaign.Patches
             try
             {
                 if (struckTroop == null || struckTroop.IsHero) return;
-                if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EnableTierArmorSimulation) return;
 
-                int tier = Math.Max(1, struckTroop.Tier);
-
-                float armorFactor = 0f;
-                switch (tier)
-                {
-                    case 3:
-                        armorFactor = -0.06f;
-                        break;
-                    case 4:
-                        armorFactor = -0.12f;
-                        break;
-                    case 5:
-                        armorFactor = -0.18f;
-                        break;
-                    default:
-                        if (tier >= 6)
-                            armorFactor = -0.24f;
-                        break;
-                }
-
-                if (armorFactor == 0f) return; // T1-T2 get no reduction.
+                // Preset 0 (vanilla) and T1-T2 both come back as 0f.
+                float armorFactor = B1071_CombatRealismTuning.GetArmorFactor(struckTroop.Tier);
+                if (armorFactor == 0f) return;
 
                 __result.AddFactor(armorFactor, _label);
             }

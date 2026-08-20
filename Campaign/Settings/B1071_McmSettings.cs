@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 20;
+        internal const int LATEST_PROFILE_VERSION = 21;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -359,6 +359,24 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "troop service toggled off by default. Enable via MCM → Troop Service or Quick Settings. ";
             }
 
+            // ── Profile v21: tier survivability + tier armor merged into one preset ──
+            // The two booleans are retired (Legacy group, no longer read). Everyone lands on
+            // the new default of 1 (Light) EXCEPT players who had deliberately switched both
+            // systems off — silently re-enabling a feature someone opted out of would be wrong,
+            // so they carry over to preset 0 (Vanilla).
+            if (SettingsProfileVersion < 21)
+            {
+                if (!EnableTierSurvivability && !EnableTierArmorSimulation)
+                {
+                    EliteSurvivabilityPreset = 0;
+                    migrated += "tier survivability and tier armor were both off, so the new Elite survivability preset starts at 0 (Vanilla). ";
+                }
+                else
+                {
+                    migrated += "tier survivability and tier armor merged into the Elite survivability preset, now at 1 (Light) — they used to stack, which made elite troops far too hard to kill. Set it to 3 for the old values. ";
+                }
+            }
+
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
             try
@@ -547,15 +565,19 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("{=b1071_mcm_t_9065705d19}[Legacy] Cost multiplier %", 1, 1000, "0", Order = 11, HintText = "{=b1071_mcm_h_29e86259f4}[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility.")]
         public int CostMultiplierPercent { get; set; } = 100;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}[Legacy] Enable tier survivability", Order = 12, HintText = "{=b1071_mcm_h_e1a2720769}[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility.")]
+        public bool EnableTierSurvivability { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}[Legacy] Enable tier armor simulation", Order = 13, HintText = "{=b1071_mcm_h_54fe9937da}[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility.")]
+        public bool EnableTierArmorSimulation { get; set; } = true;
+
         // ─── Combat Realism ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}Enable tier survivability", Order = 0, HintText = "{=b1071_mcm_h_e1a2720769}Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6=+20% flat bonus to survival chance on top of Medicine-based base rate.")]
-        public bool EnableTierSurvivability { get; set; } = true;
-
-        [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}Enable tier armor simulation", Order = 1, HintText = "{=b1071_mcm_h_54fe9937da}Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=0%, T3=-6%, T4=-12%, T5=-18%, T6=-24%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check.")]
-        public bool EnableTierArmorSimulation { get; set; } = true;
+        [SettingPropertyInteger("{=b1071_mcm_t_4b9e1f7a25}Elite survivability preset", 0, 3, "0", Order = 0, HintText = "{=b1071_mcm_h_2c8d5b3e41}How much tougher high-tier troops are in battles the game resolves for you (autoresolve, sieges you do not fight yourself). Sets reduced simulated hit damage and a higher wounded-instead-of-killed chance together. 0=Vanilla | 1=Light (T3-T6 damage -3/-6/-9/-12%, survival +2/+4/+6/+8) | 2=Moderate (-5/-10/-15/-20%, +3/+6/+9/+12) | 3=Strong (-6/-12/-18/-24%, +5/+10/+15/+20, the pre-v1.0.2.5 values). Applies to AI and player equally. Replaces the two separate tier toggles, which compounded. Default: 1.")]
+        public int EliteSurvivabilityPreset { get; set; } = 1;
 
         // ─── Army Economics ───
 

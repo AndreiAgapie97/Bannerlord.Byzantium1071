@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.2.4
-**Target Game:** Mount & Blade II: Bannerlord (tested on v1.4.8; Warsails/NavalDLC v1.2.8 verified)  
+**Version:** 1.0.2.5
+**Target Game:** Mount & Blade II: Bannerlord (tested on v1.5.0; Warsails/NavalDLC v1.3.0 verified)  
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -730,39 +730,29 @@ Active truces are visible in the overlay's **Wars** tab.
 
 ## 17. Combat Realism
 
-Two independent systems improve autoresolve and wound fidelity for higher-tier troops.
+Two patches improve autoresolve and wound fidelity for higher-tier troops. They are **not** independent — they multiply, so both read their curve from one place, `B1071_CombatRealismTuning`, selected by the `Combat Realism → Elite survivability preset` setting (0–3, default **1 — Light**).
 
-### Tier Survivability
+### Why one preset
 
-When `DefaultPartyHealingModel.GetSurvivalChance` would return a value < 1.0 for a non-hero troop, a tier-based bonus is added to survival chance (wound vs. kill decision):
+- **Tier Armor Simulation** (`B1071_TierArmorSimulationPatch`, Postfix on `DefaultCombatSimulationModel.SimulateHit`) reduces simulated hit damage, which lowers how **often** the fatal-hit gate `MBRandom.RandomInt(MaxHitPoints) < damage` fires.
+- **Tier Survivability** (`B1071_FatalityPatch`, Postfix on `DefaultPartyHealingModel.GetSurvivalChance`) raises survival chance, which decides **kill vs. wound** once the gate has fired.
 
-| Tier | Survival Bonus |
-|------|---------------|
-| T1   | +0%  |
-| T2   | +0%  |
-| T3   | +5%  |
-| T4   | +10% |
-| T5   | +15% |
-| T6+  | +20% |
+Tuned separately they double-dip: a T6 troop took a quarter fewer casualty checks *and* survived far more of the ones it got, which is what produced the "elite troops are unkillable" reports before v1.0.2.5. Sharing a preset makes that impossible.
 
-**Effect**: Veterans are more likely to survive as wounded rather than die outright. Additive on top of vanilla base survival chance, capped at 100%.
+### Preset curves
 
-### Tier Armor Simulation
+| Preset | Damage reduction (T3/T4/T5/T6+) | Survival bonus (T3/T4/T5/T6+) |
+|--------|--------------------------------|-------------------------------|
+| 0 — Vanilla | untouched | untouched |
+| 1 — Light *(default)* | −3 / −6 / −9 / −12% | +2 / +4 / +6 / +8pp |
+| 2 — Moderate | −5 / −10 / −15 / −20% | +3 / +6 / +9 / +12pp |
+| 3 — Strong | −6 / −12 / −18 / −24% | +5 / +10 / +15 / +20pp |
 
-In autoresolve, `DefaultCombatSimulationModel.SimulateHit` output is reduced for higher-tier struck troops, modelling superior armor and battle experience:
+Preset 3 reproduces the pre-v1.0.2.5 values. T1–T2 receive nothing at any preset — both lookups return `0f` and the patch returns early. The survival bonus is additive on top of vanilla's Medicine-based base rate and capped at 100%.
 
-| Tier | Damage Reduction |
-|------|----------------|
-| T1   | −0%  |
-| T2   | −0%  |
-| T3   | −6%  |
-| T4   | −12% |
-| T5   | −18% |
-| T6+  | −24% |
+Heroes are unaffected by both systems: their damage path uses `AddHeroDamage` rather than the single-hit gate, and `AddFactor(50f)` already puts their base survival near 100%. Both patches activate only in autoresolve simulation (not live battles), and both apply symmetrically to player and AI.
 
-**Effect**: Reduced damage lowers the probability of the fatal-hit gate firing per autoresolve tick. Combined with tier survivability: fewer casualty checks trigger AND better outcomes within each check.
-
-Heroes are unaffected by both systems. Both patches activate only in autoresolve simulation (not live battles). Both apply symmetrically to player and AI.
+The retired `EnableTierSurvivability` / `EnableTierArmorSimulation` booleans still exist on `B1071_McmSettings` under the **Legacy** group so older configs deserialize, but nothing reads them.
 
 ---
 
@@ -883,7 +873,7 @@ All settings are in the Mod Configuration Menu. Key groups:
 | Depleted Emergency Regen | Enable toggle, threshold %, bonus at zero |
 | Recruitment Cost | Base cost per troop, culture discount, village volunteer tier max, town volunteer tier max |
 | Castle Recruitment | Enable/disable; prisoner tier threshold; T4/T5/T6 days and gold costs; elite pool max, regen range, manpower cost; AI recruit toggle |
-| Combat Realism | Enable/disable tier survivability; enable/disable tier armor simulation |
+| Combat Realism | Elite survivability preset (0–3, default 1 — sets autoresolve damage reduction and wound-vs-kill bonus together) |
 | Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 80); garrison discount toggle |
 | Overlay | Hotkey (M/N/K/F9-F12), panel position, default tab, rows per page |
 | War Effects | Enable/disable; raid/battle/siege/conquest drain %; conquest retain % |
@@ -907,11 +897,11 @@ A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 22 system maste
 |-------|---------|
 | Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
-| Recruitment & Military | Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival |
+| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), Clan Survival |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
 | Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
 
-All toggles use `ProxyRef<bool>` wrappers around `B1071_McmSettings.Instance` — changing a Quick Settings toggle changes the corresponding full-tab setting and vice versa. Built by `B1071_QuickSettingsFluentSettings` using the same FluentGlobalSettings pattern as the Compatibility tab.
+All entries use `ProxyRef<T>` wrappers around `B1071_McmSettings.Instance` — changing a Quick Settings toggle changes the corresponding full-tab setting and vice versa. Built by `B1071_QuickSettingsFluentSettings` using the same FluentGlobalSettings pattern as the Compatibility tab.
 
 ---
 
@@ -1019,7 +1009,7 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
-**Game version:** verified against Bannerlord **v1.4.8** (and Warsails/NavalDLC **v1.2.8**). See the "Game Version Verification" subsection below for what is checked on each game update.
+**Game version:** verified against Bannerlord **v1.5.0** (and Warsails/NavalDLC **v1.3.0**). See the "Game Version Verification" subsection below for what is checked on each game update.
 
 **Required dependencies** (must load before this mod):
 - `Bannerlord.Harmony` ≥ v2.4.2
@@ -1052,7 +1042,7 @@ Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five c
 
 **No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
-### Warsails (NavalDLC) Interaction Map (v1.2.8)
+### Warsails (NavalDLC) Interaction Map (v1.3.0)
 
 Warsails registers roughly sixty campaign models of its own, ten of which sit on systems Campaign++ patches:
 
@@ -1073,7 +1063,7 @@ These derive from the abstract base rather than the vanilla `Default*` type, whi
 
 Models Warsails does **not** replace (still plain vanilla `Default*`): `SettlementFoodModel`, `SettlementLoyaltyModel`, `VolunteerModel`, `TradeItemPriceFactorModel`.
 
-`CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload in v1.2.8. The troop-vs-troop overload Campaign++ patches is unchanged and still resolves unambiguously.
+`CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload in Warsails v1.2.8: `(Ship, Ship, PartyBase, PartyBase, SiegeEngineType, float, MapEvent, ref int)`. Campaign++ does not patch it, and its parameter types stay distinct enough that the explicit `argumentTypes` array still selects the troop overload unambiguously. Note that the troop overload itself **did** change in game v1.5.0 — see the tier armor note below.
 
 **Known caveat — militia perk bonus:** `B1071_ManpowerMilitiaModel` derives from `DefaultSettlementMilitiaModel` and calls `base.CalculateMilitiaChange()`. Because official modules load first, Campaign++'s model is registered last and therefore sits outermost in the chain, so that `base.` call goes straight to the vanilla model and skips `NavalDLCSettlementMilitiaModel`'s port-town Boatswain perk bonus. Gameplay-only, no crash; would be resolved by converting the model to a Harmony postfix or resolving `BaseModel` at runtime.
 
@@ -1103,6 +1093,10 @@ The checklist per update:
 7. Check whether any newly shipped first-party model replaces a patched `Default*` type, and whether it delegates via `BaseModel`.
 
 **v1.4.8 / Warsails v1.2.8 result:** 44 Harmony patch methods and 16 reflection paths resolved with no breaking changes; UI anchors, menu IDs, and layout direction unchanged. No code changes were required.
+
+**v1.5.0 / Warsails v1.3.0 result:** exactly one breaking change. `DefaultCombatSimulationModel.SimulateHit` gained a `TaleWorlds.Core.BattleEnvironment` parameter in position 7 (8 → 9 params), which stopped `B1071_TierArmorSimulationPatch`'s explicit `argumentTypes` array from resolving. `PatchAssemblySafely` caught and logged it per-class, so there was no crash and no save damage — the feature simply stopped working. Fixed in v1.0.2.5. Every other patch target and reflection path resolved with unchanged signatures.
+
+**Lesson for future updates:** a patch pinned by an explicit `argumentTypes` array fails *silently* when the game inserts a parameter, and `VerifyCriticalPatches` will not catch it because that list only covers private methods resolved by string name. Build with the BUTR Harmony Analyzer enabled and treat any `BHA0001` warning as a release blocker — it caught this one at compile time.
 
 **Save compatibility**: All mod state is stored in campaign saves. Loading a save from a version of the mod without certain features (e.g., an older save without war exhaustion data) will gracefully default to empty dictionaries and zero values. Upgrading from 0.1.5.x to 0.1.6.0 requires no new campaign.
 

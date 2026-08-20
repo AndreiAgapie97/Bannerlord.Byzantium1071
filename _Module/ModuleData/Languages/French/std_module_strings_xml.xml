@@ -228,10 +228,8 @@
     <string id="b1071_qs_hint_castle_recruitment" text="Les châteaux génèrent des troupes d'élite à partir de la main-d'œuvre et détiennent des prisonniers T4+ pour conversion." />
     <string id="b1071_qs_name_castle_access" text="Accès ouvert au château" />
     <string id="b1071_qs_hint_castle_access" text="Supprime l'exigence de pot-de-vin au niveau du clan vanille pour entrer dans les châteaux neutres." />
-    <string id="b1071_qs_name_combat_survivability" text="Survie au niveau de combat" />
-    <string id="b1071_qs_hint_combat_survivability" text="Les troupes de rang supérieur sont plus susceptibles d'être blessées que tuées." />
-    <string id="b1071_qs_name_combat_armor" text="Simulation d'armure de niveau de combat" />
-    <string id="b1071_qs_hint_combat_armor" text="Le blindage des troupes est pris en compte dans les résultats des batailles à résolution automatique." />
+    <string id="b1071_qs_name_elite_survivability" text="Survie des troupes d'élite" />
+    <string id="b1071_qs_hint_elite_survivability" text="Résistance des troupes de niveau supérieur dans les batailles résolues automatiquement. 0 = Vanilla, 1 = Léger, 2 = Modéré, 3 = Fort." />
     <string id="b1071_qs_name_clan_survival" text="Survie du clan" />
     <string id="b1071_qs_hint_clan_survival" text="Empêche l'anéantissement du clan lorsque leur royaume est détruit. Les clans sauvés recherchent le service mercenaire." />
     <string id="b1071_qs_name_governance" text="Pression sur la gouvernance" />
@@ -507,6 +505,7 @@
     <string id="b1071_mcm_h_29e86259f4" text="[HÉRITAGE — NON UTILISÉ] Ce paramètre n'est plus actif. Le coût de la main-d'œuvre est désormais stable par troupe (BaseManpowerCostPerTroop). Conservé pour la compatibilité de sauvegarde." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Remplace les seuils d'épuisement strict par des bandes et une hystérésis graduées faibles/en hausse/crise. Produit des transitions diplomatiques plus fluides." />
     <string id="b1071_mcm_h_2c8792addb" text="Pénalité totale maximale appliquée à la prise en charge des déclarations de guerre en mode bande. Remplace le remplacement dur de -10 000." />
+    <string id="b1071_mcm_h_2c8d5b3e41" text="Détermine la résistance des troupes de niveau supérieur dans les batailles résolues automatiquement (résolution automatique, sièges que vous ne menez pas vous-même). Définit ensemble la réduction des dégâts simulés et la probabilité d'être blessé plutôt que tué. 0=Vanilla | 1=Léger (dégâts T3-T6 -3/-6/-9/-12 %, survie +2/+4/+6/+8) | 2=Modéré (-5/-10/-15/-20 %, +3/+6/+9/+12) | 3=Fort (-6/-12/-18/-24 %, +5/+10/+15/+20, les valeurs antérieures à la v1.0.2.5). S'applique également à l'IA et au joueur. Remplace les deux options de niveau distinctes, qui se cumulaient. Par défaut : 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Les pools épuisés conservent un pourcentage plus élevé pendant la conquête. Empêche les châteaux frontaliers de ping-pong d'être définitivement mis à zéro par des changements de propriétaire répétés." />
     <string id="b1071_mcm_h_2ea055b805" text="À partir de cet épuisement, les royaumes IA ne peuvent plus déclencher de nouvelles guerres." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Ajoute un petit caractère aléatoire limité à la production de bénévoles et à la récupération après un choc. Rend les campagnes moins prévisibles sans fluctuations sauvages." />
@@ -538,7 +537,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Enregistre les raisons détaillées des décisions de paix forcée et de guerre." />
     <string id="b1071_mcm_h_4e8aece026" text="Bascule principale. Permet le système d'investissement villageois (patronage) : dépensez de l'or dans les villages pour la croissance du foyer, les relations notables, l'influence et le pouvoir notable. Les seigneurs de l'IA investissent également dans leurs propres villages. Par défaut : vrai." />
     <string id="b1071_mcm_h_4ed533a03f" text="Bonus total maximum appliqué à l’aide à la décision de paix en mode bande. Remplace la dérogation matérielle +200." />
-    <string id="b1071_mcm_h_54fe9937da" text="Les troupes de niveau supérieur reçoivent des dégâts simulés réduits en résolution automatique (T2=0 %, T3=-6 %, T4=-12 %, T5=-18 %, T6=-24 %). Réduit la probabilité que la porte fatale se déclenche par tick. Fonctionne avec la capacité de survie de niveau : moins de contrôles de pertes ET une meilleure survie à chaque contrôle." />
+    <string id="b1071_mcm_h_54fe9937da" text="[OBSOLÈTE — NON UTILISÉ] Ce paramètre n'est plus actif. Remplacé par le préréglage de survie des troupes d'élite dans Réalisme de combat, qui définit ensemble la réduction des dégâts et le bonus de survie afin qu'ils ne se cumulent plus. Conservé pour la compatibilité des sauvegardes." />
     <string id="b1071_mcm_h_5582afc84b" text="Supprime le pot-de-vin au niveau du clan (~ 800 po) pour entrer dans les salles des seigneurs du château et permet l'entrée dans les châteaux neutres même avec des relations légèrement négatives avec les propriétaires. Les châteaux hostiles et les restrictions basées sur la criminalité ne sont pas affectés. Nécessaire pour le dépôt et le recrutement des prisonniers en début de partie. Par défaut : vrai." />
     <string id="b1071_mcm_h_5807af4ea7" text="Combien de temps les pénalités de récupération liées au raid persistent." />
     <string id="b1071_mcm_h_5921a54d23" text="La compétence du gouverneur steward augmente la régénération ; Le leadership augmente le pool maximum." />
@@ -682,7 +681,7 @@
       <string id="b1071_mcm_h_town_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'une ville. Le recrutement d'élite des châteaux n'est pas affecté ; ceci ne s'applique qu'au recrutement de volontaires vanilla." />
       <string id="b1071_mcm_h_village_vol_tier_max" text="Rang maximal des troupes pouvant être recrutées depuis le tableau de volontaires d'un village. Utilise uniquement le type de la colonie source ; les effectifs proviennent toujours de la réserve de la ville ou du château lié." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Décalage horizontal par rapport au bord gauche pour le panneau racine de superposition." />
-    <string id="b1071_mcm_h_e1a2720769" text="Les troupes de rang supérieur ont plus de chances de survivre en étant blessées plutôt que de mourir en résolution automatique. T1=+0 %, T2=+0 %, T3=+5 %, T4=+10 %, T5=+15 %, T6=+20 % de bonus fixe aux chances de survie en plus du taux de base basé sur les médicaments." />
+    <string id="b1071_mcm_h_e1a2720769" text="[OBSOLÈTE — NON UTILISÉ] Ce paramètre n'est plus actif. Remplacé par le préréglage de survie des troupes d'élite dans Réalisme de combat, qui définit ensemble la réduction des dégâts et le bonus de survie afin qu'ils ne se cumulent plus. Conservé pour la compatibilité des sauvegardes." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Puissance ajoutée à chaque ville notable grâce à un grand investissement. Par défaut : 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Dans quelle mesure les royaumes de même culture sont-ils préférés lors de l'affectation de services mercenaires ? Des valeurs plus élevées rendent la culture presque obligatoire. À 2,0, les royaumes de même culture obtiennent un score 3 fois plus élevé. Par défaut : 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence obtenue grâce à un investissement modeste (uniquement si le village se trouve dans votre royaume). Par défaut : 2,5." />
@@ -729,7 +728,7 @@
     <string id="b1071_mcm_t_0c4f845fa2" text="Dégradation quotidienne des esclaves (%)" />
     <string id="b1071_mcm_t_0e9795924e" text="Amplificateur d’épuisement de la main-d’œuvre" />
     <string id="b1071_mcm_t_1132bc1f96" text="Activer le bonus du gouverneur" />
-    <string id="b1071_mcm_t_12279242a5" text="Activer la capacité de survie des niveaux" />
+    <string id="b1071_mcm_t_12279242a5" text="[Obsolète] Activer la capacité de survie des niveaux" />
     <string id="b1071_mcm_t_1228e2a3ec" text="% du plafond quotidien du raid" />
     <string id="b1071_mcm_t_1856ee4e8b" text="Bonus de construction par esclave et par jour" />
     <string id="b1071_mcm_t_18656d2617" text="Lignes du grand livre par page" />
@@ -783,6 +782,7 @@
     <string id="b1071_mcm_t_472ffe7942" text="Pénalité de feu maximale (par village)" />
     <string id="b1071_mcm_t_494eb521fc" text="Durée modeste (jours)" />
     <string id="b1071_mcm_t_4a04f07333" text="Biais de paix supplémentaire par guerre majeure" />
+    <string id="b1071_mcm_t_4b9e1f7a25" text="Préréglage de survie des troupes d'élite" />
     <string id="b1071_mcm_t_4be2b0417a" text="Coût de l'or du recrutement T5" />
     <string id="b1071_mcm_t_4c7d821a43" text="Capuchon d'esclave minimum" />
     <string id="b1071_mcm_t_4f19f2d927" text="Permettre l’application de la trêve" />
@@ -919,7 +919,7 @@
     <string id="b1071_mcm_t_dd53dd11fb" text="Décalage supérieur de superposition (px)" />
     <string id="b1071_mcm_t_dda253d25a" text="Temps de recharge de paix forcée (jours)" />
     <string id="b1071_mcm_t_e01075c9d2" text="Permettre la survie du clan" />
-    <string id="b1071_mcm_t_e668bee792" text="Activer la simulation d'armure de niveau" />
+    <string id="b1071_mcm_t_e668bee792" text="[Obsolète] Activer la simulation d'armure de niveau" />
     <string id="b1071_mcm_t_e8105464cc" text="Permettre la pression sur la gouvernance" />
     <string id="b1071_mcm_t_e92571fa60" text="[Héritage] Niveaux par étape de coût de +1" />
     <string id="b1071_mcm_t_ea4106815b" text="Permettre les dividendes de la paix" />

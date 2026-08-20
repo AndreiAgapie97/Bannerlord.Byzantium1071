@@ -8,9 +8,9 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ## At a glance
 
-- **Current version:** 1.0.2.4  
-- **Target game:** Bannerlord v1.4.8 (tested)  
-- **Warsails (NavalDLC):** v1.2.8 verified compatible (optional — not required)  
+- **Current version:** 1.0.2.5  
+- **Target game:** Bannerlord v1.5.0 (tested)  
+- **Warsails (NavalDLC):** v1.3.0 verified compatible (optional — not required)  
 - **Module ID:** `Byzantium1071`
 
 ---
@@ -72,7 +72,7 @@ Campaign++ exposes a **stable public API** for third-party submods. If you're bu
 - **Forced peace** + **truce enforcement** for cooldowned war cycles
 
 ### Combat and economy realism
-- **Combat realism**: tier survivability and autoresolve armor simulation
+- **Combat realism**: elite survivability preset (0–3) for autoresolve damage and wound-vs-kill outcomes
 - **Army economics**: tier-exponential recruitment and wage scaling
 - **Garrison wage discount** with historical rationale
 

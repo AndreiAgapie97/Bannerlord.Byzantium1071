@@ -1,5 +1,4 @@
 using System;
-using Byzantium1071.Campaign.Settings;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
@@ -34,16 +33,21 @@ namespace Byzantium1071.Campaign.Patches
     ///   Garrison/siege note:
     ///     Garrison defenders often have no MobileParty (settlement party).
     ///     Vanilla base survival for them = 0% (no surgeon, no level bonus applied).
-    ///     This patch intentionally gives T6 garrison defenders +20% — elite
+    ///     This patch intentionally lifts high-tier garrison defenders too — elite
     ///     troops resist total wipe-outs even without a field surgeon.
     ///
     ///   Fast-path early exits (mirrors base method guard conditions):
     ///     • __result >= 1f  → blunt no-kill damage / VeryEasy / Easy difficulty
     ///     • character.IsHero → skip, heroes unaffected (see above)
     ///
-    /// Tier bonus (additive flat, on top of Medicine-based base rate):
-    ///   T1 = +0%   T2 = +0%   T3 = +5%
-    ///   T4 = +10%  T5 = +15%  T6+ = +20% (capped)
+    /// Tier bonus (additive flat, on top of Medicine-based base rate) comes from
+    /// B1071_CombatRealismTuning, driven by the EliteSurvivabilityPreset setting.
+    /// At the default Light preset:
+    ///   T1 = +0%   T2 = +0%   T3 = +2%
+    ///   T4 = +4%   T5 = +6%   T6+ = +8%
+    /// Preset 3 restores the pre-v1.0.2.5 curve (+5/+10/+15/+20). This bonus compounds
+    /// with B1071_TierArmorSimulationPatch, which is why both now share one preset —
+    /// see B1071_CombatRealismTuning.
     /// </summary>
     [HarmonyPatch(typeof(DefaultPartyHealingModel), nameof(DefaultPartyHealingModel.GetSurvivalChance))]
     public static class B1071_FatalityPatch
@@ -56,13 +60,10 @@ namespace Byzantium1071.Campaign.Patches
                 if (__result >= 1f) return;
                 // Skip heroes: AddFactor(50) pushes their base to ~98%, bonus always clamps to 1.0
                 if (character == null || character.IsHero) return;
-                if (!(B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EnableTierSurvivability) return;
 
-                int tier = Math.Max(1, character.Tier);
-
-                // T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6+=+20%
-                float tierBonus = Math.Max(0, tier - 2) * 0.05f;
-                if (tierBonus > 0.20f) tierBonus = 0.20f;
+                // Preset 0 (vanilla) and T1-T2 both come back as 0f.
+                float tierBonus = B1071_CombatRealismTuning.GetSurvivalBonus(character.Tier);
+                if (tierBonus == 0f) return;
 
                 __result = Math.Min(1f, __result + tierBonus);
             }

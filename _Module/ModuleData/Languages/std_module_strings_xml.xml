@@ -228,10 +228,8 @@
     <string id="b1071_qs_hint_castle_recruitment" text="Castles generate elite troops from manpower and hold T4+ prisoners for conversion." />
     <string id="b1071_qs_name_castle_access" text="Open Castle Access" />
     <string id="b1071_qs_hint_castle_access" text="Removes the vanilla clan-tier bribe requirement for entering neutral castles." />
-    <string id="b1071_qs_name_combat_survivability" text="Combat Tier Survivability" />
-    <string id="b1071_qs_hint_combat_survivability" text="Higher-tier troops are more likely to be wounded instead of killed." />
-    <string id="b1071_qs_name_combat_armor" text="Combat Tier Armor Simulation" />
-    <string id="b1071_qs_hint_combat_armor" text="Troop armor is factored into autoresolve battle outcomes." />
+    <string id="b1071_qs_name_elite_survivability" text="Elite Survivability" />
+    <string id="b1071_qs_hint_elite_survivability" text="How much tougher high-tier troops are in battles resolved for you. 0 = Vanilla, 1 = Light, 2 = Moderate, 3 = Strong." />
     <string id="b1071_qs_name_clan_survival" text="Clan Survival" />
     <string id="b1071_qs_hint_clan_survival" text="Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service." />
     <string id="b1071_qs_name_governance" text="Governance Strain" />
@@ -507,6 +505,7 @@
     <string id="b1071_mcm_h_29e86259f4" text="[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Replaces hard exhaustion thresholds with graded Low/Rising/Crisis bands and hysteresis. Produces smoother diplomatic transitions." />
     <string id="b1071_mcm_h_2c8792addb" text="Maximum total penalty applied to war declaration support in band mode. Replaces the hard -10000 override." />
+    <string id="b1071_mcm_h_2c8d5b3e41" text="How much tougher high-tier troops are in battles the game resolves for you (autoresolve, sieges you do not fight yourself). Sets reduced simulated hit damage and a higher wounded-instead-of-killed chance together. 0=Vanilla | 1=Light (T3-T6 damage -3/-6/-9/-12%, survival +2/+4/+6/+8) | 2=Moderate (-5/-10/-15/-20%, +3/+6/+9/+12) | 3=Strong (-6/-12/-18/-24%, +5/+10/+15/+20, the pre-v1.0.2.5 values). Applies to AI and player equally. Replaces the two separate tier toggles, which compounded. Default: 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Depleted pools retain a higher percentage during conquest. Prevents ping-pong border castles from being permanently zeroed by repeated ownership changes." />
     <string id="b1071_mcm_h_2ea055b805" text="At or above this exhaustion, AI kingdoms are prevented from starting new wars." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Adds small bounded randomness to volunteer production and post-shock recovery. Makes campaigns less predictable without wild swings." />
@@ -538,7 +537,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Logs detailed reasons for forced-peace and war-gate decisions." />
     <string id="b1071_mcm_h_4e8aece026" text="Master toggle. Enables the village investment (patronage) system — spend gold at villages for hearth growth, notable relations, influence, and notable power. AI lords also invest in their own villages. Default: true." />
     <string id="b1071_mcm_h_4ed533a03f" text="Maximum total bonus applied to peace decision support in band mode. Replaces the hard +200 override." />
-    <string id="b1071_mcm_h_54fe9937da" text="Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=0%, T3=-6%, T4=-12%, T5=-18%, T6=-24%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check." />
+    <string id="b1071_mcm_h_54fe9937da" text="[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility." />
     <string id="b1071_mcm_h_5582afc84b" text="Removes the clan-tier bribe (~800g) for entering castle lord's halls and allows entry to neutral castles even with slightly negative owner relations. Hostile castles and crime-based restrictions are unaffected. Needed for early-game prisoner deposit and recruitment. Default: true." />
     <string id="b1071_mcm_h_5807af4ea7" text="How long raid-related recovery penalties persist." />
     <string id="b1071_mcm_h_5921a54d23" text="Governor Steward skill boosts regen; Leadership boosts max pool." />
@@ -682,7 +681,7 @@
       <string id="b1071_mcm_h_town_vol_tier_max" text="Maximum troop tier that can be recruited from a town volunteer board. Castle elite recruitment is unaffected; this only applies to vanilla volunteer recruitment." />
       <string id="b1071_mcm_h_village_vol_tier_max" text="Maximum troop tier that can be recruited from a village volunteer board. Uses the source settlement type only; manpower still comes from the bound town or castle pool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontal offset from the left edge for the overlay root panel." />
-    <string id="b1071_mcm_h_e1a2720769" text="Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6=+20% flat bonus to survival chance on top of Medicine-based base rate." />
+    <string id="b1071_mcm_h_e1a2720769" text="[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5." />
@@ -729,7 +728,7 @@
     <string id="b1071_mcm_t_0c4f845fa2" text="Daily slave decay (%)" />
     <string id="b1071_mcm_t_0e9795924e" text="Manpower depletion amplifier" />
     <string id="b1071_mcm_t_1132bc1f96" text="Enable governor bonus" />
-    <string id="b1071_mcm_t_12279242a5" text="Enable tier survivability" />
+    <string id="b1071_mcm_t_12279242a5" text="[Legacy] Enable tier survivability" />
     <string id="b1071_mcm_t_1228e2a3ec" text="Raid daily cap %" />
     <string id="b1071_mcm_t_1856ee4e8b" text="Construction bonus per slave per day" />
     <string id="b1071_mcm_t_18656d2617" text="Ledger rows per page" />
@@ -783,6 +782,7 @@
     <string id="b1071_mcm_t_472ffe7942" text="Max hearth penalty (per village)" />
     <string id="b1071_mcm_t_494eb521fc" text="Modest duration (days)" />
     <string id="b1071_mcm_t_4a04f07333" text="Extra peace bias per major war" />
+    <string id="b1071_mcm_t_4b9e1f7a25" text="Elite survivability preset" />
     <string id="b1071_mcm_t_4be2b0417a" text="T5 recruitment gold cost" />
     <string id="b1071_mcm_t_4c7d821a43" text="Slave cap minimum" />
     <string id="b1071_mcm_t_4f19f2d927" text="Enable truce enforcement" />
@@ -919,7 +919,7 @@
     <string id="b1071_mcm_t_dd53dd11fb" text="Overlay top offset (px)" />
     <string id="b1071_mcm_t_dda253d25a" text="Forced peace cooldown (days)" />
     <string id="b1071_mcm_t_e01075c9d2" text="Enable clan survival" />
-    <string id="b1071_mcm_t_e668bee792" text="Enable tier armor simulation" />
+    <string id="b1071_mcm_t_e668bee792" text="[Legacy] Enable tier armor simulation" />
     <string id="b1071_mcm_t_e8105464cc" text="Enable governance strain" />
     <string id="b1071_mcm_t_e92571fa60" text="[Legacy] Tiers per +1 cost step" />
     <string id="b1071_mcm_t_ea4106815b" text="Enable peace dividend" />

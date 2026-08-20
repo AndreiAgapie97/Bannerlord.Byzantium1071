@@ -126,13 +126,9 @@ namespace Byzantium1071.Campaign.Settings
                         L("b1071_qs_hint_castle_access", "Removes the vanilla clan-tier bribe requirement for entering neutral castles."),
                         1, () => s.CastleOpenAccess, v => s.CastleOpenAccess = v);
 
-                    AddToggle(g, "qs_combat_survivability", L("b1071_qs_name_combat_survivability", "Combat Tier Survivability"),
-                        L("b1071_qs_hint_combat_survivability", "Higher-tier troops are more likely to be wounded instead of killed."),
-                        2, () => s.EnableTierSurvivability, v => s.EnableTierSurvivability = v);
-
-                    AddToggle(g, "qs_combat_armor", L("b1071_qs_name_combat_armor", "Combat Tier Armor Simulation"),
-                        L("b1071_qs_hint_combat_armor", "Troop armor is factored into autoresolve battle outcomes."),
-                        3, () => s.EnableTierArmorSimulation, v => s.EnableTierArmorSimulation = v);
+                    AddIntegerSetting(g, "qs_elite_survivability", L("b1071_qs_name_elite_survivability", "Elite Survivability"),
+                        L("b1071_qs_hint_elite_survivability", "How much tougher high-tier troops are in battles resolved for you. 0 = Vanilla, 1 = Light, 2 = Moderate, 3 = Strong."),
+                        2, 0, 3, () => s.EliteSurvivabilityPreset, v => s.EliteSurvivabilityPreset = v);
 
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),
                         L("b1071_qs_hint_clan_survival", "Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service."),
@@ -214,6 +210,21 @@ namespace Byzantium1071.Campaign.Settings
         {
             g.AddBool(id, name,
                 new ProxyRef<bool>(getter, setter),
+                b =>
+                {
+                    b.SetOrder(order);
+                    b.SetRequireRestart(false);
+                    b.SetHintText(hint);
+                });
+        }
+
+        private static void AddIntegerSetting(
+            MCM.Abstractions.FluentBuilder.ISettingsPropertyGroupBuilder g,
+            string id, string name, string hint, int order, int min, int max,
+            Func<int> getter, Action<int> setter)
+        {
+            g.AddInteger(id, name, min, max,
+                new ProxyRef<int>(getter, setter),
                 b =>
                 {
                     b.SetOrder(order);

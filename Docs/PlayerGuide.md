@@ -1,8 +1,8 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.4 — Everything you need to know, step by step.*
+*Version 1.0.2.5 — Everything you need to know, step by step.*
 
-**Game version:** Bannerlord **v1.4.8**. The Warsails (NavalDLC) expansion **v1.2.8** is supported but not required — Campaign++ works with or without it.
+**Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
 **Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
 
@@ -583,20 +583,28 @@ The mod makes higher-tier troops significantly more expensive:
 
 Default preset is **Moderate** for hire and upgrade costs, and **Severe** for daily wages.
 
-### Tier Survivability
+### Elite Survivability
 
-Higher-tier troops are more likely to **survive autoresolve battles** as wounded instead of killed:
+Higher-tier troops are tougher in **battles the game resolves for you** — autoresolve, and sieges you do not fight yourself. They take less damage and are more likely to come out wounded than dead, so your expensive veterans are worth the investment.
 
-| Tier | Survival Bonus | Damage Reduction |
-|------|---------------|-----------------|
-| T1 | +0% | 0% |
-| T2 | +0% | 0% |
-| T3 | +5% | -6% |
-| T4 | +10% | -12% |
-| T5 | +15% | -18% |
-| T6 | +20% | -24% |
+One setting controls how strong this is: **Combat Realism → Elite survivability preset**.
 
-This means your expensive elite troops are **less likely to die** in autoresolve — they're worth the investment.
+| Preset | What it does |
+|--------|--------------|
+| **0** | Off — vanilla behaviour |
+| **1** *(default)* | Light — a small edge for T3 and above |
+| **2** | Moderate |
+| **3** | Strong — the setting used before v1.0.2.5 |
+
+| Tier | Preset 1 | Preset 2 | Preset 3 |
+|------|----------|----------|----------|
+| T1–T2 | no change | no change | no change |
+| T3 | −3% damage, +2% survival | −5%, +3% | −6%, +5% |
+| T4 | −6% damage, +4% survival | −10%, +6% | −12%, +10% |
+| T5 | −9% damage, +6% survival | −15%, +9% | −18%, +15% |
+| T6+ | −12% damage, +8% survival | −20%, +12% | −24%, +20% |
+
+Before v1.0.2.5 this was two separate toggles that quietly stacked, which is why elite troops felt unkillable. If you preferred it that way, set the preset to **3**. Enemy lords get exactly the same treatment as you do.
 
 ---
 
@@ -616,7 +624,7 @@ The **Campaign++ - Quick Settings** tab gathers all 22 system master toggles int
 |-------|---------|
 | Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
-| Recruitment & Military | Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival |
+| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), Clan Survival |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
 | Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
 

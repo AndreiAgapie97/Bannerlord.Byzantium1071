@@ -228,10 +228,8 @@
     <string id="b1071_qs_hint_castle_recruitment" text="Burgen erzeugen Elitetruppen aus Mannstärken und halten T4+-Gefangene zur Umwandlung fest." />
     <string id="b1071_qs_name_castle_access" text="Offener Zugang zum Schloss" />
     <string id="b1071_qs_hint_castle_access" text="Entfernt die vanillemäßige Clanstufen-Bestechungsanforderung für den Zutritt zu neutralen Burgen." />
-    <string id="b1071_qs_name_combat_survivability" text="Überlebensfähigkeit der Kampfstufe" />
-    <string id="b1071_qs_hint_combat_survivability" text="Bei höherstufigen Truppen besteht ein höheres Risiko, verwundet statt getötet zu werden." />
-    <string id="b1071_qs_name_combat_armor" text="Kampfstufen-Rüstungssimulation" />
-    <string id="b1071_qs_hint_combat_armor" text="Die Truppenpanzerung wird bei der automatischen Auflösung von Gefechten berücksichtigt." />
+    <string id="b1071_qs_name_elite_survivability" text="Elite-Überlebensfähigkeit" />
+    <string id="b1071_qs_hint_elite_survivability" text="Wie widerstandsfähig höherstufige Truppen in automatisch aufgelösten Gefechten sind. 0 = Vanilla, 1 = Leicht, 2 = Mittel, 3 = Stark." />
     <string id="b1071_qs_name_clan_survival" text="Clan-Überleben" />
     <string id="b1071_qs_hint_clan_survival" text="Verhindert die Vernichtung eines Clans, wenn sein Königreich zerstört wird. Gerettete Clans suchen Söldnerdienste." />
     <string id="b1071_qs_name_governance" text="Governance-Belastung" />
@@ -507,6 +505,7 @@
     <string id="b1071_mcm_h_29e86259f4" text="[LEGACY – NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Die Personalkosten sind jetzt pauschal pro Truppe (BaseMannstärkeCostPerTroop). Aus Kompatibilitätsgründen aufbewahrt." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Ersetzt harte Erschöpfungsschwellenwerte durch abgestufte Niedrig-/Anstiegs-/Krisenbänder und Hysterese. Ermöglicht reibungslosere diplomatische Übergänge." />
     <string id="b1071_mcm_h_2c8792addb" text="Maximale Gesamtstrafe für die Kriegserklärungsunterstützung im Bandmodus. Ersetzt die harte -10000-Überschreibung." />
+    <string id="b1071_mcm_h_2c8d5b3e41" text="Wie widerstandsfähig höherstufige Truppen in Gefechten sind, die das Spiel für Sie auswürfelt (automatische Auflösung, Belagerungen, die Sie nicht selbst schlagen). Legt verringerten simulierten Trefferschaden und eine höhere Chance, verwundet statt getötet zu werden, gemeinsam fest. 0=Vanilla | 1=Leicht (Schaden T3-T6 -3/-6/-9/-12 %, Überleben +2/+4/+6/+8) | 2=Mittel (-5/-10/-15/-20 %, +3/+6/+9/+12) | 3=Stark (-6/-12/-18/-24 %, +5/+10/+15/+20, die Werte vor v1.0.2.5). Gilt gleichermaßen für KI und Spieler. Ersetzt die zwei getrennten Stufen-Schalter, die sich addierten. Standard: 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Erschöpfte Pools behalten während der Eroberung einen höheren Prozentsatz. Verhindert, dass Ping-Pong-Grenzburgen durch wiederholte Besitzerwechsel dauerhaft auf Null gesetzt werden." />
     <string id="b1071_mcm_h_2ea055b805" text="Bei oder über dieser Erschöpfung werden KI-Königreiche daran gehindert, neue Kriege zu beginnen." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Fügt der Freiwilligenproduktion und der Erholung nach einem Schock eine kleine begrenzte Zufälligkeit hinzu. Macht Kampagnen ohne wilde Schwankungen weniger vorhersehbar." />
@@ -538,7 +537,7 @@
     <string id="b1071_mcm_h_4e294753dd" text="Protokolliert detaillierte Gründe für erzwungene Friedens- und War-Gate-Entscheidungen." />
     <string id="b1071_mcm_h_4e8aece026" text="Master-Umschaltung. Aktiviert das System der Dorfinvestitionen (Mäzenatentum) – geben Sie Gold in Dörfern für Herdwachstum, bedeutende Beziehungen, Einfluss und bedeutende Macht aus. KI-Lords investieren auch in ihre eigenen Dörfer. Standard: true." />
     <string id="b1071_mcm_h_4ed533a03f" text="Maximaler Gesamtbonus für die Friedensentscheidungsunterstützung im Bandmodus. Ersetzt die harte +200-Überschreibung." />
-    <string id="b1071_mcm_h_54fe9937da" text="Höherstufige Truppen erhalten bei der automatischen Auflösung einen verringerten simulierten Trefferschaden (T2=0 %, T3=-6 %, T4=-12 %, T5=-18 %, T6=-24 %). Verringert die Wahrscheinlichkeit, dass das tödlich getroffene Tor pro Tick ausgelöst wird. Funktioniert mit der Überlebensfähigkeit der Stufe: weniger Unfallkontrollen UND bessere Überlebensrate bei jeder Kontrolle." />
+    <string id="b1071_mcm_h_54fe9937da" text="[VERALTET — NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Ersetzt durch die Voreinstellung für Elite-Überlebensfähigkeit unter Kampfrealismus, die Schadensreduzierung und Überlebensbonus gemeinsam festlegt, sodass sie sich nicht mehr addieren. Zur Speicherkompatibilität beibehalten." />
     <string id="b1071_mcm_h_5582afc84b" text="Entfernt das Bestechungsgeld der Clanstufe (~800 g) für das Betreten der Hallen des Burgherrn und ermöglicht den Zutritt zu neutralen Burgen auch bei leicht negativen Besitzerbeziehungen. Feindliche Burgen und strafrechtliche Beschränkungen bleiben davon unberührt. Wird für die Unterbringung und Rekrutierung von Gefangenen zu Beginn des Spiels benötigt. Standard: true." />
     <string id="b1071_mcm_h_5807af4ea7" text="Wie lange bestehen die Wiederherstellungsstrafen im Zusammenhang mit Razzien?" />
     <string id="b1071_mcm_h_5921a54d23" text="Die Verwalter-Fertigkeit des Gouverneurs erhöht die Regeneration; Führung steigert die maximale Poolgröße." />
@@ -682,7 +681,7 @@
         <string id="b1071_mcm_h_town_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett einer Stadt rekrutiert werden kann. Die Elite-Rekrutierung in Burgen bleibt unverändert; dies gilt nur für die Vanilla-Freiwilligenrekrutierung." />
         <string id="b1071_mcm_h_village_vol_tier_max" text="Maximale Truppenstufe, die über das Freiwilligenbrett eines Dorfes rekrutiert werden kann. Verwendet nur den Typ der Herkunftssiedlung; die Mannstärke stammt weiterhin aus dem gebundenen Stadt- oder Burgpool." />
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontaler Versatz vom linken Bildschirmrand für das Overlay-Hauptpanel." />
-    <string id="b1071_mcm_h_e1a2720769" text="Truppen höherer Stufen überleben eher als Verwundete, als dass sie bei der automatischen Auflösung sterben. T1=+0 %, T2=+0 %, T3=+5 %, T4=+10 %, T5=+15 %, T6=+20 % Pauschalbonus auf die Überlebenschance zusätzlich zum medikamentenbasierten Basissatz." />
+    <string id="b1071_mcm_h_e1a2720769" text="[VERALTET — NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Ersetzt durch die Voreinstellung für Elite-Überlebensfähigkeit unter Kampfrealismus, die Schadensreduzierung und Überlebensbonus gemeinsam festlegt, sodass sie sich nicht mehr addieren. Zur Speicherkompatibilität beibehalten." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Jeder bemerkenswerten Stadt wird durch eine Großinvestition mehr Macht verliehen. Standard: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Wie stark Königreiche gleicher Kultur bei der Zuweisung von Söldnerdiensten bevorzugt werden. Höhere Werte machen Kultur fast zur Pflicht. Bei 2,0 erzielen Königreiche gleicher Kultur eine dreifach höhere Punktzahl. Standard: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Einfluss, der durch eine bescheidene Investition erzielt wird (nur wenn das Dorf in Ihrem Königreich liegt). Standard: 2.5." />
@@ -729,7 +728,7 @@
     <string id="b1071_mcm_t_0c4f845fa2" text="Täglicher Sklavenverfall (%)" />
     <string id="b1071_mcm_t_0e9795924e" text="Verstärker zur Erschöpfung der Arbeitskraft" />
     <string id="b1071_mcm_t_1132bc1f96" text="Gouverneursbonus aktivieren" />
-    <string id="b1071_mcm_t_12279242a5" text="Aktivieren Sie die Tierüberlebensfähigkeit" />
+    <string id="b1071_mcm_t_12279242a5" text="[Veraltet] Aktivieren Sie die Tierüberlebensfähigkeit" />
     <string id="b1071_mcm_t_1228e2a3ec" text="Raid-Tagesobergrenze %" />
     <string id="b1071_mcm_t_1856ee4e8b" text="Baubonus pro Sklave und Tag" />
     <string id="b1071_mcm_t_18656d2617" text="Hauptbuchzeilen pro Seite" />
@@ -783,6 +782,7 @@
     <string id="b1071_mcm_t_472ffe7942" text="Maximale Herdstrafe (pro Dorf)" />
     <string id="b1071_mcm_t_494eb521fc" text="Bescheidene Dauer (Tage)" />
     <string id="b1071_mcm_t_4a04f07333" text="Zusätzlicher Friedensvorteil pro größerem Krieg" />
+    <string id="b1071_mcm_t_4b9e1f7a25" text="Voreinstellung für Elite-Überlebensfähigkeit" />
     <string id="b1071_mcm_t_4be2b0417a" text="Kosten für T5-Rekrutierungsgold" />
     <string id="b1071_mcm_t_4c7d821a43" text="Slave-Cap-Minimum" />
     <string id="b1071_mcm_t_4f19f2d927" text="Aktivieren Sie die Durchsetzung des Waffenstillstands" />
@@ -919,7 +919,7 @@
     <string id="b1071_mcm_t_dd53dd11fb" text="Oberer Overlay-Versatz (px)" />
     <string id="b1071_mcm_t_dda253d25a" text="Abklingzeit des erzwungenen Friedens (Tage)" />
     <string id="b1071_mcm_t_e01075c9d2" text="Ermögliche das Überleben des Clans" />
-    <string id="b1071_mcm_t_e668bee792" text="Aktivieren Sie die Simulation der Stufenpanzerung" />
+    <string id="b1071_mcm_t_e668bee792" text="[Veraltet] Aktivieren Sie die Simulation der Stufenpanzerung" />
     <string id="b1071_mcm_t_e8105464cc" text="Ermöglichen Sie Governance-Belastungen" />
     <string id="b1071_mcm_t_e92571fa60" text="[Vermächtnis] Stufen pro Kostenschritt +1" />
     <string id="b1071_mcm_t_ea4106815b" text="Ermöglichen Sie eine Friedensdividende" />

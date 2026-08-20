@@ -165,6 +165,17 @@ int manpowerMultiplier = settings.ManpowerPoolMultiplier;
 
 **Note on migration:** Settings are versioned via `LATEST_PROFILE_VERSION`. Existing player profiles auto-migrate on first load; your submod code should assume current settings are **at least** the latest version.
 
+**Retired properties.** Property names are never removed (see the stability guarantees below), but a property can stop being read. Retired properties stay declared so existing MCM configs still deserialize, and they appear in the **Legacy** settings group with a `[LEGACY — NOT USED]` hint. Do not branch on them.
+
+| Property | Retired in | Read this instead |
+|---|---|---|
+| `TiersPerExtraCost` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
+| `CostMultiplierPercent` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
+| `EnableTierSurvivability` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
+| `EnableTierArmorSimulation` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
+
+`EliteSurvivabilityPreset` drives both autoresolve tier systems at once — damage reduction and the wound-vs-kill bonus. `0` disables both; `1` (default) through `3` scale them together. The curve itself lives in `B1071_CombatRealismTuning`, which is `internal` — read the preset, not the tables.
+
 ---
 
 ## Campaign Events
