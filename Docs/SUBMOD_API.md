@@ -57,13 +57,14 @@ if (behavior != null && behavior.GetManpowerPool(mySettlement, out int cur, out 
 **Public read-only methods:**
 - `GetRecruitablePrisoners(Settlement castle)` → `List<(CharacterObject troop, int count, int days_held, int gold_cost)>` — list all ready-to-recruit prisoners at a castle
 - `GetElitePoolCount(Settlement castle, CharacterObject troop)` → `int` — retrieve elite pool stock for one troop at a castle
+- `IsLowTierEnslavementAvailable(Settlement castle)` → `bool` — whether low-tier prisoners held at this castle can be processed at all: the Slave Economy is enabled **and** the castle's faction owns a town to sell to. Deliberately does not test the current slave price, which is a temporary condition. Returns `false` for a null settlement. *(v1.0.2.4)*
 
 **Intended use:** Query castle recruitment state for overlay/reporting, prison processing logic, or allied settlement analysis
 
 **Off-limits:**
 - Prison roster mutation (use Bannerlord's prisoner actions)
 - `_elitePool`, `_prisonerDaysHeld`, `_depositorTracking` dicts (internal state)
-- `AutoEnslaveLowTierPrisoners`, `RegenerateElitePool` (called from daily tick)
+- `AutoEnslaveLowTierPrisoners`, `DrainStrandedLowTierPrisoners`, `RegenerateElitePool` (called from daily tick)
 
 **Example:**
 ```csharp

@@ -454,6 +454,10 @@ namespace Byzantium1071.Campaign.Behaviors
             UI.B1071_OverlayController.Reset();
             CleanupInactiveCasualties();
 
+            // Troop trees are static per session but differ between module sets, so the
+            // cached child→parent index must not survive into a differently-modded game.
+            B1071_RecruitmentTierGateHelper.ResetTroopParentIndex();
+
             foreach (Settlement settlement in Settlement.All)
             {
                 if (settlement == null || settlement.IsHideout)
@@ -1655,6 +1659,13 @@ namespace Byzantium1071.Campaign.Behaviors
             if (recruiterHero == null || recruitmentSettlement == null || troop == null) return;
             if (amount <= 0) return;
             if (recruitmentSettlement.IsHideout) return;
+
+            // Tavern mercenaries are wandering soldiers, not levies raised from the local
+            // population, so they do not draw on the settlement's manpower pool. The gate
+            // patch lets them through without checking the pool; consuming from it here
+            // would half-apply that exemption for AI parties. Player hires already return
+            // below, so this only changes the AI path.
+            if (B1071_AiRecruitmentManpowerGatePatch.IsProcessingTavernMercenary) return;
 
             bool isPlayer = recruiterHero == Hero.MainHero;
 

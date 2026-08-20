@@ -1,5 +1,34 @@
 # Campaign++ — Changelog
 
+## [1.0.2.4] — 2026-08-20
+
+### Fix — Villages Filling With Unrecruitable Volunteers (Troop Overhaul Mods)
+
+**Reported on Nexus by a De Re Militari player: villages filling up with tier-4 volunteers that could not be recruited and never got replaced.**
+
+- **Root cause:** The volunteer sanitizer replaced an over-cap volunteer only when it could find a legal ancestor by walking *forward* from `culture.BasicTroop` or `culture.EliteBasicTroop`, and otherwise left the slot untouched. Troop overhauls such as De Re Militari ship branches that are not rooted there — one that runs T4→T6, for instance — so the forward search can never reach them. Because vanilla only ever *upgrades* a non-null volunteer slot and never clears or downgrades one, an over-cap troop that the recruit-time tier gate refuses could never leave the board. The slot was dead permanently.
+- **Fix:** Added a fallback chain that always yields something legal: a reverse child-to-parent index over `CharacterObject.All` to reach branches disconnected from the culture roots, then the troop's own culture root, then the settlement's culture root, and finally clearing the slot for vanilla to reseed. The index is cached per session and reset at session launch, so a different module set never reuses a stale tree.
+- **Clearing a slot is safe:** `RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement` refills any null slot with `GetBasicVolunteer(notable)` on its next daily roll. The previous code avoided clearing on the belief that it destroyed the volunteer permanently; the opposite is true.
+- **Existing saves recover on load** — the sanitizer already runs across all settlements at session launch, so affected villages clear themselves without a new campaign.
+
+### Fix — Tavern Mercenary Hiring Silently Failing
+
+**Hiring mercenaries from a tavern could take no gold and add no troops, with no message explaining why.**
+
+- **Root cause:** `B1071_AiRecruitmentManpowerGatePatch` applied the settlement manpower gate to every `RecruitingDetail`, including `MercenaryFromTavern`. Once a town's manpower pool ran dry — precisely what a long war does — the tavern hire dialogue silently did nothing.
+- **Fix:** Tavern mercenaries are wandering soldiers being hired rather than levies raised from the local population, so they are now exempt from the manpower pool entirely, matching the exemption the tier gate already had. This also removes an inconsistency: the `town_backstreet` "Recruit N mercenaries" menu option bypasses `ApplyInternal` and was never gated in the first place.
+- **Pool consumption fixed too:** `ApplyInternal` fires `OnTroopRecruited` on its way out, which would still have drained the pool for the very hires just declared exempt. The patch now flags the tavern path so `B1071_ManpowerBehavior` skips consumption for AI parties as well, and a Harmony finalizer clears the flag even if `ApplyInternal` throws.
+
+### Fix — Low-Tier Prisoners Stranding in AI Castle Dungeons
+
+**Castles held by AI kingdoms could silently fill with T1–T3 prisoners they had no way to release, permanently disabling castle recruitment at that settlement.**
+
+- **Root cause:** `B1071_CastlePrisonerRetentionPatch` suppresses vanilla's `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` at every castle so T4+ prisoners survive their conversion period. That routine is also the only thing that drains T1–T3 prisoners from an AI castle, and Campaign++'s replacement for it — `AutoEnslaveLowTierPrisoners` — cannot run when the Slave Economy is disabled or the castle's kingdom holds no town to sell to. The dungeon then fills to `PrisonerSizeLimit`, every deposit route refuses on `room <= 0`, and castle recruitment at that settlement stops for the rest of the campaign.
+- **Fix — safety-net drain:** Added `DrainStrandedLowTierPrisoners`. When the enslavement pipeline is unavailable at a castle, vanilla's own 10%/day sale is restored for exactly the prisoners that pipeline was meant to handle. It uses the same `SellPrisonersAction.ApplyForSelectedPrisoners(party, null, roster)` call and the same `MBRandom.RoundRandomized(count * 0.1f)` rate as the suppressed vanilla method, so the ransom is paid into the castle treasury exactly as it would be without the mod. The rate is applied to the stranded low-tier subset rather than to `TotalRegulars`, so **T4+ prisoners awaiting conversion are never caught in it** — strictly gentler than the vanilla call being suppressed.
+- **Player-owned castles are excluded:** Vanilla auto-sells only the overflow above `PrisonerSizeLimit` at player settlements — below the cap the player is expected to escort prisoners to a town and ransom them there. That route stays open regardless of the Slave Economy setting, so there is nothing to restore, and auto-ransoming the player's own prisoners would remove a choice vanilla deliberately gives them. **Your castles behave exactly as before.**
+- **Tightened deposit guard:** `B1071_CastlePrisonerDepositPatch` previously skipped T1–T3 only when the Slave Economy was switched off. A kingdom with the Slave Economy on but no remaining towns would still accept prisoners it could never sell. Both conditions are now checked through the new `IsLowTierEnslavementAvailable` helper, which the drain uses as well, so the two paths can never disagree. **AI lords still deposit and profit from T1–T3 normally whenever the sale is actually possible** — the skip only fires when it isn't, and the lord keeps the prisoners to ransom at the next town instead.
+- **No change to normal play:** With the Slave Economy enabled and a kingdom that owns at least one town — the default configuration — none of the above triggers. This only affects the failure cases.
+
 ## [1.0.2.3] — 2026-08-17
 
 ### Compatibility — Bannerlord 1.4.8 / Warsails 1.2.8 Verified

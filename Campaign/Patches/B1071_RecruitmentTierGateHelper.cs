@@ -88,14 +88,26 @@ namespace Byzantium1071.Campaign.Patches
                     if (replacement == volunteer)
                         continue;
 
-                    // If no legal ancestor was found (null), the troop likely belongs to
-                    // a modded troop tree whose root is not culture.BasicTroop/EliteBasicTroop
-                    // (e.g., Retinues mod custom trees). Nulling the slot would permanently
-                    // destroy the volunteer. Instead, leave it in place — the recruit-time
-                    // tier gate still blocks the player/AI from actually recruiting it.
+                    // No ancestor was reachable by walking forward from the culture roots.
+                    // Troop overhauls (De Re Militari and similar) contain branches whose
+                    // root is not culture.BasicTroop/EliteBasicTroop — a branch that runs
+                    // T4→T6, say — so the forward search can never reach them.
+                    //
+                    // Fall back progressively, and clear the slot if nothing legal exists.
+                    // Clearing is safe and self-healing: vanilla
+                    // RecruitmentCampaignBehavior.UpdateVolunteersOfNotablesInSettlement
+                    // refills any null slot with GetBasicVolunteer(notable) on its next
+                    // daily roll.
+                    //
+                    // Leaving the over-cap troop in place is what is NOT safe. Vanilla only
+                    // ever UPGRADES a non-null slot and never clears or downgrades one, so
+                    // an over-cap troop the recruit-time gate refuses can never leave the
+                    // board: the slot is dead forever and the village silently fills with
+                    // unrecruitable volunteers.
                     if (replacement == null)
-                        continue;
+                        replacement = FindFallbackVolunteer(volunteer, settlement, tierCap);
 
+                    // A null replacement here deliberately empties the slot for vanilla to reseed.
                     notable.VolunteerTypes[i] = replacement;
                     changed = true;
                 }
@@ -231,6 +243,140 @@ namespace Byzantium1071.Campaign.Patches
 
             if (culture.EliteBasicTroop != null && culture.EliteBasicTroop != culture.BasicTroop)
                 yield return culture.EliteBasicTroop;
+        }
+
+        // ── Fallback chain for troops unreachable from the culture roots ──────────
+        //
+        // FindHighestAllowedAncestor only sees troops on a forward path from
+        // culture.BasicTroop / culture.EliteBasicTroop. Overhaul mods routinely ship
+        // branches that are not rooted there, and vanilla itself would trip this if a
+        // culture's EliteBasicTroop ever sat above the configured cap. Every step here
+        // exists so the caller always has something legal to write into the slot.
+
+        private static CharacterObject? FindFallbackVolunteer(CharacterObject troop, Settlement settlement, int tierCap)
+        {
+            // 1. Walk UP the tree via a reverse parent index. This reaches branches that
+            //    are disconnected from the culture roots, which the forward search cannot.
+            CharacterObject? ancestor = FindHighestAllowedAncestorByReverseIndex(troop, tierCap);
+            if (ancestor != null)
+                return ancestor;
+
+            // 2. The troop's own culture root, when it is itself within the cap.
+            CharacterObject? root = SelectBasicRootWithinCap(troop.Culture, tierCap);
+            if (root != null)
+                return root;
+
+            // 3. The settlement's culture root. Covers troops whose Culture is not the
+            //    settlement's — some overhauls park troops on shared or neutral cultures.
+            root = SelectBasicRootWithinCap(settlement?.Culture, tierCap);
+            if (root != null)
+                return root;
+
+            // 4. Nothing legal exists. Returning null clears the slot; vanilla reseeds it.
+            return null;
+        }
+
+        private static CharacterObject? SelectBasicRootWithinCap(CultureObject? culture, int tierCap)
+        {
+            if (culture == null)
+                return null;
+
+            CharacterObject? best = null;
+            foreach (CharacterObject root in EnumerateVolunteerRoots(culture))
+            {
+                if (root == null || root.IsHero || root.Tier > tierCap)
+                    continue;
+
+                if (best == null || root.Tier > best.Tier)
+                    best = root;
+            }
+
+            return best;
+        }
+
+        private static CharacterObject? FindHighestAllowedAncestorByReverseIndex(CharacterObject troop, int tierCap)
+        {
+            Dictionary<CharacterObject, List<CharacterObject>> index;
+            try
+            {
+                index = GetTroopParentIndex();
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][TierGate] Could not build troop parent index: {ex.Message}");
+                return null;
+            }
+
+            var visited = new HashSet<CharacterObject> { troop };
+            var queue = new Queue<CharacterObject>();
+            queue.Enqueue(troop);
+
+            CharacterObject? best = null;
+            while (queue.Count > 0)
+            {
+                CharacterObject current = queue.Dequeue();
+                if (!index.TryGetValue(current, out List<CharacterObject>? parents))
+                    continue;
+
+                foreach (CharacterObject parent in parents)
+                {
+                    if (parent == null || !visited.Add(parent))
+                        continue;
+
+                    if (!parent.IsHero && parent.Tier <= tierCap)
+                    {
+                        if (best == null || parent.Tier > best.Tier)
+                            best = parent;
+
+                        // This ancestor already fits; anything above it is lower tier,
+                        // so there is nothing better to find further up this line.
+                        continue;
+                    }
+
+                    queue.Enqueue(parent);
+                }
+            }
+
+            return best;
+        }
+
+        // child → parents, built once per campaign session from static troop data.
+        private static Dictionary<CharacterObject, List<CharacterObject>>? _troopParentIndex;
+
+        /// <summary>
+        /// Drops the cached troop parent index. Called on session launch so a different
+        /// module set (and therefore a different troop tree) never reuses a stale index.
+        /// </summary>
+        internal static void ResetTroopParentIndex() => _troopParentIndex = null;
+
+        private static Dictionary<CharacterObject, List<CharacterObject>> GetTroopParentIndex()
+        {
+            if (_troopParentIndex != null)
+                return _troopParentIndex;
+
+            var index = new Dictionary<CharacterObject, List<CharacterObject>>();
+            foreach (CharacterObject character in CharacterObject.All)
+            {
+                if (character?.UpgradeTargets == null)
+                    continue;
+
+                foreach (CharacterObject child in character.UpgradeTargets)
+                {
+                    if (child == null)
+                        continue;
+
+                    if (!index.TryGetValue(child, out List<CharacterObject>? parents))
+                    {
+                        parents = new List<CharacterObject>();
+                        index[child] = parents;
+                    }
+
+                    parents.Add(character);
+                }
+            }
+
+            _troopParentIndex = index;
+            return index;
         }
 
         private static CharacterObject? FindHighestAllowedAncestorOnPath(CharacterObject root, CharacterObject target, int tierCap)

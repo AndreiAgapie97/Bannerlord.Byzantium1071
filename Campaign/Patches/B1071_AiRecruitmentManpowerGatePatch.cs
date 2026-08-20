@@ -18,6 +18,14 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(RecruitmentCampaignBehavior), "ApplyInternal")]
     public static class B1071_AiRecruitmentManpowerGatePatch
     {
+        /// <summary>
+        /// True only while a tavern-mercenary hire is being applied. ApplyInternal fires
+        /// OnTroopRecruited synchronously before it returns, so B1071_ManpowerBehavior can
+        /// read this to tell tavern hires apart from levy recruitment and skip consuming the
+        /// settlement pool. Cleared by the finalizer even if ApplyInternal throws.
+        /// </summary>
+        internal static bool IsProcessingTavernMercenary { get; private set; }
+
         private static bool Prefix(
             MobileParty side1Party,
             Settlement settlement,
@@ -31,6 +39,23 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (side1Party == null || troop == null || number <= 0)
                     return true;
+
+                // Tavern mercenaries are wandering soldiers being hired, not levies raised
+                // from the local population, so they neither consume nor are blocked by the
+                // settlement manpower pool. This must be checked before the manpower gate
+                // below: gating it made the tavern hire dialogue silently no-op (no gold
+                // taken, no troops added) once a town's pool ran dry mid-campaign, which is
+                // exactly when a long war drains it. The tier gate below already exempts
+                // this path implicitly, because tavern hires pass individual == null.
+                if (detail == RecruitmentCampaignBehavior.RecruitingDetail.MercenaryFromTavern)
+                {
+                    // Flag it so the manpower behaviour's OnTroopRecruited listener — which
+                    // ApplyInternal fires on its way out — skips consumption for AI parties too.
+                    // Without this the pool would still be drained by the very hires we just
+                    // declared exempt (the player path already returns early on its own).
+                    IsProcessingTavernMercenary = true;
+                    return true;
+                }
 
                 B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
                 if (behavior == null)
@@ -117,6 +142,13 @@ namespace Byzantium1071.Campaign.Patches
                 return false;
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] AiRecruitmentManpowerGatePatch error: {ex}"); return true; }
+        }
+
+        // Runs after ApplyInternal whether it completed or threw, so the flag can never leak
+        // into the next recruitment and silently exempt it.
+        private static void Finalizer()
+        {
+            IsProcessingTavernMercenary = false;
         }
     }
 }

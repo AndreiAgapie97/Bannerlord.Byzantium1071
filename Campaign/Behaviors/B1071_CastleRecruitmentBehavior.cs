@@ -418,6 +418,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // 1. Auto-enslave low-tier prisoners
             AutoEnslaveLowTierPrisoners(settlement);
 
+            // 1b. Safety net: release low-tier prisoners nothing can ever process.
+            DrainStrandedLowTierPrisoners(settlement);
+
             // 2. Track / increment days for high-tier prisoners
             TrackHighTierPrisonerDays(settlement);
 
@@ -583,6 +586,115 @@ namespace Byzantium1071.Campaign.Behaviors
                         .ToString(),
                     new Color(0.9f, 0.7f, 0.1f))); // Yellow — warning, not error.
             }
+        }
+
+        /// <summary>
+        /// True when low-tier prisoners held at this castle can actually be processed by
+        /// <see cref="AutoEnslaveLowTierPrisoners"/>: the slave economy is on, the slave
+        /// trade good exists, and the castle's faction owns a town to sell them to.
+        ///
+        /// Deliberately does NOT test the slave price. A town that is merely broke, or
+        /// whose price dipped after a large sale, is a temporary state that resolves
+        /// itself — AutoEnslaveLowTierPrisoners already warns and retries tomorrow. Only
+        /// the two permanent conditions count as unavailable here.
+        /// </summary>
+        public bool IsLowTierEnslavementAvailable(Settlement castle)
+        {
+            if (castle == null) return false;
+            if (!Settings.EnableSlaveEconomy || _slaveItem == null) return false;
+            return FindNearestTown(castle)?.Town != null;
+        }
+
+        /// <summary>
+        /// Sells off low-tier prisoners that no system can ever remove.
+        ///
+        /// Prisoners at or below CastlePrisonerAutoEnslaveTierMax have exactly one exit
+        /// from a castle dungeon: <see cref="AutoEnslaveLowTierPrisoners"/>.
+        /// TrackHighTierPrisonerDays skips them, IsReadyForRecruitment refuses them (so
+        /// neither the player, AI lords, nor GarrisonAbsorbPrisoners will take them), and
+        /// B1071_CastlePrisonerRetentionPatch blocks vanilla's daily sale. When the
+        /// enslavement pipeline is unavailable — slave economy off, or the castle's
+        /// faction owns no town — that single exit closes and they stay forever, filling
+        /// the dungeon to PrisonerSizeLimit. Every deposit route then refuses
+        /// (HandleCastleDeposit returns on room &lt;= 0, CastleDepositPrisonersCondition
+        /// disables the menu option) and castle recruitment at that settlement is dead.
+        ///
+        /// This is a straight restoration of what our own retention patch removed:
+        /// vanilla's PartiesSellPrisonerCampaignBehavior.DailyTickSettlement sells 10%
+        /// of an AI castle's prisoners every day, and we suppress it. Same method, same
+        /// rate, same destination — ransom gold into the castle treasury. T4+ retention
+        /// is untouched, and player-owned castles are excluded (see below).
+        /// </summary>
+        private void DrainStrandedLowTierPrisoners(Settlement settlement)
+        {
+            // Player-owned castles are deliberately left alone. Vanilla auto-sells only
+            // the overflow above PrisonerSizeLimit at player settlements; below the cap
+            // the player is expected to escort prisoners to a town and ransom them
+            // there. That escape hatch stays open whether or not the enslavement
+            // pipeline works, so there is nothing here to restore and auto-ransoming
+            // the player's own prisoners would take away a choice vanilla gives them.
+            // AI lords have no such hatch: the 10%/day below is their only drain.
+            if (settlement.Owner == Hero.MainHero) return;
+
+            TroopRoster? prisonRoster = settlement.Party?.PrisonRoster;
+            if (prisonRoster == null || prisonRoster.TotalRegulars <= 0) return;
+
+            int enslaveTierMax = Settings.CastlePrisonerAutoEnslaveTierMax;
+
+            var stranded = prisonRoster.GetTroopRoster()
+                .Where(e => e.Character != null
+                         && !e.Character.IsHero
+                         && e.Number > 0
+                         && e.Character.Tier <= enslaveTierMax)
+                .ToList();
+            if (stranded.Count == 0) return;
+
+            // Cheapest checks first: the town scan below only runs when low-tier
+            // prisoners are actually sitting in a castle dungeon, already the rare case.
+            if (IsLowTierEnslavementAvailable(settlement)) return;
+
+            int strandedTotal = stranded.Sum(e => e.Number);
+
+            // Vanilla's AI-castle rate, verbatim. Applied to the stranded subset rather
+            // than to TotalRegulars so T4+ prisoners awaiting conversion are never
+            // caught in it — strictly gentler than the vanilla call we suppress.
+            // RoundRandomized floors and then adds 1 with probability equal to the
+            // fraction, so even a single stranded prisoner drains eventually (~10%/day)
+            // without needing a floor of our own.
+            int toDrain = Math.Min(strandedTotal, MBRandom.RoundRandomized(strandedTotal * 0.1f));
+            if (toDrain <= 0) return;
+
+            TroopRoster sold = TroopRoster.CreateDummyTroopRoster();
+            string castleId = settlement.StringId;
+            int drained = 0;
+
+            foreach (var element in stranded)
+            {
+                if (drained >= toDrain) break;
+                int take = Math.Min(element.Number, toDrain - drained);
+                if (take <= 0) continue;
+
+                sold.AddToCounts(element.Character, take);
+
+                // Release the consignment bookkeeping for prisoners that are leaving.
+                // Nothing else would ever consume these entries: the only consumer at
+                // these tiers is the enslavement path, which is exactly what is missing.
+                ConsumeDepositorEntries(castleId, element.Character.StringId, take);
+                ConsumeEnslavementXpEntries(castleId, element.Character.StringId, take);
+
+                drained += take;
+            }
+
+            if (drained <= 0) return;
+
+            // Vanilla's own daily-tick sale path, with the same null buyer it uses: the
+            // ransom is paid into the castle's treasury. No player-facing message — this
+            // only ever runs at AI castles, where vanilla is silent about it too.
+            SellPrisonersAction.ApplyForSelectedPrisoners(settlement.Party, null, sold);
+
+            B1071_VerboseLog.Log("CastleRecruitment",
+                $"DrainStranded {settlement.Name}: released {drained}/{strandedTotal} " +
+                $"T1-T{enslaveTierMax} prisoner(s) - no enslavement pipeline available.");
         }
 
         // ── 2. Track high-tier prisoner days ──────────────────────────────────────

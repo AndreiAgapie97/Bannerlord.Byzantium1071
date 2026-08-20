@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.2.3
+**Version:** 1.0.2.4
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.4.8; Warsails/NavalDLC v1.2.8 verified)  
 **Mod ID:** `Byzantium1071`
 
@@ -190,7 +190,25 @@ Before manpower is even checked, the mod resolves the source settlement type of 
 - Towns use `TownVolunteerTierMax` (default T4)
 - Castles are ignored here because castle recruitment is handled by the separate castle recruitment system
 
-If a troop is above the relevant cap, the volunteer roster is sanitized back down to the highest legal ancestor from that culture tree (or cleared if no safe ancestor exists). This prevents over-cap troops from occupying notable slots forever. The recruit-time gates still remain as a defensive fallback for injected or stale UI entries.
+If a troop is above the relevant cap, the volunteer roster is sanitized back down to a legal troop. This prevents over-cap troops from occupying notable slots forever. The recruit-time gates still remain as a defensive fallback for injected or stale UI entries.
+
+**Why sanitizing must always succeed:** vanilla's `UpdateVolunteersOfNotablesInSettlement` only ever *upgrades* a non-null volunteer slot — it never clears or downgrades one. So an over-cap troop that the recruit-time gate refuses can never leave the board on its own. If the sanitizer gives up on a slot, that slot is dead permanently and the settlement slowly fills with volunteers nobody can recruit.
+
+**Resolution order (v1.0.2.4).** `FindHighestAllowedAncestor` walks *forward* from `culture.BasicTroop` / `culture.EliteBasicTroop`, so it only sees troops on a path from the culture roots. Troop overhaul mods routinely ship branches that are not rooted there — De Re Militari has branches running T4→T6, for instance — and the forward search can never reach them. `FindFallbackVolunteer` therefore continues:
+
+1. **Reverse parent index.** A child→parent index built over `CharacterObject.All` lets the sanitizer walk *up* from the over-cap troop, reaching branches disconnected from the culture roots. The index is cached per session and reset at session launch, so a different module set never reuses a stale tree.
+2. **The troop's own culture root**, when it is itself within the cap.
+3. **The settlement's culture root** — covers troops whose `Culture` is not the settlement's, which some overhauls do by parking troops on shared or neutral cultures.
+4. **Clear the slot.** Safe and self-healing: vanilla refills any null slot with `GetBasicVolunteer(notable)` on its next daily roll.
+
+Existing saves recover on load, since the sanitizer already runs across all settlements at session launch. **Rebuild Recruitment Sources** in the Compatibility tab forces the same pass mid-session.
+
+### Tavern mercenaries (exempt)
+Hiring mercenaries from a tavern is exempt from the manpower pool entirely. They are wandering soldiers being hired, not levies raised from the local population, so they neither consume the pool nor are blocked by it.
+
+This is checked in `B1071_AiRecruitmentManpowerGatePatch` **before** the manpower gate, on `RecruitingDetail.MercenaryFromTavern`. Gating them made the tavern hire dialogue silently no-op — no gold taken, no troops added — once a town's pool ran dry, which is exactly what a long war does. It also removes an inconsistency: the `town_backstreet` "Recruit N mercenaries" menu option bypasses `ApplyInternal` and was never gated at all.
+
+Because `ApplyInternal` fires `OnTroopRecruited` on its way out, the patch also raises an `IsProcessingTavernMercenary` flag so `B1071_ManpowerBehavior` skips *consumption* for AI parties too — otherwise the pool would still be drained by the very hires just declared exempt. A Harmony `Finalizer` clears the flag even if `ApplyInternal` throws, so it can never leak into the next recruitment. The tier gate already exempted this path implicitly, since tavern hires pass `individual == null`.
 
 ### Per-troop gate (single recruit)
 Before each troop hire, the mod checks:
@@ -315,6 +333,15 @@ T1–T3 prisoners at castles are automatically enslaved to the nearest town's sl
 - **Deposit confirmation:** When the player deposits prisoners at their own castle, a confirmation message appears: "Deposited X prisoners at [Castle]. Low-tier will be auto-enslaved; elites held for conversion."
 
 **Verbose logging:** Each castle's daily enslavement is logged with: candidate count, processed count, target town, slave price, town gold remaining, and a TOWN BROKE flag when the affordability gate halts processing.
+
+**Availability gate (v1.0.2.4):** `IsLowTierEnslavementAvailable(castle)` is the single source of truth for whether the enslavement pipeline can run at a given castle. It requires two *permanent* conditions: the Slave Economy is enabled, and `FindNearestTown` resolves a same-faction town to sell to. It deliberately does **not** test the slave price — a broke town, or a price that dipped after a large sale, is a temporary state the affordability gate above already handles by retrying tomorrow.
+
+**Stranded-prisoner safety net (v1.0.2.4):** `DrainStrandedLowTierPrisoners` runs immediately after `AutoEnslaveLowTierPrisoners` in the daily tick. When `IsLowTierEnslavementAvailable` returns false, T1–T3 prisoners have no exit from a castle dungeon at all — `TrackHighTierPrisonerDays` skips them, `IsReadyForRecruitment` refuses them, and `B1071_CastlePrisonerRetentionPatch` blocks vanilla's daily sale — so the dungeon saturates at `PrisonerSizeLimit` and every deposit route refuses on `room <= 0`, killing castle recruitment at that settlement. The safety net restores vanilla's suppressed sale for exactly those prisoners:
+- Same call as vanilla: `SellPrisonersAction.ApplyForSelectedPrisoners(settlement.Party, null, roster)` — null buyer, ransom into the castle treasury.
+- Same rate as vanilla: `MBRandom.RoundRandomized(count * 0.1f)`, which floors and then adds 1 with probability equal to the fraction, so even a single stranded prisoner drains eventually without needing an artificial floor.
+- Applied to the **stranded low-tier subset only**, not `TotalRegulars` — T4+ prisoners awaiting conversion are never touched, making this strictly gentler than the vanilla call being suppressed.
+- Depositor and Roguery-XP FIFO entries for the released prisoners are consumed, since the enslavement path that would normally drain them is exactly what is missing.
+- **Player-owned castles are excluded.** Vanilla sells only the overflow above `PrisonerSizeLimit` at player settlements; below the cap the player escorts prisoners to a town and ransoms them there. That route is unaffected by the Slave Economy setting, so there is nothing to restore and auto-ransoming the player's prisoners would remove a vanilla choice.
 
 ### Access Rules
 

@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.3 — Everything you need to know, step by step.*
+*Version 1.0.2.4 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.4.8**. The Warsails (NavalDLC) expansion **v1.2.8** is supported but not required — Campaign++ works with or without it.
 
@@ -115,6 +115,8 @@ Every town and castle has a **manpower pool**. This is the population available 
 | **Battles** | Each casualty drains 0.5 MP from their home pool |
 | **Settlement conquest** | Retains only 50% of the current pool |
 
+> **Tavern mercenaries are free of manpower.** Hiring mercenaries in a tavern costs no manpower and is never blocked by an empty pool — they are wandering soldiers, not local levies. (Before v1.0.2.4 they were gated, which made the hire silently do nothing once a town's pool ran dry.)
+
 ### What Regenerates Manpower
 
 Pools regenerate **daily**, scaled by:
@@ -162,7 +164,8 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 - **Depleted pools = empty recruitment boards.** If a village's bound town/castle has 0 manpower, you'll find no volunteers.
 - **Village and town boards can have different tier caps.** By default, villages stop at T2 and towns stop at T4.
 - **The cap uses the source settlement type only.** A village still draws manpower from its bound town/castle pool, but the troop-tier cap is determined by the village board itself.
-- **Illegal slots are sanitized at the roster level.** Existing over-cap volunteers are downgraded to the highest legal ancestor for that culture tree, or cleared if no safe ancestor exists, so they do not clog the board forever.
+- **Illegal slots are sanitized at the roster level.** Existing over-cap volunteers are downgraded to a legal troop of that culture, or the slot is emptied for the game to refill on its next daily roll, so they do not clog the board forever.
+- **Troop overhaul mods are handled.** Overhauls such as **De Re Militari** contain troop branches that do not start at the culture's basic troop — a branch running T4→T6, for example. Campaign++ now walks *up* those branches as well as down from the roots, so an over-cap volunteer always gets replaced instead of sitting in the slot forever. If you were on an earlier version and have villages full of volunteers you cannot recruit, **they clear themselves when you load the save** — no new campaign needed.
 - **Recruit All and Done are still checked too.** The button/path gates remain as a defensive fallback if another mod injects an over-cap troop into the screen.
 - **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
@@ -317,6 +320,7 @@ You only receive **influence** for donating prisoners when the castle belongs to
 - **T4+ prisoners**: Held for conversion. Once ready, whoever recruits them pays gold. You receive your depositor's share.
 - **Garrison absorption**: The castle garrison absorbs 1 ready prisoner/day automatically. The castle owner pays you your share.
 - **Affordability gate**: The nearest town must have enough gold to buy each slave. If the town runs out, remaining prisoners stay in the dungeon until the next day.
+- **When enslavement isn't possible at all**: If the Slave Economy is switched off, or the castle's kingdom no longer holds a town to sell to, T1–T3 prisoners are **left with you instead of being deposited** — there would be no way out of that dungeon for them. Ransom them at a town as normal. T4+ deposits are unaffected, and this never triggers in a normal campaign with the Slave Economy on.
 
 You'll see notification messages in the game log:
 

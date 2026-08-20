@@ -105,13 +105,19 @@ namespace Byzantium1071.Campaign.Patches
             var toDeposit = new List<(CharacterObject Troop, int Count, int Wounded)>();
             int totalQueued = 0;
 
-            // When slave economy is disabled, T1-T3 prisoners have no processing
-            // pipeline at castles: AutoEnslaveLowTierPrisoners exits early (no slave
-            // economy), TrackHighTierPrisonerDays skips them (below tier threshold),
-            // and the retention patch blocks vanilla's 10% daily sell. They'd be
-            // permanently stuck. Skip T1-T3 so they stay with the lord — vanilla
-            // sells them for ransom gold at the next town.
-            bool slaveEconEnabled = settings.EnableSlaveEconomy;
+            // T1-T3 prisoners have exactly one processing pipeline at castles:
+            // AutoEnslaveLowTierPrisoners. TrackHighTierPrisonerDays skips them (below
+            // tier threshold), IsReadyForRecruitment refuses them, and the retention
+            // patch blocks vanilla's 10% daily sell. If that one pipeline cannot run
+            // they'd be permanently stuck, so skip them here and let them stay with the
+            // lord — vanilla sells them for ransom gold at the next town.
+            //
+            // Slave economy being enabled is not sufficient: the castle's faction must
+            // also own a town to sell to, or the pipeline can never run at this castle.
+            // IsLowTierEnslavementAvailable checks both. A null Instance is treated as
+            // unavailable, which fails towards leaving prisoners with the lord.
+            bool lowTierProcessable =
+                B1071_CastleRecruitmentBehavior.Instance?.IsLowTierEnslavementAvailable(settlement) == true;
             int enslaveTierMax = settings.CastlePrisonerAutoEnslaveTierMax;
 
             foreach (TroopRosterElement element in partyPrison.GetTroopRoster())
@@ -119,8 +125,8 @@ namespace Byzantium1071.Campaign.Patches
                 if (element.Character == null || element.Character.IsHero || element.Number <= 0)
                     continue;
 
-                // Skip T1-T3 when slave economy is OFF — no processing pipeline.
-                if (!slaveEconEnabled && element.Character.Tier <= enslaveTierMax)
+                // Skip T1-T3 when nothing here could ever process them.
+                if (!lowTierProcessable && element.Character.Tier <= enslaveTierMax)
                     continue;
 
                 // Clamp by remaining room.
