@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.5 — Everything you need to know, step by step.*
+*Version 1.0.2.6 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
@@ -130,6 +130,7 @@ Pools regenerate **daily**, scaled by:
 - **Slaves in town market** (each slave adds construction/prosperity bonuses; excess above cap are manumitted into MP)
 - **Castle minimum floor** — castles always regen at least 1/day (peasant levies from bound villages)
 - **Castle supply chain** — castle regen above the local trickle floor (1/day) is **transferred from the nearest same-faction town**, not created from nothing. If the supply town is depleted, the castle starves. **Raiding a town starves its dependent castles.**
+- **Castles in a kingdom with no town** — if your kingdom owns no town anywhere, its castles are cut off from the supply chain. They raise men from their own villages instead, and recover **4 a day** rather than the 1 a day a supplied castle falls back on. That refills a typical castle in under two months instead of most of a year, which is what makes declaring independence with a single castle survivable. It goes back to normal the moment you take a town, and kingdoms that already hold towns are unaffected.
 - **Depleted emergency regen** — settlements below 15% fill get a bonus up to +2/day at 0%, scaling down to +0 at 15%. Devastated frontiers recover slowly — historically, post-Manzikert eastern Anatolia took decades.
 
 ### How to Check Manpower
@@ -169,6 +170,10 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 - **Recruit All and Done are still checked too.** The button/path gates remain as a defensive fallback if another mod injects an over-cap troop into the screen.
 - **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
+- **You cannot recruit in a kingdom you are at war with.** Their villages give you nothing. Their towns and castles you could never enter anyway.
+- **Recruiting in another kingdom at peace costs extra gold** — you are outbidding the local lord. Roughly double for ordinary recruits by default, less for elite troops. The manpower cost is the same as anywhere else.
+- **Both rules only apply once you have a kingdom or a fief.** A clan with neither recruits anywhere, so the early game is untouched. Swear to a kingdom as a vassal or a mercenary and that kingdom becomes your realm — everywhere else is foreign, even before you are granted a fief.
+- **Enemy lords play by the same rules.**
 
 ---
 
@@ -583,6 +588,35 @@ The mod makes higher-tier troops significantly more expensive:
 
 Default preset is **Moderate** for hire and upgrade costs, and **Severe** for daily wages.
 
+### Recruiting Outside Your Own Kingdom
+
+Once you belong to a kingdom or own a fief, recruiting in a settlement your realm does not own costs extra gold — you are outbidding the local lord for men who owe him service and owe you nothing.
+
+The premium is added to the troop's **base** price, and Campaign++ is already charging well above that through the hire and upgrade preset. Both land on the same bill, so at the default settings you pay:
+
+| Troop | At home | Abroad |
+|---|---|---|
+| Village recruit (T1) | 11g | 21g |
+| T2 | 65g | 115g |
+| T3 | 175g | 275g |
+| T5 | 1400g | 1800g |
+| T6 | 3000g | 3600g |
+
+So it bites hardest on cheap village volunteers, which is where most foreign recruiting happens, and barely shows on elite troops, whose price is already dominated by their tier. Set the preset to 3 if you want the full doubling to hold at the top end as well.
+
+This includes landless vassals and mercenaries. The kingdom you serve is your realm; every other kingdom is abroad.
+
+| Setting | What it does |
+|---|---|
+| **Foreign recruitment cost preset** | 0 = off, 1 = 1.5×, 2 = 2× *(default)*, 3 = 3× |
+| **Block recruiting in enemy realms** | On by default — no recruiting at all in a kingdom you are at war with |
+
+The **manpower** cost never changes. Manpower belongs to the settlement, so charging you extra manpower would just drain that village faster and punish the kingdom you are visiting instead of you. Gold is yours, so gold is what you pay.
+
+**Tavern mercenaries and caravan guards cost the same everywhere.** They are wandering soldiers who owe no lord anything, so there is nobody to outbid for them — it makes no difference whose town they are drinking in. Your caravans are never charged the premium either; a caravan trades abroad by design.
+
+Enemy lords pay the same premium you do.
+
 ### Elite Survivability
 
 Higher-tier troops are tougher in **battles the game resolves for you** — autoresolve, and sieges you do not fight yourself. They take less damage and are more likely to come out wounded than dead, so your expensive veterans are worth the investment.
@@ -672,12 +706,31 @@ When a kingdom is destroyed in vanilla, all member clans are annihilated and the
 ### What's NOT Rescued
 
 - Clans destroyed by **failed rebellions** (legitimate consequence — the rebellion itself was defeated)
+- **Rebel clans whose rebellion was crushed** — since v1.0.2.6 these die as they do in vanilla, whether they lose their last town or their leader dies. See below if you want the old behaviour back.
 - Clans with **no living adult heroes** (no one to carry on)
 - The **player's own clan** (vanilla handles this separately)
 
-### Rebel Clan Rescue
+### Rebel Clan Rescue — Off by Default Since v1.0.2.6
 
-Rebel clans — spawned when a town rebels — are also rescued when they would otherwise be destroyed:
+**A crushed rebellion now dies, exactly as in vanilla.** The town goes back to its old owner and the rebel lords are gone.
+
+Why it changed: keeping a rebel clan alive meant turning it into a **mercenary company**, because that is the only way it can draw Frontier Revenue. Every crushed rebellion therefore left a permanent company for hire, with no limit — players reported over 40 of them by day 800.
+
+Turn **Rescue crushed rebel clans** on in MCM → Clan Survival if you want the old behaviour. Nothing was removed. Noble clans of a *destroyed kingdom* are still rescued either way; this setting only covers rebels.
+
+**Already have dozens of them in your save?** Turn on **Clean up leftover rebel mercenary companies**, load the save, and wait one campaign day. **Back up your save first — it destroys clans.**
+
+Nothing happens until you say so:
+
+1. On the next campaign day a window tells you how many leftover companies it found in *your* save and asks whether to remove them. Say no and nothing is touched.
+2. If you agree, they are disbanded a **few each day** rather than all at once. Removing 40–100 companies in a single day would empty a large part of the map at a stroke; a few a day looks like ordinary attrition. You are told how many are left each day.
+3. When it has finished you get a message, and you can turn the setting back off.
+
+It only removes companies that came from a rebellion, were made mercenaries by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions like the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement.
+
+If you are loading an older save and leave both settings alone, Campaign++ tells you once that the rescue is off and that your existing companies are being left in place. Nothing is done to them without your say-so.
+
+With the setting **on**, rebel clans are rescued when they would otherwise be destroyed:
 
 - When a rebel clan **loses its last settlement** (e.g., another faction reconquers the town), Campaign++ intercepts the destruction and rescues the clan.
 - When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net promotes an heir (if one exists) and rescues the clan.
@@ -693,6 +746,8 @@ Rebel clans — spawned when a town rebels — are also rescued when they would 
 | Setting | Default | What It Does |
 |---------|---------|-------------|
 | Enable clan survival | On | Master toggle |
+| Rescue crushed rebel clans | **Off** | Keeps crushed rebellions alive as mercenary companies (pre-v1.0.2.6 behaviour) |
+| Clean up leftover rebel mercenary companies | **Off** | One-off cleanup for an existing save. Destroys clans — back up first |
 | Grace period (days) | 30 | Reserved for planned auto-placement logic (no forced placement in v0.2.0.1) |
 | Culture match weight | 2.0 | Reserved for planned auto-placement scoring (no forced placement in v0.2.0.1) |
 

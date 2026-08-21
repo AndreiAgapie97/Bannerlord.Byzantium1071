@@ -486,6 +486,14 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableCastleSupplyChain { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("{=b1071_mcm_t_7d3a9c4e18}Castle village levy %", 0, 100, "0", Order = 79, HintText = "{=b1071_mcm_h_6f2b8d5a37}When a castle's faction owns no town anywhere, the castle raises this percentage of the manpower it would have requested from a supply town from its own bound villages instead. At 100 the castle keeps the whole request, including the emergency recovery bonus that would otherwise be lost with no town to draw on. Applied on top of the cut-off daily regen floor, whichever is higher. Default: 100.")]
+        public int CastleVillageLevyPercent { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("{=b1071_mcm_t_3e91c7ab04}Castle cut-off daily regen", 0, 50, "0", Order = 80, HintText = "{=b1071_mcm_h_5c2df08b16}Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4.")]
+        public int CastleCutOffDailyRegen { get; set; } = 4;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
         [SettingPropertyBool("{=b1071_mcm_t_56177f3ec4}Enable depleted emergency regen", Order = 82, HintText = "{=b1071_mcm_h_1617c104c4}When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models limited Crown frontier investment — historically, devastated provinces took decades to recover.")]
         public bool EnableDepletedEmergencyRegen { get; set; } = true;
 
@@ -596,6 +604,14 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
         [SettingPropertyInteger("{=b1071_mcm_t_2443dcece8}Garrison wage % of field", 10, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_c4e1a056bd}Garrison party total wage as a percentage of what the same troops would cost in a field party. 80 = garrison pays 80% (20% discount). 100 = no discount. Default: 80.")]
         public int GarrisonWagePercent { get; set; } = 80;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
+        [SettingPropertyBool("{=b1071_mcm_t_9c4e2a7b51}Block recruiting in enemy realms", Order = 4, HintText = "{=b1071_mcm_h_2d7f8a3c60}Villagers will not take service under the banner burning their fields. When enabled, no lord may recruit in a settlement belonging to a faction their realm is at war with. Hostile towns and castles cannot be entered anyway, so in practice this closes the enemy village route, which was free manpower. Manpower cost is unchanged - see the foreign recruitment cost preset for why. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: ON.")]
+        public bool BlockEnemyRealmRecruitment { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
+        [SettingPropertyInteger("{=b1071_mcm_t_3e8b1d6f9c}Foreign recruitment cost preset", 0, 3, "0", Order = 5, HintText = "{=b1071_mcm_h_5a4c7e2b8d}Gold premium for recruiting in a settlement your realm does not own - you are outbidding the local lord. 0=Off | 1=1.5x | 2=2x | 3=3x. The multiplier applies to the game's base hire price and stacks additively with the hire and upgrade cost preset, so at the default presets an ordinary village recruit costs roughly twice as much abroad while an elite troop costs about a quarter more. Manpower cost is unchanged: manpower belongs to the settlement, so charging extra manpower would only punish the settlement you recruit from. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: 2.")]
+        public int ForeignRecruitCostPreset { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_41c5ad1112}Enable verbose mod log", Order = -1, HintText = "{=b1071_mcm_h_3574df9fb7}Master switch: logs ALL mod activity (manpower, slaves, diplomacy, patches) to the Bannerlord rgl_log file. Superset of every other debug toggle. Performance cost — disable for normal play.")]
@@ -1733,6 +1749,14 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
         [SettingPropertyBool("{=b1071_mcm_t_e01075c9d2}Enable clan survival", Order = 0, HintText = "{=b1071_mcm_h_c6dedb0344}Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true.")]
         public bool EnableClanSurvival { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
+        [SettingPropertyBool("{=b1071_mcm_t_4b7d9e1a52}Rescue crushed rebel clans", Order = 3, HintText = "{=b1071_mcm_h_8c3f6b0d74}OFF (default): a rebellion that is crushed dies, exactly as in vanilla - the town returns to its old owner and the rebel lords are gone. ON: the rebel clan is kept alive as a mercenary company so it can draw frontier revenue. Leave this OFF unless you want that. Every crushed rebellion leaves a permanent mercenary company behind, with no cap and no way out, so a long campaign accumulates dozens of them. This toggle only affects REBEL clans - noble clans of a destroyed kingdom are still rescued either way.")]
+        public bool RescueRebelClans { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
+        [SettingPropertyBool("{=b1071_mcm_t_6e2a8f4b93}Clean up leftover rebel mercenary companies", Order = 4, HintText = "{=b1071_mcm_h_1f5d7c0e26}ONE-OFF CLEANUP, DESTROYS CLANS - back up your save first. OFF by default. Turn this on to remove mercenary companies left behind by crushed rebellions in a campaign you are already playing. The game asks you to confirm on the next campaign day and shows how many it found in your save - nothing is destroyed until you agree. They are then disbanded a few each day rather than all at once, so your campaign is not emptied overnight, and you are told when it has finished. It only removes clans that came from a rebellion, were made mercenary companies by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions such as the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement.")]
+        public bool PurgeLeftoverRebelClans { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
         [SettingPropertyInteger("{=b1071_mcm_t_8c4c2be8dc}Grace period (days)", 1, 120, "0", Order = 1, HintText = "{=b1071_mcm_h_b41e07e2b2}Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30.")]

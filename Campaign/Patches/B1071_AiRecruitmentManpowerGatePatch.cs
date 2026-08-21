@@ -67,6 +67,31 @@ namespace Byzantium1071.Campaign.Patches
                 if (recruitmentSettlement == null)
                     return true;
 
+                // Same rule for AI lords, so the gate stays symmetric. Tavern mercenaries
+                // returned above and are unaffected - wandering soldiers sell their swords
+                // to anyone.
+                if (B1071_RecruitmentTierGateHelper.IsBlockedByWar(
+                        recruitmentSettlement,
+                        side1Party.LeaderHero,
+                        out TextObject? warHostFaction))
+                {
+                    // The volunteer board prefixes normally catch the player before this
+                    // and explain themselves. This is the fallback path - reached when the
+                    // recruitment runs without going through that UI - and a blocked action
+                    // with no message reads as the mod being broken, so tell the player here
+                    // too, exactly as the tier gate below does. An AI lord has no UI to tell.
+                    if (side1Party == MobileParty.MainParty && warHostFaction != null)
+                    {
+                        TextObject warMsg = B1071_RecruitmentTierGateHelper.BuildWarBlockedMessage(
+                            recruitmentSettlement,
+                            warHostFaction);
+
+                        InformationManager.DisplayMessage(new InformationMessage(warMsg.ToString(), Colors.Yellow));
+                    }
+
+                    return false;
+                }
+
                 // Tier caps apply only to volunteer-board recruitment, where the notable's current
                 // settlement identifies the actual source board. Do not apply these caps to broader
                 // RecruitmentCampaignBehavior paths such as tavern mercenaries or other non-notable recruits.

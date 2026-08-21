@@ -30,7 +30,9 @@
         <string id="b1071_demob_warning_title" text="Truppen nahe der Demobilisierung" />
         <string id="b1071_mcm_g_demob" text="Truppendienst" />
         <string id="b1071_mcm_g_demob_custom" text="Truppendienst - eigene Tage" />
+    <string id="b1071_mcm_t_3e91c7ab04" text="Castle cut-off daily regen" />
         <string id="b1071_mcm_t_demob_enable" text="Truppendemobilisierung aktivieren" />
+    <string id="b1071_mcm_h_5c2df08b16" text="Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4." />
         <string id="b1071_mcm_h_demob_enable" text="Hauptschalter. Feldtruppen dienen eine einstellbare Zahl von Bannerlord-Tagen, bevor sie nach und nach gehen. Gilt für Spieler- und KI-Feldgruppen. Standard: aktiviert." />
         <string id="b1071_mcm_t_demob_preset" text="Intensitätsvorgabe" />
         <string id="b1071_mcm_h_demob_preset" text="0=Leicht, 1=Moderat, 2=Hart, 3=Benutzerdefiniert. Schwellen nutzen Bannerlord-Tage; ein Spieljahr dauert etwa 84 Tage. Standard: Moderat." />
@@ -326,6 +328,7 @@
     <string id="b1071_lbl_garrison_discount" text="B1071 Garnisonsrabatt" />
     <string id="b1071_lbl_norm_occ" text="B1071 Normalisiert den Beruf" />
     <string id="b1071_lbl_tier_armor" text="B1071-Rüstung" />
+    <string id="b1071_lbl_foreign_hire" text="B1071 Foreign Recruitment" />
     <string id="b1071_lbl_tier_econ" text="B1071 Stufenökonomie" />
     <string id="B1071_Militia" text="Verfügbarkeit von Mannstärken" />
     <string id="b1071_mod_name" text="Campaign++" />
@@ -346,6 +349,14 @@
         <string id="b1071_ui_tier_confirm_block" text="Freiwilligenobergrenze: kann nicht bestätigt werden – {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
         <string id="b1071_ui_tier_donehint" text="Freiwilligenobergrenze: {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
         <string id="b1071_ui_tier_recruit_all_block" text="Freiwilligenobergrenze: Rekrutiere alle blockiert – {SETTLEMENT} ist eine {TYPE}; {TROOP} ist Stufe {TIER}, Obergrenze {CAP}." />
+    <string id="b1071_ui_rebel_notice" text="Campaign++ no longer rescues crushed rebellions. This campaign still has {COUNT} mercenary companies left over from earlier ones. They are being left alone. An optional cleanup for them is under Clan Survival in the mod settings." />
+    <string id="b1071_ui_rebel_purge" text="Campaign++ has finished removing leftover rebel mercenary companies ({COUNT} disbanded). You can switch the cleanup off in the mod settings now." />
+    <string id="b1071_ui_rebel_purge_confirm" text="Campaign++ has found {COUNT} mercenary companies left behind by crushed rebellions in this campaign. Removing them cannot be undone, so back up your save first. They will be disbanded a few each day rather than all at once, so your campaign is not emptied overnight. Remove them?" />
+    <string id="b1071_ui_rebel_purge_no" text="Leave them alone" />
+    <string id="b1071_ui_rebel_purge_progress" text="Campaign++ disbanded {COUNT} leftover rebel company(s). {LEFT} still to go." />
+    <string id="b1071_ui_rebel_purge_title" text="Leftover Rebel Companies" />
+    <string id="b1071_ui_rebel_purge_yes" text="Remove them" />
+    <string id="b1071_ui_war_recruit_block" text="{SETTLEMENT} will not raise men for you - your realm is at war with {FACTION}." />
     <string id="b1071_overlay_title" text="Campaign++-Overlay" />
     <string id="b1071_panel_text" text="Campaign++-Overlay\n[Zum Umschalten M drücken]" />
     <string id="b1071_slave_body" text="Sklavenhandel – {SETTLEMENT}\n\nGefangene (T1–{MAXTIER}, versklavbar): {ENSLAVEABLE}\n{HIGHTIER}Sklavenwaren in Ihrem Inventar: {INV}\nSklaven auf dem {SETTLEMENT} Markt: {MARKET}\n\nVerkaufen Sie Sklaven über den Handelsbildschirm.\nTägliche Stadtboni gelten, solange Sklaven auf dem Markt sind." />
@@ -488,6 +499,7 @@
     <string id="b1071_mcm_h_1bda097a56" text="Durch eine bescheidene Investition können Beziehungen zu jeder Stadt aufgebaut werden. Standard: 3." />
     <string id="b1071_mcm_h_1d661266c0" text="Legacy-reservierte Einstellung. Wird derzeit nicht vom aktiven Tooltip-Pfad verwendet." />
     <string id="b1071_mcm_h_1e5bd1e5ec" text="Regenmultiplikator, wenn die Sicherheit 0 ist. Beispiel: 80 = Regenerierung bei unsicherer Siedlung bei 80 %." />
+    <string id="b1071_mcm_h_1f5d7c0e26" text="ONE-OFF CLEANUP, DESTROYS CLANS - back up your save first. OFF by default. Turn this on to remove mercenary companies left behind by crushed rebellions in a campaign you are already playing. The game asks you to confirm on the next campaign day and shows how many it found in your save - nothing is destroyed until you agree. They are then disbanded a few each day rather than all at once, so your campaign is not emptied overnight, and you are told when it has finished. It only removes clans that came from a rebellion, were made mercenary companies by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions such as the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement." />
     <string id="b1071_mcm_h_2133bd3ab2" text="Pro-Punkt-Friedensunterstützungs-Bias, wenn sich das Königreich im Bereich „Steigender Druck“ befindet." />
     <string id="b1071_mcm_h_21aee6a595" text="Jeder Dorffeuerplatz × dies = Pauschalbonus auf den maximalen Pool. Beispielsweise bedeutet 0,10, dass 1.000 Herddörfer 100 maximale Mannstärke hinzufügen." />
     <string id="b1071_mcm_h_223a8f48ff" text="Regenerationsmultiplikator bei guter Ernährung. Z. B. 100 = normale Regenerationsrate." />
@@ -507,6 +519,7 @@
     <string id="b1071_mcm_h_2c8792addb" text="Maximale Gesamtstrafe für die Kriegserklärungsunterstützung im Bandmodus. Ersetzt die harte -10000-Überschreibung." />
     <string id="b1071_mcm_h_2c8d5b3e41" text="Wie widerstandsfähig höherstufige Truppen in Gefechten sind, die das Spiel für Sie auswürfelt (automatische Auflösung, Belagerungen, die Sie nicht selbst schlagen). Legt verringerten simulierten Trefferschaden und eine höhere Chance, verwundet statt getötet zu werden, gemeinsam fest. 0=Vanilla | 1=Leicht (Schaden T3-T6 -3/-6/-9/-12 %, Überleben +2/+4/+6/+8) | 2=Mittel (-5/-10/-15/-20 %, +3/+6/+9/+12) | 3=Stark (-6/-12/-18/-24 %, +5/+10/+15/+20, die Werte vor v1.0.2.5). Gilt gleichermaßen für KI und Spieler. Ersetzt die zwei getrennten Stufen-Schalter, die sich addierten. Standard: 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Erschöpfte Pools behalten während der Eroberung einen höheren Prozentsatz. Verhindert, dass Ping-Pong-Grenzburgen durch wiederholte Besitzerwechsel dauerhaft auf Null gesetzt werden." />
+    <string id="b1071_mcm_h_2d7f8a3c60" text="Villagers will not take service under the banner burning their fields. When enabled, no lord may recruit in a settlement belonging to a faction their realm is at war with. Hostile towns and castles cannot be entered anyway, so in practice this closes the enemy village route, which was free manpower. Manpower cost is unchanged - see the foreign recruitment cost preset for why. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: ON." />
     <string id="b1071_mcm_h_2ea055b805" text="Bei oder über dieser Erschöpfung werden KI-Königreiche daran gehindert, neue Kriege zu beginnen." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Fügt der Freiwilligenproduktion und der Erholung nach einem Schock eine kleine begrenzte Zufälligkeit hinzu. Macht Kampagnen ohne wilde Schwankungen weniger vorhersehbar." />
     <string id="b1071_mcm_h_2fbb35aab0" text="Wie viele Tage dauert die bescheidene Stadtinvestition? Dient auch als Abklingzeit. Standard: 20." />
@@ -543,6 +556,7 @@
     <string id="b1071_mcm_h_5921a54d23" text="Die Verwalter-Fertigkeit des Gouverneurs erhöht die Regeneration; Führung steigert die maximale Poolgröße." />
     <string id="b1071_mcm_h_597ebd8ce7" text="Nach einem Besitzerwechsel wird eine Strafe für die Basisregeneration angewendet." />
     <string id="b1071_mcm_h_59fa404ca0" text="KI wird nicht in Dörfer investieren, deren Herdfeuer diesen Wert erreicht oder übersteigt, sondern die Schirmherrschaft auf ärmere Dörfer konzentrieren, die sie am meisten benötigen. Zum Deaktivieren auf 0 setzen (überall investieren). Standard: 600." />
+    <string id="b1071_mcm_h_5a4c7e2b8d" text="Gold premium for recruiting in a settlement your realm does not own - you are outbidding the local lord. 0=Off | 1=1.5x | 2=2x | 3=3x. The multiplier applies to the game's base hire price and stacks additively with the hire and upgrade cost preset, so at the default presets an ordinary village recruit costs roughly twice as much abroad while an elite troop costs about a quarter more. Manpower cost is unchanged: manpower belongs to the settlement, so charging extra manpower would only punish the settlement you recruit from. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: 2." />
     <string id="b1071_mcm_h_5b6d82c72e" text="Maximale Anzahl an Sklaven, die eine Stadt pro Wohlstandspunkt halten kann. Überzählige Sklaven werden täglich freigelassen und in Mannstärke umgewandelt. Z. B. bei 0,02: Eine Stadt mit 3000 Einwohnern kann 60 Sklaven beherbergen; 5000 Wohlstand = 100. Auf 0 setzen, um die Obergrenze zu deaktivieren. Standard: 0,02." />
     <string id="b1071_mcm_h_5c9008c96e" text="Einheitliche Obergrenze für die Versklavungsstufe (Spieler + KI-Parität). Gefangene auf oder unter dieser Stufe können versklavt werden: (1) Spieler „Versklavt Gefangene“ in Städten, (2) Automatische Versklavung der KI in Städten, (3) Automatische Versklavung der Burg bis zum nächstgelegenen Markt. Gefangene über dieser Stufe müssen zur Rekrutierung in Burgen gebracht oder freigelassen werden. Standard: 3 (T1-T3 versklavt, T4+ rekrutierbar)." />
     <string id="b1071_mcm_h_5f1a43fa3a" text="Durch Investitionen in die Stadt eines anderen Clans wird eine Beziehung zum Clan-Anführer des Stadtbesitzers aufgebaut. Standard: 2." />
@@ -564,6 +578,7 @@
     <string id="b1071_mcm_h_6e3d6b6390" text="Täglicher Herdwachstumsbonus durch eine Großinvestition. Standard: 1.0." />
     <string id="b1071_mcm_h_6e6bea98d1" text="Die Verwalterfähigkeit wird durch diesen Wert dividiert und dann durch 100 geteilt, um zusätzliche Regenerationsprozente zu erhalten. Beispielsweise bedeutet 100000, dass 200 Steward +0,002 Regenerationsprozente (0,2 % des Pools/Tag) hinzufügt." />
     <string id="b1071_mcm_h_6e9c83a214" text="Täglicher Herdwachstumsbonus aus einer bescheidenen Investition. Im Dorf-Tooltip als „Patronat“ sichtbar. Standard: 0,3." />
+    <string id="b1071_mcm_h_6f2b8d5a37" text="When a castle's faction owns no town anywhere, the castle raises this percentage of the manpower it would have requested from a supply town from its own bound villages instead. At 100 the castle keeps the whole request, including the emergency recovery bonus that would otherwise be lost with no town to draw on. Applied on top of the cut-off daily regen floor, whichever is higher. Default: 100." />
     <string id="b1071_mcm_h_6fff08965f" text="Miliz-Wachstumsmultiplikator, wenn die Personalstärke 100 % beträgt." />
     <string id="b1071_mcm_h_701e8b031f" text="% des aktuellen Pools, der erhalten bleibt, wenn die Siedlung den Besitzer wechselt (bei vollem Pool). Skaliert bei erschöpften Pools höher, wenn der dynamische Eroberungsschutz aktiviert ist." />
     <string id="b1071_mcm_h_711f8c66da" text="Regenmultiplikator, wenn im Königreich Frieden herrscht. Beispiel: 125 = 25 % Bonus." />
@@ -586,6 +601,7 @@
     <string id="b1071_mcm_h_8b83bc3e79" text="Jeder Stadt wird durch eine großzügige Investition mehr Macht verliehen. Standard: 10." />
     <string id="b1071_mcm_h_8c1640482e" text="Poolfüllverhältnis, bei dem die Soft-Cap-Verlangsamung beginnt. Beispiel: 0,75 bedeutet, dass die Verlangsamung bei 75 % Auslastung beginnt." />
     <string id="b1071_mcm_h_8c178760ed" text="Einfluss, der durch eine bescheidene Stadtinvestition erzielt wird (nur wenn die Stadt in Ihrem Königreich liegt). Standard: 10." />
+    <string id="b1071_mcm_h_8c3f6b0d74" text="OFF (default): a rebellion that is crushed dies, exactly as in vanilla - the town returns to its old owner and the rebel lords are gone. ON: the rebel clan is kept alive as a mercenary company so it can draw frontier revenue. Leave this OFF unless you want that. Every crushed rebellion leaves a permanent mercenary company behind, with no cap and no way out, so a long campaign accumulates dozens of them. This toggle only affects REBEL clans - noble clans of a destroyed kingdom are still rescued either way." />
     <string id="b1071_mcm_h_8c81642f23" text="Grundpersonalkosten für einen Rekruten der Stufe 1." />
     <string id="b1071_mcm_h_8cc407e3bb" text="Goldkosten für eine bescheidene Stadtinvestition. Standard: 5000." />
     <string id="b1071_mcm_h_8d83d2815d" text="Wenn diese Option aktiviert ist, wird die Burgregeneration über der lokalen Rinnsalebene von der nächstgelegenen Stadt derselben Fraktion übertragen (die nicht aus dem Nichts erstellt wurde). Wenn die Versorgungsstadt erschöpft ist, verhungert die Burg. Historisch gesehen wurden die Garnisonen der Burgen von den Strategos aus den Städten abgelöst. Durch das Deaktivieren wird das alte Verhalten wiederhergestellt, bei dem sich Burgen unabhängig voneinander regenerieren." />
@@ -755,6 +771,11 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Bonusobergrenze für Friedensunterstützung" />
     <string id="b1071_mcm_t_329e2f2547" text="Aktivieren Sie den dynamischen Eroberungsschutz" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Aktivieren Sie den Haken für die Spielerrekrutierung" />
+    <string id="b1071_mcm_t_3e8b1d6f9c" text="Foreign recruitment cost preset" />
+    <string id="b1071_mcm_t_4b7d9e1a52" text="Rescue crushed rebel clans" />
+    <string id="b1071_mcm_t_6e2a8f4b93" text="Clean up leftover rebel mercenary companies" />
+    <string id="b1071_mcm_t_7d3a9c4e18" text="Castle village levy %" />
+    <string id="b1071_mcm_t_9c4e2a7b51" text="Block recruiting in enemy realms" />
         <string id="b1071_mcm_t_town_vol_tier_max" text="Max. Freiwilligenstufe Stadt" />
         <string id="b1071_mcm_t_village_vol_tier_max" text="Max. Freiwilligenstufe Dorf" />
     <string id="b1071_mcm_t_333ebd3f63" text="Verwüstung pro Raid" />

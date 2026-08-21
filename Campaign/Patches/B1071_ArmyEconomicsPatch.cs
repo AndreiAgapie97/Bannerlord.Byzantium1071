@@ -4,6 +4,7 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -168,6 +169,7 @@ namespace Byzantium1071.Campaign.Patches
     {
         private static readonly TextObject _label = new TextObject("{=b1071_lbl_tier_econ}B1071 Tier Economics");
         private static readonly TextObject _cancelLabel = new TextObject("{=b1071_lbl_norm_occ}B1071 Normalises Occupation");
+        private static readonly TextObject _foreignLabel = new TextObject("{=b1071_lbl_foreign_hire}B1071 Foreign Recruitment");
 
         // [preset 0-3][tier_index 0-5]  — AddFactor values
         // tier_index = Math.Clamp(troop.Tier - 1, 0, 5)
@@ -183,7 +185,7 @@ namespace Byzantium1071.Campaign.Patches
             new[] { 0.25f, 0.75f, 1.75f, 3.50f, 6.00f, 10.0f },
         };
 
-        public static void Postfix(CharacterObject troop, ref ExplainedNumber __result)
+        public static void Postfix(CharacterObject troop, Hero buyerHero, ref ExplainedNumber __result)
         {
             try
             {
@@ -219,8 +221,79 @@ namespace Byzantium1071.Campaign.Patches
 
             if (factor != 0f)
                 __result.AddFactor(factor, _label);
+
+            float foreignFactor = GetForeignFactor(troop, buyerHero);
+            if (foreignFactor != 0f)
+                __result.AddFactor(foreignFactor, _foreignLabel);
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] HireCostPatch error: {ex}"); }
+        }
+
+        // [preset 0-3] — AddFactor values: off, 1.5x, 2x, 3x.
+        private static readonly float[] _foreignFactors = { 0.00f, 0.50f, 1.00f, 2.00f };
+
+        /// <summary>
+        /// Premium for hiring outside your own realm.
+        ///
+        /// Manpower is a property of the SETTLEMENT, not of the recruiter. Charging a
+        /// foreigner extra manpower would drain the host settlement faster and punish
+        /// that kingdom for the recruiter's behaviour - the wrong party pays. Gold is a
+        /// property of the recruiter, so gold is the correct lever: you are outbidding
+        /// the local lord for men who owe him service and owe you nothing.
+        ///
+        /// Without this, a player can tour every kingdom at peace and refill from full
+        /// volunteer boards indefinitely, while AI lords stay home and drain only their
+        /// own realm. That asymmetry made the manpower system a net player ADVANTAGE.
+        ///
+        /// Exempt only when the clan has NO kingdom AND NO fief - the early-game player,
+        /// for whom every settlement in Calradia would otherwise be foreign. A landless
+        /// VASSAL or MERCENARY is deliberately not exempt: swearing to a kingdom makes that
+        /// kingdom your realm, so every other realm is abroad whether or not you personally
+        /// hold a fief. Exempting them would have left the whole gate trivially bypassable
+        /// by simply not accepting a fief.
+        ///
+        /// Tavern mercenaries and caravan guards are exempt everywhere. The premium exists
+        /// because a settlement's volunteers owe service to their own lord and you are
+        /// outbidding him for them. A wandering mercenary owes nobody anything, so there is
+        /// no local lord to outbid and no reason his price should depend on whose town he is
+        /// drinking in. Occupation is the exact test: tavern hires come from the culture's
+        /// BasicMercenaryTroops (Occupation.Mercenary) or are caravan guards
+        /// (Occupation.CaravanGuard), while every settlement volunteer is Occupation.Soldier.
+        /// Testing the troop rather than a call-path flag covers the displayed price, the
+        /// AI's affordability pre-check and the actual charge in one place - those are three
+        /// separate call sites in vanilla and only one of them passes through ApplyInternal.
+        ///
+        /// Caravans are checked separately as well. They only ever buy tavern guards, so the
+        /// occupation test already covers them, but a caravan is the player's trade party
+        /// running abroad by design and must never be taxed for being where it belongs.
+        /// </summary>
+        private static float GetForeignFactor(CharacterObject? troop, Hero? buyerHero)
+        {
+            if (buyerHero?.Clan == null) return 0f;
+
+            int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).ForeignRecruitCostPreset;
+            if (preset <= 0 || preset >= _foreignFactors.Length) return 0f;
+
+            if (troop != null &&
+                (troop.Occupation == Occupation.Mercenary || troop.Occupation == Occupation.CaravanGuard))
+                return 0f;
+
+            if (buyerHero.PartyBelongedTo != null && buyerHero.PartyBelongedTo.IsCaravan) return 0f;
+
+            if (buyerHero.Clan.Kingdom == null &&
+                (buyerHero.Clan.Settlements == null || buyerHero.Clan.Settlements.Count == 0)) return 0f;
+
+            // Where the buyer actually is. Heroes inside a settlement report it directly;
+            // a party leader reports it through the party.
+            Settlement? host = buyerHero.CurrentSettlement ?? buyerHero.PartyBelongedTo?.CurrentSettlement;
+            if (host == null) return 0f;
+
+            IFaction? hostFaction = host.OwnerClan?.MapFaction;
+            IFaction? buyerFaction = buyerHero.MapFaction;
+            if (hostFaction == null || buyerFaction == null) return 0f;
+            if (hostFaction == buyerFaction) return 0f;
+
+            return _foreignFactors[preset];
         }
     }
 

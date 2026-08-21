@@ -28,6 +28,19 @@ namespace Byzantium1071.Campaign.Patches
                 if (behavior == null || settlement == null || party == null)
                     return true;
 
+                if (B1071_RecruitmentTierGateHelper.IsBlockedByWar(
+                        settlement,
+                        Hero.MainHero,
+                        out TextObject? warFaction))
+                {
+                    TextObject warMsg = B1071_RecruitmentTierGateHelper.BuildWarBlockedMessage(
+                        settlement,
+                        warFaction!);
+
+                    InformationManager.DisplayMessage(new InformationMessage(warMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
+
                 if (B1071_RecruitmentTierGateHelper.TryGetTierGateBlock(
                         settlement,
                         troop.Character,
@@ -85,6 +98,19 @@ namespace Byzantium1071.Campaign.Patches
                 MobileParty? party = MobileParty.MainParty;
                 if (behavior == null || settlement == null || party == null)
                     return true;
+
+                if (B1071_RecruitmentTierGateHelper.IsBlockedByWar(
+                        settlement,
+                        Hero.MainHero,
+                        out TextObject? warFaction))
+                {
+                    TextObject warMsg = B1071_RecruitmentTierGateHelper.BuildWarBlockedMessage(
+                        settlement,
+                        warFaction!);
+
+                    InformationManager.DisplayMessage(new InformationMessage(warMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
 
                 var requestedTroops = new List<CharacterObject>();
                 if (__instance.VolunteerList != null)
@@ -182,6 +208,19 @@ namespace Byzantium1071.Campaign.Patches
                 MobileParty? party = MobileParty.MainParty;
                 if (behavior == null || settlement == null || party == null)
                     return true;
+
+                if (B1071_RecruitmentTierGateHelper.IsBlockedByWar(
+                        settlement,
+                        Hero.MainHero,
+                        out TextObject? warFaction))
+                {
+                    TextObject warMsg = B1071_RecruitmentTierGateHelper.BuildWarBlockedMessage(
+                        settlement,
+                        warFaction!);
+
+                    InformationManager.DisplayMessage(new InformationMessage(warMsg.ToString(), Colors.Yellow));
+                    return false;
+                }
 
                 var troopsInCart = new List<CharacterObject>();
                 if (__instance.TroopsInCart != null)

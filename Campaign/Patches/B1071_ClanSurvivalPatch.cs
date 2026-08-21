@@ -302,6 +302,17 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (clan == null) return false;
 
+                // The leftover-company cleanup destroys these clans on purpose. Without this
+                // check our own rescue catches our own DestroyClanAction call, saves the clan
+                // again, and the cleanup reports a count it never actually removed. It is a
+                // reachable combination: a player can run the cleanup with the rescue still
+                // switched on, wanting the old behaviour but not the backlog.
+                if (B1071_ClanSurvivalBehavior.IsPurgingRebelClans)
+                {
+                    B1071_ClanSurvivalPatch._alreadyRescued.Remove(clan.StringId);
+                    return false; // Let vanilla destroy
+                }
+
                 var behavior = B1071_ClanSurvivalBehavior.Instance;
 
                 // Already rescued by event handler or OnSettlementOwnerChanged?
@@ -357,6 +368,20 @@ namespace Byzantium1071.Campaign.Patches
                 if (kingdom == null && B1071_ClanSurvivalBehavior.IsRebelClanOrigin(clan))
                 {
                     string clanName = clan.Name?.ToString() ?? clan.StringId;
+
+                    // The rebel rescue is opt-in as of v1.0.2.6. This is the third and last
+                    // door into it - the behavior class guards the settlement-loss path and
+                    // the startup scan, but a rebel clan whose LEADER DIES arrives here
+                    // instead, and IsClanEligibleForRescue only tests the master toggle. Left
+                    // ungated the setting looked switched off while companies kept appearing.
+                    if (!B1071_ClanSurvivalPatch.Settings.RescueRebelClans)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] " +
+                            $"Rebel clan {clanName} not rescued - RescueRebelClans is off. Vanilla will destroy.");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"Rebel clan {clanName} not rescued - RescueRebelClans off ({callPath}).");
+                        return false; // Let vanilla destroy, exactly as it would without the mod
+                    }
                     Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] " +
                         $"Rebel clan {clanName} caught by safety net ({callPath}). " +
                         $"Checking rescue eligibility...");

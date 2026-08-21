@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.2.5
+**Version:** 1.0.2.6
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.5.0; Warsails/NavalDLC v1.3.0 verified)  
 **Mod ID:** `Byzantium1071`
 
@@ -121,10 +121,23 @@ The full daily regen value is still computed for castles via the standard formul
 3. `supplyRequest = regen - localTrickle` — the amount the castle needs from a town
 4. Find the nearest town belonging to the same faction (by map distance)
 5. `supplyTransfer = min(supplyRequest, supplyTown.currentMP)` — castle takes what it can
-6. Castle receives `localTrickle + supplyTransfer`; supply town loses `supplyTransfer`
+6. If **no** same-faction town exists anywhere the castle is *cut off*: `villageLevy = supplyRequest × CastleVillageLevyPercent%` (default 100), and the result is floored at `CastleCutOffDailyRegen` (default 4) — see below
+7. Castle receives `localTrickle + supplyTransfer` when supplied, or `max(CastleCutOffDailyRegen, localTrickle + villageLevy)` when cut off; supply town loses `supplyTransfer`
+
+   The town lookup runs every tick rather than only when `supplyRequest > 0`. Cut-off status must be known on days the castle requests nothing, since the floor applies regardless, and a `null` lookup *is* the definition of cut off.
 
 **Edge cases:**
-- **No same-faction town exists** (last faction holdout is a castle): castle receives only the local trickle (1/day).
+- **No same-faction town exists** (a realm made only of castles): the castle raises a levy from its own bound villages, taking `CastleVillageLevyPercent` (default 100) of `supplyRequest`, and the day's total is floored at `CastleCutOffDailyRegen` (default 4). Fixed in v1.0.2.6 — previously such a castle received only the trickle (1/day) *forever*, which starved it permanently.
+
+  `FindNearestSameFactionTown` scans `Town.AllTowns` with no distance cutoff, so a `null` return means the faction owns **zero** towns, not that the nearest one is far. The levy is not manpower from nowhere: `GetDailyRegen` has already weighted `regen` by the bound villages' hearths, so a share of it is a village-derived figure. A castle with no bound villages still gets the floor, which represents the castle's own community rather than its hinterland. The normal supply chain resumes the moment the faction takes a town.
+
+  > **Why the levy alone was not enough, and why the default is 100 rather than 50.** `supplyRequest` is `regen - localTrickle`, and for a castle `regen` is almost always exactly the floor: measured across all 67 vanilla castles with shipped defaults, *every one* produces a percentage-based regen that truncates to zero, so `regen` comes entirely from `max(minDailyRegen, 0)` and `supplyRequest` is zero. The single exception is a pool below `DepletedRegenThresholdPercent` (15%), where `GetDailyRegen` adds `DepletedRegenBonusAtZero` (+2/day, tapering) *after* the floor. That bonus therefore lands in `supplyRequest` — and for a cut-off castle it was being discarded, since no town existed to honour the request. The practical effect was that a cut-off castle was denied the emergency recovery every other settlement receives: 1/day against the 3/day the same castle would get inside a kingdom that owns towns. A levy of 100% recovers that bonus in full and is a bug fix rather than a buff; 50% would have restored only half of what the emergency system already grants everywhere else.
+
+  > **Why a separate floor was still required.** Because the levy only ever operates on the emergency band, it stops contributing once the pool passes 15% fill, after which the castle is back on 1/day. Against a median castle pool of 221 that is roughly four days saved out of a two-hundred-day recovery — the leak is fixed but the castle is still uninhabitable as a base of operations. `CastleCutOffDailyRegen` addresses the underlying rate: 4/day refills that pool in ~55 days, which makes an independence start viable without touching any established kingdom. The floor is applied in the daily tick (after `GetDailyRegen`) rather than inside the regen formula, so the soft cap, hard cap and stress floor do not erode it; the pool maximum still bounds it via `newCur = min(max, cur + actualRegen)`.
+
+  > **Why this cannot inflate the AI kingdoms.** The branch is gated on the faction owning zero towns. All six starting kingdoms own towns, so none of the game's 67 castles reaches it at campaign start, and a kingdom only reaches it after being reduced to castles alone — at which point a faster rebuild is the intended behaviour, not an exploit. Simulating the shipped formulas across every settlement: a typical kingdom holds ~10,000 manpower across ~7 towns and ~8 castles and regains ~25/day, and this change leaves both figures untouched.
+
+  This is the exact position of a player who declares independence holding a single castle: before the fix their lords could never refill their parties while every established kingdom recruited normally. Same edge-case class as the v1.0.2.4 slave-economy fix — a path that assumed every faction owns a town.
 - **Supply town is depleted** (pool at 0): castle receives only the local trickle.
 - **Multiple castles share one supply town**: towns near many castles drain faster. This is intentional — historically, frontier provinces with dense castle networks placed heavy demands on their administrative capital.
 - **Castle already at max**: the early-exit `cur >= max` check fires before the supply chain code. No transfer occurs.
@@ -209,6 +222,15 @@ Hiring mercenaries from a tavern is exempt from the manpower pool entirely. They
 This is checked in `B1071_AiRecruitmentManpowerGatePatch` **before** the manpower gate, on `RecruitingDetail.MercenaryFromTavern`. Gating them made the tavern hire dialogue silently no-op — no gold taken, no troops added — once a town's pool ran dry, which is exactly what a long war does. It also removes an inconsistency: the `town_backstreet` "Recruit N mercenaries" menu option bypasses `ApplyInternal` and was never gated at all.
 
 Because `ApplyInternal` fires `OnTroopRecruited` on its way out, the patch also raises an `IsProcessingTavernMercenary` flag so `B1071_ManpowerBehavior` skips *consumption* for AI parties too — otherwise the pool would still be drained by the very hires just declared exempt. A Harmony `Finalizer` clears the flag even if `ApplyInternal` throws, so it can never leak into the next recruitment. The tier gate already exempted this path implicitly, since tavern hires pass `individual == null`.
+
+### War gate (v1.0.2.6)
+`B1071_RecruitmentTierGateHelper.IsBlockedByWar` refuses recruitment outright in any settlement belonging to a faction the recruiter's realm is at war with. It runs ahead of both the tier gate and the manpower gate in all three player paths (single recruit, Recruit All, and the Done confirmation) and in the AI path.
+
+In practice this closes the enemy **village** route — hostile towns and castles cannot be entered at all. Before the fix, touring enemy villages was free manpower: the player refilled from the very pools their war was draining while their own settlements stayed untouched.
+
+Exempt only when the clan has **no kingdom and no fief** — the early-game player, for whom every realm at war would otherwise be closed. A landless **vassal or mercenary is not exempt**: swearing to a kingdom makes that kingdom your realm and its wars your wars. Exempting them would have left the gate trivially bypassable by simply never accepting a fief. Tavern mercenaries return before this check and are unaffected. AI lords are gated on the same terms but silently — they have no UI to message. Toggle: `Block recruiting in enemy realms` (default ON).
+
+This is the **access** half of the recruiting-abroad gate; the gold premium in §18 is the price half, for realms merely at peace. Manpower cost is left alone in both — see §18 for why.
 
 ### Per-troop gate (single recruit)
 Before each troop hire, the mod checks:
@@ -775,6 +797,27 @@ Four presets control how much more expensive higher-tier troops are to recruit (
 
 Default: **Moderate**. Hire cost scaling automatically cascades into upgrade gold cost (vanilla computes upgrade cost as the difference in recruit costs divided by 2).
 
+**Foreign recruitment premium (v1.0.2.6):** recruiting in a settlement whose owner's faction is not the buyer's own faction applies a further `AddFactor` on top of the tier factor, driven by `ForeignRecruitCostPreset` (0 = off, 1 = 1.5×, 2 = 2× *(default)*, 3 = 3×). You are outbidding the local lord for men who owe him service and owe you nothing.
+
+Those multipliers are stated against the **base** game price, not against what the player already pays. `ExplainedNumber` sums its factors rather than compounding them, so the tier factor and the foreign factor land on the same number: `final = base × (1 + tierFactor + foreignFactor)`. The tier factor climbs steeply while the foreign factor is flat, so the *effective* premium falls away as tier rises. At the shipped defaults (Moderate hire, foreign preset 2):
+
+| Tier | Base | At home | Abroad | Effective |
+|------|------|---------|--------|-----------|
+| T1   | 10g  | 11g     | 21g    | ×1.91 |
+| T2   | 50g  | 65g     | 115g   | ×1.77 |
+| T3   | 100g | 175g    | 275g   | ×1.57 |
+| T4   | 200g | 500g    | 700g   | ×1.40 |
+| T5   | 400g | 1400g   | 1800g  | ×1.29 |
+| T6   | 600g | 3000g   | 3600g  | ×1.20 |
+
+That shape is intended rather than an accident of the arithmetic. Foreign recruiting in practice means village volunteers, which is exactly where the premium bites hardest. An elite troop is already priced out of casual mass-hiring by the tier factor alone, and stacking a full doubling on top of it would put a T6 hire abroad at 6000g — which removes the option instead of pricing it. A player who wants the flat doubling to hold at the top end can raise the preset to 3.
+
+The **manpower** cost is deliberately unchanged. Manpower is a property of the settlement, not of the recruiter, so charging a foreigner extra manpower would drain the host settlement faster and punish that kingdom for the visitor's behaviour — the wrong party pays. Gold is a property of the recruiter, so gold is the correct lever, and it also bites the "player is too rich by the midgame" complaint.
+
+**Tavern mercenaries and caravan guards are exempt everywhere**, on `CharacterObject.Occupation` (`Mercenary` / `CaravanGuard`; every settlement volunteer is `Soldier`). The premium models outbidding a settlement's own lord for men who owe him service — a wandering mercenary owes nobody anything, so there is no lord to outbid and no reason his price should depend on whose town he is in. Testing the *troop* rather than a call-path flag is deliberate: vanilla prices a tavern hire at three separate call sites (the recruitment UI / dialogue, the AI's affordability pre-check in `CheckRecruiting`, and the charge inside `ApplyInternal`) and only the last passes through the existing `IsProcessingTavernMercenary` flag, so a flag-based exemption would have shown the player one price and taken another. This sits alongside the occupation normalisation below, which already cancels vanilla's 3× occupation surcharge for the same troop types. Caravan parties are excluded a second time on `MobileParty.IsCaravan` — a caravan buys nothing but tavern guards, so the occupation test already covers it, but a caravan trades abroad by design and must never be taxed for being where it belongs.
+
+Exempt only when the clan has no kingdom *and* no fief, so the early game is untouched. A landless vassal or mercenary pays the premium like anyone else — `MapFaction` already resolves to the kingdom they serve, so a Vlandian vassal recruiting in Sturgia is correctly foreign whether or not he holds a fief. The buyer's location is resolved as `buyerHero.CurrentSettlement ?? buyerHero.PartyBelongedTo?.CurrentSettlement`; if neither resolves, no premium is applied. Applies to AI and player alike. Settlements of factions you are **at war with** are blocked entirely rather than priced — see §6.
+
 **Occupation normalisation:** Vanilla makes Mercenaries, Gangsters, and CaravanGuards 3× more expensive to hire than regular soldiers. This mod cancels that premium exactly so all troop types cost the same as a regular soldier of the same tier. The tier-scaling still applies; only the occupation surcharge is removed.
 
 ### Daily Wages
@@ -1274,7 +1317,7 @@ Each non-bandit minor faction clan receives a daily **"Frontier Revenue"** stipe
 
 This is visible in the clan finance tooltip as "Frontier Revenue". Bandit factions are excluded (they skip DailyTickClan entirely). The **player clan is explicitly excluded** — players have settlement income and this is an AI economic balancer only.
 
-**Rescued rebel clans** (v0.2.7.0) also qualify for Frontier Revenue after normalization. When the Clan Survival system rescues a rebel clan, it sets `IsMinorFaction = true` via reflection, making the rescued clan eligible for the unaligned stipend (`clanTier × 400 denars/day`) while it remains independent. If that clan later joins a kingdom as a normal vassal, Frontier Revenue now stops so it does not double-dip on top of settlement income. Mercenary-service clans still qualify for the mercenary stipend path.
+**Rescued rebel clans** (v0.2.7.0) also qualify for Frontier Revenue after normalization — but since v1.0.2.6 the rebel rescue is off by default, so in a default install no new clans enter this path. When the Clan Survival system rescues a rebel clan, it sets `IsMinorFaction = true` via reflection, making the rescued clan eligible for the unaligned stipend (`clanTier × 400 denars/day`) while it remains independent. If that clan later joins a kingdom as a normal vassal, Frontier Revenue now stops so it does not double-dip on top of settlement income. Mercenary-service clans still qualify for the mercenary stipend path.
 
 ### MCM settings (Minor Faction Economy group)
 
@@ -1569,11 +1612,27 @@ No scripted kingdom scoring or forced mercenary placement is executed in the v0.
 | Rescued clan's leader dies while independent | Vanilla succession triggers; if final leader dies, `DestroyClanAction` fires and our prefix re-evaluates |
 | Clan already joined a kingdom | Stop tracking (another mod or player action placed them) |
 | Failed rebellion destruction | Not patched — legitimate destruction proceeds |
-| Rebel clan loses last settlement | Rescued, normalized (IsRebelClan→false, IsMinorFaction→true), qualifies for Frontier Revenue |
-| Rebel clan leader dies | Safety net promotes heir if available, then rescues |
+| Rebel clan loses last settlement | **v1.0.2.6:** destroyed, as in vanilla. Only rescued and normalized (IsRebelClan→false, IsMinorFaction→true) if `RescueRebelClans` is enabled |
+| Rebel clan leader dies | **v1.0.2.6:** destroyed, as in vanilla. Only rescued (heir promoted, then normalized) if `RescueRebelClans` is enabled |
 | Homeless rebel clan on session load | Startup scan normalizes before vanilla's DailyTickClan can kill heroes |
 
-### Rebel Clan Rescue (v0.2.7.0)
+### Rebel Clan Rescue (v0.2.7.0, opt-in since v1.0.2.6)
+
+> **Off by default since v1.0.2.6.** A crushed rebellion now dies exactly as it does in vanilla. Everything described below runs only when `RescueRebelClans` is enabled; the code path is kept intact rather than removed so the behaviour can be restored in one click. Noble clans of a *destroyed kingdom* are still rescued either way — this toggle governs rebel-origin clans only.
+>
+> **Why it was turned off.** Rescuing a rebel clan requires `IsMinorFaction = true`, because that flag is what makes it eligible for Frontier Revenue. But `IsMinorFaction` is Bannerlord's *mercenary company* category, so every crushed rebellion left a permanent hireable company behind, with no cap and no exit. Players reported 40+ of them by day 800.
+>
+> **Cleanup for existing saves.** `PurgeLeftoverRebelClans` (default OFF) removes the accumulated companies from a campaign already in progress.
+>
+> **Consent is asked for explicitly, not inferred from the setting.** Enabling a checkbox in a long settings list is not agreement to an irreversible mass deletion. On the next daily tick the player is shown an inquiry carrying the real candidate count from their own save; nothing is destroyed until they answer yes. The count comes from the same `EnumerateLeftoverRebelClans` iterator that does the removing, so what the player is told and what is acted on cannot drift apart.
+>
+> **Removal is a drip, not a sweep** — `RebelPurgePerDay` (3) clans per daily tick. A long campaign holds 40–100 of these; disbanding them all on one day removes a large slice of the map's parties simultaneously, which reads to the player as an unexplained mass extinction and shocks army, caravan and war-party state all at once. A progress message names the remaining count each day, and a completion message tells the player they can switch the setting off. Both the ask and the confirmation are per-session and unserialised, so a save/reload part-way through re-asks with the *remaining* count rather than silently resuming.
+>
+> **`IsPurgingRebelClans` is raised around the `DestroyClanAction.Apply` call** and checked at the very top of `HandleDestroyClan`. Without it the mod intercepts its own destruction call, the rebel branch rescues the clan straight back, and the cleanup increments a counter for a clan that still exists — a silent no-op reporting success. Fixing the `RescueRebelClans` gate covers the common case, but not a player running the cleanup *with the rescue still on*, which is a coherent thing to want. The flag is cleared in a `finally` and again in the outer `catch`, so a throw mid-sweep cannot leave the rescue disabled for the rest of the session.
+>
+> Selection requires *all three* of: `IsRebelClanOrigin` (a `StringId` containing `rebel_clan` — what still identifies these clans after normalisation cleared `IsRebelClan`, and which no vanilla clan carries), `IsMinorFaction` set (so only clans this mod flagged), zero settlements, and no `Kingdom` — a company under an active mercenary contract holds its employer there, and destroying it mid-contract risks leaving that kingdom with a dangling mercenary entry. It is not leftover in any meaningful sense either; it becomes a candidate again when the contract lapses. Hand-authored minor factions are structurally unreachable, and a rebel clan that took a fief is spared. It runs on the daily tick, never at session launch: `DestroyClanAction` touches kingdoms, parties and diplomacy, and driving that during load — or from inside another action's event callback — is the failure mode that corrupted saves before.
+>
+> **`NotifyLeftoverRebelClans`** is the passive counterpart: once per session, a save holding leftover companies with `RescueRebelClans` off and the cleanup off gets one message stating that the rescue is off, that the existing companies are being left alone, and where the cleanup lives. The default flip is silent otherwise — a returning player would find their behaviour changed with no in-game signal and no way to discover the cleanup except by reading a changelog. It suppresses itself when the cleanup is enabled, since the inquiry says all of this already.
 
 Rebel clans — spawned when a town rebels — face destruction through different pathways than regular kingdom clans:
 
@@ -1585,7 +1644,7 @@ Neither path goes through the kingdom-destruction pipeline (rebel clans have `Ki
 **Two-layer rescue architecture:**
 
 - **Primary**: `OnSettlementOwnerChanged` event listener in `B1071_ClanSurvivalBehavior`. When a settlement changes hands and the previous owner's clan is a rebel-origin clan (`IsRebelClan == true` OR StringId contains `"rebel_clan"`) with zero remaining settlements, rescue fires proactively — before vanilla's daily tick can destroy the clan. No inline Campaign actions (TimeLord/BetterTime safe).
-- **Safety net**: `HandleDestroyClan` prefix in `B1071_ClanSurvivalPatch`. When `DestroyClanAction.Apply` or `ApplyByClanLeaderDeath` fires for a rebel-origin clan with `Kingdom == null`, the prefix intercepts and rescues the clan if it has living adults.
+- **Safety net**: `HandleDestroyClan` prefix in `B1071_ClanSurvivalPatch`. When `DestroyClanAction.Apply` or `ApplyByClanLeaderDeath` fires for a rebel-origin clan with `Kingdom == null`, the prefix intercepts and rescues the clan if it has living adults. **Gated on `RescueRebelClans` since v1.0.2.6.** This is the third and least obvious door into the rescue: `IsClanEligibleForRescue` tests only `EnableClanSurvival`, so gating the primary path and the startup scan alone left the toggle looking switched off while a rebel clan whose *leader died* still became a permanent company.
 
 **Normalization** (`NormalizeRebelClan`):
 1. Sets `IsRebelClan = false` (public setter) — prevents vanilla from re-targeting the clan

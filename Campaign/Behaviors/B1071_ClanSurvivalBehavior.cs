@@ -118,7 +118,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // preventing vanilla's DailyTickClan from killing them.
             try
             {
-                if (Settings.EnableClanSurvival)
+                if (Settings.EnableClanSurvival && Settings.RescueRebelClans)
                 {
                     ScanAndRescueHomelessRebelClans();
                 }
@@ -382,6 +382,18 @@ namespace Byzantium1071.Campaign.Behaviors
                 // Only interested in rebel-origin clans
                 if (!IsRebelClanOrigin(clan)) return;
 
+                // Off by default: a crushed rebellion dies, as it does in vanilla.
+                //
+                // Rescuing it means marking the clan a minor faction, which is the only
+                // way it can draw frontier revenue - but minor faction is Bannerlord's
+                // mercenary-company category, so every crushed rebellion left a permanent
+                // hireable company behind. There is no cap and no exit, so by the late
+                // game a campaign accumulated dozens of them (reported at 40+ by day 800).
+                //
+                // The whole rescue path is kept intact behind this toggle rather than
+                // removed, so the behaviour can be restored without rebuilding it.
+                if (!Settings.RescueRebelClans) return;
+
                 // Already rescued?
                 if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId)) return;
                 if (IsTracked(clan)) return;
@@ -609,12 +621,225 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
+        // ── One-off cleanup of leftover rebel mercenary companies ────────
+
+        /// <summary>
+        /// How many leftover companies the cleanup disbands per campaign day.
+        ///
+        /// Deliberately a drip rather than one sweep. A long campaign can hold 40-100 of
+        /// these, and removing them all on a single day empties a large slice of the map's
+        /// parties at once - caravans lose their escorts' buyers, war parties vanish
+        /// mid-siege, and the player sees a mass extinction with no explanation. A few a day
+        /// looks like ordinary attrition.
+        /// </summary>
+        private const int RebelPurgePerDay = 3;
+
+        /// <summary>
+        /// Raised only while the cleanup is calling DestroyClanAction on purpose, so
+        /// B1071_ClanSurvivalDestroyClanPatch stands aside instead of rescuing the very
+        /// clans we are removing.
+        /// </summary>
+        internal static bool IsPurgingRebelClans { get; private set; }
+
+        // Per-session, deliberately NOT serialised. Both flags re-arm every load, which is
+        // what lets a player enable the cleanup mid-campaign and be asked about it, and what
+        // makes a save/reload part-way through a drip re-ask with the remaining count rather
+        // than silently continuing.
+        private bool _rebelPurgeAsked;
+        private bool _rebelPurgeConfirmed;
+        private bool _rebelNoticeShown;
+        private int _rebelPurgeTotal;
+
+        /// <summary>
+        /// Every clan the cleanup would consider. Also used to count them for the
+        /// confirmation prompt and the returning-player notice, so what the player is told
+        /// and what is actually removed can never drift apart.
+        /// </summary>
+        private static IEnumerable<Clan> EnumerateLeftoverRebelClans()
+        {
+            foreach (Clan clan in Clan.All.ToList())
+            {
+                if (clan == null || clan.IsEliminated) continue;
+                if (clan == Clan.PlayerClan) continue;
+                if (clan.IsBanditFaction) continue;
+
+                if (!IsRebelClanOrigin(clan)) continue;
+                if (!clan.IsMinorFaction) continue;
+                if (clan.Settlements != null && clan.Settlements.Any()) continue;
+
+                // A company under an active mercenary contract has Kingdom set to its
+                // employer. Destroying it mid-contract risks leaving that kingdom holding a
+                // dangling mercenary entry, and such a company is not "leftover" in any case
+                // - it is employed and doing something in the world. It becomes a candidate
+                // again once the contract lapses.
+                if (clan.Kingdom != null) continue;
+
+                yield return clan;
+            }
+        }
+
+        /// <summary>
+        /// Tells a returning player, once per session, that the rescue is off and what that
+        /// means for the companies already in their save. Nothing is done to them: the point
+        /// is that the player finds out from the game rather than from a changelog, and is
+        /// pointed at the cleanup instead of discovering it by accident.
+        /// </summary>
+        private void NotifyLeftoverRebelClans()
+        {
+            if (_rebelNoticeShown) return;
+            if (Settings.RescueRebelClans) return;
+            if (Settings.PurgeLeftoverRebelClans) return; // the prompt below says all this already
+
+            _rebelNoticeShown = true;
+
+            try
+            {
+                int count = EnumerateLeftoverRebelClans().Count();
+                if (count <= 0) return;
+
+                var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_notice}Campaign++ no longer rescues crushed rebellions. This campaign still has {COUNT} mercenary companies left over from earlier ones. They are being left alone. An optional cleanup for them is under Clan Survival in the mod settings.");
+                msg.SetTextVariable("COUNT", count);
+                InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival] Leftover rebel notice error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Removes mercenary companies left behind by the old rebel rescue.
+        ///
+        /// Turning RescueRebelClans off stops NEW ones appearing, but a campaign that has
+        /// already been running keeps the ones it accumulated. This is the opt-in cleanup
+        /// for that save. It destroys clans, so it is off by default and never runs
+        /// unattended.
+        ///
+        /// The selection is deliberately narrow. IsRebelClanOrigin also matches on a
+        /// StringId containing "rebel_clan", which is what still identifies these clans
+        /// after NormalizeRebelClan cleared IsRebelClan — and no vanilla clan carries that
+        /// StringId, so the Ghilman, the Jawwal and every other hand-authored minor faction
+        /// are structurally out of reach. Requiring IsMinorFaction on top means we only
+        /// remove clans this mod itself flagged. Requiring zero settlements spares any
+        /// rebel clan that went on to take a fief and become a real power.
+        ///
+        /// Runs on the daily tick rather than at session launch: DestroyClanAction touches
+        /// kingdoms, parties and diplomacy, and driving that during load — or from inside
+        /// another action's event callback — is what corrupted saves before.
+        /// </summary>
+        private void PurgeLeftoverRebelMercenaryClans()
+        {
+            if (!Settings.PurgeLeftoverRebelClans) return;
+
+            try
+            {
+                // ── Ask first, once per session ──────────────────────────
+                //
+                // The setting alone is not consent. It is a checkbox in a long list, its
+                // hint text is easy to skip, and what it does is irreversible and large.
+                // The player is shown the real count from their own save and has to agree
+                // before anything is destroyed.
+                if (!_rebelPurgeAsked)
+                {
+                    _rebelPurgeAsked = true;
+
+                    int pending = EnumerateLeftoverRebelClans().Count();
+                    if (pending <= 0)
+                    {
+                        B1071_VerboseLog.Log("ClanSurvival", "Rebel mercenary cleanup found nothing to remove.");
+                        return;
+                    }
+
+                    var body = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_confirm}Campaign++ has found {COUNT} mercenary companies left behind by crushed rebellions in this campaign. Removing them cannot be undone, so back up your save first. They will be disbanded a few each day rather than all at once, so your campaign is not emptied overnight. Remove them?");
+                    body.SetTextVariable("COUNT", pending);
+
+                    InformationManager.ShowInquiry(new InquiryData(
+                        titleText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_title}Leftover Rebel Companies").ToString(),
+                        text: body.ToString(),
+                        isAffirmativeOptionShown: true,
+                        isNegativeOptionShown: true,
+                        affirmativeText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_yes}Remove them").ToString(),
+                        negativeText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_no}Leave them alone").ToString(),
+                        affirmativeAction: () => { _rebelPurgeConfirmed = true; },
+                        negativeAction: null),
+                        pauseGameActiveState: true);
+
+                    return; // Removal starts on the next campaign day, after an answer.
+                }
+
+                if (!_rebelPurgeConfirmed) return;
+
+                // ── Disband a few, then stop for the day ─────────────────
+                int removed = 0;
+                IsPurgingRebelClans = true;
+                try
+                {
+                    foreach (Clan clan in EnumerateLeftoverRebelClans())
+                    {
+                        if (removed >= RebelPurgePerDay) break;
+
+                        string clanName = clan.Name?.ToString() ?? clan.StringId;
+                        try
+                        {
+                            DestroyClanAction.Apply(clan);
+                            _rescuedClans.Remove(clan.StringId);
+                            removed++;
+                            _rebelPurgeTotal++;
+                            B1071_VerboseLog.Log("ClanSurvival",
+                                $"Disbanded leftover rebel mercenary clan {clanName} ({clan.StringId}).");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Print($"[Byzantium1071][ClanSurvival] Failed to disband {clanName}: {ex.Message}");
+                        }
+                    }
+                }
+                finally
+                {
+                    IsPurgingRebelClans = false;
+                }
+
+                int remaining = EnumerateLeftoverRebelClans().Count();
+
+                if (removed > 0 && remaining > 0)
+                {
+                    var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_progress}Campaign++ disbanded {COUNT} leftover rebel company(s). {LEFT} still to go.");
+                    msg.SetTextVariable("COUNT", removed);
+                    msg.SetTextVariable("LEFT", remaining);
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+                }
+                else if (remaining <= 0)
+                {
+                    // Done. Stand down rather than re-running every day for the rest of the
+                    // campaign; the player is told they can switch the setting off.
+                    _rebelPurgeConfirmed = false;
+
+                    Debug.Print($"[Byzantium1071][ClanSurvival] Leftover rebel cleanup finished: {_rebelPurgeTotal} clan(s).");
+
+                    var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge}Campaign++ has finished removing leftover rebel mercenary companies ({COUNT} disbanded). You can switch the cleanup off in the mod settings now.");
+                    msg.SetTextVariable("COUNT", _rebelPurgeTotal);
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+                }
+            }
+            catch (Exception ex)
+            {
+                IsPurgingRebelClans = false;
+                Debug.Print($"[Byzantium1071][ClanSurvival] Rebel mercenary cleanup error: {ex}");
+            }
+        }
+
         // ── Daily Tick: clear wars for independent rescued clans ─────────
 
         private void OnDailyTick()
         {
             try
             {
+                // Runs on its own setting, ahead of the master toggle: a player who has
+                // switched clan survival off entirely still needs a way to clear the
+                // companies it left in their save.
+                PurgeLeftoverRebelMercenaryClans();
+                NotifyLeftoverRebelClans();
+
                 if (!Settings.EnableClanSurvival) return;
                 if (_rescuedClans.Count == 0) return;
 

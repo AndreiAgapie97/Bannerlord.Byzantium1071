@@ -30,7 +30,9 @@
     <string id="b1071_demob_warning_title" text="Troops Near Demobilization" />
     <string id="b1071_mcm_g_demob" text="Troop Service" />
     <string id="b1071_mcm_g_demob_custom" text="Troop Service - Custom Days" />
+    <string id="b1071_mcm_t_3e91c7ab04" text="Castle cut-off daily regen" />
     <string id="b1071_mcm_t_demob_enable" text="Enable troop demobilization" />
+    <string id="b1071_mcm_h_5c2df08b16" text="Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4." />
     <string id="b1071_mcm_h_demob_enable" text="Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: true." />
     <string id="b1071_mcm_t_demob_preset" text="Intensity preset" />
     <string id="b1071_mcm_h_demob_preset" text="0=Light, 1=Moderate, 2=Harsh, 3=Custom. Thresholds use Bannerlord days; one in-game year is about 84 days. Default: Moderate." />
@@ -326,6 +328,7 @@
     <string id="b1071_lbl_garrison_discount" text="B1071 Garrison Discount" />
     <string id="b1071_lbl_norm_occ" text="B1071 Normalises Occupation" />
     <string id="b1071_lbl_tier_armor" text="B1071 Tier Armor" />
+    <string id="b1071_lbl_foreign_hire" text="B1071 Foreign Recruitment" />
     <string id="b1071_lbl_tier_econ" text="B1071 Tier Economics" />
     <string id="B1071_Militia" text="Manpower availability" />
     <string id="b1071_mod_name" text="Campaign++" />
@@ -346,6 +349,14 @@
       <string id="b1071_ui_tier_confirm_block" text="Volunteer cap: cannot confirm — {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
       <string id="b1071_ui_tier_donehint" text="Volunteer cap: {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
       <string id="b1071_ui_tier_recruit_all_block" text="Volunteer cap: Recruit All blocked — {SETTLEMENT} is a {TYPE}; {TROOP} is tier {TIER}, cap {CAP}." />
+    <string id="b1071_ui_rebel_notice" text="Campaign++ no longer rescues crushed rebellions. This campaign still has {COUNT} mercenary companies left over from earlier ones. They are being left alone. An optional cleanup for them is under Clan Survival in the mod settings." />
+    <string id="b1071_ui_rebel_purge" text="Campaign++ has finished removing leftover rebel mercenary companies ({COUNT} disbanded). You can switch the cleanup off in the mod settings now." />
+    <string id="b1071_ui_rebel_purge_confirm" text="Campaign++ has found {COUNT} mercenary companies left behind by crushed rebellions in this campaign. Removing them cannot be undone, so back up your save first. They will be disbanded a few each day rather than all at once, so your campaign is not emptied overnight. Remove them?" />
+    <string id="b1071_ui_rebel_purge_no" text="Leave them alone" />
+    <string id="b1071_ui_rebel_purge_progress" text="Campaign++ disbanded {COUNT} leftover rebel company(s). {LEFT} still to go." />
+    <string id="b1071_ui_rebel_purge_title" text="Leftover Rebel Companies" />
+    <string id="b1071_ui_rebel_purge_yes" text="Remove them" />
+    <string id="b1071_ui_war_recruit_block" text="{SETTLEMENT} will not raise men for you - your realm is at war with {FACTION}." />
     <string id="b1071_overlay_title" text="Campaign++ Overlay" />
     <string id="b1071_panel_text" text="Campaign++ Overlay\n[Press M to toggle]" />
     <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market." />
@@ -488,6 +499,7 @@
     <string id="b1071_mcm_h_1bda097a56" text="Relation gained with each town notable from a Modest investment. Default: 3." />
     <string id="b1071_mcm_h_1d661266c0" text="Legacy reserved setting. Currently not used by active tooltip path." />
     <string id="b1071_mcm_h_1e5bd1e5ec" text="Regen multiplier when security is 0. E.g., 80 = insecure settlement regens at 80%." />
+    <string id="b1071_mcm_h_1f5d7c0e26" text="ONE-OFF CLEANUP, DESTROYS CLANS - back up your save first. OFF by default. Turn this on to remove mercenary companies left behind by crushed rebellions in a campaign you are already playing. The game asks you to confirm on the next campaign day and shows how many it found in your save - nothing is destroyed until you agree. They are then disbanded a few each day rather than all at once, so your campaign is not emptied overnight, and you are told when it has finished. It only removes clans that came from a rebellion, were made mercenary companies by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions such as the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement." />
     <string id="b1071_mcm_h_2133bd3ab2" text="Per-point peace support bias when kingdom is in Rising pressure band." />
     <string id="b1071_mcm_h_21aee6a595" text="Each village hearth × this = flat bonus to max pool. E.g., 0.10 means 1000 hearth village adds 100 max manpower." />
     <string id="b1071_mcm_h_223a8f48ff" text="Regen multiplier when well-fed. E.g., 100 = normal regen rate." />
@@ -507,6 +519,7 @@
     <string id="b1071_mcm_h_2c8792addb" text="Maximum total penalty applied to war declaration support in band mode. Replaces the hard -10000 override." />
     <string id="b1071_mcm_h_2c8d5b3e41" text="How much tougher high-tier troops are in battles the game resolves for you (autoresolve, sieges you do not fight yourself). Sets reduced simulated hit damage and a higher wounded-instead-of-killed chance together. 0=Vanilla | 1=Light (T3-T6 damage -3/-6/-9/-12%, survival +2/+4/+6/+8) | 2=Moderate (-5/-10/-15/-20%, +3/+6/+9/+12) | 3=Strong (-6/-12/-18/-24%, +5/+10/+15/+20, the pre-v1.0.2.5 values). Applies to AI and player equally. Replaces the two separate tier toggles, which compounded. Default: 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Depleted pools retain a higher percentage during conquest. Prevents ping-pong border castles from being permanently zeroed by repeated ownership changes." />
+    <string id="b1071_mcm_h_2d7f8a3c60" text="Villagers will not take service under the banner burning their fields. When enabled, no lord may recruit in a settlement belonging to a faction their realm is at war with. Hostile towns and castles cannot be entered anyway, so in practice this closes the enemy village route, which was free manpower. Manpower cost is unchanged - see the foreign recruitment cost preset for why. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: ON." />
     <string id="b1071_mcm_h_2ea055b805" text="At or above this exhaustion, AI kingdoms are prevented from starting new wars." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Adds small bounded randomness to volunteer production and post-shock recovery. Makes campaigns less predictable without wild swings." />
     <string id="b1071_mcm_h_2fbb35aab0" text="How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20." />
@@ -543,6 +556,7 @@
     <string id="b1071_mcm_h_5921a54d23" text="Governor Steward skill boosts regen; Leadership boosts max pool." />
     <string id="b1071_mcm_h_597ebd8ce7" text="Base regen penalty applied after ownership change." />
     <string id="b1071_mcm_h_59fa404ca0" text="AI will not invest in villages with hearth at or above this value, focusing patronage on poorer villages that need it most. Set to 0 to disable (invest anywhere). Default: 600." />
+    <string id="b1071_mcm_h_5a4c7e2b8d" text="Gold premium for recruiting in a settlement your realm does not own - you are outbidding the local lord. 0=Off | 1=1.5x | 2=2x | 3=3x. The multiplier applies to the game's base hire price and stacks additively with the hire and upgrade cost preset, so at the default presets an ordinary village recruit costs roughly twice as much abroad while an elite troop costs about a quarter more. Manpower cost is unchanged: manpower belongs to the settlement, so charging extra manpower would only punish the settlement you recruit from. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: 2." />
     <string id="b1071_mcm_h_5b6d82c72e" text="Maximum slaves a town can hold per point of prosperity. Excess slaves are manumitted (freed) daily and converted to manpower. E.g., at 0.02: a 3000-prosperity town can hold 60 slaves; 5000 prosperity = 100. Set to 0 to disable the cap. Default: 0.02." />
     <string id="b1071_mcm_h_5c9008c96e" text="Unified enslavement tier cap (player + AI parity). Prisoners at or below this tier can be enslaved: (1) player 'Enslave prisoners' at towns, (2) AI auto-enslave at towns, (3) castle auto-enslave to nearest market. Prisoners above this tier must be taken to castles for recruitment conversion or ransomed. Default: 3 (T1-T3 enslaved, T4+ recruitable)." />
     <string id="b1071_mcm_h_5f1a43fa3a" text="Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2." />
@@ -564,6 +578,7 @@
     <string id="b1071_mcm_h_6e3d6b6390" text="Daily hearth growth bonus from a Grand investment. Default: 1.0." />
     <string id="b1071_mcm_h_6e6bea98d1" text="Steward skill is divided by this, then divided by 100 to get additional regen %. E.g., 100000 means 200 Steward adds +0.002 regen pct (0.2% of pool/day)." />
     <string id="b1071_mcm_h_6e9c83a214" text="Daily hearth growth bonus from a Modest investment. Visible in village tooltip as 'Patronage'. Default: 0.3." />
+    <string id="b1071_mcm_h_6f2b8d5a37" text="When a castle's faction owns no town anywhere, the castle raises this percentage of the manpower it would have requested from a supply town from its own bound villages instead. At 100 the castle keeps the whole request, including the emergency recovery bonus that would otherwise be lost with no town to draw on. Applied on top of the cut-off daily regen floor, whichever is higher. Default: 100." />
     <string id="b1071_mcm_h_6fff08965f" text="Militia growth multiplier when manpower is at 100%." />
     <string id="b1071_mcm_h_701e8b031f" text="% of current pool retained when settlement changes hands (at full pool). Scales higher for depleted pools if dynamic conquest protection is enabled." />
     <string id="b1071_mcm_h_711f8c66da" text="Regen multiplier when kingdom is at peace. E.g., 125 = 25% bonus." />
@@ -586,6 +601,7 @@
     <string id="b1071_mcm_h_8b83bc3e79" text="Power added to each town notable from a Generous investment. Default: 10." />
     <string id="b1071_mcm_h_8c1640482e" text="Pool fill ratio where soft-cap slowdown starts. Example: 0.75 means slowdown begins at 75% full." />
     <string id="b1071_mcm_h_8c178760ed" text="Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10." />
+    <string id="b1071_mcm_h_8c3f6b0d74" text="OFF (default): a rebellion that is crushed dies, exactly as in vanilla - the town returns to its old owner and the rebel lords are gone. ON: the rebel clan is kept alive as a mercenary company so it can draw frontier revenue. Leave this OFF unless you want that. Every crushed rebellion leaves a permanent mercenary company behind, with no cap and no way out, so a long campaign accumulates dozens of them. This toggle only affects REBEL clans - noble clans of a destroyed kingdom are still rescued either way." />
     <string id="b1071_mcm_h_8c81642f23" text="Base manpower cost for a tier-1 recruit." />
     <string id="b1071_mcm_h_8cc407e3bb" text="Gold cost for a Modest town investment. Default: 5000." />
     <string id="b1071_mcm_h_8d83d2815d" text="When enabled, castle regen above the local trickle floor is transferred from the nearest same-faction town (not created from nothing). If the supply town is depleted, the castle starves. Historically, castle garrisons were rotated from towns by the strategos. Disabling reverts to legacy behavior where castles regen independently." />
@@ -755,6 +771,11 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Peace support bonus cap" />
     <string id="b1071_mcm_t_329e2f2547" text="Enable dynamic conquest protection" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Enable player recruit manpower hook" />
+    <string id="b1071_mcm_t_3e8b1d6f9c" text="Foreign recruitment cost preset" />
+    <string id="b1071_mcm_t_4b7d9e1a52" text="Rescue crushed rebel clans" />
+    <string id="b1071_mcm_t_6e2a8f4b93" text="Clean up leftover rebel mercenary companies" />
+    <string id="b1071_mcm_t_7d3a9c4e18" text="Castle village levy %" />
+    <string id="b1071_mcm_t_9c4e2a7b51" text="Block recruiting in enemy realms" />
       <string id="b1071_mcm_t_town_vol_tier_max" text="Town volunteer tier max" />
       <string id="b1071_mcm_t_village_vol_tier_max" text="Village volunteer tier max" />
     <string id="b1071_mcm_t_333ebd3f63" text="Devastation per raid" />

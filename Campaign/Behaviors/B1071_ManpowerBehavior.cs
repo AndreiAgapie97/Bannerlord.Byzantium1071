@@ -593,8 +593,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // that trickle is *transferred* from the nearest same-faction town,
             // draining its pool rather than materialising manpower from nothing.
             //
-            // If no same-faction town exists or the supply town is depleted,
-            // the castle receives only the local trickle.
+            // If the supply town is depleted the castle receives only the local
+            // trickle. If the faction owns no town ANYWHERE, the castle is cut off and
+            // falls back on its own villages plus a floor - see the else branch below.
             int actualRegen;
             if (pool.IsCastle && Settings.EnableCastleSupplyChain)
             {
@@ -602,12 +603,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 int supplyRequest = regen - localTrickle;
 
                 int supplyTransfer = 0;
+                int villageLevy = 0;
                 string supplySource = "none";
 
-                if (supplyRequest > 0)
+                // Resolved every day, not only when there is something to request. A cut-off
+                // castle needs its own floor even on days its request is zero, and whether it
+                // is cut off is exactly the question of whether a supply town exists.
+                Settlement? supplyTown = FindNearestSameFactionTown(pool);
+
+                if (supplyTown != null)
                 {
-                    Settlement? supplyTown = FindNearestSameFactionTown(pool);
-                    if (supplyTown != null)
+                    if (supplyRequest > 0)
                     {
                         string supplyId = supplyTown.StringId;
                         EnsureEntry(supplyTown);
@@ -621,12 +627,50 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
                         supplySource = $"{supplyTown.Name} ({supplyCur}->{supplyCur - supplyTransfer})";
                     }
-                }
 
-                actualRegen = localTrickle + supplyTransfer;
+                    actualRegen = localTrickle + supplyTransfer;
+                }
+                else
+                {
+                    // The faction owns no town at all - a realm made only of castles.
+                    // FindNearestSameFactionTown scans every town in the world, so null
+                    // here means there is no supply source to rotate garrisons from, not
+                    // merely that the nearest one is far away.
+                    //
+                    // Two things go wrong for such a castle without this branch. It is pinned
+                    // at CastleMinimumDailyRegen (1/day) forever, and - worse - the emergency
+                    // recovery bonus GetDailyRegen grants a near-empty pool lands in
+                    // supplyRequest and is then silently lost, because there is no town to
+                    // honour the request. A cut-off castle was therefore denied the very
+                    // top-up every other settlement in the game receives when it runs dry.
+                    // That is the exact position of a player who declares independence holding
+                    // a single castle: their lords can never refill their parties while every
+                    // established kingdom recruits normally.
+                    //
+                    // The levy recovers the request from the castle's own bound villages -
+                    // GetDailyRegen already weighted `regen` by those villages' hearths, so it
+                    // is a village-weighted figure rather than manpower from nowhere - and the
+                    // cut-off floor guarantees a rebuild rate the trickle alone cannot give.
+                    // Kingdoms that hold any town never reach this branch, so their castles and
+                    // their balance are untouched. The normal supply chain resumes the moment
+                    // the faction takes a town.
+                    int villageCount = (pool.Town?.Villages != null) ? pool.Town.Villages.Count : 0;
+                    if (villageCount > 0 && supplyRequest > 0)
+                    {
+                        int levyPct = Math.Max(0, Math.Min(100, Settings.CastleVillageLevyPercent));
+                        villageLevy = (int)(supplyRequest * (levyPct / 100f));
+                        supplySource = $"own villages (x{villageCount} @ {levyPct}%)";
+                    }
+
+                    int cutOffFloor = Math.Max(0, Math.Max(Settings.CastleMinimumDailyRegen,
+                                                           Settings.CastleCutOffDailyRegen));
+                    actualRegen = Math.Max(cutOffFloor, localTrickle + villageLevy);
+                    if (villageLevy <= 0)
+                        supplySource = $"cut off (floor {cutOffFloor})";
+                }
                 B1071_VerboseLog.Log("Manpower",
                     $"CastleSupply {pool.Name}: trickle={localTrickle} request={supplyRequest} " +
-                    $"transfer={supplyTransfer} supply={supplySource} total=+{actualRegen}");
+                    $"transfer={supplyTransfer} levy={villageLevy} supply={supplySource} total=+{actualRegen}");
                 Byzantium1071.Campaign.B1071_SessionAudit.RecordManpowerCastleSupply();
             }
             else
