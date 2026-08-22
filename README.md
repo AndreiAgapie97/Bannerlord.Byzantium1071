@@ -8,7 +8,7 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ## At a glance
 
-- **Current version:** 1.0.2.9  
+- **Current version:** 1.0.3.0
 - **Target game:** Bannerlord v1.5.0 (tested)  
 - **Warsails (NavalDLC):** v1.3.0 verified compatible (optional — not required)  
 - **Module ID:** `Byzantium1071`
@@ -42,6 +42,19 @@ Campaign++ exposes a **stable public API** for third-party submods. If you're bu
 - **Data safety:** behavior state persists via `SyncData`; runtime logic is generally null-safe and fail-open.
 - **Parity contract:** recruitment/resource rules target player and AI through shared gate logic.
 - **Compatibility posture:** runtime scanner reports patch overlap and model replacement risk per mod.
+
+---
+
+## Automated tests
+
+The repository includes a fast .NET 8 suite for pure campaign math, module data, localization, and settings contracts, plus .NET Framework game-backed migration tests when Bannerlord is installed at the configured game path. These tests exercise shared code only; they do not alter module behavior or game data.
+
+Run them separately from the repository root:
+
+```powershell
+dotnet test Tests\Byzantium1071.Tests\Byzantium1071.Tests.csproj -c Debug --no-restore
+dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debug --no-restore
+```
 
 ---
 

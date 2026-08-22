@@ -1384,5 +1384,26 @@
     <string id="b1071_recall_waiting" text="At Home" />
     <string id="b1071_ui_cancel" text="Cancel" />
     <string id="b1071_ui_men" text="Men" />
+    <string id="b1071_mcm_t_town_invest_cost_modest" text="Modest investment cost" />
+    <string id="b1071_mcm_t_town_invest_cost_generous" text="Generous investment cost" />
+    <string id="b1071_mcm_t_town_invest_cost_grand" text="Grand investment cost" />
+    <string id="b1071_mcm_t_town_invest_duration_modest" text="Modest duration (days)" />
+    <string id="b1071_mcm_t_town_invest_duration_generous" text="Generous duration (days)" />
+    <string id="b1071_mcm_t_town_invest_duration_grand" text="Grand duration (days)" />
+    <string id="b1071_mcm_t_town_invest_relation_modest" text="Modest relation gain" />
+    <string id="b1071_mcm_t_town_invest_relation_generous" text="Generous relation gain" />
+    <string id="b1071_mcm_t_town_invest_relation_grand" text="Grand relation gain" />
+    <string id="b1071_mcm_t_town_invest_influence_modest" text="Modest influence gain" />
+    <string id="b1071_mcm_t_town_invest_influence_generous" text="Generous influence gain" />
+    <string id="b1071_mcm_t_town_invest_influence_grand" text="Grand influence gain" />
+    <string id="b1071_mcm_t_town_invest_power_modest" text="Modest power gain" />
+    <string id="b1071_mcm_t_town_invest_power_generous" text="Generous power gain" />
+    <string id="b1071_mcm_t_town_invest_power_grand" text="Grand power gain" />
+    <string id="b1071_mcm_t_town_invest_power_cap" text="Notable power cap" />
+    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="Cross-clan relation gain" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="AI gold safety multiplier" />
+    <string id="b1071_mcm_t_town_invest_ai_chance" text="AI investment chance (%)" />
+    <string id="b1071_mcm_t_town_invest_ai_random_tier" text="AI random tier selection" />
+    <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="AI hero cooldown (days)" />
   </strings>
 </base>

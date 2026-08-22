@@ -45,7 +45,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<int> _savedValues = new();
 
         // MCM settings live source. If MCM is unavailable for any reason, fall back to shared defaults.
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         private bool _seeded;
         // Alert tracking: only fire crisis alerts on downward band transitions.
@@ -2034,334 +2035,104 @@ namespace Byzantium1071.Campaign.Behaviors
 
         internal static int GetMaxManpower(Settlement pool)
         {
-            var settings = Settings;
+            IB1071Settings settings = Settings;
+            return B1071_ManpowerMath.MaxPool(ReadMaxPoolFacts(pool), settings);
+        }
 
-            // Base pool from MCM.
-            int baseMax =
-                pool.IsTown ? settings.TownPoolMax :
-                pool.IsCastle ? settings.CastlePoolMax :
-                settings.OtherPoolMax;
+        private static PoolFacts ReadMaxPoolFacts(Settlement pool)
+        {
+            var town = pool.Town;
+            var villageHearths = new List<float>();
 
-            baseMax = Math.Max(1, baseMax);
-
-            // --- Economic scaling ---
-            // Both towns and castles use prosperity as the primary driver (population/economy)
-            // and security as a secondary multiplier (safe settlements attract more volunteers).
-
-            float prosperityScale = 1.0f;
-            float securityBonus = 1.0f;
-
-            if (pool.Town != null)
+            if (town?.Villages != null)
             {
-                // Prosperity → primary pool scaling (both towns and castles).
-                float prosperity = pool.Town.Prosperity;
-                float pN = Clamp01(prosperity / Math.Max(1f, settings.ProsperityNormalizer));
-                float prosMin = Math.Max(0.01f, settings.MaxPoolProsperityMinScale / 100f);
-                float prosMax = Math.Max(prosMin, settings.MaxPoolProsperityMaxScale / 100f);
-                prosperityScale = prosMin + ((prosMax - prosMin) * pN);
-
-                // Security → secondary multiplier (both towns and castles).
-                float security = pool.Town.Security; // 0..100
-                float sN = Clamp01(security / 100f);
-                float secMin = Math.Max(0.01f, settings.SecurityBonusMinScale / 100f);
-                float secMax = Math.Max(secMin, settings.SecurityBonusMaxScale / 100f);
-                securityBonus = secMin + ((secMax - secMin) * sN);
-            }
-
-            // Hearth bonus: each village adds hearth × multiplier as flat manpower.
-            int hearthBonus = 0;
-            if (pool.Town?.Villages != null)
-            {
-                float mult = Math.Max(0f, settings.MaxPoolHearthMultiplier);
-                foreach (var v in pool.Town.Villages)
+                foreach (var village in town.Villages)
                 {
-                    if (v != null)
-                        hearthBonus += (int)(v.Hearth * mult);
+                    if (village != null)
+                    {
+                        villageHearths.Add(village.Hearth);
+                    }
                 }
             }
 
-            int value = (int)(baseMax * prosperityScale * securityBonus) + hearthBonus;
+            int governorLeadership = town?.Governor?.GetSkillValue(DefaultSkills.Leadership) ?? 0;
 
-            // Governor bonus: Leadership skill boosts max pool.
-            if (settings.EnableGovernorBonus && pool.Town?.Governor is Hero governor)
+            return new PoolFacts(
+                pool.IsTown,
+                pool.IsCastle,
+                town != null,
+                town?.Prosperity ?? 0f,
+                town?.Security ?? 0f,
+                villageHearths,
+                governorLeadership);
+        }
+
+        private static PoolFacts ReadDailyRegenFacts(Settlement pool, IB1071Settings settings)
+        {
+            PoolFacts maxPoolFacts = ReadMaxPoolFacts(pool);
+            var town = pool.Town;
+            Kingdom? kingdom = pool.OwnerClan?.Kingdom;
+            string poolId = pool.StringId ?? string.Empty;
+            var instance = Instance;
+
+            int currentPool = 0;
+            if (instance != null && !string.IsNullOrEmpty(poolId) && instance._manpowerByPoolId.TryGetValue(poolId, out int current))
             {
-                int leadership = governor.GetSkillValue(DefaultSkills.Leadership);
-                float govDivisor = Math.Max(1f, settings.GovernorLeadershipPoolDivisor);
-                float leadershipBonus = Math.Min(1.0f, leadership / govDivisor); // cap at +100%
-                value += (int)(value * leadershipBonus);
+                currentPool = current;
             }
 
-            value = Math.Max(1, value);
-
-            // Tiny pool testing override.
-            if (settings.UseTinyPoolsForTesting)
+            string? kingdomId = kingdom?.StringId;
+            float exhaustion = !string.IsNullOrEmpty(kingdomId)
+                ? instance?.GetWarExhaustion(kingdomId!) ?? 0f
+                : 0f;
+            float recoveryPenalty = settings.EnableDelayedRecovery
+                ? instance?.GetRecoveryPenaltyFraction(poolId) ?? 0f
+                : 0f;
+            B1071Season season = CampaignTime.Now.GetSeasonOfYear switch
             {
-                int divisor = Math.Max(1, settings.TinyPoolDivisor);
-                int minimumScaledPool = Math.Max(1, settings.TinyPoolMinimum);
-                value = Math.Max(minimumScaledPool, value / divisor);
-            }
+                CampaignTime.Seasons.Spring => B1071Season.Spring,
+                CampaignTime.Seasons.Summer => B1071Season.Summer,
+                CampaignTime.Seasons.Winter => B1071Season.Winter,
+                _ => B1071Season.Autumn
+            };
 
-            return value;
+            return new PoolFacts(
+                pool.IsTown,
+                pool.IsCastle,
+                maxPoolFacts.HasTown,
+                maxPoolFacts.Prosperity,
+                maxPoolFacts.Security,
+                maxPoolFacts.VillageHearths,
+                maxPoolFacts.GovernorLeadership,
+                town?.FoodStocks ?? 0f,
+                town?.Loyalty ?? 0f,
+                pool.IsUnderSiege,
+                kingdom?.FactionsAtWarWith?.Count == 0,
+                town?.Governor?.GetSkillValue(DefaultSkills.Steward) ?? 0,
+                season,
+                exhaustion,
+                recoveryPenalty,
+                currentPool);
         }
 
         internal static int GetDailyRegen(Settlement pool, int max)
         {
-            var settings = Settings;
-
-            // Stage 1: base rate from settlement type + prosperity.
-            float basePct;
-            float prosperityNorm = Math.Max(1f, settings.ProsperityNormalizer);
-
-            if (pool.IsTown)
-            {
-                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f;
-                float pN = Clamp01(prosperity / prosperityNorm);
-                float minPct = Math.Max(0f, settings.TownRegenMinPercent) / 100f;
-                float maxPct = Math.Max(minPct, settings.TownRegenMaxPercent / 100f);
-                basePct = minPct + ((maxPct - minPct) * pN);
-            }
-            else if (pool.IsCastle)
-            {
-                float prosperity = (pool.Town != null) ? pool.Town.Prosperity : 0f;
-                float pN = Clamp01(prosperity / prosperityNorm);
-                float minPct = Math.Max(0f, settings.CastleRegenMinPercent) / 100f;
-                float maxPct = Math.Max(minPct, settings.CastleRegenMaxPercent / 100f);
-                basePct = minPct + ((maxPct - minPct) * pN);
-            }
-            else
-            {
-                basePct = Math.Max(0f, settings.OtherRegenPercent) / 100f;
-            }
-
-            float pct = basePct;
-
-            // Stage 2: structural modifiers.
-            // Hearth contribution (bound villages)
-            float hearthSum = 0f;
-            if (pool.Town != null && pool.Town.Villages != null)
-            {
-                foreach (var v in pool.Town.Villages)
-                {
-                    if (v != null)
-                        hearthSum += v.Hearth;
-                }
-            }
-
-            float hearthNormalizer = Math.Max(1f, settings.HearthNormalizer);
-            float hN = Clamp01(hearthSum / hearthNormalizer);
-            float hearthBonus = Math.Max(0f, settings.HearthBonusMaxPercent) / 100f;
-            pct += hearthBonus * hN;
-
-            float securityMul = 1f;
-            float foodMul = 1f;
-            float loyaltyMul = 1f;
-            float siegeMul = 1f;
-            float seasonalMul = 1f;
-            float peaceMul = 1f;
-            float governorAdd = 0f;
-            float exhaustionMul = 1f;
-            float recoveryMul = 1f;
-            float softCapMul = 1f;
-
-            // Security modifier on regen (both towns and castles).
-            // Safe settlements attract more volunteers.
-            if (pool.Town != null)
-            {
-                float security = pool.Town.Security; // 0..100
-                float sN = Clamp01(security / 100f);
-                float secMin = Math.Max(0f, settings.SecurityRegenMinScale) / 100f;
-                float secMax = Math.Max(secMin, settings.SecurityRegenMaxScale / 100f);
-                securityMul = secMin + ((secMax - secMin) * sN);
-                pct *= securityMul;
-            }
-
-            // Stage 3: stress modifiers.
-            // Food modifier on regen: starving settlements regen much slower.
-            if (pool.Town != null)
-            {
-                float foodStocks = pool.Town.FoodStocks;
-                float foodNorm = Math.Max(1f, settings.FoodStocksNormalizer);
-                float fN = Clamp01(foodStocks / foodNorm);
-                float foodMin = Math.Max(0f, settings.FoodRegenMinScale) / 100f;
-                float foodMax = Math.Max(foodMin, settings.FoodRegenMaxScale / 100f);
-                foodMul = foodMin + ((foodMax - foodMin) * fN);
-                pct *= foodMul;
-            }
-
-            // Loyalty modifier on regen: disloyal populations won't volunteer.
-            if (pool.Town != null)
-            {
-                float loyalty = pool.Town.Loyalty; // 0..100
-                float lN = Clamp01(loyalty / 100f);
-                float loyMin = Math.Max(0f, settings.LoyaltyRegenMinScale) / 100f;
-                float loyMax = Math.Max(loyMin, settings.LoyaltyRegenMaxScale / 100f);
-                loyaltyMul = loyMin + ((loyMax - loyMin) * lN);
-                pct *= loyaltyMul;
-            }
-
-            // Siege penalty.
-            if (pool.IsUnderSiege)
-            {
-                siegeMul = Math.Max(0f, settings.SiegeRegenMultiplierPercent) / 100f;
-                pct *= siegeMul;
-            }
-
-            // Stage 4: seasonal effect.
-            // Seasonal modifier: spring/summer = bonus, winter = penalty.
-            if (settings.EnableSeasonalRegen)
-            {
-                var season = CampaignTime.Now.GetSeasonOfYear;
-                if (season == CampaignTime.Seasons.Spring || season == CampaignTime.Seasons.Summer)
-                {
-                    seasonalMul = Math.Max(0f, settings.SpringSummerRegenMultiplier) / 100f;
-                    pct *= seasonalMul;
-                }
-                else if (season == CampaignTime.Seasons.Winter)
-                {
-                    seasonalMul = Math.Max(0f, settings.WinterRegenMultiplier) / 100f;
-                    pct *= seasonalMul;
-                }
-                // Autumn = 1.0× (no change)
-            }
-
-            // Peace dividend: pools regen faster when kingdom is at peace.
-            if (settings.EnablePeaceDividend && pool.OwnerClan?.Kingdom is Kingdom kingdom)
-            {
-                if (kingdom.FactionsAtWarWith?.Count == 0)
-                {
-                    peaceMul = Math.Max(1f, settings.PeaceDividendMultiplier) / 100f;
-                    pct *= peaceMul;
-                }
-            }
-
-            // Governor bonus: Steward skill boosts regen.
-            if (settings.EnableGovernorBonus && pool.Town?.Governor is Hero governor)
-            {
-                int steward = governor.GetSkillValue(DefaultSkills.Steward);
-                float govDivisor = Math.Max(1f, settings.GovernorStewardRegenDivisor);
-                governorAdd = steward / govDivisor;
-                pct += governorAdd;
-            }
-
-            // War exhaustion penalty: strained kingdoms regen slower.
-            if (settings.EnableWarExhaustion)
-            {
-                string? kingdomId = pool.OwnerClan?.Kingdom?.StringId;
-                if (!string.IsNullOrEmpty(kingdomId))
-                {
-                    float exhaustion = Instance?.GetWarExhaustion(kingdomId) ?? 0f;
-                    if (exhaustion > 0f)
-                    {
-                        float divisor = Math.Max(1f, settings.ExhaustionRegenDivisor);
-                        float penalty = 1f - (exhaustion / divisor);
-                        if (penalty < 0.1f) penalty = 0.1f; // never reduce below 10%
-                        exhaustionMul = penalty;
-                        pct *= exhaustionMul;
-                    }
-                }
-            }
-
-            // Delayed recovery penalty: post-war shock decays over time.
-            if (settings.EnableDelayedRecovery)
-            {
-                float penalty = Instance?.GetRecoveryPenaltyFraction(pool.StringId) ?? 0f;
-                if (penalty > 0f)
-                {
-                    recoveryMul = Math.Max(0.1f, 1f - penalty);
-                    pct *= recoveryMul;
-                }
-            }
-
-            // Stage 5: soft-cap near full pool.
-            if (settings.EnableRegenSoftCap && max > 0)
-            {
-                float startRatio = Clamp01(settings.RegenSoftCapStartRatio);
-                float strength = Math.Max(0f, settings.RegenSoftCapStrength);
-
-                if (startRatio < 0.999f && strength > 0f)
-                {
-                    // A-3: Default to 0 when Instance is null so the soft-cap is effectively
-                    // disabled rather than assuming full pool and crushing regen.
-                    int current = 0;
-                    if (Instance != null && !string.IsNullOrEmpty(pool.StringId) && Instance._manpowerByPoolId.TryGetValue(pool.StringId, out int cur))
-                        current = cur;
-
-                    float fillRatio = Clamp01((float)current / max);
-                    if (fillRatio > startRatio)
-                    {
-                        float t = Clamp01((fillRatio - startRatio) / Math.Max(0.001f, 1f - startRatio));
-                        float slowdown = 1f - (strength * t * t);
-                        softCapMul = Math.Max(0.1f, slowdown);
-                        pct *= softCapMul;
-                    }
-                }
-            }
-
-            // WP4: bounded stochastic variance on daily regen output.
-            float varianceMul = 1f;
-            if (settings.EnableRecruitmentVariance && settings.RecoveryVariancePercent > 0)
-            {
-                float spread = Math.Min(settings.RecoveryVariancePercent, 100f) / 100f;
-                varianceMul = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
-                pct *= varianceMul;
-            }
-
-            // Stress floor: final safety net — avoid permanent stall under stacked penalties.
-            // Applied after ALL multipliers so nothing can push pct below this threshold.
-            float stressFloor = Math.Max(0f, settings.RegenStressFloorPercent) / 100f;
-            if (pct < stressFloor)
-                pct = stressFloor;
-
-            int regen = (int)(max * pct);
-
-            // Hard cap: never exceed RegenCapPercent of pool per day.
-            int cap = (int)(max * Math.Max(0.001f, settings.RegenCapPercent) / 100f);
-            if (regen > cap)
-                regen = cap;
-
-            // Castle-specific minimum daily regen (garrison rotation / Crown resettlement).
-            int minDailyRegen = pool.IsCastle
-                ? Math.Max(0, settings.CastleMinimumDailyRegen)
-                : Math.Max(0, settings.MinimumDailyRegen);
-            // Cap always wins: ensure minimum never exceeds the hard cap.
-            int result = Math.Min(cap, Math.Max(minDailyRegen, regen));
-
-            // Depleted Emergency Regen: when pool is below threshold, add a flat bonus
-            // that scales inversely with fill ratio (emptier = faster recovery).
-            // Models Crown frontier investment and refugee influx to devastated settlements.
-            int depletedBonus = 0;
-            if (settings.EnableDepletedEmergencyRegen && max > 0)
-            {
-                float depletedThreshold = Clamp01(Math.Max(0f, settings.DepletedRegenThresholdPercent) / 100f);
-                int maxBonus = Math.Max(0, settings.DepletedRegenBonusAtZero);
-                if (depletedThreshold > 0f && maxBonus > 0)
-                {
-                    int current = 0;
-                    if (Instance != null && !string.IsNullOrEmpty(pool.StringId) && Instance._manpowerByPoolId.TryGetValue(pool.StringId, out int depCur))
-                        current = depCur;
-                    float fillRatio = Clamp01((float)current / max);
-                    if (fillRatio < depletedThreshold)
-                    {
-                        // Linear interpolation: at 0% fill → full bonus, at threshold → 0 bonus.
-                        float t = 1f - (fillRatio / depletedThreshold);
-                        depletedBonus = Math.Max(0, (int)(maxBonus * t));
-                        result += depletedBonus;
-                        // Emergency bonus intentionally bypasses the normal hard cap to
-                        // ensure critically depleted settlements can recover.
-                    }
-                }
-            }
+            IB1071Settings settings = Settings;
+            DailyRegenResult regen = B1071_ManpowerMath.DailyRegen(
+                ReadDailyRegenFacts(pool, settings),
+                max,
+                settings,
+                B1071_TestHooks.Random ?? B1071Random.Instance);
 
             if (Instance != null)
             {
                 Instance._telemetryLastRegenPoolId = pool.StringId ?? string.Empty;
                 Instance._telemetryLastRegenBreakdown =
-                    $"Base:{(basePct * 100f):0.###}% Final:{(pct * 100f):0.###}% Sec:{securityMul:0.##} Food:{foodMul:0.##} Loy:{loyaltyMul:0.##} Siege:{siegeMul:0.##} Season:{seasonalMul:0.##} Peace:{peaceMul:0.##} Gov:+{governorAdd:0.###} Exh:{exhaustionMul:0.##} Rec:{recoveryMul:0.##} Soft:{softCapMul:0.##} Var:{varianceMul:0.##} Dep:+{depletedBonus} => +{result}";
+                    $"Base:{(regen.BasePercent * 100f):0.###}% Final:{(regen.FinalPercent * 100f):0.###}% Sec:{regen.SecurityMultiplier:0.##} Food:{regen.FoodMultiplier:0.##} Loy:{regen.LoyaltyMultiplier:0.##} Siege:{regen.SiegeMultiplier:0.##} Season:{regen.SeasonalMultiplier:0.##} Peace:{regen.PeaceMultiplier:0.##} Gov:+{regen.GovernorAdd:0.###} Exh:{regen.ExhaustionMultiplier:0.##} Rec:{regen.RecoveryMultiplier:0.##} Soft:{regen.SoftCapMultiplier:0.##} Var:{regen.VarianceMultiplier:0.##} Dep:+{regen.DepletedBonus} => +{regen.Amount}";
             }
 
-            return result;
+            return regen.Amount;
         }
-
         /// <summary>
         /// Returns the flat manpower cost per troop for standard recruitment.
         /// All tiers now cost the same: BaseManpowerCostPerTroop (default 1).
@@ -2562,21 +2333,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static float Clamp01(float v)
         {
-            if (v < 0f) return 0f;
-            if (v > 1f) return 1f;
-            return v;
+            return B1071_ManpowerMath.Clamp01(v);
         }
 
         private static int GetPoolBand(int cur, int max)
         {
-            if (max <= 0) return 0;
-            float r = (float)cur / (float)max;
-
-            if (cur <= 0) return 0;
-            if (r < 0.25f) return 1;
-            if (r < 0.50f) return 2;
-            if (r < 0.75f) return 3;
-            return 4;
+            return B1071_ManpowerMath.PoolBand(cur, max);
         }
 
         // ───────────────────────  WAR CONSEQUENCES  ───────────────────────
@@ -3005,55 +2767,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private static Dictionary<Kingdom, int> AllocateByWeights(int total, Dictionary<Kingdom, int> weights)
         {
-            var allocation = new Dictionary<Kingdom, int>();
-            if (total <= 0 || weights.Count == 0) return allocation;
-
-            int totalWeight = 0;
-            foreach (int value in weights.Values)
-            {
-                if (value > 0)
-                    totalWeight += value;
-            }
-            if (totalWeight <= 0)
-            {
-                int evenShare = total / weights.Count;
-                int remainder = total % weights.Count;
-                int index = 0;
-                foreach (Kingdom kingdom in weights.Keys)
-                {
-                    allocation[kingdom] = evenShare + (index < remainder ? 1 : 0);
-                    index++;
-                }
-                return allocation;
-            }
-
-            var remainders = new List<(Kingdom kingdom, float remainder)>();
-            int assigned = 0;
-            foreach (var kvp in weights)
-            {
-                int weight = Math.Max(0, kvp.Value);
-                float exact = (float)total * weight / totalWeight;
-                int whole = (int)Math.Floor(exact);
-                allocation[kvp.Key] = whole;
-                assigned += whole;
-                remainders.Add((kvp.Key, exact - whole));
-            }
-
-            remainders.Sort((a, b) =>
-            {
-                int compare = b.remainder.CompareTo(a.remainder);
-                if (compare != 0) return compare;
-                return string.CompareOrdinal(a.kingdom.StringId, b.kingdom.StringId);
-            });
-
-            int leftover = total - assigned;
-            for (int i = 0; i < leftover && i < remainders.Count; i++)
-            {
-                Kingdom kingdom = remainders[i].kingdom;
-                allocation[kingdom] = allocation.TryGetValue(kingdom, out int current) ? current + 1 : 1;
-            }
-
-            return allocation;
+            return B1071_ApportionMath.AllocateByWeights(total, weights, kingdom => kingdom.StringId);
         }
 
         /// <summary>

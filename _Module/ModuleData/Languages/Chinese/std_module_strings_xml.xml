@@ -1382,5 +1382,26 @@
     <string id="b1071_recall_waiting" text="在家乡" />
     <string id="b1071_ui_cancel" text="取消" />
     <string id="b1071_ui_men" text="人数" />
+    <string id="b1071_mcm_t_town_invest_cost_modest" text="小额投资花费" />
+    <string id="b1071_mcm_t_town_invest_cost_generous" text="慷慨投资花费" />
+    <string id="b1071_mcm_t_town_invest_cost_grand" text="大额投资花费" />
+    <string id="b1071_mcm_t_town_invest_duration_modest" text="小额投资持续时间（天）" />
+    <string id="b1071_mcm_t_town_invest_duration_generous" text="慷慨投资持续时间（天）" />
+    <string id="b1071_mcm_t_town_invest_duration_grand" text="大额投资持续时间（天）" />
+    <string id="b1071_mcm_t_town_invest_relation_modest" text="小额投资好感加成" />
+    <string id="b1071_mcm_t_town_invest_relation_generous" text="慷慨投资好感加成" />
+    <string id="b1071_mcm_t_town_invest_relation_grand" text="大额投资好感加成" />
+    <string id="b1071_mcm_t_town_invest_influence_modest" text="小额投资影响力加成" />
+    <string id="b1071_mcm_t_town_invest_influence_generous" text="慷慨投资影响力加成" />
+    <string id="b1071_mcm_t_town_invest_influence_grand" text="大额投资影响力加成" />
+    <string id="b1071_mcm_t_town_invest_power_modest" text="小额投资势力加成" />
+    <string id="b1071_mcm_t_town_invest_power_generous" text="慷慨投资势力加成" />
+    <string id="b1071_mcm_t_town_invest_power_grand" text="大额投资势力加成" />
+    <string id="b1071_mcm_t_town_invest_power_cap" text="名流势力上限" />
+    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="跨家族好感加成" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="AI 金钱安全倍数" />
+    <string id="b1071_mcm_t_town_invest_ai_chance" text="AI 投资概率（%）" />
+    <string id="b1071_mcm_t_town_invest_ai_random_tier" text="AI 随机选择档次" />
+    <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="AI 英雄冷却（天）" />
   </strings>
 </base>

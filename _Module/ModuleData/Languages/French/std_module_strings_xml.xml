@@ -1382,5 +1382,26 @@
     <string id="b1071_recall_waiting" text="Au foyer" />
     <string id="b1071_ui_cancel" text="Annuler" />
     <string id="b1071_ui_men" text="Hommes" />
+    <string id="b1071_mcm_t_town_invest_cost_modest" text="Coût d’investissement modeste" />
+    <string id="b1071_mcm_t_town_invest_cost_generous" text="Coût d’investissement généreux" />
+    <string id="b1071_mcm_t_town_invest_cost_grand" text="Coût d’investissement élevé" />
+    <string id="b1071_mcm_t_town_invest_duration_modest" text="Durée modeste (jours)" />
+    <string id="b1071_mcm_t_town_invest_duration_generous" text="Durée généreuse (jours)" />
+    <string id="b1071_mcm_t_town_invest_duration_grand" text="Grande durée (jours)" />
+    <string id="b1071_mcm_t_town_invest_relation_modest" text="Gain relationnel modeste" />
+    <string id="b1071_mcm_t_town_invest_relation_generous" text="Gain relationnel généreux" />
+    <string id="b1071_mcm_t_town_invest_relation_grand" text="Grand gain relationnel" />
+    <string id="b1071_mcm_t_town_invest_influence_modest" text="Gain d’influence modeste" />
+    <string id="b1071_mcm_t_town_invest_influence_generous" text="Gain d’influence généreux" />
+    <string id="b1071_mcm_t_town_invest_influence_grand" text="Grand gain d'influence" />
+    <string id="b1071_mcm_t_town_invest_power_modest" text="Gain de puissance modeste" />
+    <string id="b1071_mcm_t_town_invest_power_generous" text="Gain de puissance généreux" />
+    <string id="b1071_mcm_t_town_invest_power_grand" text="Grand gain de puissance" />
+    <string id="b1071_mcm_t_town_invest_power_cap" text="Plafond de puissance notable" />
+    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="Gain de relations entre clans" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="Multiplicateur de sécurité or IA" />
+    <string id="b1071_mcm_t_town_invest_ai_chance" text="Chance d'investissement dans l'IA (%)" />
+    <string id="b1071_mcm_t_town_invest_ai_random_tier" text="Sélection de niveau aléatoire par l'IA" />
+    <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="Temps de recharge du héros IA (jours)" />
   </strings>
 </base>

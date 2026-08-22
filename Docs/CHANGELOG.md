@@ -1,5 +1,11 @@
 # Campaign++ — Changelog
 
+## [1.0.3.0] — 2026-08-22
+
+### Engineering
+
+- Added automated coverage for pure manpower math, allocation invariants, settings migrations, localization, and module-data contracts. This test infrastructure does not change gameplay or save data.
+
 ## [1.0.2.9] — 2026-08-22
 
 ### Fix — AI Lords Recruited From Their Own Castles for Free

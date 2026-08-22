@@ -1382,5 +1382,26 @@
     <string id="b1071_recall_waiting" text="Daheim" />
     <string id="b1071_ui_cancel" text="Abbrechen" />
     <string id="b1071_ui_men" text="Mann" />
+    <string id="b1071_mcm_t_town_invest_cost_modest" text="Bescheidene Investitionskosten" />
+    <string id="b1071_mcm_t_town_invest_cost_generous" text="Großzügige Investitionskosten" />
+    <string id="b1071_mcm_t_town_invest_cost_grand" text="Große Investitionskosten" />
+    <string id="b1071_mcm_t_town_invest_duration_modest" text="Bescheidene Dauer (Tage)" />
+    <string id="b1071_mcm_t_town_invest_duration_generous" text="Großzügige Dauer (Tage)" />
+    <string id="b1071_mcm_t_town_invest_duration_grand" text="Große Dauer (Tage)" />
+    <string id="b1071_mcm_t_town_invest_relation_modest" text="Bescheidener Beziehungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_relation_generous" text="Großzügiger Beziehungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_relation_grand" text="Großer Beziehungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_influence_modest" text="Bescheidener Einflussgewinn" />
+    <string id="b1071_mcm_t_town_invest_influence_generous" text="Großzügiger Einflussgewinn" />
+    <string id="b1071_mcm_t_town_invest_influence_grand" text="Großer Einflussgewinn" />
+    <string id="b1071_mcm_t_town_invest_power_modest" text="Bescheidener Leistungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_power_generous" text="Großzügiger Leistungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_power_grand" text="Großer Machtgewinn" />
+    <string id="b1071_mcm_t_town_invest_power_cap" text="Bemerkenswerte Leistungsobergrenze" />
+    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="Clanübergreifender Beziehungsgewinn" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="KI-Gold-Sicherheitsmultiplikator" />
+    <string id="b1071_mcm_t_town_invest_ai_chance" text="KI-Investitionschance (%)" />
+    <string id="b1071_mcm_t_town_invest_ai_random_tier" text="Zufällige KI-Stufenauswahl" />
+    <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="Abklingzeit des KI-Helden (Tage)" />
   </strings>
 </base>

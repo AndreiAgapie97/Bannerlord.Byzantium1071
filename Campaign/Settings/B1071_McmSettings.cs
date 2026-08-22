@@ -7,7 +7,7 @@ using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Settings
 {
-    public sealed class B1071_McmSettings : AttributeGlobalSettings<B1071_McmSettings>
+    public sealed class B1071_McmSettings : AttributeGlobalSettings<B1071_McmSettings>, IB1071Settings
     {
         // Shared fallback instance — avoids creating multiple AttributeGlobalSettings
         // objects that could confuse MCM's lifecycle. All consumers share this one.
@@ -1783,27 +1783,27 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableTownInvestment { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9756c85392}Modest investment cost", 1000, 25000, "0", Order = 1, HintText = "{=b1071_mcm_h_8cc407e3bb}Gold cost for a Modest town investment. Default: 5000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_modest}Modest investment cost", 1000, 25000, "0", Order = 1, HintText = "{=b1071_mcm_h_8cc407e3bb}Gold cost for a Modest town investment. Default: 5000.")]
         public int TownInvestCostModest { get; set; } = 5000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_2507cf8802}Generous investment cost", 3000, 50000, "0", Order = 2, HintText = "{=b1071_mcm_h_a947183ed6}Gold cost for a Generous town investment. Default: 15000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_generous}Generous investment cost", 3000, 50000, "0", Order = 2, HintText = "{=b1071_mcm_h_a947183ed6}Gold cost for a Generous town investment. Default: 15000.")]
         public int TownInvestCostGenerous { get; set; } = 15000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_506fc29e2e}Grand investment cost", 5000, 100000, "0", Order = 3, HintText = "{=b1071_mcm_h_97d3107072}Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_grand}Grand investment cost", 5000, 100000, "0", Order = 3, HintText = "{=b1071_mcm_h_97d3107072}Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000.")]
         public int TownInvestCostGrand { get; set; } = 40000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_494eb521fc}Modest duration (days)", 5, 120, "0", Order = 4, HintText = "{=b1071_mcm_h_2fbb35aab0}How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_modest}Modest duration (days)", 5, 120, "0", Order = 4, HintText = "{=b1071_mcm_h_2fbb35aab0}How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20.")]
         public int TownInvestDurationModest { get; set; } = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_744b667ef5}Generous duration (days)", 10, 180, "0", Order = 5, HintText = "{=b1071_mcm_h_3322cd490c}How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_generous}Generous duration (days)", 10, 180, "0", Order = 5, HintText = "{=b1071_mcm_h_3322cd490c}How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40.")]
         public int TownInvestDurationGenerous { get; set; } = 40;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9314ade9c2}Grand duration (days)", 15, 240, "0", Order = 6, HintText = "{=b1071_mcm_h_a45f13eae8}How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_grand}Grand duration (days)", 15, 240, "0", Order = 6, HintText = "{=b1071_mcm_h_a45f13eae8}How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60.")]
         public int TownInvestDurationGrand { get; set; } = 60;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
@@ -1819,47 +1819,47 @@ namespace Byzantium1071.Campaign.Settings
         public float TownInvestProsperityGrand { get; set; } = 2.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_04ca6fac7d}Modest relation gain", 0, 20, "0", Order = 10, HintText = "{=b1071_mcm_h_1bda097a56}Relation gained with each town notable from a Modest investment. Default: 3.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_modest}Modest relation gain", 0, 20, "0", Order = 10, HintText = "{=b1071_mcm_h_1bda097a56}Relation gained with each town notable from a Modest investment. Default: 3.")]
         public int TownInvestRelationModest { get; set; } = 3;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d8c28d3d5b}Generous relation gain", 0, 30, "0", Order = 11, HintText = "{=b1071_mcm_h_3748411212}Relation gained with each town notable from a Generous investment. Default: 6.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_generous}Generous relation gain", 0, 30, "0", Order = 11, HintText = "{=b1071_mcm_h_3748411212}Relation gained with each town notable from a Generous investment. Default: 6.")]
         public int TownInvestRelationGenerous { get; set; } = 6;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_bcb2514534}Grand relation gain", 0, 50, "0", Order = 12, HintText = "{=b1071_mcm_h_b5c09f9d63}Relation gained with each town notable from a Grand investment. Default: 10.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_grand}Grand relation gain", 0, 50, "0", Order = 12, HintText = "{=b1071_mcm_h_b5c09f9d63}Relation gained with each town notable from a Grand investment. Default: 10.")]
         public int TownInvestRelationGrand { get; set; } = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_0c1fa8c3c0}Modest influence gain", 0f, 25f, "0.0", Order = 13, HintText = "{=b1071_mcm_h_8c178760ed}Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_modest}Modest influence gain", 0f, 25f, "0.0", Order = 13, HintText = "{=b1071_mcm_h_8c178760ed}Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10.")]
         public float TownInvestInfluenceModest { get; set; } = 10.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_28e890fbbc}Generous influence gain", 0f, 50f, "0.0", Order = 14, HintText = "{=b1071_mcm_h_aba304d75f}Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_generous}Generous influence gain", 0f, 50f, "0.0", Order = 14, HintText = "{=b1071_mcm_h_aba304d75f}Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25.")]
         public float TownInvestInfluenceGenerous { get; set; } = 25.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_d74548c067}Grand influence gain", 0f, 100f, "0.0", Order = 15, HintText = "{=b1071_mcm_h_0f079f126d}Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_grand}Grand influence gain", 0f, 100f, "0.0", Order = 15, HintText = "{=b1071_mcm_h_0f079f126d}Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50.")]
         public float TownInvestInfluenceGrand { get; set; } = 50.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9e446c836a}Modest power gain", 0, 50, "0", Order = 16, HintText = "{=b1071_mcm_h_14cc7f2c2a}Power added to each town notable from a Modest investment. Default: 5.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_modest}Modest power gain", 0, 50, "0", Order = 16, HintText = "{=b1071_mcm_h_14cc7f2c2a}Power added to each town notable from a Modest investment. Default: 5.")]
         public int TownInvestPowerModest { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_ad875bbbf1}Generous power gain", 0, 75, "0", Order = 17, HintText = "{=b1071_mcm_h_8b83bc3e79}Power added to each town notable from a Generous investment. Default: 10.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_generous}Generous power gain", 0, 75, "0", Order = 17, HintText = "{=b1071_mcm_h_8b83bc3e79}Power added to each town notable from a Generous investment. Default: 10.")]
         public int TownInvestPowerGenerous { get; set; } = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_f756638832}Grand power gain", 0, 100, "0", Order = 18, HintText = "{=b1071_mcm_h_e55ef8ccea}Power added to each town notable from a Grand investment. Default: 20.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_grand}Grand power gain", 0, 100, "0", Order = 18, HintText = "{=b1071_mcm_h_e55ef8ccea}Power added to each town notable from a Grand investment. Default: 20.")]
         public int TownInvestPowerGrand { get; set; } = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_6167980909}Notable power cap", 50, 500, "0", Order = 19, HintText = "{=b1071_mcm_h_f786952c1d}Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_cap}Notable power cap", 50, 500, "0", Order = 19, HintText = "{=b1071_mcm_h_f786952c1d}Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200.")]
         public int TownInvestPowerCap { get; set; } = 200;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9b391ff669}Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "{=b1071_mcm_h_5f1a43fa3a}Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cross_clan_relation}Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "{=b1071_mcm_h_5f1a43fa3a}Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2.")]
         public int TownInvestCrossClanRelation { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
@@ -1867,19 +1867,19 @@ namespace Byzantium1071.Campaign.Settings
         public bool TownInvestAiEnabled { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_65a39833e0}AI gold safety multiplier", 2, 30, "0", Order = 22, HintText = "{=b1071_mcm_h_c8401bec75}AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_gold_multiplier}AI gold safety multiplier", 2, 30, "0", Order = 22, HintText = "{=b1071_mcm_h_c8401bec75}AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15.")]
         public int TownInvestAiGoldMultiplier { get; set; } = 15;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_35befd4d96}AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "{=b1071_mcm_h_a3c2806b96}Percentage chance that an AI lord will invest when entering an eligible town. Default: 30.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_chance}AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "{=b1071_mcm_h_a3c2806b96}Percentage chance that an AI lord will invest when entering an eligible town. Default: 30.")]
         public int TownInvestAiChance { get; set; } = 30;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyBool("{=b1071_mcm_t_589ebea8c2}AI random tier selection", Order = 24, HintText = "{=b1071_mcm_h_0a2e5891f0}When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_town_invest_ai_random_tier}AI random tier selection", Order = 24, HintText = "{=b1071_mcm_h_0a2e5891f0}When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true.")]
         public bool TownInvestAiRandomTier { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_0571c47e15}AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "{=b1071_mcm_h_a4d717ad4f}Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_hero_cooldown}AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "{=b1071_mcm_h_a4d717ad4f}Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5.")]
         public int TownInvestAiHeroCooldownDays { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]

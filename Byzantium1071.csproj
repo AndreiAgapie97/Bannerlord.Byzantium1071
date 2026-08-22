@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.2.9</Version>
-    <AssemblyVersion>1.0.2.9</AssemblyVersion>
-    <FileVersion>1.0.2.9</FileVersion>
-    <InformationalVersion>1.0.2.9</InformationalVersion>
+    <Version>1.0.3.0</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
+    <InformationalVersion>1.0.3.0</InformationalVersion>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -23,6 +23,14 @@
   <PropertyGroup Condition="$(TargetFramework) == 'net472'">
     <BuildForWindows>true</BuildForWindows>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Byzantium1071.GameTests" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- System.Windows.Forms is used for clipboard access in the compatibility report -->
