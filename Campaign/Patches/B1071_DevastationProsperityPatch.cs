@@ -47,8 +47,8 @@ namespace Byzantium1071.Campaign.Patches
                 float avgDev = behavior.GetAverageBoundVillageDevastation(fortification);
                 if (avgDev <= 0f) return;
 
-                float ratio = avgDev / 100f;
-                float penalty = -(ratio * Settings.DevastationMaxProsperityPenalty);
+                float penalty = B1071_GovernanceMath.DevastationPenalty(
+                    avgDev, Settings.DevastationMaxProsperityPenalty);
 
                 // Apply combined B1071 prosperity penalty cap (G-1).
                 penalty = B1071_ProsperityPenaltyCapPatch.ClampPenalty(penalty);

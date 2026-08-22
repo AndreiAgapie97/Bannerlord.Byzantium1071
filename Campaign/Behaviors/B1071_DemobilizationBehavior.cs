@@ -25,7 +25,9 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_DemobilizationBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings => B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        private static IB1071Random Random => B1071_TestHooks.Random ?? B1071Random.Instance;
 
         private const string LogTag = "Demobilization";
 
@@ -414,19 +416,20 @@ namespace Byzantium1071.Campaign.Behaviors
                     {
                         foreach (CohortEntry cohort in troopKvp.Value)
                         {
-                            int soldiers = Math.Max(0, cohort.Count);
-                            for (int i = 0; i < soldiers; i++)
-                            {
-                                _savedPartyIds.Add(partyKvp.Key);
-                                _savedTroopIds.Add(troopKvp.Key);
-                                _savedJoinDays.Add(cohort.JoinDay);
-                                _savedCounts.Add(1);
-                                // The bool list is still written so an older build reading this
-                                // save keeps at least the was-extended-at-all fact.
-                                _savedExtendedFlags.Add(cohort.ExtensionCount > 0);
-                                _savedExtensionCounts.Add(cohort.ExtensionCount);
-                                _savedHomeIds.Add(cohort.HomeId ?? string.Empty);
-                            }
+                            B1071_ServiceMath.AppendServiceCohortRows(
+                                _savedPartyIds,
+                                _savedTroopIds,
+                                _savedJoinDays,
+                                _savedCounts,
+                                _savedExtendedFlags,
+                                _savedExtensionCounts,
+                                _savedHomeIds,
+                                partyKvp.Key,
+                                troopKvp.Key,
+                                cohort.JoinDay,
+                                cohort.Count,
+                                cohort.ExtensionCount,
+                                cohort.HomeId ?? string.Empty);
                         }
                     }
                 }
@@ -435,17 +438,20 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     foreach (TransferReserveEntry entry in reserveKvp.Value)
                     {
-                        int soldiers = Math.Max(0, entry.Count);
-                        for (int i = 0; i < soldiers; i++)
-                        {
-                            _savedReserveTroopIds.Add(reserveKvp.Key);
-                            _savedReserveJoinDays.Add(entry.JoinDay);
-                            _savedReserveStoredDays.Add(entry.StoredDay);
-                            _savedReserveCounts.Add(1);
-                            _savedReserveExtendedFlags.Add(entry.ExtensionCount > 0);
-                            _savedReserveExtensionCounts.Add(entry.ExtensionCount);
-                            _savedReserveHomeIds.Add(entry.HomeId ?? string.Empty);
-                        }
+                        B1071_ServiceMath.AppendTransferReserveRows(
+                            _savedReserveTroopIds,
+                            _savedReserveJoinDays,
+                            _savedReserveStoredDays,
+                            _savedReserveCounts,
+                            _savedReserveExtendedFlags,
+                            _savedReserveExtensionCounts,
+                            _savedReserveHomeIds,
+                            reserveKvp.Key,
+                            entry.JoinDay,
+                            entry.StoredDay,
+                            entry.Count,
+                            entry.ExtensionCount,
+                            entry.HomeId ?? string.Empty);
                     }
                 }
 
@@ -455,36 +461,52 @@ namespace Byzantium1071.Campaign.Behaviors
                     {
                         foreach (VeteranEntry entry in troopKvp.Value)
                         {
-                            if (entry.Count <= 0) continue;
-                            _savedVeteranSettlementIds.Add(settlementKvp.Key);
-                            _savedVeteranTroopIds.Add(troopKvp.Key);
-                            _savedVeteranDischargeDays.Add(entry.DischargeDay);
-                            _savedVeteranCounts.Add(entry.Count);
-                            _savedVeteranFromPlayer.Add(entry.FromPlayer);
+                            B1071_ServiceMath.AppendVeteranRow(
+                                _savedVeteranSettlementIds,
+                                _savedVeteranTroopIds,
+                                _savedVeteranDischargeDays,
+                                _savedVeteranCounts,
+                                _savedVeteranFromPlayer,
+                                settlementKvp.Key,
+                                troopKvp.Key,
+                                entry.DischargeDay,
+                                entry.Count,
+                                entry.FromPlayer);
                         }
                     }
                 }
 
                 foreach (PendingRecallEntry pending in _pendingRecalls)
                 {
-                    if (pending.Count <= 0) continue;
-
                     // A save taken before the first daily tick after a load can still be
                     // carrying a position we never filled in. Settle it now rather than
                     // writing a NaN into the save file.
+                    if (pending.Count <= 0) continue;
                     EnsurePendingPosition(pending);
 
-                    _savedPendingOrderIds.Add(pending.OrderId);
-                    _savedPendingSettlementIds.Add(pending.SettlementId);
-                    _savedPendingTroopIds.Add(pending.TroopId);
-                    _savedPendingCounts.Add(pending.Count);
-                    _savedPendingOrderDays.Add(pending.OrderDay);
-                    _savedPendingGold.Add(pending.GoldPaid);
-                    _savedPendingManpower.Add(pending.ManpowerDrawn);
-                    _savedPendingOwnCounts.Add(pending.PlayerOwnedCount);
-                    _savedPendingCourier.Add(pending.CourierRemaining);
-                    _savedPendingPosX.Add(pending.PosX);
-                    _savedPendingPosY.Add(pending.PosY);
+                    B1071_ServiceMath.AppendPendingRecallRow(
+                        _savedPendingOrderIds,
+                        _savedPendingSettlementIds,
+                        _savedPendingTroopIds,
+                        _savedPendingCounts,
+                        _savedPendingOrderDays,
+                        _savedPendingGold,
+                        _savedPendingManpower,
+                        _savedPendingOwnCounts,
+                        _savedPendingCourier,
+                        _savedPendingPosX,
+                        _savedPendingPosY,
+                        pending.OrderId,
+                        pending.SettlementId,
+                        pending.TroopId,
+                        pending.Count,
+                        pending.OrderDay,
+                        pending.GoldPaid,
+                        pending.ManpowerDrawn,
+                        pending.PlayerOwnedCount,
+                        pending.CourierRemaining,
+                        pending.PosX,
+                        pending.PosY);
                 }
             }
 
@@ -556,20 +578,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 _transferReserve.Clear();
                 _veteranRegister.Clear();
                 _pendingRecalls.Clear();
-                int n = Math.Min(_savedPartyIds.Count,
-                    Math.Min(_savedTroopIds.Count, Math.Min(_savedJoinDays.Count, _savedCounts.Count)));
-
-                for (int i = 0; i < n; i++)
+                foreach (ServiceCohortSaveRow savedRow in B1071_ServiceMath.ReadServiceCohortRows(
+                    _savedPartyIds,
+                    _savedTroopIds,
+                    _savedJoinDays,
+                    _savedCounts,
+                    _savedExtendedFlags,
+                    _savedExtensionCounts,
+                    _savedHomeIds))
                 {
-                    string partyId = _savedPartyIds[i];
-                    string troopId = _savedTroopIds[i];
-                    int count = _savedCounts[i];
-                    // Saves written before v1.0.2.7 only carry the bool, which maps to one extension.
-                    int extensionCount = i < _savedExtensionCounts.Count
-                        ? Math.Max(0, _savedExtensionCounts[i])
-                        : ((i < _savedExtendedFlags.Count && _savedExtendedFlags[i]) ? 1 : 0);
-                    string homeId = i < _savedHomeIds.Count ? (_savedHomeIds[i] ?? string.Empty) : string.Empty;
-                    if (string.IsNullOrEmpty(partyId) || string.IsNullOrEmpty(troopId) || count <= 0) continue;
+                    string partyId = savedRow.PartyId;
+                    string troopId = savedRow.TroopId;
 
                     if (!_serviceCohorts.TryGetValue(partyId, out var troopDict))
                     {
@@ -583,30 +602,28 @@ namespace Byzantium1071.Campaign.Behaviors
                         troopDict[troopId] = cohorts;
                     }
 
-                    for (int soldier = 0; soldier < count; soldier++)
+                    for (int soldier = 0; soldier < savedRow.Count; soldier++)
                     {
                         cohorts.Add(new CohortEntry
                         {
-                            JoinDay = _savedJoinDays[i],
+                            JoinDay = savedRow.JoinDay,
                             Count = 1,
-                            ExtensionCount = extensionCount,
-                            HomeId = homeId
+                            ExtensionCount = savedRow.ExtensionCount,
+                            HomeId = savedRow.HomeId
                         });
                     }
                 }
 
-                int reserveCount = Math.Min(_savedReserveTroopIds.Count,
-                    Math.Min(_savedReserveJoinDays.Count, Math.Min(_savedReserveStoredDays.Count, _savedReserveCounts.Count)));
-
-                for (int i = 0; i < reserveCount; i++)
+                foreach (TransferReserveSaveRow savedRow in B1071_ServiceMath.ReadTransferReserveRows(
+                    _savedReserveTroopIds,
+                    _savedReserveJoinDays,
+                    _savedReserveStoredDays,
+                    _savedReserveCounts,
+                    _savedReserveExtendedFlags,
+                    _savedReserveExtensionCounts,
+                    _savedReserveHomeIds))
                 {
-                    string troopId = _savedReserveTroopIds[i];
-                    int count = _savedReserveCounts[i];
-                    int extensionCount = i < _savedReserveExtensionCounts.Count
-                        ? Math.Max(0, _savedReserveExtensionCounts[i])
-                        : ((i < _savedReserveExtendedFlags.Count && _savedReserveExtendedFlags[i]) ? 1 : 0);
-                    string homeId = i < _savedReserveHomeIds.Count ? (_savedReserveHomeIds[i] ?? string.Empty) : string.Empty;
-                    if (string.IsNullOrEmpty(troopId) || count <= 0) continue;
+                    string troopId = savedRow.TroopId;
 
                     if (!_transferReserve.TryGetValue(troopId, out var entries))
                     {
@@ -614,29 +631,28 @@ namespace Byzantium1071.Campaign.Behaviors
                         _transferReserve[troopId] = entries;
                     }
 
-                    for (int soldier = 0; soldier < count; soldier++)
+                    for (int soldier = 0; soldier < savedRow.Count; soldier++)
                     {
                         entries.Add(new TransferReserveEntry
                         {
-                            JoinDay = _savedReserveJoinDays[i],
-                            StoredDay = _savedReserveStoredDays[i],
+                            JoinDay = savedRow.JoinDay,
+                            StoredDay = savedRow.StoredDay,
                             Count = 1,
-                            ExtensionCount = extensionCount,
-                            HomeId = homeId
+                            ExtensionCount = savedRow.ExtensionCount,
+                            HomeId = savedRow.HomeId
                         });
                     }
                 }
 
-                int veteranRows = Math.Min(_savedVeteranSettlementIds.Count,
-                    Math.Min(_savedVeteranTroopIds.Count,
-                        Math.Min(_savedVeteranDischargeDays.Count, _savedVeteranCounts.Count)));
-
-                for (int i = 0; i < veteranRows; i++)
+                foreach (VeteranSaveRow savedRow in B1071_ServiceMath.ReadVeteranRows(
+                    _savedVeteranSettlementIds,
+                    _savedVeteranTroopIds,
+                    _savedVeteranDischargeDays,
+                    _savedVeteranCounts,
+                    _savedVeteranFromPlayer))
                 {
-                    string settlementId = _savedVeteranSettlementIds[i];
-                    string troopId = _savedVeteranTroopIds[i];
-                    int count = _savedVeteranCounts[i];
-                    if (string.IsNullOrEmpty(settlementId) || string.IsNullOrEmpty(troopId) || count <= 0) continue;
+                    string settlementId = savedRow.SettlementId;
+                    string troopId = savedRow.TroopId;
 
                     if (!_veteranRegister.TryGetValue(settlementId, out var vetTroopDict))
                     {
@@ -652,55 +668,55 @@ namespace Byzantium1071.Campaign.Behaviors
 
                     // The ownership flag arrived after the register did. Saves written before
                     // it simply have no list here, so those veterans load as nobody's men in
-                    // particular and stay behind the ordinary access rules — deliberately, since
-                    // guessing would hand the player free veterans all over the map.
-                    vetEntries.Add(new VeteranEntry
-                    {
-                        DischargeDay = _savedVeteranDischargeDays[i],
-                        Count = count,
-                        FromPlayer = i < _savedVeteranFromPlayer.Count && _savedVeteranFromPlayer[i]
-                    });
-                }
+                      // particular and stay behind the ordinary access rules — deliberately, since
+                      // guessing would hand the player free veterans all over the map.
+                      vetEntries.Add(new VeteranEntry
+                      {
+                          DischargeDay = savedRow.DischargeDay,
+                          Count = savedRow.Count,
+                          FromPlayer = savedRow.FromPlayer
+                      });
+                  }
 
-                // Recall orders in flight arrived in v1.0.2.8. Every earlier save simply has
-                // no lists here, which loads as no orders outstanding — the correct answer.
-                int pendingRows = Math.Min(_savedPendingSettlementIds.Count,
-                    Math.Min(_savedPendingTroopIds.Count, _savedPendingCounts.Count));
+                  // Recall orders in flight arrived in v1.0.2.8. Every earlier save simply has
+                  // no lists here, which loads as no orders outstanding — the correct answer.
+                  foreach (PendingRecallSaveRow savedRow in B1071_ServiceMath.ReadPendingRecallRows(
+                      _savedPendingOrderIds,
+                      _savedPendingSettlementIds,
+                      _savedPendingTroopIds,
+                      _savedPendingCounts,
+                      _savedPendingOrderDays,
+                      _savedPendingGold,
+                      _savedPendingManpower,
+                      _savedPendingOwnCounts,
+                      _savedPendingCourier,
+                      _savedPendingPosX,
+                      _savedPendingPosY,
+                      GetToday()))
+                  {
+                      // A missing position is left as NaN rather than read as map origin, which
+                      // is open sea off the western edge: the column would have marched the
+                      // whole map. EnsurePendingPosition puts them back at their settlement,
+                      // once the object manager is certain to answer.
+                      _pendingRecalls.Add(new PendingRecallEntry
+                      {
+                          OrderId = savedRow.OrderId,
+                          SettlementId = savedRow.SettlementId,
+                          TroopId = savedRow.TroopId,
+                          Count = savedRow.Count,
+                          OrderDay = savedRow.OrderDay,
+                          GoldPaid = savedRow.GoldPaid,
+                          ManpowerDrawn = savedRow.ManpowerDrawn,
 
-                for (int i = 0; i < pendingRows; i++)
-                {
-                    string settlementId = _savedPendingSettlementIds[i];
-                    string troopId = _savedPendingTroopIds[i];
-                    int count = _savedPendingCounts[i];
-                    if (string.IsNullOrEmpty(settlementId) || string.IsNullOrEmpty(troopId) || count <= 0) continue;
-
-                    // A missing position is left as NaN rather than read as map origin, which
-                    // is open sea off the western edge: the column would have marched the
-                    // whole map. EnsurePendingPosition puts them back at their settlement,
-                    // once the object manager is certain to answer.
-                    bool hasPosition = i < _savedPendingPosX.Count && i < _savedPendingPosY.Count;
-
-                    _pendingRecalls.Add(new PendingRecallEntry
-                    {
-                        OrderId = i < _savedPendingOrderIds.Count ? _savedPendingOrderIds[i] : 0,
-                        SettlementId = settlementId,
-                        TroopId = troopId,
-                        Count = count,
-                        OrderDay = i < _savedPendingOrderDays.Count ? _savedPendingOrderDays[i] : GetToday(),
-                        GoldPaid = i < _savedPendingGold.Count ? _savedPendingGold[i] : 0,
-                        ManpowerDrawn = i < _savedPendingManpower.Count ? _savedPendingManpower[i] : 0,
-
-                        // Missing means none of them are his, which is the safe reading: it
-                        // hands the local lord men that were the player's rather than the
-                        // other way round, and only for orders already on the road.
-                        PlayerOwnedCount = i < _savedPendingOwnCounts.Count
-                            ? ClampInt(_savedPendingOwnCounts[i], 0, count)
-                            : 0,
-                        CourierRemaining = i < _savedPendingCourier.Count ? _savedPendingCourier[i] : 0f,
-                        PosX = hasPosition ? _savedPendingPosX[i] : float.NaN,
-                        PosY = hasPosition ? _savedPendingPosY[i] : float.NaN
-                    });
-                }
+                          // Missing means none of them are his, which is the safe reading: it
+                          // hands the local lord men that were the player's rather than the
+                          // other way round, and only for orders already on the road.
+                          PlayerOwnedCount = savedRow.PlayerOwnedCount,
+                          CourierRemaining = savedRow.CourierRemaining,
+                          PosX = savedRow.PosX,
+                          PosY = savedRow.PosY
+                      });
+                  }
 
                 // Handles are rebuilt rather than saved: all that matters is that no two
                 // outstanding orders share one and that the next order gets a free number.
@@ -1546,7 +1562,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 int overdueForTroop = CountOverdueSoldiers(cohorts, today, threshold);
                 if (overdueForTroop <= 0) continue;
 
-                int troopCap = Math.Max(1, overdueForTroop * Math.Max(1, Settings.DemobilizationDailyCapPercent) / 100);
+                int troopCap = B1071_ServiceMath.DailyRetirementCap(
+                    overdueForTroop,
+                    Settings.DemobilizationDailyCapPercent);
                 overdueByTroop[troopId] = overdueForTroop;
                 thresholdByTroop[troopId] = threshold;
                 troopCapByTroop[troopId] = troopCap;
@@ -1781,11 +1799,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Not everyone makes it back. Rolled per man so the percentage still means
             // something at counts of one, which is how discharges actually arrive.
             int returnPercent = ClampInt(Settings.DemobilizationManpowerReturnPercent, 0, 100);
-            for (int i = 0; i < count; i++)
-            {
-                if (returnPercent >= 100 || MBRandom.RandomInt(100) < returnPercent)
-                    arrived++;
-            }
+            arrived = B1071_ServiceMath.VeteranReturnCount(count, returnPercent, Random);
 
             if (arrived <= 0)
             {
@@ -1894,12 +1908,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 var entries = troopDict[troopId];
                 for (int i = entries.Count - 1; i >= 0; i--)
                 {
-                    int lost = entries[i].Count * scatterPercent / 100;
-                    // A partial man still counts as a real risk of losing the last holdout.
-                    if (lost <= 0 && MBRandom.RandomInt(100) < scatterPercent)
-                        lost = 1;
-
-                    lost = Math.Min(lost, entries[i].Count);
+                    int lost = B1071_ServiceMath.ScatterCount(entries[i].Count, scatterPercent, Random);
                     if (lost <= 0) continue;
 
                     entries[i].Count -= lost;
@@ -2054,9 +2063,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static int GetRecallGoldCost(CharacterObject troop, int count)
         {
-            int tier = ClampInt(troop.Tier, 1, 6);
-            int perTier = Math.Max(0, Settings.DemobilizationRecallGoldPerTier);
-            return Math.Max(0, count * tier * perTier);
+            return B1071_ServiceMath.RecallGoldCost(troop.Tier, count, Settings);
         }
 
         public int GetVeteranCountAt(Settlement? settlement) => GetVeteranCountAt(settlement, false);
@@ -2149,8 +2156,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (party == null) return 0;
             float distance = settlement.GetPosition2D.Distance(party.GetPosition2D);
-            float days = distance / CourierSpeedPerDay() + distance / MarchSpeedPerDay();
-            return Math.Max(1, (int)Math.Ceiling(days));
+            return B1071_ServiceMath.EstimateRecallDays(distance, Settings);
         }
 
         /// <summary>
@@ -2584,9 +2590,9 @@ namespace Byzantium1071.Campaign.Behaviors
             return party.CurrentSettlement == settlement || Settlement.CurrentSettlement == settlement;
         }
 
-        private static float CourierSpeedPerDay() => Math.Max(1, Settings.DemobilizationCourierSpeed);
+        private static float CourierSpeedPerDay() => B1071_ServiceMath.CourierSpeedPerDay(Settings);
 
-        private static float MarchSpeedPerDay() => Math.Max(1, Settings.DemobilizationMarchSpeed);
+        private static float MarchSpeedPerDay() => B1071_ServiceMath.MarchSpeedPerDay(Settings);
 
         /// <summary>
         /// Whole days before this order lands, from where the men stand now to where the
@@ -2595,9 +2601,8 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private static int EstimateArrivalDays(PendingRecallEntry entry, Vec2 target)
         {
-            float days = entry.CourierRemaining > 0f ? entry.CourierRemaining / CourierSpeedPerDay() : 0f;
-            days += new Vec2(entry.PosX, entry.PosY).Distance(target) / MarchSpeedPerDay();
-            return Math.Max(0, (int)Math.Ceiling(days));
+            float marchingDistance = new Vec2(entry.PosX, entry.PosY).Distance(target);
+            return B1071_ServiceMath.EstimateArrivalDays(entry.CourierRemaining, marchingDistance, Settings);
         }
 
         /// <summary>
@@ -2729,14 +2734,16 @@ namespace Byzantium1071.Campaign.Behaviors
             // off the remainder, and log a manpower figure for men who already fell in.
             if (entry.Count > 0 && ordered > 0)
             {
-                entry.GoldPaid -= entry.GoldPaid * joining / ordered;
-                entry.ManpowerDrawn -= entry.ManpowerDrawn * joining / ordered;
-
-                // Nothing records which men fell in first, so his share of the column shrinks
-                // with it. Clamped, so rounding can never leave the ledger claiming more of
-                // his men than there are men left standing outside.
-                entry.PlayerOwnedCount = Math.Min(entry.Count,
-                    entry.PlayerOwnedCount - entry.PlayerOwnedCount * joining / ordered);
+                PendingRecallBalance balance = B1071_ServiceMath.ProrateAfterDeparture(
+                    ordered,
+                    joining,
+                    entry.Count,
+                    entry.GoldPaid,
+                    entry.ManpowerDrawn,
+                    entry.PlayerOwnedCount);
+                entry.GoldPaid = balance.GoldPaid;
+                entry.ManpowerDrawn = balance.ManpowerDrawn;
+                entry.PlayerOwnedCount = balance.PlayerOwnedCount;
             }
 
             string troopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
@@ -2910,11 +2917,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (entry.CourierRemaining <= 0f) continue;
                 if (!string.Equals(entry.SettlementId, settlementId, StringComparison.Ordinal)) continue;
 
-                int lost = entry.Count * scatterPercent / 100;
-                if (lost <= 0 && MBRandom.RandomInt(100) < scatterPercent)
-                    lost = 1;
-
-                lost = Math.Min(lost, entry.Count);
+                int lost = B1071_ServiceMath.ScatterCount(entry.Count, scatterPercent, Random);
                 if (lost <= 0) continue;
 
                 int ordered = entry.Count;
@@ -2925,10 +2928,16 @@ namespace Byzantium1071.Campaign.Behaviors
                 // quotes their share of the bounty rather than the whole original order.
                 if (entry.Count > 0)
                 {
-                    entry.GoldPaid -= entry.GoldPaid * lost / ordered;
-                    entry.ManpowerDrawn -= entry.ManpowerDrawn * lost / ordered;
-                    entry.PlayerOwnedCount = Math.Min(entry.Count,
-                        entry.PlayerOwnedCount - entry.PlayerOwnedCount * lost / ordered);
+                    PendingRecallBalance balance = B1071_ServiceMath.ProrateAfterDeparture(
+                        ordered,
+                        lost,
+                        entry.Count,
+                        entry.GoldPaid,
+                        entry.ManpowerDrawn,
+                        entry.PlayerOwnedCount);
+                    entry.GoldPaid = balance.GoldPaid;
+                    entry.ManpowerDrawn = balance.ManpowerDrawn;
+                    entry.PlayerOwnedCount = balance.PlayerOwnedCount;
                 }
 
                 if (entry.Count <= 0)
@@ -3130,85 +3139,29 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private int GetServiceThresholdDays(CharacterObject troop, MobileParty party)
         {
-            int tier = ClampInt(troop.Tier, 1, 6);
-            int baseDays = GetBaseServiceDays(tier);
-            int percent = 100;
-
+            B1071Season season = B1071Season.Autumn;
             if (Settings.EnableDemobilizationSeasonality)
             {
-                var season = CampaignTime.Now.GetSeasonOfYear;
-                if (season == CampaignTime.Seasons.Spring || season == CampaignTime.Seasons.Summer)
-                    percent = percent * Math.Max(25, Settings.DemobilizationSpringSummerThresholdPercent) / 100;
-                else if (season == CampaignTime.Seasons.Winter)
-                    percent = percent * Math.Max(25, Settings.DemobilizationWinterThresholdPercent) / 100;
-            }
-
-            if (Settings.EnableDemobilizationCrisisCompression)
-            {
-                string? kingdomId = party.LeaderHero?.Clan?.Kingdom?.StringId;
-                if (!string.IsNullOrEmpty(kingdomId) && B1071_ManpowerBehavior.Instance?.GetPressureBand(kingdomId) == DiplomacyPressureBand.Crisis)
-                    percent = percent * Math.Max(25, Settings.DemobilizationCrisisThresholdPercent) / 100;
-            }
-
-            return Math.Max(1, baseDays * percent / 100);
-        }
-
-        private int GetBaseServiceDays(int tier)
-        {
-            int preset = Settings.DemobilizationIntensityPreset;
-            if (preset == 0)
-            {
-                switch (tier)
+                season = CampaignTime.Now.GetSeasonOfYear switch
                 {
-                    case 1: return 63;
-                    case 2: return 84;
-                    case 3: return 126;
-                    case 4: return 168;
-                    case 5: return 252;
-                    default: return 336;
-                }
+                    CampaignTime.Seasons.Spring => B1071Season.Spring,
+                    CampaignTime.Seasons.Summer => B1071Season.Summer,
+                    CampaignTime.Seasons.Winter => B1071Season.Winter,
+                    _ => B1071Season.Autumn
+                };
             }
 
-            if (preset == 2)
-            {
-                switch (tier)
-                {
-                    case 1: return 28;
-                    case 2: return 42;
-                    case 3: return 56;
-                    case 4: return 84;
-                    case 5: return 112;
-                    default: return 168;
-                }
-            }
+            string? kingdomId = party.LeaderHero?.Clan?.Kingdom?.StringId;
+            bool isInCrisis = Settings.EnableDemobilizationCrisisCompression
+                && !string.IsNullOrEmpty(kingdomId)
+                && B1071_ManpowerBehavior.Instance?.GetPressureBand(kingdomId) == DiplomacyPressureBand.Crisis;
 
-            if (preset == 3)
-            {
-                switch (tier)
-                {
-                    case 1: return Settings.DemobilizationT1ServiceDays;
-                    case 2: return Settings.DemobilizationT2ServiceDays;
-                    case 3: return Settings.DemobilizationT3ServiceDays;
-                    case 4: return Settings.DemobilizationT4ServiceDays;
-                    case 5: return Settings.DemobilizationT5ServiceDays;
-                    default: return Settings.DemobilizationT6ServiceDays;
-                }
-            }
-
-            switch (tier)
-            {
-                case 1: return 42;
-                case 2: return 63;
-                case 3: return 84;
-                case 4: return 126;
-                case 5: return 168;
-                default: return 252;
-            }
+            return B1071_ServiceMath.ServiceThresholdDays(troop.Tier, season, isInCrisis, Settings);
         }
 
         private static int GetMaxExtensions()
         {
-            return Math.Max(1, Settings.DemobilizationMaxExtensions);
+            return B1071_ServiceMath.MaxExtensions(Settings);
         }
 
         /// <summary>
@@ -3219,12 +3172,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private int GetExtensionCost(CharacterObject troop, int count, int alreadyExtended)
         {
-            int tier = ClampInt(troop.Tier, 1, 6);
-            int days = Math.Max(1, Settings.DemobilizationExtensionDays);
-            int costPerTierDay = Math.Max(0, Settings.DemobilizationExtensionGoldPerTierDay);
-            long baseCost = (long)count * tier * days * costPerTierDay;
-            long scaled = baseCost * (2 + Math.Max(0, alreadyExtended)) / 2;
-            return (int)Math.Max(0, Math.Min(int.MaxValue, scaled));
+            return B1071_ServiceMath.ExtensionCost(troop.Tier, count, alreadyExtended, Settings);
         }
 
         private List<string> GetUpgradePathIds(string sourceTroopId)

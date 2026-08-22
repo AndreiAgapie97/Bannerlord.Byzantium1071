@@ -45,8 +45,8 @@ namespace Byzantium1071.Campaign.Patches
                 float dev = behavior.GetDevastation(village);
                 if (dev <= 0f) return;
 
-                float ratio = dev / 100f;
-                float penalty = -(ratio * Settings.DevastationMaxHearthPenalty);
+                float penalty = B1071_GovernanceMath.DevastationPenalty(
+                    dev, Settings.DevastationMaxHearthPenalty);
 
                 __result.Add(penalty, _label);
             }

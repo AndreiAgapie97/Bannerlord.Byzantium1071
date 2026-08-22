@@ -40,8 +40,8 @@ namespace Byzantium1071.Campaign.Patches
                 float strain = behavior.GetStrainForTown(town);
                 if (strain > 0f)
                 {
-                    float cap = Math.Max(1f, Settings.GovernanceStrainCap);
-                    float penalty = -(strain / cap) * Settings.GovernanceMaxSecurityPenalty;
+                    float penalty = B1071_GovernanceMath.GovernancePenalty(
+                        strain, Settings.GovernanceMaxSecurityPenalty, Settings);
 
                     if (penalty < 0f)
                         __result.Add(penalty, _label);

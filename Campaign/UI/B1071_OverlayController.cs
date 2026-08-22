@@ -827,54 +827,7 @@ namespace Byzantium1071.Campaign.UI
         // Higher-weight fields contribute more to the final score so that a direct name match
         // always beats an indirect location match for a different entity.
         private static int ComputeQueryScore(string query, string[] fields, float[]? weights)
-        {
-            if (string.IsNullOrEmpty(query) || fields == null || fields.Length == 0)
-                return 0;
-
-            string q = query.Trim();
-            if (q.Length == 0)
-                return 0;
-
-            string qLower = q.ToLowerInvariant();
-            int best = 0;
-
-            string[] queryTokens = qLower.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            for (int i = 0; i < fields.Length; i++)
-            {
-                string source = fields[i] ?? string.Empty;
-                if (source.Length == 0)
-                    continue;
-
-                float w = (weights != null && i < weights.Length) ? weights[i] : 1f;
-                string sourceLower = source.ToLowerInvariant();
-
-                int fieldScore = 0;
-                if (sourceLower == qLower)
-                    fieldScore = 1000;
-                else if (sourceLower.StartsWith(qLower, StringComparison.Ordinal))
-                    fieldScore = 850;
-                else if (sourceLower.Contains(qLower))
-                    fieldScore = 650;
-
-                if (fieldScore == 0 && queryTokens.Length > 1)
-                {
-                    int tokenHits = 0;
-                    for (int t = 0; t < queryTokens.Length; t++)
-                    {
-                        if (sourceLower.Contains(queryTokens[t]))
-                            tokenHits++;
-                    }
-                    if (tokenHits > 0)
-                        fieldScore = 400 + (tokenHits * 60);
-                }
-
-                int weighted = (int)(fieldScore * w);
-                best = Math.Max(best, weighted);
-            }
-
-            return best;
-        }
+            => B1071_DisplayMath.ComputeQueryScore(query, fields, weights);
 
         /// <summary>
         /// Returns a short status string for a hero plus the best known position.
@@ -1626,26 +1579,7 @@ namespace Byzantium1071.Campaign.UI
         }
 
         private static int ComputeInstabilityScore(bool isDefectionRisk, int fiefCount, int gold, int influence, int relationToPlayer)
-        {
-            float fiefless = fiefCount <= 0 ? 1f : 0f;
-            float poor = Clamp01Float((40000f - gold) / 40000f);
-            float lowInfluence = Clamp01Float((150f - influence) / 150f);
-
-            float relationFactor = isDefectionRisk
-                ? Clamp01Float((20f - relationToPlayer) / 60f)
-                : Clamp01Float((relationToPlayer + 20f) / 80f);
-
-            float weighted =
-                (0.35f * fiefless) +
-                (0.25f * poor) +
-                (0.20f * relationFactor) +
-                (0.20f * lowInfluence);
-
-            int score = (int)Math.Round(100f * Clamp01Float(weighted), MidpointRounding.AwayFromZero);
-            if (score < 0) score = 0;
-            if (score > 100) score = 100;
-            return score;
-        }
+            => B1071_DisplayMath.ComputeInstabilityScore(isDefectionRisk, fiefCount, gold, influence, relationToPlayer);
 
         private static string BuildClanStatusCode(bool isNeutral, int fiefCount, int gold)
         {
@@ -2541,36 +2475,14 @@ namespace Byzantium1071.Campaign.UI
         }
 
         private static string FormatMp(int current, int maximum)
-        {
-            return current.ToString("N0") + "/" + maximum.ToString("N0");
-        }
+            => B1071_DisplayMath.FormatManpower(current, maximum);
 
         private static string TruncateForColumn(string text, int maxLength)
-        {
-            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
-                return text;
-
-            if (maxLength <= 1)
-                return text.Substring(0, maxLength);
-
-            return text.Substring(0, maxLength - 1) + "…";
-        }
+            => B1071_DisplayMath.TruncateForColumn(text, maxLength);
 
         /// <summary>Overload that returns the full text as hintText when truncation occurs.</summary>
         private static string TruncateForColumn(string text, int maxLength, out string hintText)
-        {
-            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
-            {
-                hintText = string.Empty;
-                return text;
-            }
-
-            hintText = text;
-            if (maxLength <= 1)
-                return text.Substring(0, maxLength);
-
-            return text.Substring(0, maxLength - 1) + "…";
-        }
+            => B1071_DisplayMath.TruncateForColumn(text, maxLength, out hintText);
 
         private static string GetExhaustionLabel(float exhaustion, string? kingdomId = null)
         {
@@ -2961,54 +2873,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         private static float Clamp01(float value)
-        {
-            if (value < 0f) return 0f;
-            if (value > 1f) return 1f;
-            return value;
-        }
+            => B1071_DisplayMath.Clamp01(value);
 
         private static int EstimateTimeToRebelDays(float loyalty, float loyaltyChange, bool inRebelliousState)
-        {
-            if (inRebelliousState)
-                return 0;
-
-            const float rebellionThreshold = 25f;
-            if (loyalty <= rebellionThreshold)
-                return 1;
-
-            if (float.IsNaN(loyaltyChange) || float.IsInfinity(loyaltyChange) || loyaltyChange >= -0.01f)
-                return int.MaxValue;
-
-            double rawDays = (loyalty - rebellionThreshold) / (-loyaltyChange);
-            if (double.IsNaN(rawDays) || double.IsInfinity(rawDays) || rawDays <= 0d)
-                return int.MaxValue;
-
-            int days = (int)Math.Ceiling(rawDays);
-            if (days < 1) days = 1;
-            if (days > 999) days = 999;
-            return days;
-        }
+            => B1071_DisplayMath.EstimateTimeToRebelDays(loyalty, loyaltyChange, inRebelliousState);
 
         private static int ComputeRebellionRiskScore(float loyalty, float security, float foodChange, bool cultureMismatch, bool inRebelliousState)
-        {
-            float loyaltyRisk = Clamp01((50f - loyalty) / 50f);
-            float securityRisk = Clamp01((45f - security) / 45f);
-            float foodRisk = foodChange < 0f ? Clamp01((-foodChange) / 8f) : 0f;
-            float mismatchRisk = cultureMismatch ? 1f : 0f;
-            float rebellionStateRisk = inRebelliousState ? 1f : 0f;
-
-            float weighted =
-                (0.50f * loyaltyRisk) +
-                (0.20f * securityRisk) +
-                (0.15f * foodRisk) +
-                (0.10f * mismatchRisk) +
-                (0.05f * rebellionStateRisk);
-
-            int score = (int)Math.Round(100f * Clamp01(weighted), MidpointRounding.AwayFromZero);
-            if (score < 0) score = 0;
-            if (score > 100) score = 100;
-            return score;
-        }
+            => B1071_DisplayMath.ComputeRebellionRiskScore(loyalty, security, foodChange, cultureMismatch, inRebelliousState);
 
         private static string FormatFoodTrend(float foodChange)
         {
@@ -3022,18 +2893,7 @@ namespace Byzantium1071.Campaign.UI
         }
 
         private static string FormatFoodTrendCompact(float foodChange)
-        {
-            if (float.IsNaN(foodChange) || float.IsInfinity(foodChange))
-                return "?";
-
-            int rounded = (int)Math.Round(foodChange, MidpointRounding.AwayFromZero);
-            if (rounded == 0)
-                return "0";
-
-            if (rounded > 999) return "+999";
-            if (rounded < -999) return "-999";
-            return rounded > 0 ? "+" + rounded : rounded.ToString();
-        }
+            => B1071_DisplayMath.FormatFoodTrendCompact(foodChange);
 
         private static string FormatTimeToRebelLabel(int days)
         {
@@ -3200,9 +3060,7 @@ namespace Byzantium1071.Campaign.UI
         /// Shows "9 vs 15" (side A's settlements vs side B's).
         /// </summary>
         private static string FormatTerritoryCount(int countA, int countB)
-        {
-            return countA.ToString() + " vs " + countB.ToString();
-        }
+            => B1071_DisplayMath.FormatTerritoryCount(countA, countB);
 
         /// <summary>
         /// Computes a mod-aware peace pressure score for the Wars tab display.
@@ -3246,11 +3104,7 @@ namespace Byzantium1071.Campaign.UI
         /// Returns "Name (Age)" e.g. "Rhagaea (45)", or N/A if data is missing.
         /// </summary>
         private static string FormatRuler(string rulerName, int rulerAge)
-        {
-            if (string.IsNullOrEmpty(rulerName) || rulerAge <= 0)
-                return L("b1071_ui_na", "N/A");
-            return rulerName + " (" + rulerAge + ")";
-        }
+            => B1071_DisplayMath.FormatRuler(rulerName, rulerAge, L("b1071_ui_na", "N/A"));
 
         /// <summary>
         /// Formats a war duration in days. Shows "New" for wars under 1 day,
@@ -3269,25 +3123,26 @@ namespace Byzantium1071.Campaign.UI
                 exhaustion = 0f;
 
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-
-            if (settings.EnableDiplomacyPressureBands && B1071_ManpowerBehavior.Instance != null && !string.IsNullOrEmpty(kingdomId))
+            bool usePressureBands = settings.EnableDiplomacyPressureBands
+                && B1071_ManpowerBehavior.Instance != null
+                && !string.IsNullOrEmpty(kingdomId);
+            DiplomacyPressureBand band = usePressureBands
+                ? B1071_ManpowerBehavior.Instance!.GetPressureBand(kingdomId)
+                : DiplomacyPressureBand.Low;
+            ExhaustionDisplayTag displayTag = B1071_DisplayMath.ExhaustionTag(exhaustion, usePressureBands, band);
+            string tag = displayTag switch
             {
-                var band = B1071_ManpowerBehavior.Instance.GetPressureBand(kingdomId);
-                string tag = band switch
-                {
-                    DiplomacyPressureBand.Crisis => L("b1071_overlay_exhaustion_tag_crisis", "Cr"),
-                    DiplomacyPressureBand.Rising => L("b1071_overlay_exhaustion_tag_rising", "Ri"),
-                    _ => exhaustion < 1f ? L("b1071_overlay_exhaustion_tag_fresh", "Fr") : L("b1071_overlay_exhaustion_tag_low", "Lo"),
-                };
-                int rounded = (int)exhaustion;
-                return rounded > 0 ? tag + rounded.ToString() : tag;
-            }
-
-            if (exhaustion < 1f) return L("b1071_overlay_exhaustion_tag_fresh", "Fr");
-            if (exhaustion < 25f) return L("b1071_overlay_exhaustion_tag_strained", "St") + ((int)exhaustion).ToString();
-            if (exhaustion < 50f) return L("b1071_overlay_exhaustion_tag_tired", "Ti") + ((int)exhaustion).ToString();
-            if (exhaustion < 75f) return L("b1071_overlay_exhaustion_tag_exhausted", "Ex") + ((int)exhaustion).ToString();
-            return L("b1071_overlay_exhaustion_tag_crisis", "Cr") + ((int)exhaustion).ToString();
+                ExhaustionDisplayTag.Fresh => L("b1071_overlay_exhaustion_tag_fresh", "Fr"),
+                ExhaustionDisplayTag.Low => L("b1071_overlay_exhaustion_tag_low", "Lo"),
+                ExhaustionDisplayTag.Rising => L("b1071_overlay_exhaustion_tag_rising", "Ri"),
+                ExhaustionDisplayTag.Strained => L("b1071_overlay_exhaustion_tag_strained", "St"),
+                ExhaustionDisplayTag.Tired => L("b1071_overlay_exhaustion_tag_tired", "Ti"),
+                ExhaustionDisplayTag.Exhausted => L("b1071_overlay_exhaustion_tag_exhausted", "Ex"),
+                _ => L("b1071_overlay_exhaustion_tag_crisis", "Cr")
+            };
+            int rounded = (int)exhaustion;
+            if (usePressureBands) return rounded > 0 ? tag + rounded.ToString() : tag;
+            return displayTag == ExhaustionDisplayTag.Fresh ? tag : tag + rounded.ToString();
         }
 
         private static string GetPeacePressureBand(float peacePressure)
@@ -3296,27 +3151,9 @@ namespace Byzantium1071.Campaign.UI
                 return L("b1071_overlay_warstate_neutral", "Neutral");
 
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-            float abs = Math.Abs(peacePressure);
-            string level;
-
-            if (settings.EnableDiplomacyPressureBands)
-            {
-                // Band-mode: scores are typically 0-2000+ range (bias × exhaustion sum).
-                level = abs >= 1600f ? "Extreme"
-                    : abs >= 800f ? "High"
-                    : abs >= 300f ? "Medium"
-                    : abs >= 80f ? "Low"
-                    : "Light";
-            }
-            else
-            {
-                // Legacy mode thresholds (vanilla DiplomacyModel scores).
-                level = abs >= 100000f ? "Extreme"
-                    : abs >= 25000f ? "High"
-                    : abs >= 5000f ? "Medium"
-                    : abs >= 1000f ? "Low"
-                    : "Light";
-            }
+            string level = B1071_DisplayMath.PeacePressureLevel(
+                peacePressure,
+                settings.EnableDiplomacyPressureBands);
 
             level = level switch
             {

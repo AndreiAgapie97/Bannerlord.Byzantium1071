@@ -53,7 +53,7 @@ namespace Byzantium1071.Campaign.Patches
                 int slaveCount = behavior.GetSlaveCountForTown(town);
                 if (slaveCount <= 0) return;
 
-                float consumption = slaveCount * Settings.SlaveFoodConsumptionPerUnit;
+                float consumption = B1071_SlaveMath.FoodConsumption(slaveCount, Settings);
                 if (consumption <= 0f) return;
 
                 __result.Add(-consumption, _label);

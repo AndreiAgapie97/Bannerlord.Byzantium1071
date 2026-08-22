@@ -171,20 +171,6 @@ namespace Byzantium1071.Campaign.Patches
         private static readonly TextObject _cancelLabel = new TextObject("{=b1071_lbl_norm_occ}B1071 Normalises Occupation");
         private static readonly TextObject _foreignLabel = new TextObject("{=b1071_lbl_foreign_hire}B1071 Foreign Recruitment");
 
-        // [preset 0-3][tier_index 0-5]  — AddFactor values
-        // tier_index = Math.Clamp(troop.Tier - 1, 0, 5)
-        private static readonly float[][] _hireFactors =
-        {
-            // 0 = Off (vanilla)
-            new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f },
-            // 1 = Light
-            new[] { 0.00f, 0.15f, 0.35f, 0.65f, 1.00f, 1.50f },
-            // 2 = Moderate
-            new[] { 0.10f, 0.30f, 0.75f, 1.50f, 2.50f, 4.00f },
-            // 3 = Severe
-            new[] { 0.25f, 0.75f, 1.75f, 3.50f, 6.00f, 10.0f },
-        };
-
         public static void Postfix(CharacterObject troop, Hero buyerHero, ref ExplainedNumber __result)
         {
             try
@@ -194,8 +180,7 @@ namespace Byzantium1071.Campaign.Patches
             int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).HireUpgradeCostPreset;
             if (preset <= 0 || preset > 3) return;
 
-            int tierIdx = Math.Max(0, Math.Min(5, troop.Tier - 1));
-            float factor = _hireFactors[preset][tierIdx];
+            float factor = B1071_EconomyMath.HireFactor(preset, troop.Tier);
 
             // Vanilla GetTroopRecruitmentCost applies result.Add(BaseNumber * 2f) for
             // Occupation.Mercenary, Occupation.Gangster, and Occupation.CaravanGuard.
@@ -228,9 +213,6 @@ namespace Byzantium1071.Campaign.Patches
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] HireCostPatch error: {ex}"); }
         }
-
-        // [preset 0-3] — AddFactor values: off, 1.5x, 2x, 3x.
-        private static readonly float[] _foreignFactors = { 0.00f, 0.50f, 1.00f, 2.00f };
 
         /// <summary>
         /// Premium for hiring outside your own realm.
@@ -272,7 +254,7 @@ namespace Byzantium1071.Campaign.Patches
             if (buyerHero?.Clan == null) return 0f;
 
             int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).ForeignRecruitCostPreset;
-            if (preset <= 0 || preset >= _foreignFactors.Length) return 0f;
+            if (preset <= 0 || preset > 3) return 0f;
 
             if (troop != null &&
                 (troop.Occupation == Occupation.Mercenary || troop.Occupation == Occupation.CaravanGuard))
@@ -293,7 +275,7 @@ namespace Byzantium1071.Campaign.Patches
             if (hostFaction == null || buyerFaction == null) return 0f;
             if (hostFaction == buyerFaction) return 0f;
 
-            return _foreignFactors[preset];
+            return B1071_EconomyMath.ForeignHireFactor(preset);
         }
     }
 
@@ -302,20 +284,6 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultPartyWageModel), nameof(DefaultPartyWageModel.GetCharacterWage))]
     public static class B1071_WagePatch
     {
-        // [preset 0-3][tier_index 0-5]  — multiplicative factors
-        // applied as: result = Round(vanilla * (1 + factor))
-        private static readonly float[][] _wageFactors =
-        {
-            // 0 = Off (vanilla)
-            new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f },
-            // 1 = Light
-            new[] { 0.00f, 0.00f, 0.20f, 0.40f, 0.70f, 1.00f },
-            // 2 = Moderate
-            new[] { 0.00f, 0.10f, 0.50f, 1.00f, 1.60f, 2.50f },
-            // 3 = Severe
-            new[] { 0.10f, 0.25f, 0.70f, 1.50f, 2.50f, 4.00f },
-        };
-
         public static void Postfix(CharacterObject character, ref int __result)
         {
             try
@@ -331,13 +299,12 @@ namespace Byzantium1071.Campaign.Patches
             int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).WagePreset;
             if (preset <= 0 || preset > 3) return;
 
-            int tierIdx = Math.Max(0, Math.Min(5, character.Tier - 1));
-            float factor = _wageFactors[preset][tierIdx];
+            float factor = B1071_EconomyMath.WageFactor(preset, character.Tier);
             if (factor == 0f) return;
 
             // Preserve a minimum of 1d/day (LimitMin in GetTotalWage handles the party
             // aggregate floor, but individual wages should not go below 1 either).
-            __result = Math.Max(1, (int)Math.Round(__result * (1f + factor)));
+            __result = B1071_EconomyMath.AdjustedWage(__result, preset, character.Tier);
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] WagePatch error: {ex}"); }
         }
@@ -385,7 +352,7 @@ namespace Byzantium1071.Campaign.Patches
             // Convert percent-of-field to AddFactor offset:
             //   GarrisonWagePercent = 60 → factor = 60/100 - 1 = -0.40 (40% discount)
             //   GarrisonWagePercent = 100 → factor = 0 (no change)
-            float factor = settings.GarrisonWagePercent / 100f - 1f;
+            float factor = B1071_EconomyMath.GarrisonWageAddFactor(settings.GarrisonWagePercent);
             if (factor >= 0f) return;
 
             __result.AddFactor(factor, _label);

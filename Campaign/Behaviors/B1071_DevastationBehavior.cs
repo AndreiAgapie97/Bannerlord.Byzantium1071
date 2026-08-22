@@ -62,7 +62,8 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_DevastationBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         // Per-village devastation (0 to 100). Key = Village.Settlement.StringId.
         private Dictionary<string, float> _devastationByVillage = new Dictionary<string, float>();
@@ -208,8 +209,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 string key = village.Settlement.StringId;
                 float current = _devastationByVillage.TryGetValue(key, out float val) ? val : 0f;
-                float added = Settings.DevastationPerRaid;
-                _devastationByVillage[key] = Math.Min(100f, current + added);
+                _devastationByVillage[key] = B1071_GovernanceMath.AddDevastation(current, Settings);
 
                 if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
                 {
@@ -239,8 +239,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 string key = settlement.StringId;
                 if (!_devastationByVillage.TryGetValue(key, out float dev) || dev <= 0f) return;
 
-                float decay = Settings.DevastationDecayPerDay;
-                dev = Math.Max(0f, dev - decay);
+                dev = B1071_GovernanceMath.DailyDevastation(dev, Settings);
 
                 if (dev <= 0f)
                     _devastationByVillage.Remove(key);

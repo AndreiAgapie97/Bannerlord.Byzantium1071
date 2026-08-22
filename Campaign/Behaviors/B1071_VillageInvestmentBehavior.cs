@@ -53,7 +53,10 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_VillageInvestmentBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        private static IB1071Random Random => B1071_TestHooks.Random ?? B1071Random.Instance;
 
         // Key = "{settlement.StringId}_{hero.StringId}" → days remaining on active investment.
         private Dictionary<string, float> _investDaysRemaining = new();
@@ -104,20 +107,10 @@ namespace Byzantium1071.Campaign.Behaviors
         public float GetActiveHearthBonus(Village village)
         {
             if (village?.Settlement == null) return 0f;
-            string prefix = village.Settlement.StringId + "_";
-            float total = 0f;
-            foreach (var kvp in _investHearthBonus)
-            {
-                if (kvp.Key.StartsWith(prefix, StringComparison.Ordinal))
-                {
-                    // Only count if days remaining > 0.
-                    if (_investDaysRemaining.TryGetValue(kvp.Key, out float days) && days > 0f)
-                    {
-                        total += kvp.Value;
-                    }
-                }
-            }
-            return total;
+            return B1071_InvestmentMath.ActiveBonus(
+                village.Settlement.StringId,
+                _investHearthBonus,
+                _investDaysRemaining);
         }
 
         // ── Daily tick: decrement durations, expire investments ────────────────────
@@ -178,7 +171,7 @@ namespace Byzantium1071.Campaign.Behaviors
             int heroCooldownDays = Settings.VillageInvestAiHeroCooldownDays;
             if (heroCooldownDays > 0 && _heroLastInvestDay.TryGetValue(hero.StringId, out float lastDay))
             {
-                if (now - lastDay < heroCooldownDays) return;
+                if (!B1071_InvestmentMath.IsHeroCooldownReady(now, lastDay, heroCooldownDays)) return;
             }
 
             // Hearth priority — skip wealthy villages so AI focuses on those in need.
@@ -186,22 +179,22 @@ namespace Byzantium1071.Campaign.Behaviors
             if (hearthCeiling > 0 && village.Hearth >= hearthCeiling) return;
 
             // Random chance gate — only a percentage of eligible visits result in investment.
-            if (MBRandom.RandomInt(100) >= Settings.VillageInvestAiChance) return;
+            if (Random.Next(100) >= Settings.VillageInvestAiChance) return;
 
             // Build list of affordable tiers using configurable gold safety multiplier.
-            int gold = hero.Gold;
-            int mult = Settings.VillageInvestAiGoldMultiplier;
-            var affordableTiers = new List<int>(3);
-            if (gold > Settings.VillageInvestCostModest * mult) affordableTiers.Add(1);
-            if (gold > Settings.VillageInvestCostGenerous * mult) affordableTiers.Add(2);
-            if (gold > Settings.VillageInvestCostGrand * mult) affordableTiers.Add(3);
+            var affordableTiers = B1071_InvestmentMath.AffordableTiers(
+                hero.Gold,
+                Settings.VillageInvestAiGoldMultiplier,
+                B1071_InvestmentMath.VillageTier(1, Settings),
+                B1071_InvestmentMath.VillageTier(2, Settings),
+                B1071_InvestmentMath.VillageTier(3, Settings));
 
             if (affordableTiers.Count == 0) return;
 
             // Pick tier: random selection from affordable tiers, or highest if random-tier is disabled.
             int tier;
             if (Settings.VillageInvestAiRandomTier)
-                tier = affordableTiers[MBRandom.RandomInt(affordableTiers.Count)];
+                tier = affordableTiers[Random.Next(affordableTiers.Count)];
             else
                 tier = affordableTiers[affordableTiers.Count - 1]; // last = highest
 
@@ -215,42 +208,14 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void ApplyInvestment(Settlement settlement, Hero investor, int tier, bool isPlayer)
         {
-            int cost;
-            int duration;
-            float hearthBonus;
-            int relation;
-            float influence;
-            int power;
-
-            switch (tier)
-            {
-                case 1: // Modest
-                    cost = Settings.VillageInvestCostModest;
-                    duration = Settings.VillageInvestDurationModest;
-                    hearthBonus = Settings.VillageInvestHearthModest;
-                    relation = Settings.VillageInvestRelationModest;
-                    influence = Settings.VillageInvestInfluenceModest;
-                    power = Settings.VillageInvestPowerModest;
-                    break;
-                case 2: // Generous
-                    cost = Settings.VillageInvestCostGenerous;
-                    duration = Settings.VillageInvestDurationGenerous;
-                    hearthBonus = Settings.VillageInvestHearthGenerous;
-                    relation = Settings.VillageInvestRelationGenerous;
-                    influence = Settings.VillageInvestInfluenceGenerous;
-                    power = Settings.VillageInvestPowerGenerous;
-                    break;
-                case 3: // Grand
-                    cost = Settings.VillageInvestCostGrand;
-                    duration = Settings.VillageInvestDurationGrand;
-                    hearthBonus = Settings.VillageInvestHearthGrand;
-                    relation = Settings.VillageInvestRelationGrand;
-                    influence = Settings.VillageInvestInfluenceGrand;
-                    power = Settings.VillageInvestPowerGrand;
-                    break;
-                default:
-                    return;
-            }
+            if (tier < 1 || tier > 3) return;
+            InvestmentTierValues values = B1071_InvestmentMath.VillageTier(tier, Settings);
+            int cost = values.Cost;
+            int duration = values.Duration;
+            float hearthBonus = values.Bonus;
+            int relation = values.Relation;
+            float influence = values.Influence;
+            int power = values.Power;
 
             // Safety: verify affordability again.
             if (investor.Gold < cost) return;
@@ -514,33 +479,23 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
             }
 
-            int cost;
-            int duration;
-            float hearthBonus;
-            int relation;
+            if (tier < 1 || tier > 3) return false;
+            InvestmentTierValues values = B1071_InvestmentMath.VillageTier(tier, Settings);
+            int cost = values.Cost;
+            int duration = values.Duration;
+            float hearthBonus = values.Bonus;
+            int relation = values.Relation;
             string tierName;
 
             switch (tier)
             {
                 case 1:
-                    cost = Settings.VillageInvestCostModest;
-                    duration = Settings.VillageInvestDurationModest;
-                    hearthBonus = Settings.VillageInvestHearthModest;
-                    relation = Settings.VillageInvestRelationModest;
                     tierName = new TextObject("{=b1071_vi_tier_modest}Modest gift").ToString();
                     break;
                 case 2:
-                    cost = Settings.VillageInvestCostGenerous;
-                    duration = Settings.VillageInvestDurationGenerous;
-                    hearthBonus = Settings.VillageInvestHearthGenerous;
-                    relation = Settings.VillageInvestRelationGenerous;
                     tierName = new TextObject("{=b1071_vi_tier_generous}Generous patronage").ToString();
                     break;
                 case 3:
-                    cost = Settings.VillageInvestCostGrand;
-                    duration = Settings.VillageInvestDurationGrand;
-                    hearthBonus = Settings.VillageInvestHearthGrand;
-                    relation = Settings.VillageInvestRelationGrand;
                     tierName = new TextObject("{=b1071_vi_tier_grand}Grand investment").ToString();
                     break;
                 default:

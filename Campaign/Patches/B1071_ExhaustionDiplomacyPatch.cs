@@ -14,7 +14,7 @@ namespace Byzantium1071.Campaign.Patches
 {
     internal static class B1071_ExhaustionDiplomacyHelpers
     {
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        internal static IB1071Settings Settings => B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         internal static bool TryGetExhaustion(Kingdom? kingdom, out float exhaustion)
         {
@@ -47,18 +47,14 @@ namespace Byzantium1071.Campaign.Patches
         internal static bool IsTruceEnforcementEnabled => Settings.EnableTruceEnforcement;
 
         // Legacy thresholds (used when bands disabled)
-        internal static float NoWarThreshold =>
-            (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyNoNewWarThreshold;
+        internal static float NoWarThreshold => Settings.DiplomacyNoNewWarThreshold;
 
-        internal static float PeaceThreshold =>
-            (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeacePressureThreshold;
+        internal static float PeaceThreshold => Settings.DiplomacyPeacePressureThreshold;
 
         // Per-point rates (legacy path)
-        internal static float WarPenaltyPerPoint =>
-            (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyWarSupportPenaltyPerPoint;
+        internal static float WarPenaltyPerPoint => Settings.DiplomacyWarSupportPenaltyPerPoint;
 
-        internal static float PeaceBonusPerPoint =>
-            (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeaceSupportBonusPerPoint;
+        internal static float PeaceBonusPerPoint => Settings.DiplomacyPeaceSupportBonusPerPoint;
 
         // WP5 caps
         internal static float WarSupportPenaltyCap => Settings.WarSupportPenaltyCap;  // negative value
@@ -85,9 +81,6 @@ namespace Byzantium1071.Campaign.Patches
 
         internal static float GetMajorWarPressureBias(Kingdom kingdom)
         {
-            int pressureStart = Math.Max(1, Settings.DiplomacyMajorWarPressureStartCount);
-            float biasPerWar = Math.Max(0f, Settings.DiplomacyExtraPeaceBiasPerMajorWar);
-
             int majorWars = 0;
             if (kingdom.FactionsAtWarWith == null) return 0f;
             for (int i = 0; i < kingdom.FactionsAtWarWith.Count; i++)
@@ -97,8 +90,7 @@ namespace Byzantium1071.Campaign.Patches
                     majorWars++;
             }
 
-            int extraWarCount = Math.Max(0, majorWars - pressureStart + 1);
-            return extraWarCount * biasPerWar;
+            return B1071_ExhaustionMath.MajorWarPressureBias(majorWars, Settings);
         }
 
         internal static bool IsKingdomVsKingdomWarTarget(DeclareWarDecision decision)
@@ -118,19 +110,13 @@ namespace Byzantium1071.Campaign.Patches
         /// </summary>
         internal static float GetManpowerDiplomacyPeaceBias(Kingdom kingdom)
         {
-            B1071_McmSettings s = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-            if (!s.EnableManpowerDiplomacyPressure) return 0f;
+            if (!Settings.EnableManpowerDiplomacyPressure) return 0f;
 
             B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
             if (behavior == null) return 0f;
 
             float avgRatio = behavior.GetKingdomAverageManpowerRatio(kingdom);
-            float threshold = Math.Max(0.001f, s.ManpowerDiplomacyThresholdPercent / 100f);
-            if (avgRatio >= threshold) return 0f;
-
-            // Scale linearly: 0 at threshold, full strength at 0% manpower.
-            float depletion = (threshold - avgRatio) / threshold;
-            return depletion * Math.Max(0f, s.ManpowerDiplomacyPressureStrength);
+            return B1071_ExhaustionMath.ManpowerDiplomacyPeaceBias(avgRatio, Settings);
         }
 
         /// <summary>
@@ -162,8 +148,7 @@ namespace Byzantium1071.Campaign.Patches
         /// </summary>
         internal static float GetEarlyWarPeacePenalty(Kingdom kingdom, IFaction peaceTarget)
         {
-            B1071_McmSettings s = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-            int minDays = Math.Max(0, s.MinWarDurationDaysBeforeForcedPeace);
+            int minDays = Math.Max(0, Settings.MinWarDurationDaysBeforeForcedPeace);
             if (minDays <= 0) return 0f;
 
             if (peaceTarget == null) return 0f;
@@ -172,30 +157,21 @@ namespace Byzantium1071.Campaign.Patches
             if (stance == null || !stance.IsAtWar) return 0f;
 
             // C+: Under multi-front crisis, use the emergency minimum for the penalty ramp.
-            int effectiveMinDays = minDays;
-            if (s.EnableMultiFrontWarRelief)
-            {
-                int emergencyMin = Math.Max(1, s.EmergencyMinWarDays);
-                if (emergencyMin < minDays)
-                {
-                    B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
-                    if (behavior != null && behavior.IsMultiFrontCrisis(kingdom))
-                        effectiveMinDays = emergencyMin;
-                }
-            }
-
             float elapsedDays = stance.WarStartDate.ElapsedDaysUntilNow;
-            if (elapsedDays >= effectiveMinDays) return 0f;
-
-            // Linear ramp: full penalty at day 0, zero at effectiveMinDays.
-            float ratio = 1f - (elapsedDays / effectiveMinDays);
-            float penalty = ratio * s.EarlyWarPeacePenaltyStrength;
+            bool canApplyMultiFrontRelief = Settings.EnableMultiFrontWarRelief
+                && Math.Max(1, Settings.EmergencyMinWarDays) < minDays;
+            bool isMultiFrontCrisis = canApplyMultiFrontRelief
+                && B1071_ManpowerBehavior.Instance?.IsMultiFrontCrisis(kingdom) == true;
+            float penalty = B1071_ExhaustionMath.EarlyWarPeacePenalty(elapsedDays, isMultiFrontCrisis, Settings);
+            int effectiveMinDays = minDays;
+            if (isMultiFrontCrisis)
+                effectiveMinDays = Math.Min(minDays, Math.Max(1, Settings.EmergencyMinWarDays));
 
             if (EnableDebugLogs)
                 TaleWorlds.Library.Debug.Print(
                     $"[Byzantium1071][Diplomacy][Debug] Early-war peace penalty {penalty:0.0} " +
                     $"for {kingdom.Name} vs {peaceTarget.Name}: war age {elapsedDays:0.0} < {effectiveMinDays} days" +
-                    (effectiveMinDays < minDays ? " (multi-front relief)." : "."));
+                      (effectiveMinDays < minDays ? " (multi-front relief)." : "."));
 
             return penalty;
         }
@@ -262,23 +238,11 @@ namespace Byzantium1071.Campaign.Patches
             {
                 DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(__instance.Kingdom);
                 float warBias = B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
-                float penaltyCap = Math.Abs(B1071_ExhaustionDiplomacyHelpers.WarSupportPenaltyCap);
-
-                float penalty;
-                switch (band)
-                {
-                    case DiplomacyPressureBand.Crisis:
-                        // Strong capped penalty — not infinite, but very heavy.
-                        penalty = Math.Min(penaltyCap, exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint + warBias);
-                        break;
-                    case DiplomacyPressureBand.Rising:
-                        // Moderate scaling penalty.
-                        penalty = Math.Min(penaltyCap * 0.6f, exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint * 0.7f + warBias);
-                        break;
-                    default: // Low
-                        penalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint * 0.3f + warBias;
-                        break;
-                }
+                float penalty = B1071_ExhaustionMath.WarSupportPenalty(
+                    band,
+                    exhaustion,
+                    warBias,
+                    B1071_ExhaustionDiplomacyHelpers.Settings);
 
                 if (outcome.ShouldWarBeDeclared)
                     __result -= penalty;
@@ -301,8 +265,10 @@ namespace Byzantium1071.Campaign.Patches
                 return;
             }
 
-            float legacyPenalty = exhaustion * B1071_ExhaustionDiplomacyHelpers.WarPenaltyPerPoint;
-            legacyPenalty += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+            float legacyPenalty = B1071_ExhaustionMath.LegacyWarSupportPenalty(
+                exhaustion,
+                B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom),
+                B1071_ExhaustionDiplomacyHelpers.Settings);
             if (outcome.ShouldWarBeDeclared)
                 __result -= legacyPenalty;
             else
@@ -382,11 +348,12 @@ namespace Byzantium1071.Campaign.Patches
             if (B1071_ExhaustionDiplomacyHelpers.UsePressureBands)
             {
                 DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(__instance.Kingdom);
-                float perPointBias = B1071_ExhaustionDiplomacyHelpers.GetBandPeaceBias(__instance.Kingdom);
                 float warBias = B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
-                float bonusCap = Math.Max(0f, B1071_ExhaustionDiplomacyHelpers.PeaceSupportBonusCap);
-
-                float bonus = Math.Min(bonusCap, exhaustion * perPointBias + warBias);
+                float bonus = B1071_ExhaustionMath.PeaceSupportBonus(
+                    band,
+                    exhaustion,
+                    warBias,
+                    B1071_ExhaustionDiplomacyHelpers.Settings);
 
                 if (outcome.ShouldPeaceBeDeclared)
                     __result += bonus;
@@ -406,8 +373,10 @@ namespace Byzantium1071.Campaign.Patches
                 return;
             }
 
-            float legacyBonus = exhaustion * B1071_ExhaustionDiplomacyHelpers.PeaceBonusPerPoint;
-            legacyBonus += B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom);
+            float legacyBonus = B1071_ExhaustionMath.LegacyPeaceSupportBonus(
+                exhaustion,
+                B1071_ExhaustionDiplomacyHelpers.GetMajorWarPressureBias(__instance.Kingdom),
+                B1071_ExhaustionDiplomacyHelpers.Settings);
             if (outcome.ShouldPeaceBeDeclared)
                 __result += legacyBonus;
             else

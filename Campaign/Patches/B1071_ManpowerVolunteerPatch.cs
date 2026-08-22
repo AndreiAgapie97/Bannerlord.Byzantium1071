@@ -31,8 +31,10 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultVolunteerModel), nameof(DefaultVolunteerModel.GetDailyVolunteerProductionProbability))]
     public static class B1071_ManpowerVolunteerPatch
     {
-        private static B1071_McmSettings Settings
-            => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings
+            => B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        private static IB1071Random Random => B1071_TestHooks.Random ?? B1071Random.Instance;
 
         [HarmonyPostfix]
         public static void Postfix(Hero hero, int index, Settlement settlement, ref float __result)
@@ -50,7 +52,7 @@ namespace Byzantium1071.Campaign.Patches
                 if (Settings.EnableRecruitmentVariance && Settings.VolunteerVariancePercent > 0)
                 {
                     float spread = Math.Min(Settings.VolunteerVariancePercent, 100f) / 100f;
-                    float factor = MBRandom.RandomFloatRanged(1f - spread, 1f + spread);
+                    float factor = Random.RangeFloat(1f - spread, 1f + spread);
                     __result *= factor;
                 }
 

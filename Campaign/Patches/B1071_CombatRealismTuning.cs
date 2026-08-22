@@ -1,4 +1,3 @@
-using System;
 using Byzantium1071.Campaign.Settings;
 
 namespace Byzantium1071.Campaign.Patches
@@ -24,50 +23,22 @@ namespace Byzantium1071.Campaign.Patches
     /// </summary>
     internal static class B1071_CombatRealismTuning
     {
-        /// <summary>Highest preset index; also the count bound for the tables below.</summary>
-        private const int MaxPreset = 3;
-
-        /// <summary>Tier index bound — tables are T1..T6, anything above T6 clamps to T6.</summary>
-        private const int MaxTierIndex = 5;
-
-        // [preset][tier-1] — negative multiplicative factor fed to ExplainedNumber.AddFactor.
-        private static readonly float[][] _armorFactors =
+        /// <summary>Negative damage factor for a struck troop of this tier. 0f means "leave vanilla alone".</summary>
+        internal static float GetArmorFactor(int tier)
         {
-            new[] { 0f, 0f,  0f,     0f,     0f,     0f     }, // 0 Vanilla
-            new[] { 0f, 0f, -0.03f, -0.06f, -0.09f, -0.12f }, // 1 Light
-            new[] { 0f, 0f, -0.05f, -0.10f, -0.15f, -0.20f }, // 2 Moderate
-            new[] { 0f, 0f, -0.06f, -0.12f, -0.18f, -0.24f }, // 3 Strong (pre-v1.0.2.5)
-        };
-
-        // [preset][tier-1] — flat addition to GetSurvivalChance (0.05f = +5 percentage points).
-        private static readonly float[][] _survivalBonuses =
-        {
-            new[] { 0f, 0f, 0f,    0f,    0f,    0f    }, // 0 Vanilla
-            new[] { 0f, 0f, 0.02f, 0.04f, 0.06f, 0.08f }, // 1 Light
-            new[] { 0f, 0f, 0.03f, 0.06f, 0.09f, 0.12f }, // 2 Moderate
-            new[] { 0f, 0f, 0.05f, 0.10f, 0.15f, 0.20f }, // 3 Strong (pre-v1.0.2.5)
-        };
-
-        /// <summary>Reads the preset, clamped so a hand-edited config can never index out of range.</summary>
-        private static int Preset
-        {
-            get
-            {
-                int p = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).EliteSurvivabilityPreset;
-                return Math.Max(0, Math.Min(MaxPreset, p));
-            }
+            IB1071Settings settings = B1071_TestHooks.Settings
+                ?? B1071_McmSettings.Instance
+                ?? B1071_McmSettings.Defaults;
+            return B1071_EconomyMath.ArmorFactor(settings.EliteSurvivabilityPreset, tier);
         }
 
-        /// <summary>Negative damage factor for a struck troop of this tier. 0f means "leave vanilla alone".</summary>
-        internal static float GetArmorFactor(int tier) => Lookup(_armorFactors, tier);
-
         /// <summary>Flat survival-chance bonus for a troop of this tier. 0f means "leave vanilla alone".</summary>
-        internal static float GetSurvivalBonus(int tier) => Lookup(_survivalBonuses, tier);
-
-        private static float Lookup(float[][] table, int tier)
+        internal static float GetSurvivalBonus(int tier)
         {
-            int tierIdx = Math.Max(0, Math.Min(MaxTierIndex, tier - 1));
-            return table[Preset][tierIdx];
+            IB1071Settings settings = B1071_TestHooks.Settings
+                ?? B1071_McmSettings.Instance
+                ?? B1071_McmSettings.Defaults;
+            return B1071_EconomyMath.SurvivalBonus(settings.EliteSurvivabilityPreset, tier);
         }
     }
 }

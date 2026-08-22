@@ -23,7 +23,8 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_GovernanceStabilizationBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         private Dictionary<string, float> _daysRemaining = new Dictionary<string, float>();
         private Dictionary<string, float> _loyaltyBonus = new Dictionary<string, float>();
@@ -222,13 +223,7 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             if (hero == null) return 0;
 
-            int multiplier = Math.Max(1, Settings.GovernanceStabilizationAiGoldMultiplier);
-            int gold = hero.Gold;
-
-            if (gold > Settings.GovernanceStabilizationCostAmnesty * multiplier) return 3;
-            if (gold > Settings.GovernanceStabilizationCostElites * multiplier) return 2;
-            if (gold > Settings.GovernanceStabilizationCostDonative * multiplier) return 1;
-            return 0;
+            return B1071_GovernanceMath.AiStabilizationTier(hero.Gold, Settings);
         }
 
         private static bool IsValidTarget(Settlement settlement)
@@ -250,45 +245,20 @@ namespace Byzantium1071.Campaign.Behaviors
             out float strainReduction, out float loyalty, out float security,
             out float decay, out TextObject tierName)
         {
-            switch (tier)
+            StabilizationTierValues values = B1071_GovernanceMath.StabilizationTier(tier, Settings);
+            cost = values.Cost;
+            duration = values.Duration;
+            strainReduction = values.StrainReduction;
+            loyalty = values.Loyalty;
+            security = values.Security;
+            decay = values.Decay;
+            tierName = tier switch
             {
-                case 1:
-                    cost = Settings.GovernanceStabilizationCostDonative;
-                    duration = Settings.GovernanceStabilizationDurationDonative;
-                    strainReduction = Settings.GovernanceStabilizationStrainDonative;
-                    loyalty = Settings.GovernanceStabilizationLoyaltyDonative;
-                    security = Settings.GovernanceStabilizationSecurityDonative;
-                    decay = Settings.GovernanceStabilizationDecayDonative;
-                    tierName = new TextObject("{=b1071_gs_tier_donative}Emergency Relief");
-                    break;
-                case 2:
-                    cost = Settings.GovernanceStabilizationCostElites;
-                    duration = Settings.GovernanceStabilizationDurationElites;
-                    strainReduction = Settings.GovernanceStabilizationStrainElites;
-                    loyalty = Settings.GovernanceStabilizationLoyaltyElites;
-                    security = Settings.GovernanceStabilizationSecurityElites;
-                    decay = Settings.GovernanceStabilizationDecayElites;
-                    tierName = new TextObject("{=b1071_gs_tier_elites}Placate Local Elites");
-                    break;
-                case 3:
-                    cost = Settings.GovernanceStabilizationCostAmnesty;
-                    duration = Settings.GovernanceStabilizationDurationAmnesty;
-                    strainReduction = Settings.GovernanceStabilizationStrainAmnesty;
-                    loyalty = Settings.GovernanceStabilizationLoyaltyAmnesty;
-                    security = Settings.GovernanceStabilizationSecurityAmnesty;
-                    decay = Settings.GovernanceStabilizationDecayAmnesty;
-                    tierName = new TextObject("{=b1071_gs_tier_amnesty}Grant Amnesty");
-                    break;
-                default:
-                    cost = 0;
-                    duration = 0;
-                    strainReduction = 0f;
-                    loyalty = 0f;
-                    security = 0f;
-                    decay = 0f;
-                    tierName = new TextObject(string.Empty);
-                    break;
-            }
+                1 => new TextObject("{=b1071_gs_tier_donative}Emergency Relief"),
+                2 => new TextObject("{=b1071_gs_tier_elites}Placate Local Elites"),
+                3 => new TextObject("{=b1071_gs_tier_amnesty}Grant Amnesty"),
+                _ => new TextObject(string.Empty)
+            };
         }
 
         private void RegisterMenus(CampaignGameStarter starter)

@@ -60,7 +60,8 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_GovernanceBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         // Per-settlement governance strain (0 to GovernanceStrainCap).
         private Dictionary<string, float> _strainBySettlement = new Dictionary<string, float>();
@@ -85,7 +86,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string key = settlement.StringId;
             float current = _strainBySettlement.TryGetValue(key, out float val) ? val : 0f;
-            float next = Math.Max(0f, current - amount);
+            float next = B1071_GovernanceMath.ReduceStrain(current, amount);
 
             if (next <= 0f)
                 _strainBySettlement.Remove(key);
@@ -133,7 +134,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 float decay = Settings.GovernanceStrainDecayPerDay
                     + (B1071_GovernanceStabilizationBehavior.Instance?.GetActiveStrainDecayBonus(settlement) ?? 0f);
-                strain = Math.Max(0f, strain - decay);
+                strain = B1071_GovernanceMath.DailyStrain(strain, decay, 0f);
 
                 if (strain <= 0f)
                     _strainBySettlement.Remove(key);
@@ -260,8 +261,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string key = settlement.StringId;
             float current = _strainBySettlement.TryGetValue(key, out float val) ? val : 0f;
-            float cap = Settings.GovernanceStrainCap;
-            _strainBySettlement[key] = Math.Min(cap, current + amount);
+            _strainBySettlement[key] = B1071_GovernanceMath.AddStrain(current, amount, Settings);
         }
 
         private void ApplyStrainToFactionSettlements(IFaction? faction, float amount)

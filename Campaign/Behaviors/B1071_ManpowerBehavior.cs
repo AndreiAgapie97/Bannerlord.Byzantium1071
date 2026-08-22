@@ -17,16 +17,6 @@ using TaleWorlds.Localization;
 namespace Byzantium1071.Campaign.Behaviors
 {
     /// <summary>
-    /// WP5: Graded diplomacy pressure levels that replace hard exhaustion threshold cliffs.
-    /// </summary>
-    public enum DiplomacyPressureBand
-    {
-        Low,     // Normal operations
-        Rising,  // Elevated peace bias, softer war penalties
-        Crisis   // War declarations blocked, strong peace pressure, forced peace eligible
-    }
-
-    /// <summary>
     /// Regional manpower pool:
     /// - Villages do NOT have their own pool; they draw from their bound Town/Castle pool.
     /// - Seeded to Max on campaign start
@@ -143,14 +133,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedIds.Clear();
-                _savedValues.Clear();
-
-                foreach (var kvp in _manpowerByPoolId)
-                {
-                    _savedIds.Add(kvp.Key);
-                    _savedValues.Add(kvp.Value);
-                }
+                StringMapSaveData<int> saved = B1071_ManpowerSaveMath.FlattenStringMap(_manpowerByPoolId);
+                _savedIds = saved.Keys;
+                _savedValues = saved.Values;
             }
 
             dataStore.SyncData("B1071_Manpower_Ids", ref _savedIds);
@@ -164,15 +149,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _manpowerByPoolId.Clear();
-
-                int n = Math.Min(_savedIds.Count, _savedValues.Count);
-                for (int i = 0; i < n; i++)
-                {
-                    var id = _savedIds[i];
-                    if (!string.IsNullOrEmpty(id))
-                        _manpowerByPoolId[id] = _savedValues[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(_manpowerByPoolId, _savedIds, _savedValues);
             }
 
             // War Exhaustion save/load.
@@ -181,14 +158,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedExhaustionIds.Clear();
-                _savedExhaustionValues.Clear();
-
-                foreach (var kvp in _warExhaustion)
-                {
-                    _savedExhaustionIds.Add(kvp.Key);
-                    _savedExhaustionValues.Add(kvp.Value);
-                }
+                StringMapSaveData<float> saved = B1071_ManpowerSaveMath.FlattenStringMap(_warExhaustion);
+                _savedExhaustionIds = saved.Keys;
+                _savedExhaustionValues = saved.Values;
             }
 
             dataStore.SyncData("B1071_WarExhaustion_Ids", ref _savedExhaustionIds);
@@ -199,15 +171,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _warExhaustion.Clear();
-
-                int ne = Math.Min(_savedExhaustionIds.Count, _savedExhaustionValues.Count);
-                for (int i = 0; i < ne; i++)
-                {
-                    var id = _savedExhaustionIds[i];
-                    if (!string.IsNullOrEmpty(id))
-                        _warExhaustion[id] = _savedExhaustionValues[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(_warExhaustion, _savedExhaustionIds, _savedExhaustionValues);
 
                 // Re-evaluate pressure bands immediately so they're correct from tick 0,
                 // before any diplomacy decisions are evaluated post-load.
@@ -225,13 +189,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedForcedPeaceCooldownIds.Clear();
-                _savedForcedPeaceCooldownDays.Clear();
-                foreach (var kvp in _lastForcedPeaceDayByKingdom)
-                {
-                    _savedForcedPeaceCooldownIds.Add(kvp.Key);
-                    _savedForcedPeaceCooldownDays.Add(kvp.Value);
-                }
+                StringMapSaveData<float> saved = B1071_ManpowerSaveMath.FlattenStringMap(_lastForcedPeaceDayByKingdom);
+                _savedForcedPeaceCooldownIds = saved.Keys;
+                _savedForcedPeaceCooldownDays = saved.Values;
             }
 
             dataStore.SyncData("B1071_ForcedPeaceCooldown_Ids", ref _savedForcedPeaceCooldownIds);
@@ -242,14 +202,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _lastForcedPeaceDayByKingdom.Clear();
-                int nf = Math.Min(_savedForcedPeaceCooldownIds.Count, _savedForcedPeaceCooldownDays.Count);
-                for (int i = 0; i < nf; i++)
-                {
-                    string id = _savedForcedPeaceCooldownIds[i];
-                    if (!string.IsNullOrEmpty(id))
-                        _lastForcedPeaceDayByKingdom[id] = _savedForcedPeaceCooldownDays[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(
+                    _lastForcedPeaceDayByKingdom, _savedForcedPeaceCooldownIds, _savedForcedPeaceCooldownDays);
             }
 
             // Kingdom pair truce save/load.
@@ -258,13 +212,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedTruceKeys.Clear();
-                _savedTruceExpiryDays.Clear();
-                foreach (var kvp in _truceExpiryByPair)
-                {
-                    _savedTruceKeys.Add(kvp.Key);
-                    _savedTruceExpiryDays.Add(kvp.Value);
-                }
+                StringMapSaveData<float> saved = B1071_ManpowerSaveMath.FlattenStringMap(_truceExpiryByPair);
+                _savedTruceKeys = saved.Keys;
+                _savedTruceExpiryDays = saved.Values;
             }
 
             dataStore.SyncData("B1071_TrucePair_Keys", ref _savedTruceKeys);
@@ -275,14 +225,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _truceExpiryByPair.Clear();
-                int nt = Math.Min(_savedTruceKeys.Count, _savedTruceExpiryDays.Count);
-                for (int i = 0; i < nt; i++)
-                {
-                    string key = _savedTruceKeys[i];
-                    if (!string.IsNullOrEmpty(key))
-                        _truceExpiryByPair[key] = _savedTruceExpiryDays[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(_truceExpiryByPair, _savedTruceKeys, _savedTruceExpiryDays);
             }
 
             // Raid drain dedupe save/load.
@@ -291,13 +234,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedRaidDrainVillageIds.Clear();
-                _savedRaidDrainDays.Clear();
-                foreach (var kvp in _lastRaidDrainDayByVillageId)
-                {
-                    _savedRaidDrainVillageIds.Add(kvp.Key);
-                    _savedRaidDrainDays.Add(kvp.Value);
-                }
+                StringMapSaveData<int> saved = B1071_ManpowerSaveMath.FlattenStringMap(_lastRaidDrainDayByVillageId);
+                _savedRaidDrainVillageIds = saved.Keys;
+                _savedRaidDrainDays = saved.Values;
             }
 
             dataStore.SyncData("B1071_RaidDrainDedupe_VillageIds", ref _savedRaidDrainVillageIds);
@@ -308,14 +247,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _lastRaidDrainDayByVillageId.Clear();
-                int nrv = Math.Min(_savedRaidDrainVillageIds.Count, _savedRaidDrainDays.Count);
-                for (int i = 0; i < nrv; i++)
-                {
-                    string villageId = _savedRaidDrainVillageIds[i];
-                    if (!string.IsNullOrEmpty(villageId))
-                        _lastRaidDrainDayByVillageId[villageId] = _savedRaidDrainDays[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(
+                    _lastRaidDrainDayByVillageId, _savedRaidDrainVillageIds, _savedRaidDrainDays);
             }
 
             // Raid pool-day cap spend save/load.
@@ -324,13 +257,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedRaidPoolDayKeys.Clear();
-                _savedRaidPoolDaySpent.Clear();
-                foreach (var kvp in _raidDrainSpentByPoolDay)
-                {
-                    _savedRaidPoolDayKeys.Add(kvp.Key);
-                    _savedRaidPoolDaySpent.Add(kvp.Value);
-                }
+                StringMapSaveData<int> saved = B1071_ManpowerSaveMath.FlattenStringMap(_raidDrainSpentByPoolDay);
+                _savedRaidPoolDayKeys = saved.Keys;
+                _savedRaidPoolDaySpent = saved.Values;
             }
 
             dataStore.SyncData("B1071_RaidDrainCap_PoolDayKeys", ref _savedRaidPoolDayKeys);
@@ -341,14 +270,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _raidDrainSpentByPoolDay.Clear();
-                int nrp = Math.Min(_savedRaidPoolDayKeys.Count, _savedRaidPoolDaySpent.Count);
-                for (int i = 0; i < nrp; i++)
-                {
-                    string poolDayKey = _savedRaidPoolDayKeys[i];
-                    if (!string.IsNullOrEmpty(poolDayKey))
-                        _raidDrainSpentByPoolDay[poolDayKey] = _savedRaidPoolDaySpent[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceStringMap(
+                    _raidDrainSpentByPoolDay, _savedRaidPoolDayKeys, _savedRaidPoolDaySpent);
             }
 
             // Delayed recovery save/load.
@@ -359,21 +282,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedRecoveryPenaltyPoolIds.Clear();
-                _savedRecoveryPenaltyBaseValues.Clear();
-                _savedRecoveryPenaltyStartDays.Clear();
-                _savedRecoveryPenaltyExpiryDays.Clear();
-                foreach (var kvp in _recoveryPenaltyBaseByPoolId)
-                {
-                    string poolId = kvp.Key;
-                    if (string.IsNullOrEmpty(poolId))
-                        continue;
-
-                    _savedRecoveryPenaltyPoolIds.Add(poolId);
-                    _savedRecoveryPenaltyBaseValues.Add(kvp.Value);
-                    _savedRecoveryPenaltyStartDays.Add(_recoveryPenaltyStartDayByPoolId.TryGetValue(poolId, out float startDay) ? startDay : (float)CampaignTime.Now.ToDays);
-                    _savedRecoveryPenaltyExpiryDays.Add(_recoveryPenaltyExpiryDayByPoolId.TryGetValue(poolId, out float expiryDay) ? expiryDay : (float)CampaignTime.Now.ToDays);
-                }
+                RecoveryPenaltySaveData saved = B1071_ManpowerSaveMath.FlattenRecoveryPenalties(
+                    _recoveryPenaltyBaseByPoolId,
+                    _recoveryPenaltyStartDayByPoolId,
+                    _recoveryPenaltyExpiryDayByPoolId,
+                    (float)CampaignTime.Now.ToDays);
+                _savedRecoveryPenaltyPoolIds = saved.PoolIds;
+                _savedRecoveryPenaltyBaseValues = saved.BaseValues;
+                _savedRecoveryPenaltyStartDays = saved.StartDays;
+                _savedRecoveryPenaltyExpiryDays = saved.ExpiryDays;
             }
 
             dataStore.SyncData("B1071_RecoveryPenalty_PoolIds", ref _savedRecoveryPenaltyPoolIds);
@@ -388,24 +305,14 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _recoveryPenaltyBaseByPoolId.Clear();
-                _recoveryPenaltyStartDayByPoolId.Clear();
-                _recoveryPenaltyExpiryDayByPoolId.Clear();
-
-                int nr = Math.Min(
-                    Math.Min(_savedRecoveryPenaltyPoolIds.Count, _savedRecoveryPenaltyBaseValues.Count),
-                    Math.Min(_savedRecoveryPenaltyStartDays.Count, _savedRecoveryPenaltyExpiryDays.Count));
-
-                for (int i = 0; i < nr; i++)
-                {
-                    string poolId = _savedRecoveryPenaltyPoolIds[i];
-                    if (string.IsNullOrEmpty(poolId))
-                        continue;
-
-                    _recoveryPenaltyBaseByPoolId[poolId] = Math.Max(0f, _savedRecoveryPenaltyBaseValues[i]);
-                    _recoveryPenaltyStartDayByPoolId[poolId] = _savedRecoveryPenaltyStartDays[i];
-                    _recoveryPenaltyExpiryDayByPoolId[poolId] = _savedRecoveryPenaltyExpiryDays[i];
-                }
+                B1071_ManpowerSaveMath.ReplaceRecoveryPenalties(
+                    _recoveryPenaltyBaseByPoolId,
+                    _recoveryPenaltyStartDayByPoolId,
+                    _recoveryPenaltyExpiryDayByPoolId,
+                    _savedRecoveryPenaltyPoolIds,
+                    _savedRecoveryPenaltyBaseValues,
+                    _savedRecoveryPenaltyStartDays,
+                    _savedRecoveryPenaltyExpiryDays);
             }
 
             // Casualties ledger save/load.
@@ -415,15 +322,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedCasualtiesKeys.Clear();
-                _savedCasualtiesKillsA.Clear();
-                _savedCasualtiesKillsB.Clear();
-                foreach (var kvp in _casualtiesByPair)
-                {
-                    _savedCasualtiesKeys.Add(kvp.Key);
-                    _savedCasualtiesKillsA.Add(kvp.Value.Item1);
-                    _savedCasualtiesKillsB.Add(kvp.Value.Item2);
-                }
+                CasualtySaveData saved = B1071_ManpowerSaveMath.FlattenCasualties(_casualtiesByPair);
+                _savedCasualtiesKeys = saved.Keys;
+                _savedCasualtiesKillsA = saved.KillsA;
+                _savedCasualtiesKillsB = saved.KillsB;
             }
 
             dataStore.SyncData("B1071_Casualties_Keys", ref _savedCasualtiesKeys);
@@ -436,16 +338,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (dataStore.IsLoading)
             {
-                _casualtiesByPair.Clear();
-                int nc = Math.Min(
-                    _savedCasualtiesKeys.Count,
-                    Math.Min(_savedCasualtiesKillsA.Count, _savedCasualtiesKillsB.Count));
-                for (int i = 0; i < nc; i++)
-                {
-                    string key = _savedCasualtiesKeys[i];
-                    if (!string.IsNullOrEmpty(key))
-                        _casualtiesByPair[key] = (_savedCasualtiesKillsA[i], _savedCasualtiesKillsB[i]);
-                }
+                B1071_ManpowerSaveMath.ReplaceCasualties(
+                    _casualtiesByPair, _savedCasualtiesKeys, _savedCasualtiesKillsA, _savedCasualtiesKillsB);
             }
         }
 
@@ -1223,40 +1117,9 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private DiplomacyPressureBand EvaluatePressureBand(string kingdomId, float exhaustion)
         {
-            float risingStart = Math.Max(1f, Settings.PressureBandRisingStart);
-            float crisisStart = Math.Max(risingStart + 1f, Settings.PressureBandCrisisStart);
-            float hysteresis = Math.Max(0f, Settings.PressureBandHysteresis);
-
             DiplomacyPressureBand current = _pressureBandByKingdom.TryGetValue(kingdomId, out var prev)
                 ? prev : DiplomacyPressureBand.Low;
-
-            DiplomacyPressureBand newBand;
-
-            // Upward transitions: use raw thresholds
-            if (exhaustion >= crisisStart)
-                newBand = DiplomacyPressureBand.Crisis;
-            else if (exhaustion >= risingStart)
-                newBand = DiplomacyPressureBand.Rising;
-            else
-                newBand = DiplomacyPressureBand.Low;
-
-            // Hysteresis: resist downward transitions
-            if (newBand < current)
-            {
-                switch (current)
-                {
-                    case DiplomacyPressureBand.Crisis:
-                        // Stay in Crisis until exhaustion drops below crisisStart - hysteresis
-                        if (exhaustion >= crisisStart - hysteresis)
-                            newBand = DiplomacyPressureBand.Crisis;
-                        break;
-                    case DiplomacyPressureBand.Rising:
-                        // Stay in Rising until exhaustion drops below risingStart - hysteresis
-                        if (exhaustion >= risingStart - hysteresis)
-                            newBand = DiplomacyPressureBand.Rising;
-                        break;
-                }
-            }
+            DiplomacyPressureBand newBand = B1071_ExhaustionMath.EvaluatePressureBand(exhaustion, current, Settings);
 
             if (newBand != current)
                 B1071_VerboseLog.Log("Diplomacy", $"Band transition {kingdomId}: {current}->{newBand} at exhaustion {exhaustion:0.0}.");
@@ -1268,27 +1131,15 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Maps exhaustion to a legacy-compatible band (no hysteresis) for when pressure bands are disabled.
         /// Uses the old hard thresholds: NoWarThreshold → Crisis, PeaceThreshold → Rising, else → Low.
         /// </summary>
-        private static DiplomacyPressureBand MapExhaustionToLegacyBand(float exhaustion)
-        {
-            float noWarThreshold = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyNoNewWarThreshold;
-            float peaceThreshold = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).DiplomacyPeacePressureThreshold;
-            if (exhaustion >= noWarThreshold) return DiplomacyPressureBand.Crisis;
-            if (exhaustion >= peaceThreshold) return DiplomacyPressureBand.Rising;
-            return DiplomacyPressureBand.Low;
-        }
+        private static DiplomacyPressureBand MapExhaustionToLegacyBand(float exhaustion) =>
+            B1071_ExhaustionMath.MapExhaustionToLegacyBand(exhaustion, Settings);
 
         /// <summary>
         /// Returns per-point peace bias for the given band.
         /// </summary>
         internal float GetBandPeaceBias(DiplomacyPressureBand band)
         {
-            return band switch
-            {
-                DiplomacyPressureBand.Low => Settings.PeaceBiasBandLow,
-                DiplomacyPressureBand.Rising => Settings.PeaceBiasBandHigh,
-                DiplomacyPressureBand.Crisis => Settings.PeaceBiasBandHigh * 1.5f, // Crisis escalates further
-                _ => Settings.PeaceBiasBandLow,
-            };
+            return B1071_ExhaustionMath.BandPeaceBias(band, Settings);
         }
 
         public void RegisterKingdomPairTruce(IFaction? faction1, IFaction? faction2)
@@ -1433,9 +1284,6 @@ namespace Byzantium1071.Campaign.Behaviors
             if (!Settings.EnableExhaustionDiplomacyPressure || !Settings.EnableForcedPeaceAtCrisis)
                 return;
 
-            float baseThreshold = Math.Max(1f, Settings.DiplomacyForcedPeaceThreshold);
-            int pressureStartWars = Math.Max(1, Settings.DiplomacyMajorWarPressureStartCount);
-            float thresholdReductionPerWar = Math.Max(0f, Settings.DiplomacyForcedPeaceThresholdReductionPerMajorWar);
             int maxActiveWars = Math.Max(0, Settings.DiplomacyForcedPeaceMaxActiveWars);
             int cooldownDays = Math.Max(1, Settings.DiplomacyForcedPeaceCooldownDays);
             int minWarDays = Math.Max(0, Settings.MinWarDurationDaysBeforeForcedPeace);
@@ -1458,8 +1306,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 int activeMajorWars = CountActiveMajorWars(kingdom);
-                int extraWarCount = Math.Max(0, activeMajorWars - pressureStartWars + 1);
-                float threshold = Math.Max(1f, baseThreshold - (extraWarCount * thresholdReductionPerWar));
+                float threshold = B1071_ExhaustionMath.ForcedPeaceThreshold(activeMajorWars, Settings);
 
                 float exhaustion = GetWarExhaustion(kingdom.StringId);
 

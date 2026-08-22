@@ -46,8 +46,8 @@ namespace Byzantium1071.Campaign.Patches
                 float avgDev = behavior.GetAverageBoundVillageDevastation(town);
                 if (avgDev <= 0f) return;
 
-                float ratio = avgDev / 100f;
-                float penalty = -(ratio * Settings.DevastationMaxSecurityPenalty);
+                float penalty = B1071_GovernanceMath.DevastationPenalty(
+                    avgDev, Settings.DevastationMaxSecurityPenalty);
 
                 __result.Add(penalty, _label);
             }

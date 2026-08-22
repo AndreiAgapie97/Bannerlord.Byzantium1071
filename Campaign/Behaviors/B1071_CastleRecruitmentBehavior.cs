@@ -56,7 +56,9 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_CastleRecruitmentBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings => B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        private static IB1071Random Random => B1071_TestHooks.Random ?? B1071Random.Instance;
 
         private ItemObject? _slaveItem;
 
@@ -168,17 +170,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedPrisonerCastleIds.Clear();
-                _savedPrisonerTroopIds.Clear();
-                _savedPrisonerDays.Clear();
-
-                foreach (var castleKvp in _prisonerDaysHeld)
-                    foreach (var troopKvp in castleKvp.Value)
-                    {
-                        _savedPrisonerCastleIds.Add(castleKvp.Key);
-                        _savedPrisonerTroopIds.Add(troopKvp.Key);
-                        _savedPrisonerDays.Add(troopKvp.Value);
-                    }
+                CastleIntSaveData saved = B1071_CastleSaveMath.FlattenIntMap(_prisonerDaysHeld);
+                _savedPrisonerCastleIds = saved.CastleIds;
+                _savedPrisonerTroopIds = saved.TroopIds;
+                _savedPrisonerDays = saved.Values;
             }
 
             dataStore.SyncData("b1071_cr_prisonerCastles", ref _savedPrisonerCastleIds);
@@ -190,24 +185,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedPrisonerDays ??= new List<int>();
 
             if (dataStore.IsLoading)
-            {
-                _prisonerDaysHeld.Clear();
-                int n = Math.Min(_savedPrisonerCastleIds.Count,
-                        Math.Min(_savedPrisonerTroopIds.Count, _savedPrisonerDays.Count));
-                for (int i = 0; i < n; i++)
-                {
-                    string cId = _savedPrisonerCastleIds[i];
-                    string tId = _savedPrisonerTroopIds[i];
-                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)) continue;
-
-                    if (!_prisonerDaysHeld.TryGetValue(cId, out var dict))
-                    {
-                        dict = new Dictionary<string, int>();
-                        _prisonerDaysHeld[cId] = dict;
-                    }
-                    dict[tId] = _savedPrisonerDays[i];
-                }
-            }
+                _prisonerDaysHeld = B1071_CastleSaveMath.ReadIntMap(
+                    _savedPrisonerCastleIds, _savedPrisonerTroopIds, _savedPrisonerDays);
 
             // ── Elite pool: flatten Dict<castle, Dict<troop, count>> → 3 parallel lists ──
             _savedEliteCastleIds ??= new List<string>();
@@ -216,17 +195,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedEliteCastleIds.Clear();
-                _savedEliteTroopIds.Clear();
-                _savedEliteCounts.Clear();
-
-                foreach (var castleKvp in _elitePool)
-                    foreach (var troopKvp in castleKvp.Value)
-                    {
-                        _savedEliteCastleIds.Add(castleKvp.Key);
-                        _savedEliteTroopIds.Add(troopKvp.Key);
-                        _savedEliteCounts.Add(troopKvp.Value);
-                    }
+                CastleIntSaveData saved = B1071_CastleSaveMath.FlattenIntMap(_elitePool);
+                _savedEliteCastleIds = saved.CastleIds;
+                _savedEliteTroopIds = saved.TroopIds;
+                _savedEliteCounts = saved.Values;
             }
 
             dataStore.SyncData("b1071_cr_eliteCastles", ref _savedEliteCastleIds);
@@ -238,24 +210,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedEliteCounts ??= new List<int>();
 
             if (dataStore.IsLoading)
-            {
-                _elitePool.Clear();
-                int ne = Math.Min(_savedEliteCastleIds.Count,
-                         Math.Min(_savedEliteTroopIds.Count, _savedEliteCounts.Count));
-                for (int i = 0; i < ne; i++)
-                {
-                    string cId = _savedEliteCastleIds[i];
-                    string tId = _savedEliteTroopIds[i];
-                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)) continue;
-
-                    if (!_elitePool.TryGetValue(cId, out var dict))
-                    {
-                        dict = new Dictionary<string, int>();
-                        _elitePool[cId] = dict;
-                    }
-                    dict[tId] = _savedEliteCounts[i];
-                }
-            }
+                _elitePool = B1071_CastleSaveMath.ReadIntMap(
+                    _savedEliteCastleIds, _savedEliteTroopIds, _savedEliteCounts);
 
             // ── Depositor tracking: flatten Dict<castle, Dict<troop, List<(hero, count)>>> → 4 parallel lists ──
             _savedDepositorCastleIds ??= new List<string>();
@@ -265,21 +221,11 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedDepositorCastleIds.Clear();
-                _savedDepositorTroopIds.Clear();
-                _savedDepositorHeroIds.Clear();
-                _savedDepositorCounts.Clear();
-
-                foreach (var castleKvp in _depositorTracking)
-                    foreach (var troopKvp in castleKvp.Value)
-                        foreach (var entry in troopKvp.Value)
-                        {
-                            if (entry.Count <= 0) continue;
-                            _savedDepositorCastleIds.Add(castleKvp.Key);
-                            _savedDepositorTroopIds.Add(troopKvp.Key);
-                            _savedDepositorHeroIds.Add(entry.HeroId);
-                            _savedDepositorCounts.Add(entry.Count);
-                        }
+                CastleDepositorSaveData saved = B1071_CastleSaveMath.FlattenDepositors(_depositorTracking);
+                _savedDepositorCastleIds = saved.CastleIds;
+                _savedDepositorTroopIds = saved.TroopIds;
+                _savedDepositorHeroIds = saved.HeroIds;
+                _savedDepositorCounts = saved.Counts;
             }
 
             dataStore.SyncData("b1071_cr_depCastles", ref _savedDepositorCastleIds);
@@ -293,33 +239,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedDepositorCounts ??= new List<int>();
 
             if (dataStore.IsLoading)
-            {
-                _depositorTracking.Clear();
-                int nd = Math.Min(_savedDepositorCastleIds.Count,
-                         Math.Min(_savedDepositorTroopIds.Count,
-                         Math.Min(_savedDepositorHeroIds.Count, _savedDepositorCounts.Count)));
-                for (int i = 0; i < nd; i++)
-                {
-                    string cId = _savedDepositorCastleIds[i];
-                    string tId = _savedDepositorTroopIds[i];
-                    string hId = _savedDepositorHeroIds[i];
-                    int cnt = _savedDepositorCounts[i];
-                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)
-                        || string.IsNullOrEmpty(hId) || cnt <= 0) continue;
-
-                    if (!_depositorTracking.TryGetValue(cId, out var troopDict))
-                    {
-                        troopDict = new Dictionary<string, List<(string, int)>>();
-                        _depositorTracking[cId] = troopDict;
-                    }
-                    if (!troopDict.TryGetValue(tId, out var heroList))
-                    {
-                        heroList = new List<(string, int)>();
-                        troopDict[tId] = heroList;
-                    }
-                    heroList.Add((hId, cnt));
-                }
-            }
+                _depositorTracking = B1071_CastleSaveMath.ReadDepositors(
+                    _savedDepositorCastleIds, _savedDepositorTroopIds, _savedDepositorHeroIds, _savedDepositorCounts);
 
             // ── Delayed enslavement XP tracking: flatten Dict<castle, Dict<troop, List<(hero, party, count)>>> → 5 parallel lists ──
             _savedXpCastleIds ??= new List<string>();
@@ -330,23 +251,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (!dataStore.IsLoading)
             {
-                _savedXpCastleIds.Clear();
-                _savedXpTroopIds.Clear();
-                _savedXpHeroIds.Clear();
-                _savedXpPartyIds.Clear();
-                _savedXpCounts.Clear();
-
-                foreach (var castleKvp in _enslavementXpTracking)
-                    foreach (var troopKvp in castleKvp.Value)
-                        foreach (var entry in troopKvp.Value)
-                        {
-                            if (entry.Count <= 0 || string.IsNullOrEmpty(entry.HeroId)) continue;
-                            _savedXpCastleIds.Add(castleKvp.Key);
-                            _savedXpTroopIds.Add(troopKvp.Key);
-                            _savedXpHeroIds.Add(entry.HeroId);
-                            _savedXpPartyIds.Add(entry.PartyId ?? string.Empty);
-                            _savedXpCounts.Add(entry.Count);
-                        }
+                CastleXpSaveData saved = B1071_CastleSaveMath.FlattenXp(_enslavementXpTracking);
+                _savedXpCastleIds = saved.CastleIds;
+                _savedXpTroopIds = saved.TroopIds;
+                _savedXpHeroIds = saved.HeroIds;
+                _savedXpPartyIds = saved.PartyIds;
+                _savedXpCounts = saved.Counts;
             }
 
             dataStore.SyncData("b1071_cr_xpCastles", ref _savedXpCastleIds);
@@ -362,35 +272,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedXpCounts ??= new List<int>();
 
             if (dataStore.IsLoading)
-            {
-                _enslavementXpTracking.Clear();
-                int nx = Math.Min(_savedXpCastleIds.Count,
-                         Math.Min(_savedXpTroopIds.Count,
-                         Math.Min(_savedXpHeroIds.Count,
-                         Math.Min(_savedXpPartyIds.Count, _savedXpCounts.Count))));
-                for (int i = 0; i < nx; i++)
-                {
-                    string cId = _savedXpCastleIds[i];
-                    string tId = _savedXpTroopIds[i];
-                    string hId = _savedXpHeroIds[i];
-                    string pId = _savedXpPartyIds[i] ?? string.Empty;
-                    int cnt = _savedXpCounts[i];
-                    if (string.IsNullOrEmpty(cId) || string.IsNullOrEmpty(tId)
-                        || string.IsNullOrEmpty(hId) || cnt <= 0) continue;
-
-                    if (!_enslavementXpTracking.TryGetValue(cId, out var troopDict))
-                    {
-                        troopDict = new Dictionary<string, List<(string, string, int)>>();
-                        _enslavementXpTracking[cId] = troopDict;
-                    }
-                    if (!troopDict.TryGetValue(tId, out var heroList))
-                    {
-                        heroList = new List<(string, string, int)>();
-                        troopDict[tId] = heroList;
-                    }
-                    heroList.Add((hId, pId, cnt));
-                }
-            }
+                _enslavementXpTracking = B1071_CastleSaveMath.ReadXp(
+                    _savedXpCastleIds, _savedXpTroopIds, _savedXpHeroIds, _savedXpPartyIds, _savedXpCounts);
         }
 
         // ── Session launch ────────────────────────────────────────────────────────
@@ -661,7 +544,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // RoundRandomized floors and then adds 1 with probability equal to the
             // fraction, so even a single stranded prisoner drains eventually (~10%/day)
             // without needing a floor of our own.
-            int toDrain = Math.Min(strandedTotal, MBRandom.RoundRandomized(strandedTotal * 0.1f));
+            int toDrain = Math.Min(strandedTotal, Random.RoundRandomized(strandedTotal * 0.1f));
             if (toDrain <= 0) return;
 
             TroopRoster sold = TroopRoster.CreateDummyTroopRoster();
@@ -745,20 +628,11 @@ namespace Byzantium1071.Campaign.Behaviors
             string castleId = settlement.StringId;
 
             // ── Compute effective pool cap ──
-            int poolMax;
-            if (Settings.EnableDynamicPoolCapacity)
-            {
-                float prosperity = settlement.Town?.Prosperity ?? 0f;
-                int wallLevel = settlement.Town?.GetWallLevel() ?? 0;
-                poolMax = Settings.CastleElitePoolBaseCapDynamic
-                    + (int)Math.Floor(prosperity * Settings.CastleElitePoolProsperityScaling)
-                    + wallLevel * Settings.CastleElitePoolWallBonus;
-                poolMax = Math.Max(1, poolMax);
-            }
-            else
-            {
-                poolMax = Settings.CastleElitePoolMax;
-            }
+            float prosperity = settlement.Town?.Prosperity ?? 0f;
+            int wallLevel = Settings.EnableDynamicPoolCapacity
+                ? settlement.Town?.GetWallLevel() ?? 0
+                : 0;
+            int poolMax = B1071_CastlePoolMath.PoolCapacity(prosperity, wallLevel, Settings);
 
             if (!_elitePool.TryGetValue(castleId, out var poolDict))
             {
@@ -770,18 +644,13 @@ namespace Byzantium1071.Campaign.Behaviors
             if (currentTotal >= poolMax) return;
 
             // Determine how many troops to add today (based on castle prosperity).
-            float settleProsperity = settlement.Town?.Prosperity ?? 0f;
-            float prosperityRatio = Math.Min(1f, settleProsperity / Settings.ProsperityNormalizer);
-            int regenMin = Settings.CastleEliteRegenMin;
-            int regenMax = Settings.CastleEliteRegenMax;
-            int toAdd = Math.Max(regenMin, (int)Math.Round(regenMin + (regenMax - regenMin) * prosperityRatio));
-            toAdd = Math.Min(toAdd, poolMax - currentTotal);
+            int toAdd = B1071_CastlePoolMath.DailyRegenCount(prosperity, poolMax, currentTotal, Settings);
 
             if (toAdd <= 0) return;
 
             Dictionary<string, List<CharacterObject>>? diversifiedBuckets = null;
             var weightedBuckets = new List<(string key, int weight)>();
-            int totalWeight = 0;
+            List<int>? bucketWeights = null;
             List<CharacterObject>? legacyTroops = null;
 
             // Validate generation sources before draining manpower. MCM weights are allowed
@@ -802,8 +671,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (weightedBuckets.Count == 0) return;
 
-                totalWeight = weightedBuckets.Sum(weightedBucket => weightedBucket.weight);
-                if (totalWeight <= 0) return;
+                bucketWeights = weightedBuckets.Select(weightedBucket => weightedBucket.weight).ToList();
+                if (!B1071_CastlePoolMath.HasPositiveTotalWeight(bucketWeights)) return;
             }
             else
             {
@@ -832,21 +701,13 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 for (int i = 0; i < toAdd; i++)
                 {
-                    int roll = MBRandom.RandomInt(0, totalWeight);
-                    string chosenKey = weightedBuckets[weightedBuckets.Count - 1].key;
-                    int cumulative = 0;
-                    foreach (var (key, weight) in weightedBuckets)
-                    {
-                        cumulative += weight;
-                        if (roll < cumulative)
-                        {
-                            chosenKey = key;
-                            break;
-                        }
-                    }
+                    int bucketIndex = B1071_CastlePoolMath.ChooseWeightedBucketIndex(
+                        bucketWeights!,
+                        Random);
+                    string chosenKey = weightedBuckets[bucketIndex].key;
 
                     var troopList = diversifiedBuckets![chosenKey];
-                    var troop = troopList[MBRandom.RandomInt(0, troopList.Count)];
+                    var troop = troopList[Random.Next(0, troopList.Count)];
                     string troopId = troop.StringId;
                     if (poolDict.TryGetValue(troopId, out int cnt))
                         poolDict[troopId] = cnt + 1;
@@ -859,7 +720,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 // Legacy path: flat random from T4-T6.
                 for (int i = 0; i < toAdd; i++)
                 {
-                    var troop = legacyTroops![MBRandom.RandomInt(0, legacyTroops.Count)];
+                    var troop = legacyTroops![Random.Next(0, legacyTroops.Count)];
                     string troopId = troop.StringId;
                     if (poolDict.TryGetValue(troopId, out int cnt))
                         poolDict[troopId] = cnt + 1;
@@ -1084,12 +945,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private static int GetAiBufferedAffordableCount(int gold, int costPerUnit, int maxUnits)
         {
-            if (maxUnits <= 0) return 0;
-            if (costPerUnit <= 0) return maxUnits;
-
-            long buffered = (long)costPerUnit * Math.Max(1, Settings.CastleAiGoldBufferMultiplier);
-            long affordable = (gold - 1) / buffered;
-            return (int)Math.Max(0L, Math.Min(maxUnits, affordable));
+            return B1071_CastlePoolMath.AiBufferedAffordableCount(gold, costPerUnit, maxUnits, Settings);
         }
 
         // ── 5. Garrison absorbs ready prisoners at auto-recruit rate ──────────────
@@ -1499,19 +1355,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
         public int GetRequiredDaysForTier(int tier)
         {
-            if (tier <= Settings.CastlePrisonerAutoEnslaveTierMax) return 0;
-            if (tier == 4) return Settings.CastleRecruitT4Days;
-            if (tier == 5) return Settings.CastleRecruitT5Days;
-            return Settings.CastleRecruitT6Days;
+            return B1071_CastlePoolMath.RequiredPrisonerDays(tier, Settings);
         }
 
         public int GetGoldCostForTier(int tier)
         {
-            if (tier <= 2) return Settings.CastleRecruitGoldT2;
-            if (tier == 3) return Settings.CastleRecruitGoldT3;
-            if (tier == 4) return Settings.CastleRecruitGoldT4;
-            if (tier == 5) return Settings.CastleRecruitGoldT5;
-            return Settings.CastleRecruitGoldT6;
+            return B1071_CastlePoolMath.GoldCostForTier(tier, Settings);
         }
 
         public int GetDaysHeld(string castleStringId, string troopStringId)
@@ -1771,7 +1620,7 @@ namespace Byzantium1071.Campaign.Behaviors
             if (FactionManager.IsAtWarAgainstFaction(recruiterFaction, castleFaction))
                 return false;
 
-            int accessLevel = B1071_McmSettings.Instance?.CastleRecruitmentAccess ?? 1;
+            int accessLevel = Settings.CastleRecruitmentAccess;
             switch (accessLevel)
             {
                 case 0: // Open — any non-hostile
@@ -2327,9 +2176,9 @@ namespace Byzantium1071.Campaign.Behaviors
             }
 
             // Cross-clan split.
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
-            int ownerShare = (int)(totalIncome * feePercent);
-            int depositorShare = totalIncome - ownerShare;
+            CastleFeeSplit split = B1071_CastlePoolMath.SplitHoldingFee(totalIncome, Settings.CastleHoldingFeePercent);
+            int ownerShare = split.OwnerPayment;
+            int depositorShare = split.DepositorPayment;
 
             if (depositorShare > 0)
                 PayHero(payingTown, depositor, depositorShare);
@@ -2357,8 +2206,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // Hostile depositor → forfeit (wartime exploit prevention).
             if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction)) return 0;
 
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
-            return totalIncome - (int)(totalIncome * feePercent);
+            return B1071_CastlePoolMath.SplitHoldingFee(totalIncome, Settings.CastleHoldingFeePercent).DepositorPayment;
         }
 
         /// <summary>
@@ -2384,9 +2232,8 @@ namespace Byzantium1071.Campaign.Behaviors
             // Family waiver: recruiter same clan as depositor → depositor gets nothing.
             if (recruiterHero?.Clan != null && recruiterHero.Clan == depositor.Clan) return 0;
 
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
             int totalGold = goldCostPerTroop * count;
-            return totalGold - (int)(totalGold * feePercent);
+            return B1071_CastlePoolMath.SplitHoldingFee(totalGold, Settings.CastleHoldingFeePercent).DepositorPayment;
         }
 
         /// <summary>
@@ -2432,49 +2279,29 @@ namespace Byzantium1071.Campaign.Behaviors
             bool recruiterIsSameClanAsDepositor = (depositor != null && recruiterClan != null
                 && recruiterClan == depositor.Clan);
 
-            // For untracked prisoners, depositor = owner effectively.
-            if (depositor == null || depositor.Clan == castle.OwnerClan)
-            {
-                // Simple 2-party: recruiter vs. owner.
-                if (recruiterIsSameClanAsOwner)
-                    return; // Free — family.
-
-                int totalCost = goldCostPerTroop * count;
-                if (recruiterHero != null && owner != null)
-                    GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, totalCost, disableNotification: true);
-                // If owner is null, skip — don't silently destroy gold.
-                return;
-            }
-
-            // Hostile depositor → forfeit share to owner (wartime exploit prevention).
-            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction))
-            {
-                if (recruiterIsSameClanAsOwner)
-                    return; // Free — family.
-                int totalCost = goldCostPerTroop * count;
-                if (recruiterHero != null && owner != null)
-                    GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, totalCost, disableNotification: true);
-                return;
-            }
-
-            // 3-party split: depositor, owner, recruiter all potentially different clans.
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
-            int totalGold = goldCostPerTroop * count;
-            int ownerShareAmount = (int)(totalGold * feePercent);
-            int depositorShareAmount = totalGold - ownerShareAmount;
+            bool hasSeparateDepositor = depositor != null
+                && depositor.Clan != castle.OwnerClan
+                && !FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction);
+            CastleFeeSplit split = B1071_CastlePoolMath.RecruitmentFeeSplit(
+                goldCostPerTroop,
+                count,
+                Settings.CastleHoldingFeePercent,
+                hasSeparateDepositor,
+                recruiterIsSameClanAsOwner,
+                recruiterIsSameClanAsDepositor);
 
             // Transfer gold via direct hero-to-hero transfers (GiveGoldAction
             // clamps to available gold — safe, no inflation, proper campaign events).
 
             // Pay depositor their share (waived if recruiter is family of depositor).
-            if (!recruiterIsSameClanAsDepositor && depositorShareAmount > 0
-                && recruiterHero != null)
-                GiveGoldAction.ApplyBetweenCharacters(recruiterHero, depositor, depositorShareAmount, disableNotification: true);
+            if (split.DepositorPayment > 0 && depositor != null
+                  && recruiterHero != null)
+                GiveGoldAction.ApplyBetweenCharacters(recruiterHero, depositor, split.DepositorPayment, disableNotification: true);
 
             // Pay owner their share (waived if recruiter is family of owner).
-            if (!recruiterIsSameClanAsOwner && ownerShareAmount > 0
-                && recruiterHero != null && owner != null)
-                GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, ownerShareAmount, disableNotification: true);
+            if (split.OwnerPayment > 0
+                  && recruiterHero != null && owner != null)
+                GiveGoldAction.ApplyBetweenCharacters(recruiterHero, owner, split.OwnerPayment, disableNotification: true);
         }
 
         /// <summary>
@@ -2495,23 +2322,16 @@ namespace Byzantium1071.Campaign.Behaviors
             bool recruiterIsSameClanAsDepositor = (depositor != null && recruiterClan != null
                 && recruiterClan == depositor.Clan);
 
-            // Untracked or same-clan-as-owner depositor → 2-party rule.
-            if (depositor == null || depositor.Clan == castle?.OwnerClan)
-                return recruiterIsSameClanAsOwner ? 0 : goldCostPerTroop;
-
-            // Hostile depositor → treat as untracked; owner keeps all (wartime exploit prevention).
-            if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle?.OwnerClan?.MapFaction))
-                return recruiterIsSameClanAsOwner ? 0 : goldCostPerTroop;
-
-            // 3-party.
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
-            int ownerShare = (int)(goldCostPerTroop * feePercent);
-            int depositorShare = goldCostPerTroop - ownerShare;
-
-            int cost = 0;
-            if (!recruiterIsSameClanAsDepositor) cost += depositorShare;
-            if (!recruiterIsSameClanAsOwner) cost += ownerShare;
-            return cost;
+            bool hasSeparateDepositor = depositor != null
+                && depositor.Clan != castle?.OwnerClan
+                && !FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle?.OwnerClan?.MapFaction);
+            return B1071_CastlePoolMath.RecruitmentFeeSplit(
+                goldCostPerTroop,
+                1,
+                Settings.CastleHoldingFeePercent,
+                hasSeparateDepositor,
+                recruiterIsSameClanAsOwner,
+                recruiterIsSameClanAsDepositor).RecruiterCost;
         }
 
         /// <summary>
@@ -2530,8 +2350,9 @@ namespace Byzantium1071.Campaign.Behaviors
             // Hostile depositor → forfeit; owner absorbs for free (wartime exploit prevention).
             if (FactionManager.IsAtWarAgainstFaction(depositor.MapFaction, castle.OwnerClan?.MapFaction)) return 0;
 
-            float feePercent = Settings.CastleHoldingFeePercent / 100f;
-            return (int)(goldCostPerTroop * (1f - feePercent));
+            return B1071_CastlePoolMath.SplitHoldingFee(
+                goldCostPerTroop,
+                Settings.CastleHoldingFeePercent).DepositorPayment;
         }
 
         /// <summary>

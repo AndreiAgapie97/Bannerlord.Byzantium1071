@@ -53,7 +53,7 @@ namespace Byzantium1071.Campaign.Patches
                 int slaveCount = behavior.GetSlaveCountForTown(fortification);
                 if (slaveCount <= 0) return;
 
-                float bonus = slaveCount * Settings.SlaveProsperityPerUnit * Settings.SlaveRansomMultiplier;
+                float bonus = B1071_SlaveMath.ProsperityBonus(slaveCount, Settings);
                 if (bonus > 0f)
                     __result.Add(bonus, _slaveLabel);
             }

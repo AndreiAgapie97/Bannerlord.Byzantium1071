@@ -56,8 +56,7 @@ namespace Byzantium1071.Campaign.Patches
                     float dev = behavior.GetDevastation(v);
                     if (dev <= 0f) continue;
 
-                    float ratio = dev / 100f;
-                    totalPenalty += ratio * Settings.DevastationMaxFoodPenaltyPerVillage;
+                    totalPenalty += B1071_GovernanceMath.DevastationFoodPenalty(dev, Settings);
                 }
 
                 if (totalPenalty <= 0f) return;

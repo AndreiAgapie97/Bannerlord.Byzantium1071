@@ -70,7 +70,10 @@ namespace Byzantium1071.Campaign.Behaviors
     {
         public static B1071_SlaveEconomyBehavior? Instance { get; internal set; }
 
-        private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+        private static IB1071Settings Settings =>
+            B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+
+        private static IB1071Random Random => B1071_TestHooks.Random ?? B1071Random.Instance;
 
         // Slave trade ItemObject resolved from XML on session launch.
         private ItemObject? _slaveItem;
@@ -228,12 +231,11 @@ namespace Byzantium1071.Campaign.Behaviors
 
             float supply = town.MarketData.GetSupply(slaveCat);
             float demand = town.MarketData.GetDemand(slaveCat);
-            int inStoreValue = currentSlaveCount * _slaveItem.Value;
-
             // Allow Supply to be at most 2× actual InStoreValue + a small baseline.
             // The baseline (3000 = 2 slaves worth at 1500d base) prevents snapping
             // to zero when stock is legitimately empty.
-            float maxReasonableSupply = inStoreValue * 2f + 3000f;
+            int inStoreValue = currentSlaveCount * _slaveItem.Value;
+            float maxReasonableSupply = B1071_SlaveMath.MaxReasonableSupply(currentSlaveCount, _slaveItem.Value);
 
             if (supply > maxReasonableSupply)
             {
@@ -311,8 +313,8 @@ namespace Byzantium1071.Campaign.Behaviors
             // More hearths = larger village = more slaves captured.
             Village? village = mapEvent.MapEventSettlement?.Village;
             float   hearths  = village?.Hearth ?? 0f;
-            int     divisor  = Math.Max(1, Settings.SlaveHearthDivisor);
-            int     count    = (int)(hearths / divisor);
+            int     divisor  = B1071_SlaveMath.RaidHearthDivisor(Settings);
+            int     count    = B1071_SlaveMath.RaidSlaveCount(hearths, Settings);
             if (count <= 0) return;
 
             mobileParty.ItemRoster.AddToCounts(_slaveItem, count);
@@ -380,22 +382,19 @@ namespace Byzantium1071.Campaign.Behaviors
             // Without decay, slave populations only grow — decay creates natural equilibrium.
             if (Settings.SlaveDailyDecayPercent > 0f)
             {
-                float decayFraction = Settings.SlaveDailyDecayPercent / 100f;
-                float rawLoss = slaveCount * decayFraction;
                 // Accumulate fractional loss — when >= 1.0, remove whole slaves.
                 string decayKey = settlement.StringId;
                 if (!_decayAccumulator.TryGetValue(decayKey, out float accum))
                     accum = 0f;
-                accum += rawLoss;
-                int wholeLoss = Math.Min((int)accum, slaveCount);
+                SlaveDecayResult decay = B1071_SlaveMath.DailyDecay(slaveCount, accum, Settings);
+                int wholeLoss = decay.WholeLoss;
                 if (wholeLoss > 0)
                 {
                     settlement.ItemRoster.AddToCounts(_slaveItem, -wholeLoss);
                     slaveCount -= wholeLoss;  // update local count for notification
-                    accum -= wholeLoss;
                     B1071_VerboseLog.Log("SlaveEconomy", $"Decay {settlement.Name}: -{wholeLoss} slave(s) attrition, {slaveCount} remaining.");
                 }
-                _decayAccumulator[decayKey] = accum;
+                _decayAccumulator[decayKey] = decay.RemainingAccumulator;
             }
 
             // ── Manumission (slave cap overflow → freed → MP) ─────────────────────
@@ -405,8 +404,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // and creates supply differentials that drive caravan trade.
             if (Settings.SlaveCapPerProsperity > 0f && slaveCount > 0)
             {
-                int cap = Math.Max(Settings.SlaveCapMinimum,
-                                   (int)(settlement.Town.Prosperity * Settings.SlaveCapPerProsperity));
+                int cap = B1071_SlaveMath.SlaveCap(settlement.Town.Prosperity, Settings);
                 if (slaveCount > cap)
                 {
                     int freed = slaveCount - cap;
@@ -445,10 +443,8 @@ namespace Byzantium1071.Campaign.Behaviors
             // spamming a message for every slave-holding town in the world each day.
             if (Settings.ShowPlayerDebugMessages && Settlement.CurrentSettlement == settlement)
             {
-                float prosDisplay = slaveCount * Settings.SlaveProsperityPerUnit * eff;
-                float consDisplay = Math.Min(
-                    Settings.SlaveConstructionBonusCap,
-                    slaveCount * Settings.SlaveConstructionAcceleration * eff);
+                float prosDisplay = B1071_SlaveMath.ProsperityBonus(slaveCount, Settings);
+                float consDisplay = B1071_SlaveMath.ConstructionBonus(slaveCount, Settings);
                 InformationManager.DisplayMessage(new InformationMessage(
                     new TextObject("{=b1071_slave_daily_msg}{SETTLEMENT}: {COUNT} slave{PLURAL} in market. Daily: +{PROS} prosperity, +{CONS} construction.")
                         .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? "Town")
@@ -509,7 +505,7 @@ namespace Byzantium1071.Campaign.Behaviors
             foreach (Settlement settlement in Settlement.All)
             {
                 if (!settlement.IsTown) continue;
-                int count = MBRandom.RandomInt(0, 11); // 0-10 inclusive
+                int count = Random.Next(0, 11); // 0-10 inclusive
                 if (count > 0)
                 {
                     settlement.ItemRoster.AddToCounts(_slaveItem, count);
@@ -790,7 +786,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 tierSum += element.Character.Tier * element.Number;
             }
 
-            return tierSum * 2f;
+            return B1071_SlaveMath.RogueryXpFromTierSum(tierSum);
         }
 
         internal static void AwardPrisonerProcessingRogueryXp(

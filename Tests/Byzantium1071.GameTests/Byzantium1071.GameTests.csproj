@@ -41,7 +41,9 @@
 
   <ItemGroup>
     <Compile Remove="SettingsMigrationTests.cs" />
+    <Compile Remove="PatchSignatureTests.cs" />
     <Compile Include="SettingsMigrationTests.cs" Condition="Exists('$(GameExecutable)')" />
+    <Compile Include="PatchSignatureTests.cs" Condition="Exists('$(GameExecutable)')" />
     <ProjectReference Include="..\..\Byzantium1071.csproj"
                       AdditionalProperties="ModuleId="
                       Condition="Exists('$(GameExecutable)')" />
