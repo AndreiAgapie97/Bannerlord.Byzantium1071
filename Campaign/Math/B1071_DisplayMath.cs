@@ -13,6 +13,85 @@ namespace Byzantium1071.Campaign
         Exhausted
     }
 
+    internal enum FoodTrendDisplayKind
+    {
+        Unknown,
+        Rising,
+        Falling,
+        Flat
+    }
+
+    internal enum PeacePressureDisplayDirection
+    {
+        Neutral,
+        Peace,
+        War
+    }
+
+    internal readonly struct ClanStatusCode
+    {
+        internal ClanStatusCode(bool isNeutral, bool isRich, int fiefCount)
+        {
+            IsNeutral = isNeutral;
+            IsRich = isRich;
+            FiefCount = fiefCount;
+        }
+
+        internal bool IsNeutral { get; }
+        internal bool IsRich { get; }
+        internal int FiefCount { get; }
+    }
+
+    internal readonly struct FoodTrendDisplay
+    {
+        internal FoodTrendDisplay(FoodTrendDisplayKind kind, float value)
+        {
+            Kind = kind;
+            Value = value;
+        }
+
+        internal FoodTrendDisplayKind Kind { get; }
+        internal float Value { get; }
+    }
+
+    internal readonly struct WarDurationDisplay
+    {
+        internal WarDurationDisplay(bool isNew, int days)
+        {
+            IsNew = isNew;
+            Days = days;
+        }
+
+        internal bool IsNew { get; }
+        internal int Days { get; }
+    }
+
+    internal readonly struct ExhaustionCompactDisplay
+    {
+        internal ExhaustionCompactDisplay(ExhaustionDisplayTag tag, int roundedValue, bool includeValue)
+        {
+            Tag = tag;
+            RoundedValue = roundedValue;
+            IncludeValue = includeValue;
+        }
+
+        internal ExhaustionDisplayTag Tag { get; }
+        internal int RoundedValue { get; }
+        internal bool IncludeValue { get; }
+    }
+
+    internal readonly struct PeacePressureDisplay
+    {
+        internal PeacePressureDisplay(PeacePressureDisplayDirection direction, string level)
+        {
+            Direction = direction;
+            Level = level;
+        }
+
+        internal PeacePressureDisplayDirection Direction { get; }
+        internal string Level { get; }
+    }
+
     internal static class B1071_DisplayMath
     {
         internal static string FormatManpower(int current, int maximum) =>
@@ -159,6 +238,23 @@ namespace Byzantium1071.Campaign
             return rounded > 0 ? "+" + rounded : rounded.ToString();
         }
 
+        internal static ClanStatusCode BuildClanStatusCode(bool isNeutral, int fiefCount, int gold) =>
+            new(isNeutral, gold >= 40000, fiefCount);
+
+        internal static FoodTrendDisplay FormatFoodTrend(float foodChange)
+        {
+            if (float.IsNaN(foodChange) || float.IsInfinity(foodChange))
+                return new FoodTrendDisplay(FoodTrendDisplayKind.Unknown, 0f);
+            if (foodChange > 0.10f)
+                return new FoodTrendDisplay(FoodTrendDisplayKind.Rising, foodChange);
+            if (foodChange < -0.10f)
+                return new FoodTrendDisplay(FoodTrendDisplayKind.Falling, foodChange);
+            return new FoodTrendDisplay(FoodTrendDisplayKind.Flat, foodChange);
+        }
+
+        internal static WarDurationDisplay FormatWarDuration(int days) =>
+            new(days <= 0, days);
+
         internal static string FormatTerritoryCount(int countA, int countB) => countA + " vs " + countB;
 
         internal static string FormatRuler(string rulerName, int rulerAge, string notAvailable) =>
@@ -186,6 +282,19 @@ namespace Byzantium1071.Campaign
             return ExhaustionDisplayTag.Crisis;
         }
 
+        internal static ExhaustionCompactDisplay GetExhaustionCompact(
+            float exhaustion,
+            bool pressureBands,
+            DiplomacyPressureBand band)
+        {
+            if (float.IsNaN(exhaustion) || float.IsInfinity(exhaustion)) exhaustion = 0f;
+
+            ExhaustionDisplayTag tag = ExhaustionTag(exhaustion, pressureBands, band);
+            int rounded = (int)exhaustion;
+            bool includeValue = pressureBands ? rounded > 0 : tag != ExhaustionDisplayTag.Fresh;
+            return new ExhaustionCompactDisplay(tag, rounded, includeValue);
+        }
+
         internal static string PeacePressureLevel(float pressure, bool pressureBands)
         {
             float absolute = Math.Abs(pressure);
@@ -203,6 +312,17 @@ namespace Byzantium1071.Campaign
                 : absolute >= 5000f ? "Medium"
                 : absolute >= 1000f ? "Low"
                 : "Light";
+        }
+
+        internal static PeacePressureDisplay GetPeacePressureBand(float pressure, bool pressureBands)
+        {
+            if (float.IsNaN(pressure) || float.IsInfinity(pressure) || pressure == 0f)
+                return new PeacePressureDisplay(PeacePressureDisplayDirection.Neutral, "Light");
+
+            PeacePressureDisplayDirection direction = pressure > 0f
+                ? PeacePressureDisplayDirection.Peace
+                : PeacePressureDisplayDirection.War;
+            return new PeacePressureDisplay(direction, PeacePressureLevel(pressure, pressureBands));
         }
 
         private static int ClampPercent(int value) => Math.Max(0, Math.Min(100, value));

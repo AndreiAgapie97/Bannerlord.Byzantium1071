@@ -319,7 +319,7 @@ namespace Byzantium1071.Campaign.Settings
                     // (which patch SandBoxCore rather than TaleWorlds.*) are never missed.
                     foreach (var p in info.Prefixes.Concat(info.Postfixes)
                                            .Concat(info.Transpilers).Concat(info.Finalizers))
-                        if (p.owner != B1071HarmonyId && !IsFrameworkId(p.owner))
+                        if (p.owner != B1071HarmonyId && !B1071_CompatibilityMath.IsFrameworkId(p.owner))
                             _allGameplayOwners.Add(p.owner);
 
                     bool b1071Patches = info.Prefixes.Any(p => p.owner == B1071HarmonyId)
@@ -456,7 +456,7 @@ namespace Byzantium1071.Campaign.Settings
                     // (TaleWorlds.*, SandBox, NavalDLC, etc.), it is NOT a third-party mod
                     // replacement. Official DLC models delegate via BaseModel to the Default*
                     // model, so our Harmony patches still fire through the delegation chain.
-                    if (IsNativeAssembly(activeAssembly)) continue;
+                    if (B1071_CompatibilityMath.IsNativeAssembly(activeAssembly)) continue;
 
                     // Non-vanilla model detected — a completely different type hierarchy.
                     // Harmony patches on the expected vanilla type will NOT fire.
@@ -853,47 +853,6 @@ namespace Byzantium1071.Campaign.Settings
             return methodName; // fallback: raw method name
         }
 
-        // ─── Gameplay mod detection helpers ───────────────────────────────────────────────
-
-        /// <summary>
-        /// Returns true if the assembly name belongs to the native Bannerlord game or an official
-        /// TaleWorlds DLC.  Covers TaleWorlds.*, SandBox*, StoryMode*, CustomBattle*, and
-        /// NavalDLC* (official Naval DLC).  NavalDLC replaces several models with thin decorator
-        /// wrappers that delegate to the Default* model via BaseModel, so our Harmony patches
-        /// on the Default* type still fire through the delegation chain.
-        /// </summary>
-        private static bool IsNativeAssembly(string? assemblyName)
-        {
-            if (string.IsNullOrEmpty(assemblyName)) return false;
-            string name = assemblyName!;
-            return name.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("CustomBattle", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("NavalDLC", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("BirthAndDeath", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Multiplayer", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Native", StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Returns true if the Harmony owner ID belongs to an infrastructure mod
-        /// (game core, patch framework, MCM, UI extension) rather than a gameplay mod.
-        /// Heuristic: pure frameworks never patch TaleWorlds.CampaignSystem gameplay code.
-        /// </summary>
-        private static bool IsFrameworkId(string harmonyId)
-        {
-            if (string.IsNullOrEmpty(harmonyId)) return true;
-            var lc = harmonyId.ToLowerInvariant();
-            return lc.Contains("taleworlds")     || lc.Contains("butterlib")        ||
-                   lc.Contains("butlib")         || lc.Contains(".mcm")             ||
-                   lc.Contains("modlib")         || lc.Contains("uiextender")       ||
-                   lc.Contains("mboptionscreen") || lc.Contains("betterexception")  ||
-                   lc.Contains("debugmode")      || lc.Contains("nativemodule")     ||
-                   lc.Contains("unpatch")        || lc.Contains("blse")             ||
-                   lc.Contains("launcherex")     ||
-                   lc == "0harmony"              || lc.StartsWith("0harmony.");
-        }
 
         /// <summary>All non-framework mods detected patching gameplay methods this session.</summary>
         internal static IReadOnlyList<string> GetAllGameplayModOwners() =>

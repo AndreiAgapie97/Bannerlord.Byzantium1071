@@ -650,7 +650,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
 
                         float before = _warExhaustion[key];
-                        float val = before - decay;
+                        float val = B1071_ExhaustionMath.DailyDecay(before, decay);
                         if (val <= 0f)
                             _warExhaustion.Remove(key);
                         else
@@ -957,47 +957,34 @@ namespace Byzantium1071.Campaign.Behaviors
                 return 0f;
             }
 
-            float duration = Math.Max(1f, expiryDay - startDay);
-            float remaining = Math.Max(0f, expiryDay - now);
-            float ratio = Clamp01(remaining / duration);
-            float penalty = Math.Max(0f, basePenalty * ratio);
-
-            // Reduce penalty effectiveness when pool is depleted (below threshold).
-            // A ruined settlement has nothing left to penalize — halve the penalty.
-            if (Settings.ReduceRecoveryPenaltyWhenDepleted && penalty > 0f)
+            int maximumPool = 0;
+            int currentPool = 0;
+            if (Settings.ReduceRecoveryPenaltyWhenDepleted
+                && Settings.RecoveryDepletedThresholdPercent > 0
+                && !string.IsNullOrEmpty(poolId))
             {
-                float depletedThreshold = Clamp01(Math.Max(0f, Settings.RecoveryDepletedThresholdPercent) / 100f);
-                if (depletedThreshold > 0f && !string.IsNullOrEmpty(poolId))
+                // Prefer cache (populated during daily tick) to avoid Settlement.All iteration.
+                maximumPool = _maxManpowerCache.TryGetValue(poolId, out int cached) ? cached : 0;
+                if (maximumPool <= 0)
                 {
-                    // Prefer cache (populated during daily tick) to avoid Settlement.All iteration.
-                    int max = _maxManpowerCache.TryGetValue(poolId, out int cached) ? cached : 0;
-                    if (max <= 0)
+                    // Cache miss — find settlement to compute max. Only happens
+                    // if called before the first daily tick (e.g. conquest event).
+                    foreach (var s in Settlement.All)
                     {
-                        // Cache miss — find settlement to compute max. Only happens
-                        // if called before the first daily tick (e.g. conquest event).
-                        foreach (var s in Settlement.All)
+                        if (s != null && s.StringId == poolId && (s.IsTown || s.IsCastle))
                         {
-                            if (s != null && s.StringId == poolId && (s.IsTown || s.IsCastle))
-                            {
-                                max = GetMaxManpowerCached(s);
-                                break;
-                            }
-                        }
-                    }
-                    if (max > 0)
-                    {
-                        int cur = _manpowerByPoolId.TryGetValue(poolId, out int cv) ? cv : max;
-                        float fillRatio = Clamp01((float)cur / max);
-                        if (fillRatio < depletedThreshold)
-                        {
-                            // Halve the penalty when depleted.
-                            penalty *= 0.5f;
+                            maximumPool = GetMaxManpowerCached(s);
+                            break;
                         }
                     }
                 }
+
+                if (maximumPool > 0)
+                    currentPool = _manpowerByPoolId.TryGetValue(poolId, out int value) ? value : maximumPool;
             }
 
-            return penalty;
+            return B1071_ManpowerMath.RecoveryPenaltyFraction(
+                basePenalty, startDay, expiryDay, now, currentPool, maximumPool, Settings);
         }
 
         /// <summary>
@@ -1986,26 +1973,20 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private static int GetManpowerCostPerTroop(CharacterObject troop)
         {
-            return Math.Max(1, Settings.BaseManpowerCostPerTroop);
+            return B1071_ManpowerMath.RecruitmentCostPerTroop(Settings);
         }
 
         private static int ApplyCultureDiscountIfAny(int baseCost, Settlement recruitmentSettlement, MobileParty party)
         {
-            int costPer = Math.Max(1, baseCost);
-            var settings = Settings;
-
-            if (settings.EnableCultureDiscount && party.LeaderHero != null)
+            bool culturesMatch = false;
+            if (party.LeaderHero != null)
             {
                 var settlementCulture = recruitmentSettlement.Culture;
                 var heroCulture = party.LeaderHero.Culture;
-                if (settlementCulture != null && heroCulture != null && settlementCulture == heroCulture)
-                {
-                    float costPct = Math.Max(0.01f, settings.CultureCostPercent) / 100f;
-                    costPer = Math.Max(1, (int)(costPer * costPct));
-                }
+                culturesMatch = settlementCulture != null && heroCulture != null && settlementCulture == heroCulture;
             }
 
-            return costPer;
+            return B1071_ManpowerMath.CultureDiscountedRecruitmentCost(baseCost, culturesMatch, Settings);
         }
 
         internal int GetRecruitCostForParty(Settlement recruitmentSettlement, MobileParty party, CharacterObject troop)
@@ -2226,20 +2207,11 @@ namespace Byzantium1071.Campaign.Behaviors
             if (string.IsNullOrEmpty(poolId)) return;
 
             int max = GetMaxManpowerCached(pool);
-            float drainPct = Math.Max(0f, Settings.RaidManpowerDrainPercent) / 100f;
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
-            int drainRequested = (int)(cur * drainPct);
-            if (drainRequested <= 0 && drainPct > 0f && cur > 0)
-                drainRequested = 1;
-
-            if (drainRequested <= 0) return;
-
-            int capPercent = Math.Max(0, Settings.RaidDailyPoolDrainCapPercent);
-            int capAbsolute = (int)(max * (capPercent / 100f));
             string poolDayKey = $"{poolId}|{today}";
             int spentToday = _raidDrainSpentByPoolDay.TryGetValue(poolDayKey, out int spent) ? spent : 0;
-            int remainingBudget = capAbsolute > 0 ? Math.Max(0, capAbsolute - spentToday) : drainRequested;
-            int drain = capAbsolute > 0 ? Math.Min(drainRequested, remainingBudget) : drainRequested;
+            int drain = B1071_ManpowerMath.RaidDrainAmount(
+                cur, max, Settings.RaidManpowerDrainPercent, Settings.RaidDailyPoolDrainCapPercent, spentToday);
 
             if (drain <= 0)
             {
@@ -2314,23 +2286,25 @@ namespace Byzantium1071.Campaign.Behaviors
             if (string.IsNullOrEmpty(poolId)) return;
 
             int max = GetMaxManpowerCached(pool);
-            float retainPct;
+            float retainPercent;
             switch (aftermathType)
             {
                 case SiegeAftermathAction.SiegeAftermath.Devastate:
-                    retainPct = Math.Max(0f, Settings.SiegeDevastateRetainPercent) / 100f;
+                    retainPercent = Settings.SiegeDevastateRetainPercent;
                     break;
                 case SiegeAftermathAction.SiegeAftermath.Pillage:
-                    retainPct = Math.Max(0f, Settings.SiegePillageRetainPercent) / 100f;
+                    retainPercent = Settings.SiegePillageRetainPercent;
                     break;
                 default: // ShowMercy
-                    retainPct = Math.Max(0f, Settings.SiegeMercyRetainPercent) / 100f;
+                    retainPercent = Settings.SiegeMercyRetainPercent;
                     break;
             }
 
-            int newVal = Math.Max(0, (int)(max * retainPct));
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
-            int appliedVal = Math.Min(cur, newVal);
+            PoolRetentionResult retention = B1071_ManpowerMath.SiegeRetention(cur, max, retainPercent);
+            int newVal = retention.TargetPool;
+            int appliedVal = retention.AppliedPool;
+            float retainPct = retention.RetainFraction;
             _manpowerByPoolId[poolId] = appliedVal; // only reduce, never increase
             _telemetrySiegeDrainToday += Math.Max(0, cur - appliedVal);
 
@@ -2708,16 +2682,13 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 int died = mep.DiedInBattle?.TotalManCount ?? 0;
                 int wounded = mep.WoundedInBattle?.TotalManCount ?? 0;
-                int casualties = died + wounded;
-                if (casualties <= 0) continue;
+                float exhaustion = B1071_ExhaustionMath.BattleExhaustion(died, wounded, perCasualty);
+                if (exhaustion <= 0f) continue;
 
                 string? kingdomId = mp.LeaderHero?.Clan?.Kingdom?.StringId;
-                AddWarExhaustion(kingdomId, casualties * perCasualty);
+                AddWarExhaustion(kingdomId, exhaustion);
             }
         }
-
-        // Tier drain weights: T1=1.0×, T2=1.1×, T3=1.25×, T4=1.5×, T5=1.75×, T6=2.0×
-        private static readonly float[] _tierDrainWeights = { 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f };
 
         /// <summary>
         /// Computes the effective casualty drain from a roster, optionally applying tier-based weight multipliers.
@@ -2737,8 +2708,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (elem.Character == null) continue;
                 int count = elem.Number;
                 if (count <= 0) continue;
-                int tier = Math.Max(1, Math.Min(6, elem.Character.Tier));
-                total += count * baseMultiplier * _tierDrainWeights[tier - 1];
+                total += B1071_ManpowerMath.TierWeightedDrain(count, elem.Character.Tier, baseMultiplier);
             }
             return total;
         }
@@ -2828,26 +2798,11 @@ namespace Byzantium1071.Campaign.Behaviors
             if (string.IsNullOrEmpty(poolId)) return;
 
             int max = GetMaxManpowerCached(pool);
-            float baseRetainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
             int cur = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
-
-            // Dynamic conquest protection: depleted pools retain a higher percentage.
-            // Prevents ping-pong border castles from being permanently zeroed.
-            float retainPct = baseRetainPct;
-            if (Settings.EnableDynamicConquestProtection && max > 0)
-            {
-                float depletedThreshold = Clamp01(Math.Max(0f, Settings.ConquestDepletedThresholdPercent) / 100f);
-                float depletedRetain = Math.Max(baseRetainPct, Math.Max(0f, Settings.ConquestDepletedRetainPercent) / 100f);
-                float fillRatio = Clamp01((float)cur / max);
-                if (fillRatio < depletedThreshold && depletedThreshold > 0f)
-                {
-                    // Linear interpolation: at 0% fill → depletedRetain, at threshold → baseRetainPct.
-                    float t = fillRatio / depletedThreshold;
-                    retainPct = depletedRetain + (baseRetainPct - depletedRetain) * t;
-                }
-            }
-
-            int newVal = Math.Max(0, (int)(cur * retainPct));
+            PoolRetentionResult retention = B1071_ManpowerMath.ConquestRetention(cur, max, Settings);
+            int newVal = retention.AppliedPool;
+            float retainPct = retention.RetainFraction;
+            float baseRetainPct = Math.Max(0f, Settings.ConquestPoolRetainPercent) / 100f;
             _manpowerByPoolId[poolId] = newVal;
 
             B1071_VerboseLog.Log("WarEffects", $"Conquest at {settlement.Name}: {oldKingdom?.Name}->{newKingdom?.Name}, pool {cur}->{newVal}/{max} ({retainPct:P0} retain{(retainPct > baseRetainPct ? $", boosted from {baseRetainPct:P0}" : "")}).");

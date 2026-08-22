@@ -104,5 +104,34 @@ namespace Byzantium1071.Tests
             Assert.Equal("castle_a", castle.Key);
             Assert.Equal(("hero_a", "party_a", 3), Assert.Single(castle.Value["troop_a"]));
         }
+
+        [Fact]
+        public void TenThousandCastlePoolEntriesRoundTripWithoutCrossingCastleOrTroopIds()
+        {
+            var source = new Dictionary<string, Dictionary<string, int>>();
+            for (int castleIndex = 0; castleIndex < 100; castleIndex++)
+            {
+                var troops = new Dictionary<string, int>();
+                for (int troopIndex = 0; troopIndex < 100; troopIndex++)
+                {
+                    troops["troop_" + troopIndex] = castleIndex * 100 + troopIndex;
+                }
+
+                source["castle_" + castleIndex] = troops;
+            }
+
+            CastleIntSaveData saved = B1071_CastleSaveMath.FlattenIntMap(source);
+            Dictionary<string, Dictionary<string, int>> loaded = B1071_CastleSaveMath.ReadIntMap(
+                saved.CastleIds, saved.TroopIds, saved.Values);
+
+            Assert.Equal(10_000, saved.Values.Count);
+            foreach (KeyValuePair<string, Dictionary<string, int>> castle in source)
+            {
+                foreach (KeyValuePair<string, int> troop in castle.Value)
+                {
+                    Assert.Equal(troop.Value, loaded[castle.Key][troop.Key]);
+                }
+            }
+        }
     }
 }

@@ -60,6 +60,135 @@ namespace Byzantium1071.Tests
         }
 
         [Fact]
+        public void ExtremeButFiniteSettingsStayFiniteAndBoundedForTwoHundredDays()
+        {
+            FakeSettings settings = TownSettings();
+            settings.TownPoolMax = 10_000;
+            settings.ProsperityNormalizer = 0f;
+            settings.MaxPoolProsperityMinScale = 1f;
+            settings.MaxPoolProsperityMaxScale = 500f;
+            settings.SecurityBonusMinScale = 1f;
+            settings.SecurityBonusMaxScale = 500f;
+            settings.TownRegenMinPercent = 0f;
+            settings.TownRegenMaxPercent = 500f;
+            settings.SecurityRegenMinScale = 0f;
+            settings.SecurityRegenMaxScale = 500f;
+            settings.FoodRegenMinScale = 0f;
+            settings.FoodRegenMaxScale = 500f;
+            settings.LoyaltyRegenMinScale = 0f;
+            settings.LoyaltyRegenMaxScale = 500f;
+            settings.EnableSeasonalRegen = true;
+            settings.SpringSummerRegenMultiplier = 500;
+            settings.WinterRegenMultiplier = 0;
+            settings.EnablePeaceDividend = true;
+            settings.PeaceDividendMultiplier = 1;
+            settings.EnableWarExhaustion = true;
+            settings.ExhaustionRegenDivisor = 0f;
+            settings.EnableDelayedRecovery = true;
+            settings.EnableRegenSoftCap = true;
+            settings.RegenSoftCapStartRatio = -1f;
+            settings.RegenSoftCapStrength = 10f;
+            settings.EnableRecruitmentVariance = true;
+            settings.RecoveryVariancePercent = 100;
+            settings.RegenStressFloorPercent = 1f;
+            settings.RegenCapPercent = 100f;
+            settings.EnableDepletedEmergencyRegen = true;
+            settings.DepletedRegenThresholdPercent = 100;
+            settings.DepletedRegenBonusAtZero = 25;
+            settings.PressureBandRisingStart = 1f;
+            settings.PressureBandCrisisStart = 2f;
+            settings.PressureBandHysteresis = 1f;
+
+            PoolFacts maxFacts = new(
+                isTown: true,
+                isCastle: false,
+                hasTown: true,
+                prosperity: 2_000f,
+                security: 200f,
+                foodStocks: 200f,
+                loyalty: 200f,
+                ownerAtPeace: true,
+                currentPool: 0);
+            int maximum = B1071_ManpowerMath.MaxPool(maxFacts, settings);
+            int pool = 0;
+            float exhaustion = 100f;
+            DiplomacyPressureBand band = DiplomacyPressureBand.Low;
+
+            for (int day = 0; day < 200; day++)
+            {
+                float recovery = B1071_ManpowerMath.RecoveryPenaltyFraction(
+                    basePenalty: 2f,
+                    startDay: 0f,
+                    expiryDay: 100f,
+                    currentDay: day,
+                    currentPool: pool,
+                    maximumPool: maximum,
+                    settings);
+                PoolFacts facts = new(
+                    isTown: true,
+                    isCastle: false,
+                    hasTown: true,
+                    prosperity: day % 2 == 0 ? 2_000f : -100f,
+                    security: day % 3 == 0 ? 200f : -100f,
+                    foodStocks: day % 5 == 0 ? 200f : -100f,
+                    loyalty: day % 7 == 0 ? 200f : -100f,
+                    isUnderSiege: day % 11 == 0,
+                    ownerAtPeace: day % 13 != 0,
+                    season: (B1071Season)(day % 4),
+                    exhaustion: exhaustion,
+                    recoveryPenalty: recovery,
+                    currentPool: pool);
+                DailyRegenResult regen = B1071_ManpowerMath.DailyRegen(
+                    facts, maximum, settings, new FakeRandom(floats: new[] { day % 2 == 0 ? 0f : 2f }));
+                pool = Math.Min(maximum, Math.Max(0, pool + regen.Amount));
+                exhaustion = B1071_ExhaustionMath.DailyDecay(
+                    exhaustion + B1071_ExhaustionMath.BattleExhaustion(10, 5, 0.5f),
+                    5f);
+                band = B1071_ExhaustionMath.EvaluatePressureBand(exhaustion, band, settings);
+
+                Assert.InRange(pool, 0, maximum);
+                Assert.InRange(exhaustion, 0f, 1_000f);
+                Assert.NotEqual(DiplomacyPressureBand.Low, band);
+                AssertFinite(recovery, regen.BasePercent, regen.FinalPercent, regen.SecurityMultiplier,
+                    regen.FoodMultiplier, regen.LoyaltyMultiplier, regen.SiegeMultiplier,
+                    regen.SeasonalMultiplier, regen.PeaceMultiplier, regen.GovernorAdd,
+                    regen.ExhaustionMultiplier, regen.RecoveryMultiplier, regen.SoftCapMultiplier,
+                    regen.VarianceMultiplier);
+            }
+        }
+
+        [Fact]
+        public void SiegeConquestAndRecoveryPreserveDepletedPoolsThenRestoreThem()
+        {
+            FakeSettings settings = TownSettings();
+            settings.ConquestPoolRetainPercent = 50;
+            settings.EnableDynamicConquestProtection = true;
+            settings.ConquestDepletedThresholdPercent = 25;
+            settings.ConquestDepletedRetainPercent = 80;
+            int maximum = B1071_ManpowerMath.MaxPool(TownFacts(0), settings);
+            int pool = 200;
+
+            PoolRetentionResult siege = B1071_ManpowerMath.SiegeRetention(pool, maximum, 50f);
+            pool = siege.AppliedPool;
+            PoolRetentionResult conquest = B1071_ManpowerMath.ConquestRetention(pool, maximum, settings);
+            pool = conquest.AppliedPool;
+
+            Assert.Equal(200, siege.AppliedPool);
+            Assert.Equal(0.56f, conquest.RetainFraction, 5);
+            Assert.Equal(112, pool);
+
+            for (int day = 0; day < 200; day++)
+            {
+                DailyRegenResult regen = B1071_ManpowerMath.DailyRegen(
+                    TownFacts(pool), maximum, settings, new FakeRandom());
+                pool = Math.Min(maximum, pool + regen.Amount);
+                Assert.InRange(pool, 0, maximum);
+            }
+
+            Assert.Equal(maximum, pool);
+        }
+
+        [Fact]
         public void LongWarReachesCrisisAndCooldownKeepsForcedPeaceEventsApart()
         {
             FakeSettings settings = new()
@@ -234,5 +363,14 @@ namespace Byzantium1071.Tests
             SiegeRegenMultiplierPercent = 100f,
             RegenCapPercent = 100f
         };
+
+        private static void AssertFinite(params float[] values)
+        {
+            foreach (float value in values)
+            {
+                Assert.False(float.IsNaN(value));
+                Assert.False(float.IsInfinity(value));
+            }
+        }
     }
 }

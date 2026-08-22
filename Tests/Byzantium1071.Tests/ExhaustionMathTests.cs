@@ -69,6 +69,17 @@ namespace Byzantium1071.Tests
             Assert.Equal(150f, B1071_ExhaustionMath.EarlyWarPeacePenalty(20f, false, settings));
         }
 
+        [Fact]
+        public void DailyDecayAndBattleExhaustionRespectZeroFloors()
+        {
+            Assert.Equal(6f, B1071_ExhaustionMath.DailyDecay(10f, 4f));
+            Assert.Equal(0f, B1071_ExhaustionMath.DailyDecay(3f, 4f));
+            Assert.Equal(3f, B1071_ExhaustionMath.DailyDecay(3f, -4f));
+            Assert.Equal(2.5f, B1071_ExhaustionMath.BattleExhaustion(3, 2, 0.5f));
+            Assert.Equal(0f, B1071_ExhaustionMath.BattleExhaustion(0, 0, 1f));
+            Assert.Equal(0f, B1071_ExhaustionMath.BattleExhaustion(3, 2, -1f));
+        }
+
         [Property(MaxTest = 1000)]
         public bool PressureBandAlwaysProducesADefinedValue(float exhaustion)
         {

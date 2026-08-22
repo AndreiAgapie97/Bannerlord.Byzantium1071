@@ -114,5 +114,25 @@ namespace Byzantium1071.Tests
             Assert.Equal("pair_a", entry.Key);
             Assert.Equal((9, 8), entry.Value);
         }
+
+        [Fact]
+        public void TenThousandStringMapEntriesRoundTripWithoutLosingAlignment()
+        {
+            var source = new Dictionary<string, int>();
+            for (int index = 0; index < 10_000; index++)
+            {
+                source["pool_" + index] = index - 5_000;
+            }
+
+            StringMapSaveData<int> saved = B1071_ManpowerSaveMath.FlattenStringMap(source);
+            var loaded = new Dictionary<string, int>();
+            B1071_ManpowerSaveMath.ReplaceStringMap(loaded, saved.Keys, saved.Values);
+
+            Assert.Equal(10_000, loaded.Count);
+            foreach (KeyValuePair<string, int> entry in source)
+            {
+                Assert.Equal(entry.Value, loaded[entry.Key]);
+            }
+        }
     }
 }

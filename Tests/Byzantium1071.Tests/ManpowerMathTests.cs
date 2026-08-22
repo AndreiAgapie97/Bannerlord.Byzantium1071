@@ -216,6 +216,109 @@ namespace Byzantium1071.Tests
             Assert.Equal(expected, B1071_ManpowerMath.PoolBand(current, max));
         }
 
+        [Fact]
+        public void RecoveryPenaltyDecaysLinearlyAndHalvesOnlyBelowTheDepletedThreshold()
+        {
+            FakeSettings settings = new()
+            {
+                ReduceRecoveryPenaltyWhenDepleted = true,
+                RecoveryDepletedThresholdPercent = 50
+            };
+
+            float normal = B1071_ManpowerMath.RecoveryPenaltyFraction(
+                0.4f, 10f, 20f, 15f, 50, 100, settings);
+            float depleted = B1071_ManpowerMath.RecoveryPenaltyFraction(
+                0.4f, 10f, 20f, 15f, 49, 100, settings);
+            float expired = B1071_ManpowerMath.RecoveryPenaltyFraction(
+                0.4f, 10f, 20f, 20f, 0, 100, settings);
+
+            Assert.Equal(0.2f, normal, 5);
+            Assert.Equal(0.1f, depleted, 5);
+            Assert.Equal(0f, expired);
+        }
+
+        [Theory]
+        [InlineData(100, 100, 60f, 20, 5, 15)]
+        [InlineData(100, 100, 60f, 0, 99, 60)]
+        [InlineData(1, 100, 1f, 100, 0, 1)]
+        [InlineData(100, 100, 60f, 20, 20, 0)]
+        [InlineData(100, 100, 0f, 20, 0, 0)]
+        public void RaidDrainHonorsDailyBudgetAndMinimumOnePointDrain(
+            int current,
+            int maximum,
+            float drainPercent,
+            int dailyCapPercent,
+            int spentToday,
+            int expected)
+        {
+            Assert.Equal(expected, B1071_ManpowerMath.RaidDrainAmount(
+                current, maximum, drainPercent, dailyCapPercent, spentToday));
+        }
+
+        [Fact]
+        public void SiegeRetentionCanOnlyLowerTheCurrentPool()
+        {
+            PoolRetentionResult limitedByCurrent = B1071_ManpowerMath.SiegeRetention(30, 100, 50f);
+            PoolRetentionResult limitedByTarget = B1071_ManpowerMath.SiegeRetention(80, 100, 50f);
+            PoolRetentionResult negativePercentage = B1071_ManpowerMath.SiegeRetention(80, 100, -10f);
+
+            Assert.Equal(50, limitedByCurrent.TargetPool);
+            Assert.Equal(30, limitedByCurrent.AppliedPool);
+            Assert.Equal(50, limitedByTarget.AppliedPool);
+            Assert.Equal(0, negativePercentage.AppliedPool);
+        }
+
+        [Fact]
+        public void ConquestProtectionInterpolatesForDepletedPools()
+        {
+            FakeSettings settings = new()
+            {
+                ConquestPoolRetainPercent = 50,
+                EnableDynamicConquestProtection = true,
+                ConquestDepletedThresholdPercent = 25,
+                ConquestDepletedRetainPercent = 80
+            };
+
+            PoolRetentionResult depleted = B1071_ManpowerMath.ConquestRetention(10, 100, settings);
+            PoolRetentionResult atThreshold = B1071_ManpowerMath.ConquestRetention(25, 100, settings);
+            PoolRetentionResult full = B1071_ManpowerMath.ConquestRetention(100, 100, settings);
+
+            Assert.Equal(0.68f, depleted.RetainFraction, 5);
+            Assert.Equal(6, depleted.AppliedPool);
+            Assert.Equal(12, atThreshold.AppliedPool);
+            Assert.Equal(50, full.AppliedPool);
+        }
+
+        [Theory]
+        [InlineData(4, 1, 2f, 8f)]
+        [InlineData(4, 2, 2f, 8.8f)]
+        [InlineData(4, 6, 2f, 16f)]
+        [InlineData(4, 0, 2f, 8f)]
+        [InlineData(4, 7, 2f, 16f)]
+        [InlineData(0, 4, 2f, 0f)]
+        public void TierWeightedDrainClampsTiersAndSkipsEmptyRows(int count, int tier, float multiplier, float expected)
+        {
+            Assert.Equal(expected, B1071_ManpowerMath.TierWeightedDrain(count, tier, multiplier), 5);
+        }
+
+        [Fact]
+        public void RecruitmentCostClampsItsBaseAndOnlyDiscountsMatchingCultures()
+        {
+            FakeSettings settings = new()
+            {
+                BaseManpowerCostPerTroop = 0,
+                EnableCultureDiscount = true,
+                CultureCostPercent = 50
+            };
+
+            Assert.Equal(1, B1071_ManpowerMath.RecruitmentCostPerTroop(settings));
+            Assert.Equal(4, B1071_ManpowerMath.CultureDiscountedRecruitmentCost(8, true, settings));
+            Assert.Equal(8, B1071_ManpowerMath.CultureDiscountedRecruitmentCost(8, false, settings));
+
+            settings.EnableCultureDiscount = false;
+            Assert.Equal(8, B1071_ManpowerMath.CultureDiscountedRecruitmentCost(8, true, settings));
+        }
+
         private static FakeSettings BaseSettings() =>
             new()
             {

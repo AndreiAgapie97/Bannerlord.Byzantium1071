@@ -80,6 +80,15 @@ namespace Byzantium1071.Campaign
             return extraWars * Math.Max(0f, settings.DiplomacyExtraPeaceBiasPerMajorWar);
         }
 
+        internal static float DailyDecay(float current, float decay) =>
+            Math.Max(0f, current - Math.Max(0f, decay));
+
+        internal static float BattleExhaustion(int deaths, int wounded, float perCasualty)
+        {
+            int casualties = deaths + wounded;
+            return casualties <= 0 ? 0f : casualties * Math.Max(0f, perCasualty);
+        }
+
         internal static float ManpowerDiplomacyPeaceBias(float averageRatio, IB1071Settings settings)
         {
             if (!settings.EnableManpowerDiplomacyPressure) return 0f;

@@ -50,6 +50,51 @@ namespace Byzantium1071.Tests
             Assert.Equal("High", B1071_DisplayMath.PeacePressureLevel(800f, true));
         }
 
+        [Fact]
+        public void OverlayDisplayFactsCoverTheExistingBoundaryRules()
+        {
+            ClanStatusCode neutralPoor = B1071_DisplayMath.BuildClanStatusCode(true, 3, 39_999);
+            ClanStatusCode vassalRich = B1071_DisplayMath.BuildClanStatusCode(false, 4, 40_000);
+            Assert.True(neutralPoor.IsNeutral);
+            Assert.False(neutralPoor.IsRich);
+            Assert.Equal(3, neutralPoor.FiefCount);
+            Assert.False(vassalRich.IsNeutral);
+            Assert.True(vassalRich.IsRich);
+
+            Assert.Equal(FoodTrendDisplayKind.Unknown, B1071_DisplayMath.FormatFoodTrend(float.NaN).Kind);
+            Assert.Equal(FoodTrendDisplayKind.Flat, B1071_DisplayMath.FormatFoodTrend(0.10f).Kind);
+            Assert.Equal(FoodTrendDisplayKind.Flat, B1071_DisplayMath.FormatFoodTrend(-0.10f).Kind);
+            Assert.Equal(FoodTrendDisplayKind.Rising, B1071_DisplayMath.FormatFoodTrend(0.11f).Kind);
+            Assert.Equal(FoodTrendDisplayKind.Falling, B1071_DisplayMath.FormatFoodTrend(-0.11f).Kind);
+
+            Assert.True(B1071_DisplayMath.FormatWarDuration(0).IsNew);
+            Assert.False(B1071_DisplayMath.FormatWarDuration(1).IsNew);
+            Assert.Equal(87, B1071_DisplayMath.FormatWarDuration(87).Days);
+        }
+
+        [Fact]
+        public void CompactExhaustionAndPeacePressureFactsPreserveUiSelectionRules()
+        {
+            ExhaustionCompactDisplay fresh = B1071_DisplayMath.GetExhaustionCompact(
+                float.NaN, false, DiplomacyPressureBand.Low);
+            ExhaustionCompactDisplay banded = B1071_DisplayMath.GetExhaustionCompact(
+                24.9f, true, DiplomacyPressureBand.Rising);
+            Assert.Equal(ExhaustionDisplayTag.Fresh, fresh.Tag);
+            Assert.False(fresh.IncludeValue);
+            Assert.Equal(ExhaustionDisplayTag.Rising, banded.Tag);
+            Assert.True(banded.IncludeValue);
+            Assert.Equal(24, banded.RoundedValue);
+
+            PeacePressureDisplay neutral = B1071_DisplayMath.GetPeacePressureBand(float.PositiveInfinity, true);
+            PeacePressureDisplay peace = B1071_DisplayMath.GetPeacePressureBand(800f, true);
+            PeacePressureDisplay war = B1071_DisplayMath.GetPeacePressureBand(-1_600f, true);
+            Assert.Equal(PeacePressureDisplayDirection.Neutral, neutral.Direction);
+            Assert.Equal(PeacePressureDisplayDirection.Peace, peace.Direction);
+            Assert.Equal("High", peace.Level);
+            Assert.Equal(PeacePressureDisplayDirection.War, war.Direction);
+            Assert.Equal("Extreme", war.Level);
+        }
+
         [Property(MaxTest = 1000)]
         public bool ScoresAlwaysRemainBounded(float loyalty, float security, float foodChange, int gold, int influence)
         {

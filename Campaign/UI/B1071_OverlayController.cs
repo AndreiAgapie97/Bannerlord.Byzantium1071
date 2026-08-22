@@ -1583,12 +1583,13 @@ namespace Byzantium1071.Campaign.UI
 
         private static string BuildClanStatusCode(bool isNeutral, int fiefCount, int gold)
         {
-            string allegiance = isNeutral ? L("b1071_overlay_neutral", "Neutral") : L("b1071_overlay_vassal", "Vassal");
-            string wealth = gold >= 40000 ? L("b1071_overlay_rich", "Rich") : L("b1071_overlay_poor", "Poor");
+            ClanStatusCode status = B1071_DisplayMath.BuildClanStatusCode(isNeutral, fiefCount, gold);
+            string allegiance = status.IsNeutral ? L("b1071_overlay_neutral", "Neutral") : L("b1071_overlay_vassal", "Vassal");
+            string wealth = status.IsRich ? L("b1071_overlay_rich", "Rich") : L("b1071_overlay_poor", "Poor");
             return new TextObject("{=b1071_overlay_statuscode}{ALLEGIANCE}/{WEALTH}/Fiefs {COUNT}")
                 .SetTextVariable("ALLEGIANCE", allegiance)
                 .SetTextVariable("WEALTH", wealth)
-                .SetTextVariable("COUNT", fiefCount)
+                .SetTextVariable("COUNT", status.FiefCount)
                 .ToString();
         }
 
@@ -2883,13 +2884,17 @@ namespace Byzantium1071.Campaign.UI
 
         private static string FormatFoodTrend(float foodChange)
         {
-            if (float.IsNaN(foodChange) || float.IsInfinity(foodChange))
-                return L("b1071_overlay_food_unknown", "F?");
-            if (foodChange > 0.10f)
-                return new TextObject("{=b1071_overlay_food_up}F↑{VALUE}").SetTextVariable("VALUE", foodChange.ToString("0.0")).ToString();
-            if (foodChange < -0.10f)
-                return new TextObject("{=b1071_overlay_food_down}F↓{VALUE}").SetTextVariable("VALUE", Math.Abs(foodChange).ToString("0.0")).ToString();
-            return new TextObject("{=b1071_overlay_food_flat}F={VALUE}").SetTextVariable("VALUE", foodChange.ToString("0.0")).ToString();
+            FoodTrendDisplay display = B1071_DisplayMath.FormatFoodTrend(foodChange);
+            return display.Kind switch
+            {
+                FoodTrendDisplayKind.Unknown => L("b1071_overlay_food_unknown", "F?"),
+                FoodTrendDisplayKind.Rising => new TextObject("{=b1071_overlay_food_up}F↑{VALUE}")
+                    .SetTextVariable("VALUE", display.Value.ToString("0.0")).ToString(),
+                FoodTrendDisplayKind.Falling => new TextObject("{=b1071_overlay_food_down}F↓{VALUE}")
+                    .SetTextVariable("VALUE", Math.Abs(display.Value).ToString("0.0")).ToString(),
+                _ => new TextObject("{=b1071_overlay_food_flat}F={VALUE}")
+                    .SetTextVariable("VALUE", display.Value.ToString("0.0")).ToString()
+            };
         }
 
         private static string FormatFoodTrendCompact(float foodChange)
@@ -3112,16 +3117,14 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         private static string FormatWarDuration(int days)
         {
-            if (days <= 0)
+            WarDurationDisplay duration = B1071_DisplayMath.FormatWarDuration(days);
+            if (duration.IsNew)
                 return L("b1071_overlay_war_dur_new", "New");
-            return new TextObject("{=b1071_overlay_war_dur}{DAYS}d").SetTextVariable("DAYS", days).ToString();
+            return new TextObject("{=b1071_overlay_war_dur}{DAYS}d").SetTextVariable("DAYS", duration.Days).ToString();
         }
 
         private static string GetExhaustionCompact(float exhaustion, string? kingdomId = null)
         {
-            if (float.IsNaN(exhaustion) || float.IsInfinity(exhaustion))
-                exhaustion = 0f;
-
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
             bool usePressureBands = settings.EnableDiplomacyPressureBands
                 && B1071_ManpowerBehavior.Instance != null
@@ -3129,8 +3132,8 @@ namespace Byzantium1071.Campaign.UI
             DiplomacyPressureBand band = usePressureBands
                 ? B1071_ManpowerBehavior.Instance!.GetPressureBand(kingdomId)
                 : DiplomacyPressureBand.Low;
-            ExhaustionDisplayTag displayTag = B1071_DisplayMath.ExhaustionTag(exhaustion, usePressureBands, band);
-            string tag = displayTag switch
+            ExhaustionCompactDisplay display = B1071_DisplayMath.GetExhaustionCompact(exhaustion, usePressureBands, band);
+            string tag = display.Tag switch
             {
                 ExhaustionDisplayTag.Fresh => L("b1071_overlay_exhaustion_tag_fresh", "Fr"),
                 ExhaustionDisplayTag.Low => L("b1071_overlay_exhaustion_tag_low", "Lo"),
@@ -3140,22 +3143,19 @@ namespace Byzantium1071.Campaign.UI
                 ExhaustionDisplayTag.Exhausted => L("b1071_overlay_exhaustion_tag_exhausted", "Ex"),
                 _ => L("b1071_overlay_exhaustion_tag_crisis", "Cr")
             };
-            int rounded = (int)exhaustion;
-            if (usePressureBands) return rounded > 0 ? tag + rounded.ToString() : tag;
-            return displayTag == ExhaustionDisplayTag.Fresh ? tag : tag + rounded.ToString();
+            return display.IncludeValue ? tag + display.RoundedValue.ToString() : tag;
         }
 
         private static string GetPeacePressureBand(float peacePressure)
         {
-            if (float.IsNaN(peacePressure) || float.IsInfinity(peacePressure))
-                return L("b1071_overlay_warstate_neutral", "Neutral");
-
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-            string level = B1071_DisplayMath.PeacePressureLevel(
+            PeacePressureDisplay display = B1071_DisplayMath.GetPeacePressureBand(
                 peacePressure,
                 settings.EnableDiplomacyPressureBands);
+            if (display.Direction == PeacePressureDisplayDirection.Neutral)
+                return L("b1071_overlay_warstate_neutral", "Neutral");
 
-            level = level switch
+            string level = display.Level switch
             {
                 "Extreme" => L("b1071_overlay_level_extreme", "Extreme"),
                 "High" => L("b1071_overlay_level_high", "High"),
@@ -3164,11 +3164,9 @@ namespace Byzantium1071.Campaign.UI
                 _ => L("b1071_overlay_level_light", "Light")
             };
 
-            if (peacePressure > 0f)
+            if (display.Direction == PeacePressureDisplayDirection.Peace)
                 return new TextObject("{=b1071_overlay_warstate_peace}Peace {LEVEL}").SetTextVariable("LEVEL", level).ToString();
-            if (peacePressure < 0f)
-                return new TextObject("{=b1071_overlay_warstate_war}War {LEVEL}").SetTextVariable("LEVEL", level).ToString();
-            return L("b1071_overlay_warstate_neutral", "Neutral");
+            return new TextObject("{=b1071_overlay_warstate_war}War {LEVEL}").SetTextVariable("LEVEL", level).ToString();
         }
 
         private static string BuildWarsColumns(B1071_ManpowerBehavior behavior)

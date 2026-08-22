@@ -336,6 +336,39 @@ namespace Byzantium1071.Tests
             Assert.True(float.IsNaN(legacy.PosY));
         }
 
+        [Fact]
+        public void TenThousandServiceCohortsRoundTripWithEveryParallelFieldAligned()
+        {
+            var partyIds = new System.Collections.Generic.List<string>();
+            var troopIds = new System.Collections.Generic.List<string>();
+            var joinDays = new System.Collections.Generic.List<int>();
+            var counts = new System.Collections.Generic.List<int>();
+            var extendedFlags = new System.Collections.Generic.List<bool>();
+            var extensionCounts = new System.Collections.Generic.List<int>();
+            var homeIds = new System.Collections.Generic.List<string>();
+
+            for (int index = 0; index < 10_000; index++)
+            {
+                B1071_ServiceMath.AppendServiceCohortRows(
+                    partyIds, troopIds, joinDays, counts, extendedFlags, extensionCounts, homeIds,
+                    "party_" + index, "troop_" + index, index, 1, index % 4, "home_" + index);
+            }
+
+            var rows = B1071_ServiceMath.ReadServiceCohortRows(
+                partyIds, troopIds, joinDays, counts, extendedFlags, extensionCounts, homeIds);
+
+            Assert.Equal(10_000, rows.Count);
+            for (int index = 0; index < rows.Count; index++)
+            {
+                ServiceCohortSaveRow row = rows[index];
+                Assert.Equal("party_" + index, row.PartyId);
+                Assert.Equal("troop_" + index, row.TroopId);
+                Assert.Equal(index, row.JoinDay);
+                Assert.Equal(index % 4, row.ExtensionCount);
+                Assert.Equal("home_" + index, row.HomeId);
+            }
+        }
+
         private static FakeSettings ServiceSettings() =>
             new()
             {

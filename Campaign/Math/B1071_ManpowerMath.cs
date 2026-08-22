@@ -3,8 +3,24 @@ using Byzantium1071.Campaign.Settings;
 
 namespace Byzantium1071.Campaign
 {
+    internal readonly struct PoolRetentionResult
+    {
+        internal PoolRetentionResult(int targetPool, int appliedPool, float retainFraction)
+        {
+            TargetPool = targetPool;
+            AppliedPool = appliedPool;
+            RetainFraction = retainFraction;
+        }
+
+        internal int TargetPool { get; }
+        internal int AppliedPool { get; }
+        internal float RetainFraction { get; }
+    }
+
     internal static class B1071_ManpowerMath
     {
+        private static readonly float[] TierDrainWeights = { 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f };
+
         internal static int MaxPool(PoolFacts facts, IB1071Settings settings)
         {
             int baseMax =
@@ -256,6 +272,117 @@ namespace Byzantium1071.Campaign
                 softCapMultiplier,
                 varianceMultiplier,
                 depletedBonus);
+        }
+
+        internal static float RecoveryPenaltyFraction(
+            float basePenalty,
+            float startDay,
+            float expiryDay,
+            float currentDay,
+            int currentPool,
+            int maximumPool,
+            IB1071Settings settings)
+        {
+            if (basePenalty <= 0f || currentDay >= expiryDay) return 0f;
+
+            float duration = Math.Max(1f, expiryDay - startDay);
+            float remaining = Math.Max(0f, expiryDay - currentDay);
+            float penalty = Math.Max(0f, basePenalty * Clamp01(remaining / duration));
+
+            if (settings.ReduceRecoveryPenaltyWhenDepleted && penalty > 0f && maximumPool > 0)
+            {
+                float depletedThreshold = Clamp01(Math.Max(0f, settings.RecoveryDepletedThresholdPercent) / 100f);
+                float fillRatio = Clamp01((float)currentPool / maximumPool);
+                if (depletedThreshold > 0f && fillRatio < depletedThreshold)
+                {
+                    penalty *= 0.5f;
+                }
+            }
+
+            return penalty;
+        }
+
+        internal static int RaidDrainAmount(
+            int currentPool,
+            int maximumPool,
+            float drainPercent,
+            int dailyCapPercent,
+            int spentToday)
+        {
+            float drainFraction = Math.Max(0f, drainPercent) / 100f;
+            int requested = (int)(currentPool * drainFraction);
+            if (requested <= 0 && drainFraction > 0f && currentPool > 0)
+            {
+                requested = 1;
+            }
+
+            if (requested <= 0) return 0;
+
+            int capPercent = Math.Max(0, dailyCapPercent);
+            int cap = (int)(maximumPool * (capPercent / 100f));
+            if (cap <= 0) return requested;
+
+            int remainingBudget = Math.Max(0, cap - spentToday);
+            return Math.Min(requested, remainingBudget);
+        }
+
+        internal static PoolRetentionResult SiegeRetention(
+            int currentPool,
+            int maximumPool,
+            float retainPercent)
+        {
+            float retainFraction = Math.Max(0f, retainPercent) / 100f;
+            int targetPool = Math.Max(0, (int)(maximumPool * retainFraction));
+            return new PoolRetentionResult(targetPool, Math.Min(currentPool, targetPool), retainFraction);
+        }
+
+        internal static PoolRetentionResult ConquestRetention(
+            int currentPool,
+            int maximumPool,
+            IB1071Settings settings)
+        {
+            float baseRetainFraction = Math.Max(0f, settings.ConquestPoolRetainPercent) / 100f;
+            float retainFraction = baseRetainFraction;
+
+            if (settings.EnableDynamicConquestProtection && maximumPool > 0)
+            {
+                float depletedThreshold = Clamp01(Math.Max(0f, settings.ConquestDepletedThresholdPercent) / 100f);
+                float depletedRetain = Math.Max(
+                    baseRetainFraction,
+                    Math.Max(0f, settings.ConquestDepletedRetainPercent) / 100f);
+                float fillRatio = Clamp01((float)currentPool / maximumPool);
+                if (fillRatio < depletedThreshold && depletedThreshold > 0f)
+                {
+                    float interpolation = fillRatio / depletedThreshold;
+                    retainFraction = depletedRetain + (baseRetainFraction - depletedRetain) * interpolation;
+                }
+            }
+
+            int targetPool = Math.Max(0, (int)(currentPool * retainFraction));
+            return new PoolRetentionResult(targetPool, targetPool, retainFraction);
+        }
+
+        internal static float TierWeightedDrain(int count, int tier, float baseMultiplier)
+        {
+            if (count <= 0) return 0f;
+
+            int tierIndex = Math.Max(0, Math.Min(TierDrainWeights.Length - 1, tier - 1));
+            return count * baseMultiplier * TierDrainWeights[tierIndex];
+        }
+
+        internal static int RecruitmentCostPerTroop(IB1071Settings settings) =>
+            Math.Max(1, settings.BaseManpowerCostPerTroop);
+
+        internal static int CultureDiscountedRecruitmentCost(
+            int baseCost,
+            bool culturesMatch,
+            IB1071Settings settings)
+        {
+            int cost = Math.Max(1, baseCost);
+            if (!settings.EnableCultureDiscount || !culturesMatch) return cost;
+
+            float discountFraction = Math.Max(0.01f, settings.CultureCostPercent) / 100f;
+            return Math.Max(1, (int)(cost * discountFraction));
         }
 
         internal static float Clamp01(float value)
