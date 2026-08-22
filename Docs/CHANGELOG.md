@@ -1,5 +1,27 @@
 # Campaign++ — Changelog
 
+## [1.0.3.1] — 2026-08-22
+
+### Engineering
+
+**Completed the automated coverage pass started in 1.0.3.0. Every function in `Campaign/Math/` is now reached by at least one test.**
+
+- Added boundary cases for the eleven formulas that had none: `CourierSpeedPerDay`, `MarchSpeedPerDay`, `ClampInt`, `HasPositiveTotalWeight`, `ForeignHireFactor`, `BandPeaceBias`, `MajorWarPressureBias`, `LegacyWarSupportPenalty`, `LegacyPeaceSupportBonus`, `RaidHearthDivisor` and `FormatManpower`.
+- Added a reflection-driven sweep that drives every settings-taking formula with all ~260 MCM sliders parked at both ends, then again with values MCM cannot produce. Reachable settings must return sane results; unreachable ones only have to not throw. Two guards keep the sweep from silently degrading into a no-op if the range reader breaks.
+- Added 39 further generated-input rules, bringing the total to 53. The fast suite is now **377 tests and ~53,000 generated cases** in under a second; the game-referencing suite is 64 patch-signature checks.
+- `B1071_DemobilizationBehavior.ClampInt` now delegates to `B1071_ServiceMath.ClampInt` instead of duplicating it. Identical output for every input, including an inverted range where `min > max`.
+- `B1071_ServiceMath.DailyRetirementCap` documented as an upper bound rather than a headcount. The `Math.Max(1, ...)` floor stops a small overdue group from rounding down to zero and never rotating out; the caller only asks for a cap once it has found at least one overdue soldier.
+
+**No gameplay or save-data change.** All 78 `SyncData` keys are byte-identical to 1.0.2.9, so existing campaigns load unchanged.
+
+### Fix — French Setting Labels
+
+**Seven town-investment labels in the MCM menu used the wrong apostrophe or read awkwardly.**
+
+- Curly apostrophes normalised to the straight form the rest of the file already uses (379 straight against 57 curly before this change).
+- AI investment chance read *"Chance d'investissement dans l'IA"* — investing *into* the AI — and is now *"Chance d'investissement de l'IA"*.
+- AI gold safety multiplier read *"Multiplicateur de sécurité or IA"* and is now *"Multiplicateur de sécurité d'or de l'IA"*.
+
 ## [1.0.3.0] — 2026-08-22
 
 ### Engineering

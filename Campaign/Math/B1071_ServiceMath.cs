@@ -195,6 +195,12 @@ namespace Byzantium1071.Campaign
             return scaled >= int.MaxValue ? int.MaxValue : (int)scaled;
         }
 
+        /// <summary>
+        /// How many soldiers of one troop type may leave in a single day. This is an upper bound on
+        /// a list of genuinely overdue men, not a count of them: the floor of one stops a small
+        /// group from rounding down to zero and never rotating out. Callers are expected to have
+        /// found at least one overdue soldier before asking.
+        /// </summary>
         internal static int DailyRetirementCap(int overdueCount, int dailyCapPercent)
         {
             return Math.Max(1, overdueCount * Math.Max(1, dailyCapPercent) / 100);
@@ -600,6 +606,18 @@ namespace Byzantium1071.Campaign
                 case 5: return tierFive;
                 default: return tierSix;
             }
+        }
+
+        /// <summary>
+        /// Clamps a value into an inclusive range. An inverted range (min above max) does not
+        /// throw: values below <paramref name="min"/> return <paramref name="min"/> and everything
+        /// else returns <paramref name="max"/>.
+        /// </summary>
+        internal static int ClampInt(int value, int min, int max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
         }
 
         private static int ClampTier(int tier) => Math.Max(1, Math.Min(6, tier));

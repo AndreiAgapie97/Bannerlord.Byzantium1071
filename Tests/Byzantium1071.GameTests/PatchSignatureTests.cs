@@ -1,12 +1,37 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using HarmonyLib;
 using Xunit;
 
 namespace Byzantium1071.GameTests
 {
+    /// <summary>
+    /// One Harmony patch the mod declares, resolved from the built mod assembly.
+    /// </summary>
+    internal sealed class DeclaredPatch
+    {
+        internal DeclaredPatch(string patchOwner, Type declaringType, string methodName, Type[]? argumentTypes)
+        {
+            PatchOwner = patchOwner;
+            DeclaringType = declaringType;
+            MethodName = methodName;
+            ArgumentTypes = argumentTypes;
+        }
+
+        internal string PatchOwner { get; }
+        internal Type DeclaringType { get; }
+        internal string MethodName { get; }
+        internal Type[]? ArgumentTypes { get; }
+    }
+
     public sealed class PatchSignatureTests
     {
+        private static Assembly ModAssembly => typeof(Byzantium1071.SubModule).Assembly;
+
         public static IEnumerable<object[]> CriticalTargets()
         {
             yield return Target(
@@ -32,43 +57,21 @@ namespace Byzantium1071.GameTests
                 "DailyTickSettlement");
         }
 
-        public static IEnumerable<object[]> DeclarativePatchTargets()
-        {
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementProsperityModel", "CalculateHearthChange");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementFoodModel", "CalculateTownFoodStocksChange");
-            yield return Target("TaleWorlds.CampaignSystem.Kingdom", "DeactivateKingdom");
-            yield return Target("TaleWorlds.CampaignSystem.Actions.DestroyClanAction", "Apply");
-            yield return Target("TaleWorlds.CampaignSystem.Actions.DestroyClanAction", "ApplyByClanLeaderDeath");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultBuildingConstructionModel", "CalculateDailyConstructionPower");
-            yield return Target("TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior", "DailyTickSettlement");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultPartyWageModel", "GetTroopRecruitmentCost");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultPartyWageModel", "GetCharacterWage");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultPartyWageModel", "GetTotalWage");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultVolunteerModel", "GetDailyVolunteerProductionProbability");
-            yield return Target("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitVolunteerVM", "ExecuteRecruit");
-            yield return Target("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM", "ExecuteRecruitAll");
-            yield return Target("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM", "OnDone");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementAccessModel", "CanMainHeroEnterSettlement");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementAccessModel", "CanMainHeroEnterLordsHall");
-            yield return Target("TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior", "OnSettlementEntered");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultPartyHealingModel", "GetSurvivalChance");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementSecurityModel", "CalculateSecurityChange");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementGarrisonModel", "GetMaximumDailyAutoRecruitmentCount");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementProsperityModel", "CalculateProsperityChange");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultCombatSimulationModel", "SimulateHit");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel", "CalculateClanIncomeInternal");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementLoyaltyModel", "CalculateLoyaltyChange");
-            yield return Target("TaleWorlds.CampaignSystem.CampaignBehaviors.RecruitmentCampaignBehavior", "ApplyInternal");
-            yield return Target("TaleWorlds.CampaignSystem.CampaignBehaviors.InfluenceGainCampaignBehavior", "OnPrisonerDonatedToSettlement");
-            yield return Target("TaleWorlds.CampaignSystem.Election.DeclareWarDecision", "DetermineSupport");
-            yield return Target("TaleWorlds.CampaignSystem.Election.MakePeaceKingdomDecision", "DetermineSupport");
-            yield return Target("TaleWorlds.CampaignSystem.Kingdom", "AddDecision");
-            yield return Target("TaleWorlds.CampaignSystem.Actions.MakePeaceAction", "Apply");
-            yield return Target("TaleWorlds.CampaignSystem.Actions.MakePeaceAction", "ApplyByKingdomDecision");
-            yield return Target("TaleWorlds.CampaignSystem.GameComponents.DefaultTradeItemPriceFactorModel", "GetBasePriceFactor");
-            yield return Target("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM", "RefreshScreen");
-            yield return Target("TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Recruitment.RecruitmentVM", "RefreshPartyProperties");
-        }
+        /// <summary>
+        /// Discovers every Harmony patch the mod declares by reflecting over the built mod
+        /// assembly, so a newly added patch is guarded automatically instead of relying on
+        /// somebody remembering to extend a hand-written list.
+        /// </summary>
+        public static IEnumerable<object[]> DeclarativePatchTargets() =>
+            DiscoverDeclaredPatches()
+                .Select(patch => new object[]
+                {
+                    patch.DeclaringType.FullName!,
+                    patch.MethodName,
+                    patch.PatchOwner,
+                    FormatArgumentTypes(patch.ArgumentTypes)
+                })
+                .ToArray();
 
         public static IEnumerable<object[]> RequiredGameModels()
         {
@@ -93,12 +96,89 @@ namespace Byzantium1071.GameTests
 
         [Theory]
         [MemberData(nameof(DeclarativePatchTargets))]
-        public void DeclarativeHarmonyPatchTargetStillExists(string typeName, string methodName)
+        public void DeclarativeHarmonyPatchTargetStillExists(
+            string typeName,
+            string methodName,
+            string patchOwner,
+            string argumentTypeNames)
         {
             Type type = ResolveType(typeName);
             MethodInfo? method = FindMethod(type, methodName);
 
-            Assert.True(method != null, $"Missing declarative Harmony patch target {typeName}.{methodName}.");
+            Assert.True(
+                method != null,
+                $"{patchOwner} patches {typeName}.{methodName}, which no longer exists in the installed game.");
+
+            if (argumentTypeNames.Length == 0)
+            {
+                return;
+            }
+
+            Type[] argumentTypes = argumentTypeNames
+                .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(ResolveType)
+                .ToArray();
+            MethodInfo? overload = type.GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                types: argumentTypes,
+                modifiers: null);
+
+            Assert.True(
+                overload != null,
+                $"{patchOwner} pins the {typeName}.{methodName} overload taking " +
+                $"({argumentTypeNames.Replace('|', ',')}), which no longer exists in the installed game.");
+        }
+
+        [Fact]
+        public void PatchDiscoveryFindsEveryPatchClassInTheModAssembly()
+        {
+            DeclaredPatch[] discovered = DiscoverDeclaredPatches();
+
+            // Guards against a reflection change silently reducing this suite to zero targets.
+            Assert.True(
+                discovered.Length >= 30,
+                $"Only {discovered.Length} Harmony patch targets were discovered; the mod declares far more.");
+
+            Type[] patchClasses = ModAssembly
+                .GetTypes()
+                .Where(type => type.GetCustomAttributes(typeof(HarmonyPatch), inherit: false).Length > 0)
+                .ToArray();
+            string[] classesWithoutTarget = patchClasses
+                .Select(type => type.FullName!)
+                .Except(discovered.Select(patch => patch.PatchOwner), StringComparer.Ordinal)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.True(
+                classesWithoutTarget.Length == 0,
+                $"These Harmony patch classes declare no resolvable target: {string.Join(", ", classesWithoutTarget)}.");
+        }
+
+        [Fact]
+        public void CriticalTargetListCoversEveryStringBasedLookupInSubModule()
+        {
+            string subModuleSource = File.ReadAllText(
+                Path.Combine(RepositoryRoot(), "SubModule.cs"));
+            int verifySection = subModuleSource.IndexOf("VerifyCriticalPatches", StringComparison.Ordinal);
+            Assert.True(verifySection >= 0, "SubModule.cs no longer contains VerifyCriticalPatches.");
+
+            string[] declaredPairs = CriticalTargets()
+                .Select(target => $"{(string)target[0]}.{(string)target[1]}")
+                .ToArray();
+            string[] missing = Regex
+                .Matches(subModuleSource.Substring(verifySection), @"""(?<type>TaleWorlds\.[A-Za-z0-9_.]+)"",\s*""(?<method>[A-Za-z0-9_]+)""")
+                .Cast<Match>()
+                .Select(match => $"{match.Groups["type"].Value}.{match.Groups["method"].Value}")
+                .Distinct(StringComparer.Ordinal)
+                .Except(declaredPairs, StringComparer.Ordinal)
+                .OrderBy(pair => pair, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.True(
+                missing.Length == 0,
+                $"VerifyCriticalPatches checks targets this suite does not guard: {string.Join(", ", missing)}.");
         }
 
         [Theory]
@@ -133,6 +213,132 @@ namespace Byzantium1071.GameTests
 
             Assert.NotNull(method);
             Assert.Equal("TaleWorlds.CampaignSystem.ExplainedNumber", method!.ReturnType.FullName);
+        }
+
+        /// <summary>
+        /// Walks every type in the mod assembly and merges class-level and method-level
+        /// <c>[HarmonyPatch]</c> attributes the same way Harmony itself does, so both the
+        /// "attribute on the class" and "attribute on each patch method" styles are covered.
+        /// </summary>
+        private static DeclaredPatch[] DiscoverDeclaredPatches()
+        {
+            List<DeclaredPatch> discovered = new();
+
+            foreach (Type type in LoadAllModTypes())
+            {
+                object[] classAttributes = type.GetCustomAttributes(typeof(HarmonyPatch), inherit: false);
+                if (classAttributes.Length == 0)
+                {
+                    continue;
+                }
+
+                HarmonyMethod classInfo = MergeAttributes(classAttributes);
+                MethodInfo[] annotatedMethods = type
+                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic
+                        | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                    .Where(method => method.GetCustomAttributes(typeof(HarmonyPatch), inherit: false).Length > 0)
+                    .ToArray();
+
+                if (annotatedMethods.Length == 0)
+                {
+                    AddIfResolvable(discovered, type.FullName!, classInfo, classInfo);
+                    continue;
+                }
+
+                foreach (MethodInfo method in annotatedMethods)
+                {
+                    HarmonyMethod methodInfo = MergeAttributes(
+                        method.GetCustomAttributes(typeof(HarmonyPatch), inherit: false));
+                    AddIfResolvable(discovered, type.FullName!, methodInfo, classInfo);
+                }
+            }
+
+            return discovered
+                .GroupBy(patch => $"{patch.PatchOwner}|{patch.DeclaringType.FullName}|{patch.MethodName}|{FormatArgumentTypes(patch.ArgumentTypes)}",
+                    StringComparer.Ordinal)
+                .Select(group => group.First())
+                .OrderBy(patch => patch.PatchOwner, StringComparer.Ordinal)
+                .ThenBy(patch => patch.MethodName, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Loads every type in the mod assembly. A partial load would silently drop patch
+        /// classes from this suite, so a missing dependency is reported as a failure rather
+        /// than quietly reducing coverage.
+        /// </summary>
+        private static Type[] LoadAllModTypes()
+        {
+            try
+            {
+                return ModAssembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException exception)
+            {
+                string[] reasons = exception.LoaderExceptions
+                    .Where(loaderException => loaderException != null)
+                    .Select(loaderException => loaderException!.Message)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+
+                throw new InvalidOperationException(
+                    "The mod assembly could not be fully loaded, so some Harmony patches would go unguarded. "
+                    + $"Add the missing references to this test project. Reasons: {string.Join(" | ", reasons)}",
+                    exception);
+            }
+        }
+
+        private static void AddIfResolvable(
+            List<DeclaredPatch> discovered,
+            string patchOwner,
+            HarmonyMethod primary,
+            HarmonyMethod fallback)
+        {
+            Type? declaringType = primary.declaringType ?? fallback.declaringType;
+            string? methodName = primary.methodName ?? fallback.methodName;
+            Type[]? argumentTypes = primary.argumentTypes ?? fallback.argumentTypes;
+
+            if (declaringType != null && !string.IsNullOrEmpty(methodName))
+            {
+                discovered.Add(new DeclaredPatch(patchOwner, declaringType, methodName!, argumentTypes));
+            }
+        }
+
+        private static HarmonyMethod MergeAttributes(object[] attributes)
+        {
+            HarmonyMethod merged = new();
+
+            foreach (object attribute in attributes)
+            {
+                HarmonyMethod info = ((HarmonyPatch)attribute).info;
+                merged.declaringType ??= info.declaringType;
+                merged.methodName ??= info.methodName;
+                merged.argumentTypes ??= info.argumentTypes;
+            }
+
+            return merged;
+        }
+
+        private static string FormatArgumentTypes(Type[]? argumentTypes) =>
+            argumentTypes == null || argumentTypes.Length == 0
+                ? string.Empty
+                : string.Join("|", argumentTypes.Select(type => type.FullName));
+
+        private static string RepositoryRoot()
+        {
+            DirectoryInfo? directory = new(AppContext.BaseDirectory);
+
+            while (directory != null)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "Directory.Build.props")))
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
+
+            throw new DirectoryNotFoundException("Could not find the repository root.");
         }
 
         private static object[] Target(string typeName, string methodName) => new object[] { typeName, methodName };

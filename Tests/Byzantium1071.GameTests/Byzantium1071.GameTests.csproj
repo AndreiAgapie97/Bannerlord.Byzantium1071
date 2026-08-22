@@ -9,10 +9,17 @@
     <GameExecutable>$(GameFolder)\bin\$(GameBinariesFolder)\Bannerlord.exe</GameExecutable>
   </PropertyGroup>
 
+  <PropertyGroup Condition="Exists('$(GameExecutable)')">
+    <DefineConstants>$(DefineConstants);GAME_TESTS_ENABLED</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="Bannerlord.MCM" Version="5.11.4" />
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.13.2" />
+    <PackageReference Include="Bannerlord.ButterLib" Version="2.10.4" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

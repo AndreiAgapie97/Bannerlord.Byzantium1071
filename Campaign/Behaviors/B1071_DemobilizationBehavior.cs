@@ -3508,9 +3508,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static int ClampInt(int value, int min, int max)
         {
-            if (value < min) return min;
-            if (value > max) return max;
-            return value;
+            return B1071_ServiceMath.ClampInt(value, min, max);
         }
 
         private static string PartyLogName(MobileParty party)

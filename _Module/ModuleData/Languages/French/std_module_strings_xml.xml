@@ -741,7 +741,7 @@
     <string id="b1071_mcm_t_0b65af384e" text="% de pénalité de récupération de raid" />
     <string id="b1071_mcm_t_0bf74d7558" text="% de pénalité de récupération de siège" />
     <string id="b1071_mcm_t_0c1c235e2e" text="Pénalité de sécurité maximale (ville liée)" />
-    <string id="b1071_mcm_t_0c1fa8c3c0" text="Gain d’influence modeste" />
+    <string id="b1071_mcm_t_0c1fa8c3c0" text="Gain d'influence modeste" />
     <string id="b1071_mcm_t_0c4f845fa2" text="Dégradation quotidienne des esclaves (%)" />
     <string id="b1071_mcm_t_0e9795924e" text="Amplificateur d’épuisement de la main-d’œuvre" />
     <string id="b1071_mcm_t_1132bc1f96" text="Activer le bonus du gouverneur" />
@@ -757,11 +757,11 @@
     <string id="b1071_mcm_t_2443dcece8" text="Salaire de garnison % du terrain" />
     <string id="b1071_mcm_t_24551006f0" text="% de régénération des dividendes de la paix" />
     <string id="b1071_mcm_t_24e0e77468" text="Plafond à foyer AI" />
-    <string id="b1071_mcm_t_2507cf8802" text="Coût d’investissement généreux" />
+    <string id="b1071_mcm_t_2507cf8802" text="Coût d'investissement généreux" />
     <string id="b1071_mcm_t_25c6c1ebe1" text="Afficher la télémétrie dans l'onglet Actuel" />
     <string id="b1071_mcm_t_262a11be2f" text="Bonus de grande prospérité/jour" />
     <string id="b1071_mcm_t_2809d10e0b" text="Régénération de fidélité min %" />
-    <string id="b1071_mcm_t_28e890fbbc" text="Gain d’influence généreux" />
+    <string id="b1071_mcm_t_28e890fbbc" text="Gain d'influence généreux" />
     <string id="b1071_mcm_t_28ee03f1f7" text="Attente de recrutement T6+ (jours)" />
     <string id="b1071_mcm_t_28f61ff98c" text="Activer le remplacement expérimental du survol de la carte (hérité)" />
     <string id="b1071_mcm_t_28f7f149d6" text="[Héritage] Durée du bonus de construction (jours)" />
@@ -784,7 +784,7 @@
     <string id="b1071_mcm_t_33dc1f57bd" text="% maximum de régénération des aliments" />
     <string id="b1071_mcm_t_34983f6734" text="% de pluie hivernale" />
     <string id="b1071_mcm_t_352660b343" text="Généreux bonus de prospérité/jour" />
-    <string id="b1071_mcm_t_35befd4d96" text="Chance d'investissement dans l'IA (%)" />
+    <string id="b1071_mcm_t_35befd4d96" text="Chance d'investissement de l'IA (%)" />
     <string id="b1071_mcm_t_35dbc459b5" text="Régénération alimentaire min %" />
     <string id="b1071_mcm_t_36c35ecdc1" text="Activer les journaux de débogage de télémétrie" />
     <string id="b1071_mcm_t_3a8a2610f7" text="Niveau d'asservissement automatique maximum" />
@@ -808,7 +808,7 @@
     <string id="b1071_mcm_t_4be2b0417a" text="Coût de l'or du recrutement T5" />
     <string id="b1071_mcm_t_4c7d821a43" text="Capuchon d'esclave minimum" />
     <string id="b1071_mcm_t_4f19f2d927" text="Permettre l’application de la trêve" />
-    <string id="b1071_mcm_t_506fc29e2e" text="Coût d’investissement élevé" />
+    <string id="b1071_mcm_t_506fc29e2e" text="Coût d'investissement élevé" />
     <string id="b1071_mcm_t_56004bcc8c" text="Activer l’amplificateur d’épuisement de la main-d’œuvre" />
     <string id="b1071_mcm_t_56177f3ec4" text="Activer la régénération d'urgence épuisée" />
     <string id="b1071_mcm_t_56b5b0c27f" text="Régénération d'élite min par jour" />
@@ -825,7 +825,7 @@
     <string id="b1071_mcm_t_62895ca392" text="Accès ouvert au château (early game)" />
     <string id="b1071_mcm_t_64645f566a" text="Épuisement de siège (défenseur)" />
     <string id="b1071_mcm_t_6555ffe583" text="Activer le raccourci clavier" />
-    <string id="b1071_mcm_t_65a39833e0" text="Multiplicateur de sécurité or IA" />
+    <string id="b1071_mcm_t_65a39833e0" text="Multiplicateur de sécurité d'or de l'IA" />
     <string id="b1071_mcm_t_66058d06ad" text="Pénalité de prospérité maximale (ville liée)" />
     <string id="b1071_mcm_t_66419f08dc" text="Le pool de conquête conserve %" />
     <string id="b1071_mcm_t_6728a5b42a" text="Seuil de pression pour la paix" />
@@ -874,7 +874,7 @@
     <string id="b1071_mcm_t_9364507e22" text="Force de pression de la diplomatie de la main d’œuvre" />
     <string id="b1071_mcm_t_950bb85407" text="Activer l'augmentation des revenus des factions mineures" />
     <string id="b1071_mcm_t_95b0692672" text="Coût culturel %" />
-    <string id="b1071_mcm_t_9756c85392" text="Coût d’investissement modeste" />
+    <string id="b1071_mcm_t_9756c85392" text="Coût d'investissement modeste" />
     <string id="b1071_mcm_t_9aa639407c" text="La miséricorde de siège conserve %" />
     <string id="b1071_mcm_t_9b391ff669" text="Gain de relations entre clans" />
     <string id="b1071_mcm_t_9c2eafe6c2" text="Activer les journaux de débogage de la diplomatie" />
@@ -1382,25 +1382,25 @@
     <string id="b1071_recall_waiting" text="Au foyer" />
     <string id="b1071_ui_cancel" text="Annuler" />
     <string id="b1071_ui_men" text="Hommes" />
-    <string id="b1071_mcm_t_town_invest_cost_modest" text="Coût d’investissement modeste" />
-    <string id="b1071_mcm_t_town_invest_cost_generous" text="Coût d’investissement généreux" />
-    <string id="b1071_mcm_t_town_invest_cost_grand" text="Coût d’investissement élevé" />
+    <string id="b1071_mcm_t_town_invest_cost_modest" text="Coût d'investissement modeste" />
+    <string id="b1071_mcm_t_town_invest_cost_generous" text="Coût d'investissement généreux" />
+    <string id="b1071_mcm_t_town_invest_cost_grand" text="Coût d'investissement élevé" />
     <string id="b1071_mcm_t_town_invest_duration_modest" text="Durée modeste (jours)" />
     <string id="b1071_mcm_t_town_invest_duration_generous" text="Durée généreuse (jours)" />
     <string id="b1071_mcm_t_town_invest_duration_grand" text="Grande durée (jours)" />
     <string id="b1071_mcm_t_town_invest_relation_modest" text="Gain relationnel modeste" />
     <string id="b1071_mcm_t_town_invest_relation_generous" text="Gain relationnel généreux" />
     <string id="b1071_mcm_t_town_invest_relation_grand" text="Grand gain relationnel" />
-    <string id="b1071_mcm_t_town_invest_influence_modest" text="Gain d’influence modeste" />
-    <string id="b1071_mcm_t_town_invest_influence_generous" text="Gain d’influence généreux" />
+    <string id="b1071_mcm_t_town_invest_influence_modest" text="Gain d'influence modeste" />
+    <string id="b1071_mcm_t_town_invest_influence_generous" text="Gain d'influence généreux" />
     <string id="b1071_mcm_t_town_invest_influence_grand" text="Grand gain d'influence" />
     <string id="b1071_mcm_t_town_invest_power_modest" text="Gain de puissance modeste" />
     <string id="b1071_mcm_t_town_invest_power_generous" text="Gain de puissance généreux" />
     <string id="b1071_mcm_t_town_invest_power_grand" text="Grand gain de puissance" />
     <string id="b1071_mcm_t_town_invest_power_cap" text="Plafond de puissance notable" />
     <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="Gain de relations entre clans" />
-    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="Multiplicateur de sécurité or IA" />
-    <string id="b1071_mcm_t_town_invest_ai_chance" text="Chance d'investissement dans l'IA (%)" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="Multiplicateur de sécurité d'or de l'IA" />
+    <string id="b1071_mcm_t_town_invest_ai_chance" text="Chance d'investissement de l'IA (%)" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="Sélection de niveau aléatoire par l'IA" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="Temps de recharge du héros IA (jours)" />
   </strings>

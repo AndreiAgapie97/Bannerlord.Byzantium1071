@@ -10,7 +10,10 @@ namespace Byzantium1071.Tests
 {
     public sealed class LocalizationTests
     {
-        private static readonly Regex TextIdPattern = new(@"{=(?<id>b1071_[^}]+)}", RegexOptions.Compiled);
+        // Case-insensitive: at least one shipped ID uses "B1071_" rather than "b1071_".
+        private static readonly Regex TextIdPattern = new(
+            @"{=(?<id>b1071_[^}{]+)}",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex PlaceholderPattern = new(@"{(?<name>[A-Z][A-Z0-9_]*)}", RegexOptions.Compiled);
         private static readonly Regex EscapedUnicodePattern = new(@"\\u[0-9A-Fa-f]{4}", RegexOptions.Compiled);
 
@@ -19,6 +22,17 @@ namespace Byzantium1071.Tests
             yield return new object[] { "French", LanguageFile("French") };
             yield return new object[] { "German", LanguageFile("German") };
             yield return new object[] { "Chinese", LanguageFile("Chinese") };
+        }
+
+        [Fact]
+        public void TextIdScanFindsTheExpectedBodyOfIds()
+        {
+            HashSet<string> referencedIds = FindCodeTextIds();
+
+            // Without this the scanning tests below would pass vacuously if the pattern broke.
+            Assert.True(
+                referencedIds.Count >= 900,
+                $"Only {referencedIds.Count} text IDs were found in the mod source; the scan pattern is likely broken.");
         }
 
         [Fact]
@@ -120,8 +134,11 @@ namespace Byzantium1071.Tests
 
         private static HashSet<string> FindCodeTextIds()
         {
-            string campaignDirectory = RepositoryPaths.FromRoot("Campaign");
-            return Directory.EnumerateFiles(campaignDirectory, "*.cs", SearchOption.AllDirectories)
+            string[] sourceFiles = Directory
+                .EnumerateFiles(RepositoryPaths.FromRoot("Campaign"), "*.cs", SearchOption.AllDirectories)
+                .Append(RepositoryPaths.FromRoot("SubModule.cs"))
+                .ToArray();
+            return sourceFiles
                 .SelectMany(path => TextIdPattern.Matches(File.ReadAllText(path)).Cast<Match>())
                 .Select(match => match.Groups["id"].Value)
                 .ToHashSet(StringComparer.Ordinal);
