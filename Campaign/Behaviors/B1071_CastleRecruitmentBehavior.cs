@@ -957,7 +957,7 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
 
                         party.MemberRoster.AddToCounts(troop, take);
-                        B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, take, "castle_elite_ai");
+                        B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, take, "castle_elite_ai", settlement);
 
                         // Gold: same-clan = free, cross-clan = pay castle owner.
                         if (!isSameClan)
@@ -1002,7 +1002,7 @@ namespace Byzantium1071.Campaign.Behaviors
                                 // Prisoner recruitment costs zero manpower (by design).
 
                                 party.MemberRoster.AddToCounts(troop, 1);
-                                B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, 1, "castle_prisoner_ai");
+                                B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, 1, "castle_prisoner_ai", settlement);
                                 prisonRoster.RemoveTroop(troop, 1);
 
                                 var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, 1);
@@ -1619,7 +1619,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             prisonRoster.RemoveTroop(troop, 1);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
-            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_prisoner_player");
+            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_prisoner_player", castle);
 
             if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
                 castleDict.Remove(troop.StringId);
@@ -1663,7 +1663,7 @@ namespace Byzantium1071.Campaign.Behaviors
             poolDict[troopId] = available - 1;
             if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
-            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_elite_player");
+            B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_elite_player", castle);
 
             if (Settings.CastleRecruitDrainsManpower)
                 B1071_ManpowerBehavior.Instance?.ConsumeManpowerPublic(castle, troop, 1);
@@ -1683,7 +1683,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 string poolName = pool?.Name?.ToString() ?? "castle";
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TaleWorlds.Localization.TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} - {POOL} needs {COST}, only {LEFT} left.")
+                    new TaleWorlds.Localization.TextObject("{=b1071_cr_manpower_block}Manpower: cannot recruit {TROOP} — {POOL} needs {COST}, only {LEFT} left.")
                         .SetTextVariable("TROOP", troop.Name?.ToString() ?? "troop")
                         .SetTextVariable("POOL", poolName)
                         .SetTextVariable("COST", costPer)

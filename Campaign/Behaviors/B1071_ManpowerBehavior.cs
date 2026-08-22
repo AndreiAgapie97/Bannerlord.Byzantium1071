@@ -1986,6 +1986,20 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Called by the slave economy behavior after a captive sale.
         /// Clamped to [current, max]; never overflows the pool.
         /// </summary>
+        /// <summary>
+        /// Credits back the manpower <see cref="ConsumeManpowerPublic"/> charged for
+        /// <paramref name="amount"/> men of this troop. The mirror image of that method, and
+        /// deliberately written against the same price lookup: a refund expressed as a head
+        /// count under-credits the pool whenever BaseManpowerCostPerTroop is above 1.
+        /// </summary>
+        internal void ReturnManpowerForTroops(Settlement settlement, CharacterObject troop, int amount)
+        {
+            if (settlement == null || troop == null || amount <= 0) return;
+            int costPer = GetManpowerCostPerTroop(troop);
+            if (costPer <= 0) return;
+            AddManpowerToSettlement(settlement, costPer * amount);
+        }
+
         internal void AddManpowerToSettlement(Settlement settlement, int amount)
         {
             if (amount <= 0) return;
@@ -2414,6 +2428,17 @@ namespace Byzantium1071.Campaign.Behaviors
 
             long required = (long)costPer * amount;
             return available >= required;
+        }
+
+        /// <summary>
+        /// The manpower actually charged per man by <see cref="ConsumeManpowerPublic"/>.
+        /// Deliberately not <see cref="GetRecruitCostForParty"/>: the affordability gate
+        /// applies the culture discount but the charge does not, and anything that quotes
+        /// a price to the player must quote the one he will really be billed.
+        /// </summary>
+        internal int GetManpowerChargePerTroop(CharacterObject troop)
+        {
+            return troop == null ? 1 : GetManpowerCostPerTroop(troop);
         }
 
         internal bool CanRecruitSequenceAllOrNothing(

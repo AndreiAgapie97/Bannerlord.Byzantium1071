@@ -1,5 +1,114 @@
 # Campaign++ — Changelog
 
+## [1.0.2.7] — 2026-08-21
+
+### Change — Discharged Soldiers Go Home Instead of Ceasing to Exist
+
+**A soldier who completed his term was deleted from the roster and from the world. Nothing recorded that he had ever existed, and the manpower his village spent raising him was never returned.**
+
+- **Root cause:** `RetireOverdueCohorts` ended at `RemoveTroopsFromRoster(party, troop, 1)`. That is the whole of it — the roster shrinks, the cohort entry shrinks, and the man is gone. Recruitment had already debited the settlement's manpower pool for him, so every completed term was a permanent, silent withdrawal from the map's recruitment economy. Across every AI party in the campaign this compounds: the longer a save runs, the less manpower Calradia has, for no modelled reason.
+- **Second problem:** `OnTroopRecruited` receives `Settlement recruitmentSettlement` and discarded it. Nothing in the system knew where any soldier came from, so there was nowhere to send him back to.
+- **Fix, part 1 — origin is now tracked.** `CohortEntry` and `TransferReserveEntry` carry a `HomeId`. It survives roster reconciliation, tier upgrades (a promoted recruit keeps the village that raised him), and the transfer reserve round-trip. `AddFreshCohort` and both `RegisterDirectRecruitment` overloads take it; the castle recruitment behaviour passes the castle at all four of its call sites. Soldiers picked up by reconciliation rather than by a recruitment event fall back to `ResolveHomeIdForParty` — the settlement the party is standing in, else its leader's clan seat.
+- **Fix, part 2 — discharge returns the manpower.** `SendVeteranHome` calls the new `B1071_ManpowerBehavior.ReturnManpowerForTroops` for the men who reach home, which routes a village's manpower to its bound town pool exactly as recruitment drew it. It is priced through the same `GetManpowerCostPerTroop` lookup `ConsumeManpowerPublic` charges, so the credit is `men × cost-per-man` rather than a head count — a refund expressed in heads silently under-credits the pool at any `Base manpower cost per troop` above 1. `Manpower returned on discharge` (new, default **100**%) is rolled **per man**, not per batch: discharges arrive one soldier at a time, so `count * percent / 100` would floor to zero at any setting below 100 and the option would silently do nothing.
+- **Fix, part 3 — the veteran register.** Each man who makes it home also joins `_veteranRegister`, keyed `settlementId → troopId → discharge batches`, and can be hired back at the tier he was trained to. Recall charges a gold re-enlistment bounty (`Veteran recall gold per tier`, new, default **40**/tier) *and* draws manpower from the pool through the ordinary `CanRecruitCountForPlayer` / `ConsumeManpowerPublic` path, so a recalled veteran costs the settlement the same manpower a fresh recruit does. The bounty is paid to the veterans themselves — `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, ...)`, the same sink idiom as the service extension fee — not to the fief holder. Paying the owner would net to nothing at the player's own settlements, which is where most of his veterans are, so the price would be quoted and gated on but never actually charged. His service clock restarts and that settlement becomes his home.
+- **The register decays.** `Veteran retention` (new, default **84** days — one campaign year) ages entries off in `CleanupVeteranRegister`, run once per daily tick. A raid (`RaidCompletedEvent`) or a change of realm (`OnSettlementOwnerChangedEvent`, kingdom-to-kingdom only) scatters `Veteran scatter on raid or conquest` percent of the register — default **50** — and a captured town scatters its bound villages too. Partial losses round up through a random roll so the last holdout is still at risk.
+- **`Veteran recall access` (new, default 1 = kingdom)** mirrors the castle recruitment access levels: 0 open to any non-hostile lord, 1 same-kingdom, 2 owning clan only. The owning clan always has access; a faction at war never does. It governs **other lords'** veterans only — see the register-access fix below.
+- **Save format:** five new parallel lists (`b1071_demob_vetSettlementIds`, `vetTroopIds`, `vetDischargeDays`, `vetCounts`, `vetFromPlayer`) plus `homeIds` / `reserveHomeIds`. Old saves load with an empty `HomeId`, which `SendVeteranHome` resolves through the party fallback.
+- **Impact:** a completed service term no longer drains the map. At `Manpower returned on discharge` 100% the round trip is exactly neutral — the pool is credited what recall will charge — and below 100% it leaks by design, which is what that setting is for. A player who lets a veteran unit go can buy it back at tier instead of retraining from T1.
+
+### Change — Service Terms Roughly Doubled
+
+**A term measured in weeks meant the roster churned faster than a campaign moves.**
+
+- All three intensity presets and the Custom defaults were multiplied by roughly two, and the spread between tiers widened. Moderate (the default) goes 21/32/45/63/84/112 → **42/63/84/126/168/252** days for T1–T6; Light 34/49/63/91/126/168 → **63/84/126/168/252/336**; Harsh 14/21/35/56/84/112 → **28/42/56/84/112/168**.
+- A Bannerlord year is 84 days, so a Moderate T1 levy now serves half a year and a T6 veteran three years. Previously a T6 elite served sixteen weeks.
+- **Existing configs:** the v22 settings migration rewrites the Custom T1–T6 day values **only if they still hold the v17 defaults exactly** (21/32/45/63/84/112). A player who tuned them keeps his numbers.
+
+### Change — Service Extensions Are Repeatable and Affordable
+
+**`count × tier × 21 × 5` came to 525 gold to keep one T5 soldier, once, ever. More than recruiting several fresh men, so nobody pulled the lever.**
+
+- `Extension gold per tier-day` default **5 → 2**, and the one-shot `HasBeenExtended` bool became an `ExtensionCount`. `Maximum service extensions` (new, default **3**) caps repeats.
+- `GetExtensionCost` scales each repeat by `(2 + alreadyExtended) / 2` — +50% per extension already taken — so retention gets progressively harder instead of being a single all-or-nothing purchase. Under the new defaults the same T5 soldier costs 210g the first time, 315g the second, 420g the third.
+- AI lords use the identical rule and cost.
+- **Save compatibility:** `b1071_demob_extensionCounts` is new; the legacy `b1071_demob_extendedFlags` bool list is still **written** (`ExtensionCount > 0`) so an older build reading a new save keeps the was-extended-at-all fact. The loader prefers the int list and falls back to the bool.
+
+### Change — Rotation and Warnings Are Quieter
+
+- `Daily departure cap` **15% → 8%** of the party, and `Maximum daily departures` **10 → 5** men. A large party no longer loses a squad a day.
+- `Warning interval` (new, default **3** days) throttles the standing pre-discharge warning. It previously reprinted every single campaign day for the whole lead window; the inquiry popup is throttled on the same interval through its own `_lastPopupDay`. Re-entrancy within one day is guarded separately by `_lastWarningEvalDay` so the interval can be honoured without losing the once-per-day guard.
+
+### Change — Veteran Register UI
+
+- New Gauntlet screen `B1071_VeteranRecall` (VM + row VM + screen singleton at z-order 500, same pattern as castle recruitment), reachable from the **Veteran register** option on the town, castle and village menus. The option shows the waiting headcount in its label, is hidden entirely where the player has no access, and is disabled with a tooltip when the register is empty. Each row shows tier, headcount, days until the men disperse, gold per man and manpower per man.
+- The troop service screen gained a **Home** column and its extension hint now names the extension number, the cap, and where the man returns to.
+
+### Change — Soldiers Can Be Released Before Their Term Ends
+
+**Service could only be lengthened, never shortened. When a war ended there was no way to stand men down; the only way to shed them was the vanilla party screen, which is exactly the manpower leak this system exists to close.**
+
+- `TryDischargeCohort(partyId, troopId, cohortIndex, requested)` (new, public) releases men from a tracked record early. It reuses `SendVeteranHome` unchanged, so destination, the `Manpower returned on discharge` roll, the manpower credit and the register entry are all identical to a term that ran its course — the only difference is that the player picked the moment. No cost, no penalty: recruit-then-release is manpower-neutral and every recall still costs gold, so there is nothing to farm.
+- **Deliberately exempt from the daily departure caps.** `Daily departure cap` and `Maximum daily departures` exist to stop a party bleeding a squad a day behind the player's back. Throttling a decision he made himself would only make him click the same button again tomorrow.
+- **Blocked during a battle or siege** (`MapEvent`/`SiegeEvent` non-null). Pulling men out of a roster mid-action is the class of state change that corrupts a party.
+- The troop service screen gained release buttons per row, matching the veteran register's idiom, and a headcount column — records can hold a whole batch (recall creates them five at a time) and the screen never showed how many men a row represented, which made a release button unreadable. The summary line now reports records and soldiers separately so it adds up to the visible column.
+- **Window widened** to fit the new column and buttons. No existing column was narrowed.
+- `CohortView.ReturnsHome` (new) tells a consumer whether `EnableDemobilizationVeteranReturn` is on, so the release tooltip can say honestly that the men will simply disperse when the feature is switched off.
+- **A release asks first above ten men.** One click emptying a whole row is cheap to undo only in principle — buying the men back costs the re-enlistment bounty and the settlement's manpower a second time, and only while they are still on the register. Smaller releases stay a single click.
+- **The release message quotes arrivals, not departures.** `SendVeteranHome` gained an `out int arrived`; it always rolled survival per man but reported only the destination, so a release at a `Manpower returned on discharge` below 100 announced everyone who marched off rather than everyone who got there. Identical at the default of 100. The daily-tick message is unchanged — it says the men "set off home", which is true either way.
+- `B1071_VeteranRecallScreen.Reset()` is called from both `OnGameEnd` and `OnSubModuleUnloaded` alongside the existing screen resets.
+
+### Fix — Your Own Discharged Men Were Locked Behind a Door You Could Not See
+
+**A soldier recruited outside your realm marched home on discharge, was written correctly to that settlement's register, and then became invisible and unreachable — the exact "they disappear forever" complaint the return model was built to answer.**
+
+- **Root cause, and it is not where it looks.** The origin was always right: all four `RegisterDirectRecruitment` call sites in the castle behaviour stamp the castle, converted prisoners included. The fault was the access gate. `Veteran recall access` defaults to 1 (same kingdom), and `VeteranMenuCondition` returned `false` when it failed — which in a Bannerlord menu *hides the option entirely* rather than greying it. The men were alive, registered, and ageing off a register with no visible door. Castles recruited from outside the realm are precisely the ones the converted-prisoner path uses, so the feature failed hardest exactly where the player used it most.
+- **Fix — ownership is now tracked per batch.** `VeteranEntry` gained `FromPlayer`, set through `IsPlayerParty` (`MobileParty.MainParty`, or any party whose `ActualClan` is `Clan.PlayerClan`). It is part of the same-day merge key as well as the payload, so the player's claim can never be folded into a batch he has no claim on, nor lend itself to one.
+- **Fix — access is no longer a single yes/no.** `TryGetPlayerRegisterAccess(settlement, out bool ownMenOnly)` (new, static, public) returns three outcomes: `false` at war with the owner (register closed, option hidden); `true` with `ownMenOnly == false` when the access ladder is satisfied (full register, unchanged); `true` with `ownMenOnly == true` everywhere else short of war — the player may collect the men he discharged there himself, and nobody else's. On foreign ground the menu option only appears when some of his men are actually waiting, or an empty stranger's register would put a dead entry on every friendly settlement menu on the map.
+- **The flag reaches the draw, not just the display.** `GetVeteranCountAt(Settlement?, bool)` (new overload) for the label and the rows, and `RemoveVeteransFromRegister(..., ownMenOnly)` for the consume — without the last one a recall abroad would count the player's men and then quietly take the local lord's instead.
+- **The balance is unchanged.** Other lords' countrymen still obey `Veteran recall access` in full, so the v1.0.2.6 foreign-recruitment tightening stands. What changed is that the setting no longer confiscates the player's own soldiers. Its MCM hint now says so.
+- **Old saves.** `vetFromPlayer` is excluded from the row-count guard and read defensively, so a save written before the flag loads unchanged, with its veterans behind the ordinary access ladder. Guessing the flag would hand a returning player free veterans across the map, which is the worse failure.
+
+### Change — Troop Service Screen: Rows Are Groups, and Clicks Scale
+
+**One line per soldier, and a release button that could only ever release one man.**
+
+- **Root cause of "All releases 1".** Service records hold exactly one man apiece — `NormalizeIndividualEntries` splits every multi-man entry — and that is what makes per-man service age, FIFO discharge order and the transfer reserve work, so it cannot change. Grouping had to move to the display layer instead.
+- **`GetMainPartyCohortsForUi` now returns groups.** Records sharing a troop, a home, an enlistment day and an extension count collapse into one `CohortView`; men matching on all four are genuinely interchangeable. `CohortView.HomeId` (new) is part of that key. `ExtendCost` is now quoted **per man**, because the buttons act on one, five or the whole row and a single total would be wrong for two of the three.
+- **Rows are addressed by identity, not by slot.** Indices shift the moment a drained record is pruned, so `CollectGroupIndices` re-resolves a row's records at the moment of the call. `TryExtendCohortGroup(partyId, troopId, homeId, joinDay, extensionCount, requested)` (new) and `TryDischargeCohort`, re-signatured to match, both take the group key. `TryExtendCohort(partyId, troopId, cohortIndex)` is unchanged for submods. A batch extension the player cannot fully afford shrinks to what his gold covers rather than failing, and it extends first and bills for what happened.
+- **Click one, Shift+click five, Ctrl+click the row** — on both buttons, replacing the fixed **1 / All** pair. The hints spell the convention out and name the row's headcount.
+- **Column labels over Extend and Send Home**, which had none, and **Count** renamed **Men** to match what it counts.
+- **The Status column is coloured** — red overdue, amber warning, green serving — as three fixed-colour `TextWidget`s gated by `IsVisible`, rather than binding a colour string, whose Gauntlet conversion on a bound property is unverified and not worth gambling a release on.
+- **Alternating row shading**, decided in the parent VM while the row order is still known, because a `ListPanel` item template has no index of its own.
+- **Window widened 900 → 1060 → 1200px** across this version, the last step to give the Troop column the 270px the long names needed. No column was narrowed.
+- **The veteran register screen was brought to the same idiom.** Its **1 / 5 / All** buttons sat immediately right of two numeric columns and read as a third row of numbers — `Gold Each 120 | Manpower Each 1 | 1 5 All`. They are now one labelled **Recall** button under a **Recall** header, on the same click / Shift+click / Ctrl+click convention, with the same alternating row shading. `TryRecallVeterans` already trims a request against stock, party room, gold and manpower, so Ctrl+click is safe by construction.
+- **Header text no longer collides with the gold readout.** The summary line and the right-aligned gold total shared one full-width row, so the register's longer summary ran underneath it. The summary is now clamped clear of the gold block and cut to one short sentence; the sentence explaining that a foreign register shows only your own men moved to a second line, shown only when it applies (window 560 → 600px to fit it). `Gold:` also gained the space it was missing before the number, on both screens.
+
+### Fix — Veterans Did Not Scatter From Conquests Outside a Kingdom
+
+**A settlement changing hands scattered its veteran register only when both the old and new owner belonged to a kingdom.**
+
+- `OnSettlementOwnerChanged` compared `Clan.Kingdom` on both sides and returned early when either was null. A clan outside a kingdom — an independent lord, a rebel clan, a minor faction — has a null `Kingdom`, so every conquest involving one was silently skipped. That covers a player who has declared independence taking his first town, and every settlement a rebellion seizes.
+- Now compares `Clan.MapFaction`, which returns the kingdom for a clan that has one and the clan itself otherwise. Kingdom-to-kingdom transfers behave exactly as before; the previously-skipped cases now scatter.
+- The `Raid/capture scatter %` hint reads "changes hands to another realm" instead of "changes kingdom" to match.
+
+### Fix — Localization: Line Breaks That Were Not Line Breaks, and 978 Untranslated Chinese Entries
+
+**Twenty-five entries across all four language files, English included, held a literal backslash-n where a line break was meant. Players saw the two characters printed on screen in the middle of a menu.**
+
+- **Root cause:** an entry present in `std_module_strings_xml.xml` **overrides** the fallback compiled into the C# `TextObject`, and the fallbacks here are ordinary non-verbatim strings holding real newlines. The XML was therefore replacing correct text with broken text — the English file was breaking English. Affected the Provincial Stabilization, Slave Trade, Civic Patronage, Village Patronage and overlay panel bodies. A raw newline inside an XML attribute is normalised to a space by any reader, so all of them are now written as `&#10;`. A further 11 German entries had lost their breaks entirely and were restored.
+- **Three MCM hints per file printed raw escape codes** — `1.5\u00d7` where `1.5×` was meant, and likewise for `\u2014` and `\u2192`. Decoded to the characters themselves.
+- **73 keys were missing** from one or more languages and have been added; **9 entries held text the game no longer produced**, including one that printed `{WARNINGS}` unsubstituted instead of a number, and four MCM hints quoting defaults that had since changed.
+- **Chinese is now complete** — 978 entries translated across the whole mod, with terminology held consistent (兵源 manpower, 兵池 pool, 繁荣度 prosperity, 炉灶 hearth, 治理压力 governance strain, 战争疲惫 war exhaustion, 第纳尔 denars) and full-width punctuation throughout. Plural-suffix variables (`{PLURAL}` and its siblings) substitute an English "s"; German and Chinese phrasings are written number-agnostically and omit them.
+- **German and French:** `b1071_gs_body`, the whole Provincial Stabilization menu body, was still English prose in both. Two German MCM setting names were half-translated ("Gouverneur Steward Regen Divisor") and are now German.
+- **`b1071_cr_manpower_block` used a hyphen** in `B1071_CastleRecruitmentBehavior` and an em dash in both recruitment gate patches. Three call sites, two strings, one key — the behaviour was aligned to the em dash the English file already used.
+- **The check that said this was finished was measuring the wrong thing.** It compared each translation against the inline fallback extracted from the C# source rather than against the English language file. Where the two had drifted — an em dash against a hyphen, an English wording edited later — an entry holding stale English matched neither and counted as translated. Chinese read as 2 entries short of complete when 89 were still English. Chinese now has an exact test (Latin letters and no CJK character); French and German are checked on word overlap against the current English entry.
+- **The 79 orphaned ids were left in place deliberately.** Most are not orphaned: `b1071_compat_method_*` and `b1071_compat_effect_*` are composed at runtime from the name of the method being checked, so no text search can see the reference. Removing them would blank the compatibility report.
+- **Final state:** 1328 entries in each of the four files, no missing keys, no duplicates, no placeholder mismatches, and matching line-break counts on all 18 multi-line entries. Per-file byte conventions are unchanged — BOM on English and Chinese, none on French and German, CRLF throughout.
+
+### Settings — Profile v22
+
+`LATEST_PROFILE_VERSION` 21 → 22. On first load the migration enables veteran return, applies the retuned service, extension, rotation and notification defaults, and reports one plain-language line in the migration notice. New group **Troop Service - Veterans** (GroupOrder 18): `EnableDemobilizationVeteranReturn`, `DemobilizationManpowerReturnPercent`, `DemobilizationVeteranRetentionDays`, `DemobilizationVeteranScatterPercent`, `DemobilizationRecallGoldPerTier`, `DemobilizationVeteranRecallAccess`. New in **Troop Service**: `DemobilizationMaxExtensions`, `DemobilizationNotifyIntervalDays`.
+
 ## [1.0.2.6] — 2026-08-21
 
 ### Fix — Castles Starved Forever in a Realm That Owned No Town

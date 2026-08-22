@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 21;
+        internal const int LATEST_PROFILE_VERSION = 22;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -375,6 +375,56 @@ namespace Byzantium1071.Campaign.Settings
                 {
                     migrated += "tier survivability and tier armor merged into the Elite survivability preset, now at 1 (Light) — they used to stack, which made elite troops far too hard to kill. Set it to 3 for the old values. ";
                 }
+            }
+
+            // ── Profile v22: veterans go home, longer service, cheaper extensions, calmer rotation ──
+            // Discharged soldiers used to be deleted outright, which quietly destroyed the
+            // manpower that settlement had spent to raise them. They now return to the
+            // settlement they were recruited from and can be hired back from its veteran
+            // register. With recall available, service terms are lengthened so a campaign
+            // army is a long-term investment rather than a leaky bucket.
+            if (SettingsProfileVersion < 22)
+            {
+                EnableDemobilizationVeteranReturn = true;
+                DemobilizationManpowerReturnPercent = 100;
+                DemobilizationVeteranRetentionDays = 84;
+                DemobilizationVeteranScatterPercent = 50;
+                DemobilizationRecallGoldPerTier = 40;
+                DemobilizationVeteranRecallAccess = 1;
+
+                // Service terms roughly doubled. A Bannerlord year is about 84 days, so the
+                // new Moderate baseline runs from half a year (T1) to three years (T6).
+                bool customDefaultsStillV17 =
+                    DemobilizationT1ServiceDays == 21 &&
+                    DemobilizationT2ServiceDays == 32 &&
+                    DemobilizationT3ServiceDays == 45 &&
+                    DemobilizationT4ServiceDays == 63 &&
+                    DemobilizationT5ServiceDays == 84 &&
+                    DemobilizationT6ServiceDays == 112;
+
+                if (customDefaultsStillV17)
+                {
+                    DemobilizationT1ServiceDays = 42;
+                    DemobilizationT2ServiceDays = 63;
+                    DemobilizationT3ServiceDays = 84;
+                    DemobilizationT4ServiceDays = 126;
+                    DemobilizationT5ServiceDays = 168;
+                    DemobilizationT6ServiceDays = 252;
+                }
+
+                // Extensions were priced so high they were never worth buying: one T5 soldier
+                // cost 525g for 21 days, once, forever. Now cheaper and repeatable.
+                DemobilizationExtensionGoldPerTierDay = 2;
+                DemobilizationMaxExtensions = 3;
+
+                // Large armies were bleeding men every single day instead of rotating in waves.
+                DemobilizationDailyCapPercent = 8;
+                DemobilizationMaxDailyDepartures = 5;
+
+                // Quieter warnings: throttle the daily message and the popup.
+                DemobilizationNotifyIntervalDays = 3;
+
+                migrated += "troop service reworked — discharged soldiers now return to the settlement that raised them and can be recalled from its veteran register, service terms roughly doubled, extensions are cheaper and repeatable up to 3 times, and daily departures and warnings are quieter. ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1153,8 +1203,8 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationExtensionDays { get; set; } = 21;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_cost}Extension gold per tier-day", 0, 100, "0", Order = 8, HintText = "{=b1071_mcm_h_demob_extend_cost}Cost formula per soldier: troop tier x extension days x this value. Default: 5.")]
-        public int DemobilizationExtensionGoldPerTierDay { get; set; } = 5;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_cost}Extension gold per tier-day", 0, 100, "0", Order = 8, HintText = "{=b1071_mcm_h_demob_extend_cost}Cost formula per soldier: troop tier x extension days x this value. Each further extension of the same soldier costs 50% more than the last. Default: 2.")]
+        public int DemobilizationExtensionGoldPerTierDay { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
         [SettingPropertyBool("{=b1071_mcm_t_demob_ai_extend}AI can pay for extensions", Order = 9, HintText = "{=b1071_mcm_h_demob_ai_extend}Allows AI lord field parties to buy the same one-time paid service extension before soldiers leave. Uses the same cost formula and excludes garrisons, militia, caravans, villagers, and bandits. Default: true.")]
@@ -1169,12 +1219,12 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationPromotionBonusDays { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_pct}Daily departure cap %", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_daily_pct}Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Default: 15.")]
-        public int DemobilizationDailyCapPercent { get; set; } = 15;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_pct}Daily departure cap %", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_daily_pct}Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Lower values make troops rotate out in waves instead of trickling away every day. Default: 8.")]
+        public int DemobilizationDailyCapPercent { get; set; } = 8;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_max}Max departures per party/day", 1, 200, "0", Order = 13, HintText = "{=b1071_mcm_h_demob_daily_max}Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 10.")]
-        public int DemobilizationMaxDailyDepartures { get; set; } = 10;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_max}Max departures per party/day", 1, 200, "0", Order = 13, HintText = "{=b1071_mcm_h_demob_daily_max}Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 5.")]
+        public int DemobilizationMaxDailyDepartures { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
         [SettingPropertyBool("{=b1071_mcm_t_demob_seasonal}Enable service seasonality", Order = 14, HintText = "{=b1071_mcm_h_demob_seasonal}Optional realism pressure. Lightly adjusts service thresholds by Bannerlord season, which can shift soldiers closer to or farther from departure. Default: false.")]
@@ -1196,29 +1246,67 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("{=b1071_mcm_t_demob_crisis_pct}Crisis service %", 50, 150, "0", Order = 18, HintText = "{=b1071_mcm_h_demob_crisis_pct}Threshold multiplier while a kingdom is in Crisis. 90 means troops rotate out 10% sooner. Default: 90.")]
         public int DemobilizationCrisisThresholdPercent { get; set; } = 90;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_max_extends}Extensions allowed per soldier", 1, 10, "0", Order = 19, HintText = "{=b1071_mcm_h_demob_max_extends}How many times the same soldier may have his service extended. Each extension after the first costs 50% more than the one before it. Default: 3.")]
+        public int DemobilizationMaxExtensions { get; set; } = 3;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_notify_interval}Days between warning messages", 1, 21, "0", Order = 20, HintText = "{=b1071_mcm_h_demob_notify_interval}Minimum days between troop-service warning messages and popups. 1 means every day, as before. Default: 3.")]
+        public int DemobilizationNotifyIntervalDays { get; set; } = 3;
+
+        // ─── Troop Service - Veterans ───
+        // Soldiers who complete their term return to the settlement that raised them
+        // instead of being deleted. The manpower they cost goes back into that pool,
+        // and they stay on the settlement's veteran register for a while, where they
+        // can be hired back at the tier they had reached.
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_vet_enable}Discharged soldiers return home", Order = 0, HintText = "{=b1071_mcm_h_demob_vet_enable}When a soldier finishes his service he walks back to the settlement he was recruited from, returning its manpower and joining that settlement's veteran register. With this off, discharged soldiers simply disappear as they used to. Default: true.")]
+        public bool EnableDemobilizationVeteranReturn { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_manpower}Manpower returned %", 0, 100, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_vet_manpower}How much of a discharged soldier's manpower cost goes back to his home settlement. 100 means every man who survives his term is available to be raised again. Lower it if you want war to permanently thin the countryside. Default: 100.")]
+        public int DemobilizationManpowerReturnPercent { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_retention}Veteran register days", 7, 1000, "0", Order = 2, HintText = "{=b1071_mcm_h_demob_vet_retention}How many Bannerlord days a discharged soldier stays available for recall before he settles down for good. His manpower stays in the pool either way. One in-game year is about 84 days. Default: 84.")]
+        public int DemobilizationVeteranRetentionDays { get; set; } = 84;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_scatter}Raid/capture scatter %", 0, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_vet_scatter}Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50.")]
+        public int DemobilizationVeteranScatterPercent { get; set; } = 50;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_gold}Recall gold per tier", 0, 500, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_vet_gold}Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40.")]
+        public int DemobilizationRecallGoldPerTier { get; set; } = 40;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_vet_access}Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 1.")]
+        public int DemobilizationVeteranRecallAccess { get; set; } = 1;
+
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t1}Custom T1 service days", 1, 300, "0", Order = 0, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT1ServiceDays { get; set; } = 21;
+        public int DemobilizationT1ServiceDays { get; set; } = 42;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t2}Custom T2 service days", 1, 300, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT2ServiceDays { get; set; } = 32;
+        public int DemobilizationT2ServiceDays { get; set; } = 63;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t3}Custom T3 service days", 1, 300, "0", Order = 2, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT3ServiceDays { get; set; } = 45;
+        public int DemobilizationT3ServiceDays { get; set; } = 84;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t4}Custom T4 service days", 1, 300, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT4ServiceDays { get; set; } = 63;
+        public int DemobilizationT4ServiceDays { get; set; } = 126;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t5}Custom T5 service days", 1, 300, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT5ServiceDays { get; set; } = 84;
+        public int DemobilizationT5ServiceDays { get; set; } = 168;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t6}Custom T6 service days", 1, 300, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT6ServiceDays { get; set; } = 112;
+        public int DemobilizationT6ServiceDays { get; set; } = 252;
 
         [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("{=b1071_mcm_t_28f7f149d6}[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "{=b1071_mcm_h_3ad968ac32}[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]

@@ -81,6 +81,87 @@ if (behavior != null)
 
 ---
 
+### B1071_DemobilizationBehavior
+
+**Location:** `Byzantium1071.Campaign.Behaviors`  
+**Access:** `B1071_DemobilizationBehavior.Instance`
+
+**Public read-only methods:**
+- `GetMainPartyCohortsForUi()` → `List<CohortView>` — one row per group of interchangeable soldiers in the player's main party. Records are stored one man apiece; this method collapses men who share a troop, a home, an enlistment day and an extension count into a single row, so `Count` is the size of the group and `CohortIndex` is the first record in it *(grouping added in v1.0.2.7)*
+- `CanPlayerAccessVeteranRegister(Settlement? settlement)` → `bool` *(static)* — whether the player may hire **anyone** from this settlement's veteran register under the configured access level *(v1.0.2.7)*
+- `TryGetPlayerRegisterAccess(Settlement? settlement, out bool ownMenOnly)` → `bool` *(static)* — whether the register opens at all, and on what terms. `false` when the player is at war with the owner. `true` with `ownMenOnly == false` is full access; `true` with `ownMenOnly == true` means he may take back only the men he discharged there himself. Prefer this over `CanPlayerAccessVeteranRegister`, which answers only the first half *(v1.0.2.7)*
+- `GetVeteranCountAt(Settlement? settlement)` → `int` — how many discharged veterans are waiting at a settlement; `0` for null and for a settlement with no register. It reports the stock, not your ability to hire it: it does **not** consult `EnableDemobilizationVeteranReturn`, so pair it with `TryGetPlayerRegisterAccess` before offering the player anything *(v1.0.2.7)*
+- `GetVeteranCountAt(Settlement? settlement, bool ownMenOnly)` → `int` — same, counting only the player's own discharged men when `ownMenOnly` is set. Feed it the flag from `TryGetPlayerRegisterAccess` *(v1.0.2.7)*
+
+**Public mutating methods:**
+- `GetVeteransForUi(Settlement? settlement)` → `List<VeteranView>` — one row per troop type on that settlement's register, with prices and the per-row block reason. Listed here rather than above because it runs `CleanupVeteranRegister` first: reading the register is what ages expired entries off it *(v1.0.2.7)*
+- `RegisterDirectRecruitment(MobileParty party, CharacterObject troop, int amount, string source)` → `int` — register soldiers added outside a vanilla recruitment event so they start at service age 0
+- `RegisterDirectRecruitment(MobileParty party, CharacterObject troop, int amount, string source, Settlement? homeSettlement)` → `int` — same, but records the settlement the men return to on discharge. The four-argument overload is kept and simply passes `null`. *(v1.0.2.7)*
+- `TryExtendCohort(string partyId, string troopId, int cohortIndex)` → `bool` — buy one service extension for a single tracked record; fails if gold is short or the extension cap is reached. Records hold one man, so this extends one man
+- `TryExtendCohortGroup(string partyId, string troopId, string homeId, int joinDay, int extensionCount, int requested)` → `int` — extend service for men on one `CohortView` row, identified by the row's `TroopId`, `HomeId`, `JoinDay` and `ExtensionCount`. Every man carries the same fee, so the bill is `CohortView.ExtendCost` times the number extended; a batch the player cannot fully afford shrinks to what his gold covers rather than failing. Returns how many were kept on *(v1.0.2.7)*
+- `TryDischargeCohort(string partyId, string troopId, string homeId, int joinDay, int extensionCount, int requested)` → `int` — release men from one `CohortView` row before their term ends, main party only. Returns how many actually left, trimmed to the row's headcount. Free, and exempt from the daily departure caps, but refused outright while the party is in a `MapEvent` or `SiegeEvent`. Routes through the same `SendVeteranHome` as a completed term, so the manpower credit, the return roll and the register entry are identical *(v1.0.2.7)*
+- `TryRecallVeterans(Settlement? settlement, CharacterObject? troop, int requested)` → `int` — hire veterans back. Returns how many actually joined: the request is trimmed successively by register stock, party room, the player's gold, and the settlement's manpower, so asking for more than is possible returns a smaller number rather than failing. *(v1.0.2.7)*
+
+**View types:**
+
+```csharp
+public sealed class CohortView
+{
+    public string PartyId, TroopId;
+    public int CohortIndex;
+    public CharacterObject Troop;
+    public int Count, JoinDay, AgeDays, ThresholdDays, RemainingDays;
+    public int ExtendCost;                      // per man, not per row
+    public bool IsWarning, IsOverdue;
+    public int ExtensionCount, MaxExtensions;   // v1.0.2.7
+    public bool ExtensionsExhausted;            // v1.0.2.7
+    public bool CanExtend;
+    public string HomeId;                       // v1.0.2.7 - group key
+    public string HomeName;                     // v1.0.2.7
+    public bool ReturnsHome;                    // v1.0.2.7
+}
+
+public sealed class VeteranView                 // v1.0.2.7
+{
+    public string SettlementId, TroopId;
+    public CharacterObject Troop;
+    public int Count, Tier;
+    public int GoldCostPerMan, ManpowerCostPerMan;
+    public int DaysUntilGone;
+    public bool CanRecallOne;
+    public string BlockReason;
+}
+```
+
+**Breaking change in v1.0.2.7:** `CohortView.HasBeenExtended` (`bool`) is gone. Extensions are now repeatable, so use `ExtensionCount`, `MaxExtensions`, and `ExtensionsExhausted` instead. `ExtensionCount > 0` is the exact equivalent of the old flag.
+
+**Row identity in v1.0.2.7:** a `CohortView` is a group, not a slot. `CohortIndex` still points at the first record behind the row and is safe to display, but do not use it to act on the row — slot indices shift whenever emptied records are pruned. Pass `TroopId` + `HomeId` + `JoinDay` + `ExtensionCount` to the group methods instead; they re-resolve the records at the moment of the call.
+
+**Intended use:** Display service state in an overlay, add your own recruitment source that participates in the service clock, or offer veterans through a different UI
+
+**Off-limits:**
+- `_serviceCohorts`, `_transferReserve`, `_veteranRegister` dicts (internal state)
+- `SendVeteranHome`, `ScatterVeteransAt`, `CleanupVeteranRegister`, `RetireOverdueCohorts` (daily-tick lifecycle)
+- Removing troops from a roster yourself to "discharge" them — that is the manpower leak this system exists to close. Let the daily tick do it, or call `TryDischargeCohort` if you need it to happen now
+
+**Example:**
+```csharp
+var behavior = B1071_DemobilizationBehavior.Instance;
+if (behavior != null && B1071_DemobilizationBehavior.TryGetPlayerRegisterAccess(settlement, out bool ownMenOnly))
+{
+    // ownMenOnly == true on foreign ground: the rows below are the player's own
+    // discharged men, and nobody else's, which is all he is entitled to take there.
+    foreach (var row in behavior.GetVeteransForUi(settlement))
+    {
+        // row.Troop, row.Count, row.GoldCostPerMan, row.DaysUntilGone
+    }
+
+    int joined = behavior.TryRecallVeterans(settlement, someTroop, 5);
+}
+```
+
+---
+
 ### B1071_SlaveEconomyBehavior
 
 **Location:** `Byzantium1071.Campaign.Behaviors`  
@@ -409,4 +490,4 @@ namespace MyPopulationMod.Campaign
 
 ---
 
-**Last updated:** v1.0.1.2 (May 2026)
+**Last updated:** v1.0.2.7 (August 2026)

@@ -17,9 +17,12 @@ namespace Byzantium1071.Campaign.UI
         private string _tierColumnText = string.Empty;
         private string _countColumnText = string.Empty;
         private string _ageColumnText = string.Empty;
+        private string _homeColumnText = string.Empty;
         private string _remainingColumnText = string.Empty;
         private string _costColumnText = string.Empty;
         private string _statusColumnText = string.Empty;
+        private string _extendColumnText = string.Empty;
+        private string _releaseColumnText = string.Empty;
         private string _noCohortsText = string.Empty;
         private MBBindingList<B1071_DemobilizationCohortVM> _cohorts;
         private bool _hasCohorts;
@@ -42,11 +45,14 @@ namespace Byzantium1071.Campaign.UI
             GoldLabelText = L("b1071_ui_gold", "Gold:");
             TroopColumnText = L("b1071_ui_troop", "Troop");
             TierColumnText = L("b1071_ui_tier", "Tier");
-            CountColumnText = L("b1071_ui_count", "Count");
+            CountColumnText = L("b1071_ui_men", "Men");
             AgeColumnText = L("b1071_demob_age", "Age");
+            HomeColumnText = L("b1071_demob_home", "Home");
             RemainingColumnText = L("b1071_demob_remaining", "Days Left");
-            CostColumnText = L("b1071_demob_extend_cost", "Extend Cost");
+            CostColumnText = L("b1071_demob_extend_cost_each", "Extend (each)");
             StatusColumnText = L("b1071_ui_status", "Status");
+            ExtendColumnText = L("b1071_demob_extend", "Extend");
+            ReleaseColumnText = L("b1071_demob_release", "Send Home");
             NoCohortsText = L("b1071_demob_no_cohorts", "No tracked soldiers yet. Existing troops are enrolled when the system next reconciles your party.");
         }
 
@@ -66,12 +72,16 @@ namespace Byzantium1071.Campaign.UI
             }
 
             var rows = behavior.GetMainPartyCohortsForUi();
+            int totalMen = 0;
             int warningRows = 0;
             int warningMen = 0;
 
             foreach (var row in rows)
             {
-                _cohorts.Add(new B1071_DemobilizationCohortVM(this, row));
+                // The row knows whether it is a shaded one: a list template has no index of its
+                // own, so the striping has to be decided here while the order is still known.
+                _cohorts.Add(new B1071_DemobilizationCohortVM(this, row, _cohorts.Count % 2 == 1));
+                totalMen += row.Count;
                 if (row.IsWarning)
                 {
                     warningRows++;
@@ -81,9 +91,15 @@ namespace Byzantium1071.Campaign.UI
 
             HasCohorts = _cohorts.Count > 0;
             HasNoCohorts = _cohorts.Count == 0;
-            SummaryText = new TextObject("{=b1071_demob_summary}{SOLDIERS} soldier service record{SPLURAL} tracked. {WARNINGS} soldier{WPLURAL} within the warning window.")
-                .SetTextVariable("SOLDIERS", _cohorts.Count)
+
+            // A row is not a man — men who enlisted together at the same place share one line.
+            // Now that the Men column makes that visible, the summary has to add up to what the
+            // list shows.
+            SummaryText = new TextObject("{=b1071_demob_summary}{RECORDS} service record{SPLURAL} tracked, {SOLDIERS} soldier{TPLURAL}. {MEN} soldier{MPLURAL} within the warning window.")
+                .SetTextVariable("RECORDS", _cohorts.Count)
                 .SetTextVariable("SPLURAL", _cohorts.Count == 1 ? string.Empty : "s")
+                .SetTextVariable("SOLDIERS", totalMen)
+                .SetTextVariable("TPLURAL", totalMen == 1 ? string.Empty : "s")
                 .SetTextVariable("WARNINGS", warningRows)
                 .SetTextVariable("WPLURAL", warningRows == 1 ? string.Empty : "s")
                 .SetTextVariable("MEN", warningMen)
@@ -153,6 +169,13 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string HomeColumnText
+        {
+            get => _homeColumnText;
+            set { if (_homeColumnText != value) { _homeColumnText = value; OnPropertyChangedWithValue(value, nameof(HomeColumnText)); } }
+        }
+
+        [DataSourceProperty]
         public string RemainingColumnText
         {
             get => _remainingColumnText;
@@ -171,6 +194,20 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _statusColumnText;
             set { if (_statusColumnText != value) { _statusColumnText = value; OnPropertyChangedWithValue(value, nameof(StatusColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string ExtendColumnText
+        {
+            get => _extendColumnText;
+            set { if (_extendColumnText != value) { _extendColumnText = value; OnPropertyChangedWithValue(value, nameof(ExtendColumnText)); } }
+        }
+
+        [DataSourceProperty]
+        public string ReleaseColumnText
+        {
+            get => _releaseColumnText;
+            set { if (_releaseColumnText != value) { _releaseColumnText = value; OnPropertyChangedWithValue(value, nameof(ReleaseColumnText)); } }
         }
 
         [DataSourceProperty]

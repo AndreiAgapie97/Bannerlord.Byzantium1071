@@ -4,15 +4,15 @@
     <tag language="French" />
   </tags>
   <strings>
-    <string id="b1071_demob_age" text="Age" />
+    <string id="b1071_demob_age" text="Âge" />
     <string id="b1071_demob_extend" text="Prolonger" />
     <string id="b1071_demob_extend_cost" text="Coût de prolongation" />
-    <string id="b1071_demob_extend_done" text="Service prolongé pour {COUNT} {TROOP} de {DAYS} jours pour {COST}g." />
-    <string id="b1071_demob_extend_hint" text="Payer {COST}g pour prolonger une fois ce soldat du nombre de jours configuré." />
+    <string id="b1071_demob_extend_done" text="Service prolongé pour {COUNT} {TROOP} de {DAYS} jours pour {COST}g. Prolongation {USED} sur {MAX}." />
+    <string id="b1071_demob_extend_hint" text="Payez {COST}g par homme pour garder ces soldats un terme de plus. Prolongation {NEXT} sur {MAX} ; chacune coûte plus cher que la précédente. Quand ils partiront enfin, ils rentreront à {HOME}.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
     <string id="b1071_demob_extend_hint_blocked" text="Or insuffisant pour cette prolongation de service." />
-    <string id="b1071_demob_extend_hint_used" text="Ce soldat a déjà utilisé son unique prolongation de service autorisée." />
+    <string id="b1071_demob_extend_hint_used" text="Ces soldats ont utilisé leurs {MAX} prolongations de service autorisées. Ils rentreront à {HOME} à la fin de leur terme et pourront être réengagés depuis son registre des vétérans." />
     <string id="b1071_demob_extend_no_gold" text="Or insuffisant pour prolonger le service. Il faut {COST}g." />
-    <string id="b1071_demob_extend_used" text="Ce soldat a déjà utilisé son unique prolongation de service autorisée." />
+    <string id="b1071_demob_extend_used" text="Ce soldat a déjà utilisé ses {MAX} prolongations de service autorisées." />
     <string id="b1071_demob_no_campaign" text="Chargez une campagne avant d'ouvrir le service des troupes." />
     <string id="b1071_demob_no_cohorts" text="Aucun soldat suivi pour l'instant. Les troupes existantes seront enregistrées lors de la prochaine synchronisation de votre groupe." />
     <string id="b1071_demob_no_screen" text="Service des troupes : pas d'écran actif." />
@@ -23,17 +23,17 @@
     <string id="b1071_demob_status_due" text="Échu" />
     <string id="b1071_demob_status_serving" text="En service" />
     <string id="b1071_demob_status_warning" text="Avertissement" />
-    <string id="b1071_demob_summary" text="{SOLDIERS} fiche{SPLURAL} de service suivie{SPLURAL}. {WARNINGS} soldat{WPLURAL} dans la fenêtre d'avertissement." />
+    <string id="b1071_demob_summary" text="{RECORDS} fiche{SPLURAL} de service suivie{SPLURAL}, {SOLDIERS} soldat{TPLURAL}. {MEN} soldat{MPLURAL} dans la fenêtre d'avertissement." />
     <string id="b1071_demob_title" text="Service des troupes" />
     <string id="b1071_demob_unavailable" text="Le service des troupes n'est pas disponible dans cette campagne." />
     <string id="b1071_demob_warning_text" text="{MEN} soldat{MPLURAL} en service commencera à partir dans les {LEAD} jours. Plus proche : {TROOP}, {DAYS} jour{DPLURAL} restant." />
     <string id="b1071_demob_warning_title" text="Troupes proches de la démobilisation" />
     <string id="b1071_mcm_g_demob" text="Service des troupes" />
     <string id="b1071_mcm_g_demob_custom" text="Service des troupes - jours personnalisés" />
-    <string id="b1071_mcm_t_3e91c7ab04" text="Castle cut-off daily regen" />
+    <string id="b1071_mcm_t_3e91c7ab04" text="Régénération quotidienne des châteaux coupés" />
     <string id="b1071_mcm_t_demob_enable" text="Activer la démobilisation des troupes" />
-    <string id="b1071_mcm_h_5c2df08b16" text="Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4." />
-    <string id="b1071_mcm_h_demob_enable" text="Interrupteur principal. Les troupes de campagne servent un nombre configurable de jours Bannerlord avant de partir progressivement. S'applique au joueur et à l'IA. Par défaut : activé." />
+    <string id="b1071_mcm_h_5c2df08b16" text="Effectif quotidien qu'un château récupère par lui-même lorsque sa faction ne possède aucune ville - un royaume indépendant fait uniquement de châteaux, typiquement un joueur qui vient de déclarer son indépendance ou un royaume réduit à ses châteaux. Un tel château n'a aucune ville d'où faire tourner sa garnison : sans cela, il resterait bloqué au filet ordinaire des châteaux et ne pourrait jamais se reconstituer. Les royaumes qui tiennent des villes ne passent jamais par là et ne sont pas concernés. Retour à la chaîne d'approvisionnement normale dès que la faction prend une ville. Par défaut : 4." />
+    <string id="b1071_mcm_h_demob_enable" text="Interrupteur principal. Les troupes de campagne servent un nombre configurable de jours Bannerlord avant de partir progressivement. S'applique au joueur et à l'IA. Par défaut : désactivé." />
     <string id="b1071_mcm_t_demob_preset" text="Préréglage d'intensité" />
     <string id="b1071_mcm_h_demob_preset" text="0=Léger, 1=Modéré, 2=Dur, 3=Personnalisé. Les seuils utilisent les jours Bannerlord ; une année de jeu dure environ 84 jours. Par défaut : Modéré." />
     <string id="b1071_mcm_t_demob_hotkey_enable" text="Activer le raccourci de l'écran de service" />
@@ -49,7 +49,7 @@
     <string id="b1071_mcm_t_demob_extend_days" text="Jours de prolongation" />
     <string id="b1071_mcm_h_demob_extend_days" text="Nombre de jours Bannerlord ajoutés par une prolongation payée sur un soldat. Chaque soldat ne peut être prolongé qu'une fois. Par défaut : 21." />
     <string id="b1071_mcm_t_demob_extend_cost" text="Or de prolongation par rang-jour" />
-    <string id="b1071_mcm_h_demob_extend_cost" text="Formule par soldat : rang x jours de prolongation x cette valeur. Par défaut : 5." />
+    <string id="b1071_mcm_h_demob_extend_cost" text="Formule par soldat : rang x jours de prolongation x cette valeur. Chaque nouvelle prolongation du même soldat coûte 50 % de plus que la précédente. Par défaut : 2." />
     <string id="b1071_mcm_t_demob_ai_extend" text="L'IA peut payer les prolongations" />
     <string id="b1071_mcm_h_demob_ai_extend" text="Autorise les groupes de campagne des seigneurs IA à acheter la même prolongation de service payante et unique avant le départ des soldats. Utilise la même formule de coût et exclut garnisons, milices, caravanes, villageois et bandits. Par défaut : activé." />
     <string id="b1071_mcm_t_demob_ai_buffer" text="Réserve d'or IA pour prolongation" />
@@ -57,9 +57,9 @@
     <string id="b1071_mcm_t_demob_promotion_bonus" text="Jours bonus de promotion" />
     <string id="b1071_mcm_h_demob_promotion_bonus" text="Nombre de jours d'âge de service retirés au soldat promu lors d'une vraie amélioration de troupe. Ne remet jamais l'âge sous 0 et ne rafraîchit pas les prolongations uniques. Par défaut : 5." />
     <string id="b1071_mcm_t_demob_daily_pct" text="Plafond quotidien de départ %" />
-    <string id="b1071_mcm_h_demob_daily_pct" text="Pourcentage maximum de soldats échus d'un même type pouvant partir en un jour. Par défaut : 15." />
+    <string id="b1071_mcm_h_demob_daily_pct" text="Pourcentage maximum de soldats échus d'un même type pouvant partir en un jour. Des valeurs basses font partir les troupes par vagues plutôt qu'au compte-gouttes chaque jour. Par défaut : 8." />
     <string id="b1071_mcm_t_demob_daily_max" text="Départs max par groupe/jour" />
-    <string id="b1071_mcm_h_demob_daily_max" text="Plafond absolu du nombre de troupes pouvant quitter un groupe en un jour. L'IA utilise la même valeur comme plafond quotidien de prolongation. Par défaut : 10." />
+    <string id="b1071_mcm_h_demob_daily_max" text="Plafond absolu du nombre de troupes pouvant quitter un groupe en un jour. L'IA utilise la même valeur comme plafond quotidien de prolongation. Par défaut : 5." />
     <string id="b1071_mcm_t_demob_seasonal" text="Activer la saisonnalité du service" />
     <string id="b1071_mcm_h_demob_seasonal" text="Pression réaliste optionnelle. Ajuste légèrement les seuils de service selon la saison Bannerlord, ce qui peut rapprocher ou éloigner les départs. Par défaut : désactivé." />
     <string id="b1071_mcm_t_demob_spring" text="Service printemps/été %" />
@@ -235,7 +235,7 @@
     <string id="b1071_qs_name_clan_survival" text="Survie du clan" />
     <string id="b1071_qs_hint_clan_survival" text="Empêche l'anéantissement du clan lorsque leur royaume est détruit. Les clans sauvés recherchent le service mercenaire." />
     <string id="b1071_qs_name_governance" text="Pression sur la gouvernance" />
-    <string id="b1071_qs_hint_governance" text="Wars, sieges, raids, and conquest create settlement strain. High strain reduces loyalty, security, and prosperity; stabilization actions can help recovery." />
+    <string id="b1071_qs_hint_governance" text="Les guerres, sièges, raids et conquêtes créent de la tension dans les fiefs. Une forte tension réduit la loyauté, la sécurité et la prospérité ; les actions de stabilisation aident à la récupération." />
     <string id="b1071_qs_name_devastation" text="Dévastation des frontières" />
     <string id="b1071_qs_hint_devastation" text="Les raids provoquent un foyer persistant, une prospérité, une sécurité et des pénalités alimentaires qui diminuent lentement." />
     <string id="b1071_qs_name_castle_supply" text="Chaîne d'approvisionnement du château" />
@@ -257,78 +257,78 @@
     <string id="b1071_dev_villages" text="Villages dévastés" />
     <string id="b1071_frontier_rev" text="Revenus frontaliers" />
     <string id="b1071_gov_strain" text="Pression sur la gouvernance" />
-    <string id="b1071_gov_stabilization" text="Provincial Stabilization" />
-    <string id="b1071_gs_enter" text="Stabilize province" />
-    <string id="b1071_gs_enter_active" text="Stabilize province  (active - {DAYS} days remaining)" />
-    <string id="b1071_gs_enter_need" text="Stabilize province  (need {COST}d)" />
-    <string id="b1071_gs_tip_active" text="A stabilization program is already active here." />
-    <string id="b1071_gs_tip_need" text="You need at least {COST} denars for Emergency Relief." />
-    <string id="b1071_gs_tip_need_exact" text="You need {COST} denars for this stabilization program." />
-    <string id="b1071_gs_body" text="Provincial Stabilization - {SETTLEMENT}\n\nGovernance strain: {STRAIN}   |   Owner: {OWNER}   |   Active program: {ACTIVE}\n\nFund a stabilization program to reduce governance strain immediately and support daily loyalty and security recovery. Duration also serves as cooldown." />
-    <string id="b1071_gs_tier_donative" text="Emergency Relief" />
-    <string id="b1071_gs_tier_elites" text="Placate Local Elites" />
-    <string id="b1071_gs_tier_amnesty" text="Grant Amnesty" />
-    <string id="b1071_gs_tier_label" text="{TIER}  ({COST}d - -{STRAIN} strain, +{LOYALTY} loyalty/day, +{SECURITY} security/day, {DAYS} days)" />
-    <string id="b1071_gs_player_msg" text="{TIER} at {SETTLEMENT}: -{COST}d, strain {BEFORE}->{AFTER}, +{LOYALTY} loyalty/day and +{SECURITY} security/day for {DAYS} days." />
-    <string id="b1071_gs_ai_note" text="{LORD} stabilized {SETTLEMENT} with {TIER}." />
-    <string id="b1071_yes_days" text="{DAYS} days" />
-    <string id="b1071_none" text="none" />
-    <string id="b1071_qs_name_governance_stabilization" text="Provincial Stabilization" />
-    <string id="b1071_qs_hint_governance_stabilization" text="Spend gold at strained towns and castles to reduce governance strain and fund temporary loyalty/security recovery." />
-    <string id="b1071_mcm_t_govstab_enable" text="Enable provincial stabilization" />
-    <string id="b1071_mcm_h_govstab_enable" text="Allows lords to spend gold at same-faction towns and castles to reduce governance strain and fund temporary loyalty/security recovery. Default: true." />
-    <string id="b1071_mcm_t_govstab_notify" text="Notify player of AI stabilization" />
-    <string id="b1071_mcm_h_govstab_notify" text="Shows a message when an AI lord funds stabilization in one of the player's settlements. Default: true." />
-    <string id="b1071_mcm_t_govstab_ai_enable" text="AI uses provincial stabilization" />
-    <string id="b1071_mcm_h_govstab_ai_enable" text="Allows AI lords to fund stabilization when governance strain is high and they have enough gold. Default: true." />
-    <string id="b1071_mcm_t_govstab_ai_threshold" text="AI strain threshold" />
-    <string id="b1071_mcm_h_govstab_ai_threshold" text="Minimum governance strain before AI lords consider funding stabilization. Default: 25." />
-    <string id="b1071_mcm_t_govstab_ai_gold_mult" text="AI gold safety multiplier" />
-    <string id="b1071_mcm_h_govstab_ai_gold_mult" text="AI lords only use a tier if their gold is greater than cost multiplied by this value. Default: 10." />
-    <string id="b1071_mcm_t_govstab_ai_cooldown" text="AI hero cooldown days" />
-    <string id="b1071_mcm_h_govstab_ai_cooldown" text="Minimum days between stabilization actions by the same AI lord. Default: 7." />
-    <string id="b1071_mcm_t_govstab_cost_donative" text="Emergency Relief cost" />
-    <string id="b1071_mcm_h_govstab_cost_donative" text="Gold cost for the low-tier stabilization action. Default: 1500." />
-    <string id="b1071_mcm_t_govstab_duration_donative" text="Emergency Relief duration" />
-    <string id="b1071_mcm_h_govstab_duration_donative" text="Days of loyalty/security recovery from Emergency Relief. Duration also acts as cooldown. Default: 5." />
-    <string id="b1071_mcm_t_govstab_strain_donative" text="Emergency Relief strain reduction" />
-    <string id="b1071_mcm_h_govstab_strain_donative" text="Immediate governance strain removed by Emergency Relief. Default: 10." />
-    <string id="b1071_mcm_t_govstab_loyalty_donative" text="Emergency Relief loyalty/day" />
-    <string id="b1071_mcm_h_govstab_loyalty_donative" text="Daily loyalty recovery while Emergency Relief is active. Default: 0.6." />
-    <string id="b1071_mcm_t_govstab_security_donative" text="Emergency Relief security/day" />
-    <string id="b1071_mcm_h_govstab_security_donative" text="Daily security recovery while Emergency Relief is active. Default: 0.4." />
-    <string id="b1071_mcm_t_govstab_decay_donative" text="Emergency Relief extra decay" />
-    <string id="b1071_mcm_h_govstab_decay_donative" text="Extra daily governance strain decay while Emergency Relief is active. Default: 0.2." />
-    <string id="b1071_mcm_t_govstab_cost_elites" text="Placate Local Elites cost" />
-    <string id="b1071_mcm_h_govstab_cost_elites" text="Gold cost for the mid-tier stabilization action. Default: 4000." />
-    <string id="b1071_mcm_t_govstab_duration_elites" text="Placate Local Elites duration" />
-    <string id="b1071_mcm_h_govstab_duration_elites" text="Days of loyalty/security recovery from Placating Local Elites. Duration also acts as cooldown. Default: 7." />
-    <string id="b1071_mcm_t_govstab_strain_elites" text="Placate Local Elites strain reduction" />
-    <string id="b1071_mcm_h_govstab_strain_elites" text="Immediate governance strain removed by Placating Local Elites. Default: 20." />
-    <string id="b1071_mcm_t_govstab_loyalty_elites" text="Placate Local Elites loyalty/day" />
-    <string id="b1071_mcm_h_govstab_loyalty_elites" text="Daily loyalty recovery while Placate Local Elites is active. Default: 1.0." />
-    <string id="b1071_mcm_t_govstab_security_elites" text="Placate Local Elites security/day" />
-    <string id="b1071_mcm_h_govstab_security_elites" text="Daily security recovery while Placate Local Elites is active. Default: 0.7." />
-    <string id="b1071_mcm_t_govstab_decay_elites" text="Placate Local Elites extra decay" />
-    <string id="b1071_mcm_h_govstab_decay_elites" text="Extra daily governance strain decay while Placate Local Elites is active. Default: 0.4." />
-    <string id="b1071_mcm_t_govstab_cost_amnesty" text="Grant Amnesty cost" />
-    <string id="b1071_mcm_h_govstab_cost_amnesty" text="Gold cost for the high-tier stabilization action. Default: 9000." />
-    <string id="b1071_mcm_t_govstab_duration_amnesty" text="Grant Amnesty duration" />
-    <string id="b1071_mcm_h_govstab_duration_amnesty" text="Days of loyalty/security recovery from Grant Amnesty. Duration also acts as cooldown. Default: 10." />
-    <string id="b1071_mcm_t_govstab_strain_amnesty" text="Grant Amnesty strain reduction" />
-    <string id="b1071_mcm_h_govstab_strain_amnesty" text="Immediate governance strain removed by Grant Amnesty. Default: 35." />
-    <string id="b1071_mcm_t_govstab_loyalty_amnesty" text="Grant Amnesty loyalty/day" />
-    <string id="b1071_mcm_h_govstab_loyalty_amnesty" text="Daily loyalty recovery while Grant Amnesty is active. Default: 1.5." />
-    <string id="b1071_mcm_t_govstab_security_amnesty" text="Grant Amnesty security/day" />
-    <string id="b1071_mcm_h_govstab_security_amnesty" text="Daily security recovery while Grant Amnesty is active. Default: 1.0." />
-    <string id="b1071_mcm_t_govstab_decay_amnesty" text="Grant Amnesty extra decay" />
-    <string id="b1071_mcm_h_govstab_decay_amnesty" text="Extra daily governance strain decay while Grant Amnesty is active. Default: 0.7." />
+    <string id="b1071_gov_stabilization" text="Stabilisation provinciale" />
+    <string id="b1071_gs_enter" text="Stabiliser la province" />
+    <string id="b1071_gs_enter_active" text="Stabiliser la province  (en cours - {DAYS} jours restants)" />
+    <string id="b1071_gs_enter_need" text="Stabiliser la province  (il faut {COST}d)" />
+    <string id="b1071_gs_tip_active" text="Un programme de stabilisation est déjà en cours ici." />
+    <string id="b1071_gs_tip_need" text="Il vous faut au moins {COST} deniers pour un secours d'urgence." />
+    <string id="b1071_gs_tip_need_exact" text="Il vous faut {COST} deniers pour ce programme de stabilisation." />
+    <string id="b1071_gs_body" text="Stabilisation provinciale - {SETTLEMENT}&#10;&#10;Tension administrative : {STRAIN}   |   Propriétaire : {OWNER}   |   Programme en cours : {ACTIVE}&#10;&#10;Financez un programme de stabilisation pour réduire immédiatement la tension et soutenir la récupération quotidienne de loyauté et de sécurité. La durée sert aussi de délai de recharge." />
+    <string id="b1071_gs_tier_donative" text="Secours d'urgence" />
+    <string id="b1071_gs_tier_elites" text="Apaiser les élites locales" />
+    <string id="b1071_gs_tier_amnesty" text="Accorder l'amnistie" />
+    <string id="b1071_gs_tier_label" text="{TIER}  ({COST}d - -{STRAIN} tension, +{LOYALTY} loyauté/jour, +{SECURITY} sécurité/jour, {DAYS} jours)" />
+    <string id="b1071_gs_player_msg" text="{TIER} à {SETTLEMENT} : -{COST}d, tension {BEFORE}-&gt;{AFTER}, +{LOYALTY} loyauté/jour et +{SECURITY} sécurité/jour pendant {DAYS} jours." />
+    <string id="b1071_gs_ai_note" text="{LORD} a stabilisé {SETTLEMENT} par {TIER}." />
+    <string id="b1071_yes_days" text="{DAYS} jours" />
+    <string id="b1071_none" text="aucun" />
+    <string id="b1071_qs_name_governance_stabilization" text="Stabilisation provinciale" />
+    <string id="b1071_qs_hint_governance_stabilization" text="Dépensez de l'or dans les villes et châteaux sous tension pour réduire la tension de gouvernance et financer une récupération temporaire de loyauté et de sécurité." />
+    <string id="b1071_mcm_t_govstab_enable" text="Activer la stabilisation provinciale" />
+    <string id="b1071_mcm_h_govstab_enable" text="Permet aux seigneurs de dépenser de l'or dans les villes et châteaux de leur faction pour réduire la tension de gouvernance et financer une récupération temporaire de loyauté et de sécurité. Par défaut : activé." />
+    <string id="b1071_mcm_t_govstab_notify" text="Avertir le joueur des stabilisations de l'IA" />
+    <string id="b1071_mcm_h_govstab_notify" text="Affiche un message lorsqu'un seigneur IA finance une stabilisation dans un fief du joueur. Par défaut : activé." />
+    <string id="b1071_mcm_t_govstab_ai_enable" text="L'IA utilise la stabilisation provinciale" />
+    <string id="b1071_mcm_h_govstab_ai_enable" text="Permet aux seigneurs IA de financer la stabilisation quand la tension de gouvernance est élevée et qu'ils ont assez d'or. Par défaut : activé." />
+    <string id="b1071_mcm_t_govstab_ai_threshold" text="Seuil de tension pour l'IA" />
+    <string id="b1071_mcm_h_govstab_ai_threshold" text="Tension de gouvernance minimale avant qu'un seigneur IA n'envisage de financer la stabilisation. Par défaut : 25." />
+    <string id="b1071_mcm_t_govstab_ai_gold_mult" text="Multiplicateur de prudence en or de l'IA" />
+    <string id="b1071_mcm_h_govstab_ai_gold_mult" text="Les seigneurs IA n'utilisent un palier que si leur or dépasse le coût multiplié par cette valeur. Par défaut : 10." />
+    <string id="b1071_mcm_t_govstab_ai_cooldown" text="Jours de recharge des héros IA" />
+    <string id="b1071_mcm_h_govstab_ai_cooldown" text="Nombre minimal de jours entre deux actions de stabilisation d'un même seigneur IA. Par défaut : 7." />
+    <string id="b1071_mcm_t_govstab_cost_donative" text="Coût du Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_cost_donative" text="Coût en or de l'action de stabilisation de bas palier. Par défaut : 1500." />
+    <string id="b1071_mcm_t_govstab_duration_donative" text="Durée du Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_duration_donative" text="Jours de récupération de loyauté et de sécurité apportés par le Secours d'urgence. La durée sert aussi de temps de recharge. Par défaut : 5." />
+    <string id="b1071_mcm_t_govstab_strain_donative" text="Réduction de tension - Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_strain_donative" text="Tension de gouvernance immédiatement retirée par le Secours d'urgence. Par défaut : 10." />
+    <string id="b1071_mcm_t_govstab_loyalty_donative" text="Loyauté/jour - Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_loyalty_donative" text="Récupération quotidienne de loyauté pendant le Secours d'urgence. Par défaut : 0.6." />
+    <string id="b1071_mcm_t_govstab_security_donative" text="Sécurité/jour - Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_security_donative" text="Récupération quotidienne de sécurité pendant le Secours d'urgence. Par défaut : 0.4." />
+    <string id="b1071_mcm_t_govstab_decay_donative" text="Baisse supplémentaire - Secours d'urgence" />
+    <string id="b1071_mcm_h_govstab_decay_donative" text="Baisse quotidienne supplémentaire de la tension de gouvernance pendant le Secours d'urgence. Par défaut : 0.2." />
+    <string id="b1071_mcm_t_govstab_cost_elites" text="Coût de l'Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_cost_elites" text="Coût en or de l'action de stabilisation de palier moyen. Par défaut : 4000." />
+    <string id="b1071_mcm_t_govstab_duration_elites" text="Durée de l'Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_duration_elites" text="Jours de récupération de loyauté et de sécurité apportés par l'Apaisement des élites locales. La durée sert aussi de temps de recharge. Par défaut : 7." />
+    <string id="b1071_mcm_t_govstab_strain_elites" text="Réduction de tension - Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_strain_elites" text="Tension de gouvernance immédiatement retirée par l'Apaisement des élites locales. Par défaut : 20." />
+    <string id="b1071_mcm_t_govstab_loyalty_elites" text="Loyauté/jour - Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_loyalty_elites" text="Récupération quotidienne de loyauté pendant l'Apaisement des élites locales. Par défaut : 1.0." />
+    <string id="b1071_mcm_t_govstab_security_elites" text="Sécurité/jour - Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_security_elites" text="Récupération quotidienne de sécurité pendant l'Apaisement des élites locales. Par défaut : 0.7." />
+    <string id="b1071_mcm_t_govstab_decay_elites" text="Baisse supplémentaire - Apaisement des élites" />
+    <string id="b1071_mcm_h_govstab_decay_elites" text="Baisse quotidienne supplémentaire de la tension de gouvernance pendant l'Apaisement des élites locales. Par défaut : 0.4." />
+    <string id="b1071_mcm_t_govstab_cost_amnesty" text="Coût de l'Amnistie" />
+    <string id="b1071_mcm_h_govstab_cost_amnesty" text="Coût en or de l'action de stabilisation de haut palier. Par défaut : 9000." />
+    <string id="b1071_mcm_t_govstab_duration_amnesty" text="Durée de l'Amnistie" />
+    <string id="b1071_mcm_h_govstab_duration_amnesty" text="Jours de récupération de loyauté et de sécurité apportés par l'Amnistie. La durée sert aussi de temps de recharge. Par défaut : 10." />
+    <string id="b1071_mcm_t_govstab_strain_amnesty" text="Réduction de tension - Amnistie" />
+    <string id="b1071_mcm_h_govstab_strain_amnesty" text="Tension de gouvernance immédiatement retirée par l'Amnistie. Par défaut : 35." />
+    <string id="b1071_mcm_t_govstab_loyalty_amnesty" text="Loyauté/jour - Amnistie" />
+    <string id="b1071_mcm_h_govstab_loyalty_amnesty" text="Récupération quotidienne de loyauté pendant l'Amnistie. Par défaut : 1.5." />
+    <string id="b1071_mcm_t_govstab_security_amnesty" text="Sécurité/jour - Amnistie" />
+    <string id="b1071_mcm_h_govstab_security_amnesty" text="Récupération quotidienne de sécurité pendant l'Amnistie. Par défaut : 1.0." />
+    <string id="b1071_mcm_t_govstab_decay_amnesty" text="Baisse supplémentaire - Amnistie" />
+    <string id="b1071_mcm_h_govstab_decay_amnesty" text="Baisse quotidienne supplémentaire de la tension de gouvernance pendant l'Amnistie. Par défaut : 0.7." />
     <string id="b1071_item_slaves" text="Esclaves" />
     <string id="b1071_itemcat_slaves" text="Esclaves{@Plural}groupes d'esclaves{\@}" />
     <string id="b1071_lbl_garrison_discount" text="B1071 Remise de garnison" />
     <string id="b1071_lbl_norm_occ" text="B1071 normalise la profession" />
     <string id="b1071_lbl_tier_armor" text="Armure de niveau B1071" />
-    <string id="b1071_lbl_foreign_hire" text="B1071 Foreign Recruitment" />
+    <string id="b1071_lbl_foreign_hire" text="B1071 Recrutement à l'étranger" />
     <string id="b1071_lbl_tier_econ" text="Économie de niveau B1071" />
     <string id="B1071_Militia" text="Disponibilité de la main d'œuvre" />
     <string id="b1071_mod_name" text="Campaign++" />
@@ -349,18 +349,18 @@
       <string id="b1071_ui_tier_confirm_block" text="Plafond des volontaires : confirmation impossible — {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
       <string id="b1071_ui_tier_donehint" text="Plafond des volontaires : {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
       <string id="b1071_ui_tier_recruit_all_block" text="Plafond des volontaires : « Recruter tout » bloqué — {SETTLEMENT} est une {TYPE} ; {TROOP} est de rang {TIER}, plafond {CAP}." />
-    <string id="b1071_ui_rebel_notice" text="Campaign++ no longer rescues crushed rebellions. This campaign still has {COUNT} mercenary companies left over from earlier ones. They are being left alone. An optional cleanup for them is under Clan Survival in the mod settings." />
-    <string id="b1071_ui_rebel_purge" text="Campaign++ has finished removing leftover rebel mercenary companies ({COUNT} disbanded). You can switch the cleanup off in the mod settings now." />
-    <string id="b1071_ui_rebel_purge_confirm" text="Campaign++ has found {COUNT} mercenary companies left behind by crushed rebellions in this campaign. Removing them cannot be undone, so back up your save first. They will be disbanded a few each day rather than all at once, so your campaign is not emptied overnight. Remove them?" />
-    <string id="b1071_ui_rebel_purge_no" text="Leave them alone" />
-    <string id="b1071_ui_rebel_purge_progress" text="Campaign++ disbanded {COUNT} leftover rebel company(s). {LEFT} still to go." />
-    <string id="b1071_ui_rebel_purge_title" text="Leftover Rebel Companies" />
-    <string id="b1071_ui_rebel_purge_yes" text="Remove them" />
-    <string id="b1071_ui_war_recruit_block" text="{SETTLEMENT} will not raise men for you - your realm is at war with {FACTION}." />
+    <string id="b1071_ui_rebel_notice" text="Campaign++ ne sauve plus les rébellions écrasées. Cette campagne compte encore {COUNT} compagnies mercenaires héritées des précédentes. Elles sont laissées telles quelles. Un nettoyage facultatif est proposé sous Survie des clans dans les options du mod." />
+    <string id="b1071_ui_rebel_purge" text="Campaign++ a fini de supprimer les compagnies mercenaires rebelles résiduelles ({COUNT} dissoutes). Vous pouvez désormais désactiver le nettoyage dans les options du mod." />
+    <string id="b1071_ui_rebel_purge_confirm" text="Campaign++ a trouvé {COUNT} compagnies mercenaires laissées par des rébellions écrasées dans cette campagne. Leur suppression est irréversible : sauvegardez d'abord votre partie. Elles seront dissoutes quelques-unes par jour plutôt que toutes d'un coup, afin que votre campagne ne se vide pas du jour au lendemain. Les supprimer ?" />
+    <string id="b1071_ui_rebel_purge_no" text="Les laisser tranquilles" />
+    <string id="b1071_ui_rebel_purge_progress" text="Campaign++ a dissous {COUNT} compagnie(s) rebelle(s) résiduelle(s). Il en reste {LEFT}." />
+    <string id="b1071_ui_rebel_purge_title" text="Compagnies rebelles résiduelles" />
+    <string id="b1071_ui_rebel_purge_yes" text="Les supprimer" />
+    <string id="b1071_ui_war_recruit_block" text="{SETTLEMENT} ne lèvera pas d'hommes pour vous - votre royaume est en guerre avec {FACTION}." />
     <string id="b1071_overlay_title" text="Superposition Campaign++" />
-    <string id="b1071_panel_text" text="Superposition Campaign++\n[Appuyez sur M pour basculer]" />
-    <string id="b1071_slave_body" text="Commerce des esclaves — {SETTLEMENT}\n\nPrisonniers (T1–{MAXTIER}, asservissables) : {ENSLAVEABLE}\n{HIGHTIER}Marchandises d'esclaves dans votre inventaire : {INV}\nEsclaves sur le marché de {SETTLEMENT} : {MARKET}\n\nVendez les esclaves via l'écran de commerce.\nLes bonus quotidiens de la ville s'appliquent tant qu'il y a des esclaves sur le marché." />
-    <string id="b1071_slave_body_hightier" text="\nPrisonniers T{NEXTTIER}+ (non asservissants) : {COUNT} → emmener au château ou obtenir une rançon\n" />
+    <string id="b1071_panel_text" text="Superposition Campaign++&#10;[Appuyez sur M pour basculer]" />
+    <string id="b1071_slave_body" text="Commerce des esclaves — {SETTLEMENT}&#10;&#10;Prisonniers (T1–{MAXTIER}, asservissables) : {ENSLAVEABLE}&#10;{HIGHTIER}Marchandises d'esclaves dans votre inventaire : {INV}&#10;Esclaves sur le marché de {SETTLEMENT} : {MARKET}&#10;&#10;Vendez les esclaves via l'écran de commerce.&#10;Les bonus quotidiens de la ville s'appliquent tant qu'il y a des esclaves sur le marché." />
+    <string id="b1071_slave_body_hightier" text="&#10;Prisonniers T{NEXTTIER}+ (non asservissants) : {COUNT} → emmener au château ou obtenir une rançon&#10;" />
     <string id="b1071_slave_daily_msg" text="{SETTLEMENT} : {COUNT} esclave{PLURAL} sur le marché. Quotidien : +{PROS} prospérité, +{CONS} construction." />
     <string id="b1071_slave_enslave_kept" text="({COUNT} T{TIER}+ conservé – à emporter au château ou en rançon)" />
     <string id="b1071_slave_enslave_skipped" text="({COUNT} T{TIER}+ prisonnier{PLURAL} gardé)" />
@@ -390,7 +390,7 @@
     <string id="b1071_tab_villages" text="Villages" />
     <string id="b1071_tab_wars" text="Guerres" />
     <string id="b1071_ti_ai_note" text="{LORD} a réalisé un investissement {TIER} à {TOWN}." />
-    <string id="b1071_ti_body" text="Patronage civique — {TOWN}\n\nProspérité : {PROSP} | Notables : {NOTABLES} | Propriétaire : {OWNER}\n\nChoisissez un niveau d'investissement. Les niveaux supérieurs coûtent plus cher, mais offrent plus de prospérité, de relation, d'influence et de pouvoir.\n\nLa durée de l'investissement sert aussi de délai de recharge : aucun réinvestissement tant que le patronage actuel n'a pas expiré." />
+    <string id="b1071_ti_body" text="Patronage civique — {TOWN}&#10;&#10;Prospérité : {PROSP} | Notables : {NOTABLES} | Propriétaire : {OWNER}&#10;&#10;Choisissez un niveau d'investissement. Les niveaux supérieurs coûtent plus cher, mais offrent plus de prospérité, de relation, d'influence et de pouvoir.&#10;&#10;La durée de l'investissement sert aussi de délai de recharge : aucun réinvestissement tant que le patronage actuel n'a pas expiré." />
     <string id="b1071_ti_civic" text="Patronage civique" />
     <string id="b1071_ti_enter" text="Investir en ville" />
     <string id="b1071_ti_enter_active" text="Investir en ville (actif — {DAYS} jours restants)" />
@@ -413,7 +413,7 @@
     <string id="b1071_tier_modest_l" text="modeste" />
     <string id="b1071_toggle_text" text="Appuyez sur M" />
     <string id="b1071_ui_close" text="X" />
-    <string id="b1071_ui_count" text="Compter" />
+    <string id="b1071_ui_count" text="Nombre" />
     <string id="b1071_ui_gold" text="Or:" />
     <string id="b1071_ui_gold_cost" text="Coût de l'or" />
     <string id="b1071_ui_leave" text="Partir" />
@@ -421,12 +421,12 @@
     <string id="b1071_ui_mp_donehint" text="Effectif : {POOL} a besoin de {NEEDED} pour {TROOP}, il ne reste que {LEFT}." />
     <string id="b1071_ui_recruit" text="Recruter" />
     <string id="b1071_ui_status" text="Statut" />
-    <string id="b1071_ui_tier" text="Étage" />
+    <string id="b1071_ui_tier" text="Rang" />
     <string id="b1071_ui_troop" text="Troupe" />
     <string id="b1071_ui_unknown" text="Inconnu" />
-    <string id="b1071_ui_na" text="N/A" />
+    <string id="b1071_ui_na" text="N/D" />
     <string id="b1071_vi_ai_note" text="{LORD} a réalisé un investissement {TIER} à {VILLAGE}." />
-    <string id="b1071_vi_body" text="Patronage villageois — {VILLAGE}\n\nFoyers : {HEARTH} | Notables : {NOTABLES} | Propriétaire : {OWNER}\n\nChoisissez un niveau d'investissement. Les niveaux supérieurs coûtent plus cher, mais offrent plus de croissance de foyers, de relation, d'influence et de pouvoir.\n\nLa durée de l'investissement sert aussi de délai de recharge : aucun réinvestissement tant que le patronage actuel n'a pas expiré." />
+    <string id="b1071_vi_body" text="Patronage villageois — {VILLAGE}&#10;&#10;Foyers : {HEARTH} | Notables : {NOTABLES} | Propriétaire : {OWNER}&#10;&#10;Choisissez un niveau d'investissement. Les niveaux supérieurs coûtent plus cher, mais offrent plus de croissance de foyers, de relation, d'influence et de pouvoir.&#10;&#10;La durée de l'investissement sert aussi de délai de recharge : aucun réinvestissement tant que le patronage actuel n'a pas expiré." />
     <string id="b1071_vi_enter" text="Investir dans le village" />
     <string id="b1071_vi_enter_active" text="Investir dans le village (actif — {DAYS} jours restants)" />
     <string id="b1071_vi_enter_need" text="Investir dans le village (besoin de {COST}d)" />
@@ -499,7 +499,7 @@
     <string id="b1071_mcm_h_1bda097a56" text="Relation acquise avec chaque commune notable grâce à un investissement modeste. Par défaut : 3." />
     <string id="b1071_mcm_h_1d661266c0" text="Paramètres réservés hérités. Actuellement non utilisé par le chemin d'info-bulle actif." />
     <string id="b1071_mcm_h_1e5bd1e5ec" text="Multiplicateur de régénération lorsque la sécurité est de 0. Par exemple, 80 = régénération de règlement non sécurisé à 80 %." />
-    <string id="b1071_mcm_h_1f5d7c0e26" text="ONE-OFF CLEANUP, DESTROYS CLANS - back up your save first. OFF by default. Turn this on to remove mercenary companies left behind by crushed rebellions in a campaign you are already playing. The game asks you to confirm on the next campaign day and shows how many it found in your save - nothing is destroyed until you agree. They are then disbanded a few each day rather than all at once, so your campaign is not emptied overnight, and you are told when it has finished. It only removes clans that came from a rebellion, were made mercenary companies by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions such as the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement." />
+    <string id="b1071_mcm_h_1f5d7c0e26" text="NETTOYAGE UNIQUE, DÉTRUIT DES CLANS - sauvegardez d'abord votre partie. Désactivé par défaut. Activez ceci pour supprimer les compagnies mercenaires laissées par des rébellions écrasées dans une partie déjà en cours. Le jeu vous demande confirmation au jour de campagne suivant et indique combien il en a trouvé dans votre sauvegarde - rien n'est détruit avant votre accord. Elles sont ensuite dissoutes quelques-unes par jour plutôt que toutes d'un coup, afin que votre campagne ne se vide pas du jour au lendemain, et vous êtes averti quand c'est terminé. Seuls sont supprimés les clans issus d'une rébellion, transformés en compagnies mercenaires par ce mod, sans fief et qui ne sont pas actuellement engagés par un royaume. Les factions mineures d'origine comme les Ghilmans et les Jawwals ne sont jamais touchées, pas plus qu'un clan possédant un fief." />
     <string id="b1071_mcm_h_2133bd3ab2" text="Biais de soutien à la paix par point lorsque le royaume est dans une bande de pression croissante." />
     <string id="b1071_mcm_h_21aee6a595" text="Chaque foyer de village × ceci = bonus fixe au pool maximum. Par exemple, 0,10 signifie que 1 000 foyers ajoutent 100 mains d’œuvre maximales." />
     <string id="b1071_mcm_h_223a8f48ff" text="Multiplicateur de régénération lorsqu'il est bien nourri. Par exemple, 100 = taux de régénération normal." />
@@ -519,7 +519,7 @@
     <string id="b1071_mcm_h_2c8792addb" text="Pénalité totale maximale appliquée à la prise en charge des déclarations de guerre en mode bande. Remplace le remplacement dur de -10 000." />
     <string id="b1071_mcm_h_2c8d5b3e41" text="Détermine la résistance des troupes de niveau supérieur dans les batailles résolues automatiquement (résolution automatique, sièges que vous ne menez pas vous-même). Définit ensemble la réduction des dégâts simulés et la probabilité d'être blessé plutôt que tué. 0=Vanilla | 1=Léger (dégâts T3-T6 -3/-6/-9/-12 %, survie +2/+4/+6/+8) | 2=Modéré (-5/-10/-15/-20 %, +3/+6/+9/+12) | 3=Fort (-6/-12/-18/-24 %, +5/+10/+15/+20, les valeurs antérieures à la v1.0.2.5). S'applique également à l'IA et au joueur. Remplace les deux options de niveau distinctes, qui se cumulaient. Par défaut : 1." />
     <string id="b1071_mcm_h_2d7ade5704" text="Les pools épuisés conservent un pourcentage plus élevé pendant la conquête. Empêche les châteaux frontaliers de ping-pong d'être définitivement mis à zéro par des changements de propriétaire répétés." />
-    <string id="b1071_mcm_h_2d7f8a3c60" text="Villagers will not take service under the banner burning their fields. When enabled, no lord may recruit in a settlement belonging to a faction their realm is at war with. Hostile towns and castles cannot be entered anyway, so in practice this closes the enemy village route, which was free manpower. Manpower cost is unchanged - see the foreign recruitment cost preset for why. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: ON." />
+    <string id="b1071_mcm_h_2d7f8a3c60" text="Les villageois ne prennent pas du service sous la bannière qui brûle leurs champs. Une fois activé, aucun seigneur ne peut recruter dans un fief appartenant à une faction avec laquelle son royaume est en guerre. Les villes et châteaux hostiles sont de toute façon inaccessibles : en pratique, cela ferme la voie des villages ennemis, qui offrait de l'effectif gratuit. Le coût en effectif est inchangé - voir le préréglage de coût du recrutement à l'étranger. L'exemption ne joue que si votre clan n'a NI royaume NI fief, afin de ne pas gêner le début de partie : dès que vous jurez fidélité à un royaume, ses terres sont votre royaume et tout autre royaume est étranger, fief ou non. S'applique à l'IA comme au joueur. Par défaut : activé." />
     <string id="b1071_mcm_h_2ea055b805" text="À partir de cet épuisement, les royaumes IA ne peuvent plus déclencher de nouvelles guerres." />
     <string id="b1071_mcm_h_2f283ad2f0" text="Ajoute un petit caractère aléatoire limité à la production de bénévoles et à la récupération après un choc. Rend les campagnes moins prévisibles sans fluctuations sauvages." />
     <string id="b1071_mcm_h_2fbb35aab0" text="Combien de jours dure l’investissement d’une ville modeste. Sert également de temps de recharge. Par défaut : 20." />
@@ -556,7 +556,7 @@
     <string id="b1071_mcm_h_5921a54d23" text="La compétence du gouverneur steward augmente la régénération ; Le leadership augmente le pool maximum." />
     <string id="b1071_mcm_h_597ebd8ce7" text="Pénalité de régénération de base appliquée après le changement de propriétaire." />
     <string id="b1071_mcm_h_59fa404ca0" text="AI n’investira pas dans les villages dont le foyer est égal ou supérieur à cette valeur, concentrant son mécénat sur les villages les plus pauvres qui en ont le plus besoin. Réglez sur 0 pour désactiver (investir n’importe où). Par défaut : 600." />
-    <string id="b1071_mcm_h_5a4c7e2b8d" text="Gold premium for recruiting in a settlement your realm does not own - you are outbidding the local lord. 0=Off | 1=1.5x | 2=2x | 3=3x. The multiplier applies to the game's base hire price and stacks additively with the hire and upgrade cost preset, so at the default presets an ordinary village recruit costs roughly twice as much abroad while an elite troop costs about a quarter more. Manpower cost is unchanged: manpower belongs to the settlement, so charging extra manpower would only punish the settlement you recruit from. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: 2." />
+    <string id="b1071_mcm_h_5a4c7e2b8d" text="Supplément d'or pour recruter dans un fief que votre royaume ne possède pas - vous surenchérissez sur le seigneur local. 0=Désactivé | 1=1,5x | 2=2x | 3=3x. Le multiplicateur s'applique au prix d'engagement de base du jeu et s'ajoute au préréglage de coût d'engagement et d'amélioration : aux préréglages par défaut, une recrue de village ordinaire coûte environ le double à l'étranger, tandis qu'une troupe d'élite coûte environ un quart de plus. Le coût en effectif est inchangé : l'effectif appartient au fief, et en exiger davantage ne punirait que le fief où vous recrutez. L'exemption ne joue que si votre clan n'a NI royaume NI fief, afin de ne pas gêner le début de partie : dès que vous jurez fidélité à un royaume, ses terres sont votre royaume et tout autre royaume est étranger, fief ou non. S'applique à l'IA comme au joueur. Par défaut : 2." />
     <string id="b1071_mcm_h_5b6d82c72e" text="Nombre maximum d'esclaves qu'une ville peut détenir par point de prospérité. Les esclaves excédentaires sont affranchis (libérés) quotidiennement et convertis en main-d'œuvre. Par exemple, à 0,02 : une ville de 3 000 habitants peut accueillir 60 esclaves ; 5000 prospérité = 100. Réglez sur 0 pour désactiver le plafond. Par défaut : 0,02." />
     <string id="b1071_mcm_h_5c9008c96e" text="Plafond de niveau d’asservissement unifié (parité joueur + IA). Les prisonniers de ce niveau ou en dessous peuvent être réduits en esclavage : (1) le joueur « asservit les prisonniers » dans les villes, (2) l'asservissement automatique de l'IA dans les villes, (3) l'asservissement automatique du château au marché le plus proche. Les prisonniers au-dessus de ce niveau doivent être emmenés dans des châteaux pour être convertis en recrutement ou être rachetés. Par défaut : 3 (T1-T3 asservi, T4+ recrutable)." />
     <string id="b1071_mcm_h_5f1a43fa3a" text="Relation établie avec le chef de clan du propriétaire de la ville lors d'un investissement dans la ville d'un autre clan. Par défaut : 2." />
@@ -578,7 +578,7 @@
     <string id="b1071_mcm_h_6e3d6b6390" text="Bonus de croissance quotidien du foyer provenant d’un grand investissement. Par défaut : 1.0." />
     <string id="b1071_mcm_h_6e6bea98d1" text="La compétence d'intendant est divisée par ceci, puis divisée par 100 pour obtenir un % de régénération supplémentaire. Par exemple, 100 000 signifie que 200 Steward ajoute +0,002 PCT de régénération (0,2 % du pool/jour)." />
     <string id="b1071_mcm_h_6e9c83a214" text="Bonus de croissance quotidien du foyer provenant d'un investissement modeste. Visible dans l'infobulle du village sous le nom &quot;Patronage&quot;. Par défaut : 0,3." />
-    <string id="b1071_mcm_h_6f2b8d5a37" text="When a castle's faction owns no town anywhere, the castle raises this percentage of the manpower it would have requested from a supply town from its own bound villages instead. At 100 the castle keeps the whole request, including the emergency recovery bonus that would otherwise be lost with no town to draw on. Applied on top of the cut-off daily regen floor, whichever is higher. Default: 100." />
+    <string id="b1071_mcm_h_6f2b8d5a37" text="Lorsque la faction d'un château ne possède aucune ville, le château lève sur ses propres villages rattachés ce pourcentage de l'effectif qu'il aurait demandé à une ville d'approvisionnement. À 100, le château conserve toute la demande, y compris le bonus de récupération d'urgence qui serait autrement perdu faute de ville. Appliqué par-dessus le plancher de régénération quotidienne en cas de coupure, la valeur la plus élevée l'emportant. Par défaut : 100." />
     <string id="b1071_mcm_h_6fff08965f" text="Multiplicateur de croissance de la milice lorsque l'effectif est à 100 %." />
     <string id="b1071_mcm_h_701e8b031f" text="% du pool actuel conservé lorsque le règlement change de mains (au pool complet). Augmente davantage pour les pools épuisés si la protection contre la conquête dynamique est activée." />
     <string id="b1071_mcm_h_711f8c66da" text="Multiplicateur de régénération lorsque le royaume est en paix. Par exemple, 125 = 25 % de bonus." />
@@ -595,13 +595,13 @@
     <string id="b1071_mcm_h_84904d0932" text="Relation acquise avec le chef de clan du propriétaire du village lors d'un investissement dans le village d'un autre clan. Crée une voie d’investissement diplomatique. Par défaut : 2." />
     <string id="b1071_mcm_h_856a2b5f99" text="Combien de jours dure le bonus de foyer du Grand investissement. Sert également de temps de recharge. Par défaut : 45." />
     <string id="b1071_mcm_h_8671ad36bf" text="Après toute paix entre deux royaumes, bloquez la nouvelle déclaration pendant ce nombre de jours. Actif uniquement lorsque l'application de la trêve est activée." />
-    <string id="b1071_mcm_h_88f5ff1208" text="Progression de la construction par esclave et par jour (même échelle que le tarif journalier vanille ~ 130-180). Visible sous la forme « Slave Labor +XX » dans l'info-bulle de construction. À l'efficacité par défaut (1,5\u00d7) : 0,5 \u00d7 1,5 = 0,75/esclave. Par exemple, 100 esclaves = 75 progressions/jour (plafonnés). Par défaut : 0,5." />
+    <string id="b1071_mcm_h_88f5ff1208" text="Progression de la construction par esclave et par jour (même échelle que le tarif journalier vanille ~ 130-180). Visible sous la forme « Slave Labor +XX » dans l'info-bulle de construction. À l'efficacité par défaut (1,5×) : 0,5 × 1,5 = 0,75/esclave. Par exemple, 100 esclaves = 75 progressions/jour (plafonnés). Par défaut : 0,5." />
     <string id="b1071_mcm_h_894831a9bf" text="Pénalité de régénération de base appliquée après le siège." />
     <string id="b1071_mcm_h_8a9832e2bb" text="% de pool en pleine prospérité. Par exemple, 100 = une colonie prospère possède 100 % du pool de base." />
     <string id="b1071_mcm_h_8b83bc3e79" text="Puissance ajoutée à chaque ville grâce à un investissement généreux. Par défaut : 10." />
     <string id="b1071_mcm_h_8c1640482e" text="Taux de remplissage du pool où commence le ralentissement des soft-caps. Exemple : 0,75 signifie que le ralentissement commence à 75 % de remplissage." />
     <string id="b1071_mcm_h_8c178760ed" text="Influence obtenue grâce à un investissement modeste dans une ville (uniquement si la ville se trouve dans votre royaume). Par défaut : 10." />
-    <string id="b1071_mcm_h_8c3f6b0d74" text="OFF (default): a rebellion that is crushed dies, exactly as in vanilla - the town returns to its old owner and the rebel lords are gone. ON: the rebel clan is kept alive as a mercenary company so it can draw frontier revenue. Leave this OFF unless you want that. Every crushed rebellion leaves a permanent mercenary company behind, with no cap and no way out, so a long campaign accumulates dozens of them. This toggle only affects REBEL clans - noble clans of a destroyed kingdom are still rescued either way." />
+    <string id="b1071_mcm_h_8c3f6b0d74" text="DÉSACTIVÉ (par défaut) : une rébellion écrasée meurt, exactement comme dans le jeu de base - la ville revient à son ancien propriétaire et les seigneurs rebelles disparaissent. ACTIVÉ : le clan rebelle est maintenu en vie comme compagnie mercenaire, afin de pouvoir tirer des revenus des frontières. Laissez ceci désactivé, sauf si c'est bien ce que vous voulez. Chaque rébellion écrasée laisse alors une compagnie mercenaire permanente, sans limite ni porte de sortie, si bien qu'une longue campagne en accumule des dizaines. Ce réglage ne concerne que les clans REBELLES - les clans nobles d'un royaume détruit sont sauvés dans les deux cas." />
     <string id="b1071_mcm_h_8c81642f23" text="Coût de base en main-d’œuvre pour une recrue de niveau 1." />
     <string id="b1071_mcm_h_8cc407e3bb" text="Coût de l’or pour un investissement urbain modeste. Par défaut : 5 000." />
     <string id="b1071_mcm_h_8d83d2815d" text="Lorsqu'elle est activée, la régénération du château au-dessus du niveau de ruissellement local est transférée depuis la ville de même faction la plus proche (non créée à partir de rien). Si la ville de ravitaillement est épuisée, le château meurt de faim. Historiquement, les garnisons des châteaux étaient chassées des villes par les stratèges. La désactivation revient au comportement hérité où les châteaux se régénèrent indépendamment." />
@@ -722,7 +722,7 @@
     <string id="b1071_mcm_h_f83ad71f92" text="Affiche un message lorsqu'un seigneur IA investit dans une ville que vous possédez. Par défaut : vrai." />
     <string id="b1071_mcm_h_fa1ea63b89" text="Plancher pour la pénalité de prospérité quotidienne combinée de Governance Strain + Devastated Hinterlands. Empêche les spirales de mort incontrôlées lorsque les deux systèmes s'empilent. Par défaut : -8,0." />
     <string id="b1071_mcm_h_fa9bb5beb0" text="Revenu quotidien par niveau de clan pour les factions mineures NON sous aucun contrat de mercenaire. Plus élevée que la rémunération des mercenaires car aucun employeur ne les subventionne. Par défaut : 400." />
-    <string id="b1071_mcm_h_fdddba79d9" text="Prospérité par esclave et par jour (indiquée comme « Travail des esclaves » dans l'info-bulle de la prospérité). À l'efficacité par défaut (1,5\u00d7) : 0,0067 \u00d7 1,5 \u2248 0,01/esclave. Par exemple, 100 esclaves \u2192 ~ 1 prospérité/jour. Par défaut : 0,0067." />
+    <string id="b1071_mcm_h_fdddba79d9" text="Prospérité par esclave et par jour (indiquée comme « Travail des esclaves » dans l'info-bulle de la prospérité). À l'efficacité par défaut (1,5×) : 0,0067 × 1,5 ≈ 0,01/esclave. Par exemple, 100 esclaves → ~ 1 prospérité/jour. Par défaut : 0,0067." />
     <string id="b1071_mcm_h_ff8b7b8002" text="Applique des pénalités de récupération temporaires après des événements de raid/siège/conquête, décroissant avec le temps." />
     <string id="b1071_mcm_h_ff96994b56" text="Ajoute des informations sur la main-d'œuvre aux info-bulles des propriétés du règlement dans l'interface utilisateur de la campagne." />
     <string id="b1071_mcm_h_ffe4431637" text="Pourcentage de régénération quotidien minimum du pool maximum après les pénalités de stress empilées." />
@@ -771,11 +771,11 @@
     <string id="b1071_mcm_t_2e953ae0a0" text="Plafond des primes de soutien à la paix" />
     <string id="b1071_mcm_t_329e2f2547" text="Activer la protection contre la conquête dynamique" />
     <string id="b1071_mcm_t_32fd0ff77f" text="Activer le crochet de recrutement de joueurs" />
-    <string id="b1071_mcm_t_3e8b1d6f9c" text="Foreign recruitment cost preset" />
-    <string id="b1071_mcm_t_4b7d9e1a52" text="Rescue crushed rebel clans" />
-    <string id="b1071_mcm_t_6e2a8f4b93" text="Clean up leftover rebel mercenary companies" />
-    <string id="b1071_mcm_t_7d3a9c4e18" text="Castle village levy %" />
-    <string id="b1071_mcm_t_9c4e2a7b51" text="Block recruiting in enemy realms" />
+    <string id="b1071_mcm_t_3e8b1d6f9c" text="Préréglage du coût de recrutement à l'étranger" />
+    <string id="b1071_mcm_t_4b7d9e1a52" text="Sauver les clans rebelles écrasés" />
+    <string id="b1071_mcm_t_6e2a8f4b93" text="Nettoyer les compagnies mercenaires rebelles résiduelles" />
+    <string id="b1071_mcm_t_7d3a9c4e18" text="% de levée des villages de château" />
+    <string id="b1071_mcm_t_9c4e2a7b51" text="Bloquer le recrutement en royaume ennemi" />
       <string id="b1071_mcm_t_town_vol_tier_max" text="Rang max des volontaires de ville" />
       <string id="b1071_mcm_t_village_vol_tier_max" text="Rang max des volontaires de village" />
     <string id="b1071_mcm_t_333ebd3f63" text="Dévastation par raid" />
@@ -1266,5 +1266,78 @@
     <string id="b1071_mcm_h_cr_dyncap_prosp" text="Bonus de capacité du pool par point de prospérité, utilisé seulement en mode dynamique. Exemple : 0,005 avec 1500 de prospérité ajoute 7 troupes. Par défaut : 0,005." />
     <string id="b1071_mcm_t_cr_dyncap_wall" text="Bonus dynamique de niveau de muraille" />
     <string id="b1071_mcm_h_cr_dyncap_wall" text="Bonus de capacité du pool par niveau de muraille, utilisé seulement en mode dynamique. Exemple : 3 avec des murailles de niveau 2 ajoute 6 troupes. Par défaut : 3." />
+    <string id="b1071_compat_button_rebuild_sources" text="Reconstruire les sources" />
+    <string id="b1071_compat_button_rebuild_sources_full" text="Reconstruire les sources de recrutement" />
+    <string id="b1071_compat_hint_model_group_status" text="Résumé rapide de l'analyse des systèmes de jeu essentiels. « Tous les systèmes sont normaux » signifie qu'aucun autre mod n'a remplacé un élément dont Campaign++ dépend. Si un problème est détecté, survolez les lignes ci-dessous pour le détail." />
+    <string id="b1071_compat_hint_rebuild_sources" text="Réanalyse les listes de volontaires, réapplique le nettoyage des volontaires de Campaign++ et vide les caches de culture du recrutement dans les châteaux. À utiliser après l'ajout d'un mod d'arbre de troupes en cours de partie, ou si les listes de volontaires semblent obsolètes." />
+    <string id="b1071_compat_label_model_group_status" text="Statut" />
+    <string id="b1071_compat_model_group_issues" text="Problème détecté — voir ci-dessous" />
+    <string id="b1071_compat_model_group_ok" text="Tous les systèmes sont normaux" />
+    <string id="b1071_compat_model_group_pending" text="Chargez une campagne pour vérifier" />
+    <string id="b1071_demob_extend_cost_each" text="Prolonger (par homme)" />
+    <string id="b1071_demob_home" text="Foyer" />
+    <string id="b1071_demob_home_unknown" text="Inconnu" />
+    <string id="b1071_demob_menu" text="Gérer le service des troupes" />
+    <string id="b1071_demob_menu_veterans" text="Registre des vétérans ({COUNT} au foyer)" />
+    <string id="b1071_demob_menu_veterans_empty" text="Registre des vétérans (aucun au foyer)" />
+    <string id="b1071_demob_menu_veterans_own" text="Registre des vétérans ({COUNT} de vos hommes ici)" />
+    <string id="b1071_demob_menu_veterans_tip" text="Aucun vétéran n'attend ici. Les soldats apparaissent sur le registre d'un fief lorsqu'ils achèvent leur service et rentrent chez eux." />
+    <string id="b1071_demob_release" text="Renvoyer" />
+    <string id="b1071_demob_release_busy" text="Vous ne pouvez pas libérer de soldats en pleine bataille." />
+    <string id="b1071_demob_release_confirm" text="Renvoyer {COUNT} {TROOP} chez eux maintenant ? Les réengager plus tard coûtera la prime de rengagement et, de nouveau, l'effectif de leur fief d'origine." />
+    <string id="b1071_demob_release_confirm_title" text="Libérer des soldats" />
+    <string id="b1071_demob_release_confirm_yes" text="Les renvoyer chez eux" />
+    <string id="b1071_demob_release_hint" text="Renvoyez ces hommes chez eux dès maintenant, avant la fin de leur terme. Cela ne coûte rien : ils rendent leur effectif à {HOME} et attendent sur son registre des vétérans, où vous pourrez les réengager à ce rang.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
+    <string id="b1071_demob_release_hint_off" text="Congédiez ces hommes maintenant. Le retour des vétérans est désactivé dans les options du mod : ils partent simplement et leur effectif est perdu.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
+    <string id="b1071_demob_released_gone" text="{COUNT} {TROOP} libérés du service. Ils ont quitté votre groupe." />
+    <string id="b1071_demob_released_home" text="{COUNT} {TROOP} libérés du service. Ils partent pour {HOME} et pourront être réengagés depuis son registre des vétérans." />
+    <string id="b1071_demob_released_partial" text="{COUNT} {TROOP} libérés du service. {ARRIVED} ont atteint {HOME} et pourront être réengagés depuis son registre des vétérans ; les autres ne sont pas rentrés." />
+    <string id="b1071_demob_retired_home" text="{COUNT} soldat{PLURAL} ont achevé leur service et sont rentrés chez eux. Premier groupe : {TROOP}, en route pour {HOME}. Vous pouvez réengager des vétérans depuis le registre des vétérans d'un fief." />
+    <string id="b1071_mcm_g_demob_vets" text="Service des troupes - Vétérans" />
+    <string id="b1071_mcm_h_demob_max_extends" text="Combien de fois le service d'un même soldat peut être prolongé. Chaque prolongation après la première coûte 50 % de plus que la précédente. Par défaut : 3." />
+    <string id="b1071_mcm_h_demob_notify_interval" text="Nombre minimal de jours entre deux avertissements ou fenêtres du service des troupes. 1 signifie chaque jour, comme auparavant. Par défaut : 3." />
+    <string id="b1071_mcm_h_demob_vet_access" text="Qui peut rappeler les vétérans des autres seigneurs depuis un fief. 0 = Libre (tout seigneur qui n'est pas en guerre avec le propriétaire). 1 = Royaume uniquement (il faut partager le royaume du propriétaire). 2 = Clan uniquement (seul le clan propriétaire du fief). Les mêmes règles s'appliquent au joueur et à l'IA. Vos propres hommes ne sont jamais bloqués : les soldats que vous avez libérés vous-même peuvent toujours être récupérés là où ils sont rentrés, tant que vous n'êtes pas en guerre avec le propriétaire du fief. Par défaut : 1." />
+    <string id="b1071_mcm_h_demob_vet_enable" text="Lorsqu'un soldat achève son service, il retourne à pied au fief où il a été recruté, lui rend son effectif et rejoint son registre des vétérans. Si cette option est désactivée, les soldats libérés disparaissent simplement, comme avant. Par défaut : activé." />
+    <string id="b1071_mcm_h_demob_vet_gold" text="Prime de rengagement payée par vétéran rappelé, multipliée par son rang. Un vétéran de rang 5 coûte 200 pièces d'or si la valeur est de 40. Le rappel puise aussi dans l'effectif du fief, exactement comme une recrue ordinaire. Par défaut : 40." />
+    <string id="b1071_mcm_h_demob_vet_manpower" text="Quelle part du coût en effectif d'un soldat libéré retourne à son fief d'origine. 100 signifie que chaque homme qui survit à son terme peut être levé de nouveau. Baissez cette valeur si vous voulez que la guerre vide durablement les campagnes. Par défaut : 100." />
+    <string id="b1071_mcm_h_demob_vet_retention" text="Combien de jours de Bannerlord un soldat libéré reste disponible au rappel avant de s'établir définitivement. Son effectif reste dans le réservoir dans les deux cas. Une année de jeu fait environ 84 jours. Par défaut : 84." />
+    <string id="b1071_mcm_h_demob_vet_scatter" text="Pourcentage du registre des vétérans d'un fief perdu lorsque celui-ci est pillé ou passe à un autre royaume. Les vétérans se dispersent quand leur foyer est mis à sac. 0 désactive la dispersion. Par défaut : 50." />
+    <string id="b1071_mcm_t_demob_max_extends" text="Prolongations autorisées par soldat" />
+    <string id="b1071_mcm_t_demob_notify_interval" text="Jours entre les avertissements" />
+    <string id="b1071_mcm_t_demob_vet_access" text="Restriction d'accès au rappel" />
+    <string id="b1071_mcm_t_demob_vet_enable" text="Les soldats libérés rentrent chez eux" />
+    <string id="b1071_mcm_t_demob_vet_gold" text="Or de rappel par rang" />
+    <string id="b1071_mcm_t_demob_vet_manpower" text="% d'effectif rendu" />
+    <string id="b1071_mcm_t_demob_vet_retention" text="Jours au registre des vétérans" />
+    <string id="b1071_mcm_t_demob_vet_scatter" text="% de dispersion (pillage/prise)" />
+    <string id="b1071_recall_action" text="Rappeler" />
+    <string id="b1071_recall_block_access" text="Vous n'avez pas le droit de recruter sur le registre de ce fief." />
+    <string id="b1071_recall_block_disabled" text="Le retour des vétérans est désactivé dans les options du mod." />
+    <string id="b1071_recall_block_gold" text="Or insuffisant : {COST}g par homme." />
+    <string id="b1071_recall_block_manpower" text="Effectif insuffisant ici : {COST} nécessaires, {LEFT} restants." />
+    <string id="b1071_recall_block_party" text="Votre groupe est plein." />
+    <string id="b1071_recall_days" text="Dispersion dans" />
+    <string id="b1071_recall_done" text="{COUNT} {TROOP} ont répondu à l'appel à {SETTLEMENT} pour {COST}g." />
+    <string id="b1071_recall_gold_each" text="Or / homme" />
+    <string id="b1071_recall_hint" text="Rappelez ces hommes : {GOLD}g et {MANPOWER} d'effectif par homme. Leur terme de service repart de zéro et {SETTLEMENT} redevient leur foyer. Ils se dispersent dans {DAYS} jours si on les laisse.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
+    <string id="b1071_recall_hint_blocked" text="Ces vétérans ne peuvent pas être rappelés pour l'instant." />
+    <string id="b1071_recall_manpower_each" text="Effectif / homme" />
+    <string id="b1071_recall_no_access" text="Vous ne pouvez pas recruter sur le registre des vétérans de {SETTLEMENT}." />
+    <string id="b1071_recall_no_campaign" text="Chargez une campagne avant d'ouvrir le registre des vétérans." />
+    <string id="b1071_recall_no_entitlement" text="Vous n'avez pas le droit de recruter sur le registre des vétérans de ce fief." />
+    <string id="b1071_recall_no_gold" text="Or insuffisant pour rappeler qui que ce soit : {COST}g par homme." />
+    <string id="b1071_recall_no_manpower" text="{SETTLEMENT} n'a plus d'effectif à consacrer aux vétérans." />
+    <string id="b1071_recall_no_screen" text="Registre des vétérans : aucun écran actif." />
+    <string id="b1071_recall_none" text="Aucun vétéran n'attend ici. Les soldats qui achèvent leur service retournent au fief qui les a levés et apparaissent sur son registre." />
+    <string id="b1071_recall_notice_own" text="Ce n'est pas votre royaume : seuls les hommes que vous avez renvoyés vous-même répondront." />
+    <string id="b1071_recall_open_fail" text="Échec de l'ouverture du registre des vétérans : {ERR}" />
+    <string id="b1071_recall_party_full" text="Votre groupe est plein." />
+    <string id="b1071_recall_summary" text="{MEN} vétéran{MPLURAL} au foyer ici, {TYPES} type{TPLURAL} de troupe. Ils se dispersent {RETENTION} jours après leur libération." />
+    <string id="b1071_recall_summary_own" text="{MEN} de vos propres hommes ici, {TYPES} type{TPLURAL} de troupe. Ils se dispersent {RETENTION} jours après leur libération." />
+    <string id="b1071_recall_title" text="Registre des vétérans — {SETTLEMENT}" />
+    <string id="b1071_recall_unavailable" text="Le registre des vétérans n'est pas disponible dans cette campagne." />
+    <string id="b1071_recall_waiting" text="Au foyer" />
+    <string id="b1071_ui_cancel" text="Annuler" />
+    <string id="b1071_ui_men" text="Hommes" />
   </strings>
 </base>

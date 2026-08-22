@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.6 — Everything you need to know, step by step.*
+*Version 1.0.2.7 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
@@ -181,6 +181,8 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 
 Field troops now have a service life. After enough Bannerlord days in the field, some soldiers finish their term and leave the party gradually instead of serving forever.
 
+They do not vanish. A soldier who finishes his term walks back to the settlement that raised him, adds his manpower to its pool, and waits there on that settlement's **veteran register** — where you can hire him back at the tier he reached.
+
 ### What Counts
 
 - Your **main party** is tracked in detail and shown in the service screen.
@@ -190,19 +192,50 @@ Field troops now have a service life. After enough Bannerlord days in the field,
 ### How to Read It
 
 - Press the configured **Troop Service hotkey** on the campaign map (default: F9) to open the service screen.
-- The screen shows each tracked soldier, how long he has served, how many days remain, and the gold cost to extend him.
+- The screen shows one line per group of men, how long they have served, how many days remain, and the gold cost to extend each of them.
+- Men of the same troop who came from the same place and joined on the same day share a line, so a line can hold one man or fifty. The **Men** column tells you how many.
+- **Click a button for one man, Shift+click for five, Ctrl+click for the whole line.** This works on both **Extend** and **Send Home**.
+- The **Status** column is coloured: green still serving, amber close to leaving, red overdue.
 - When soldiers are close to leaving, the game can show a daily warning message and, by default, a popup with an **Open Service** button when the earliest soldier reaches the 14-day warning lead or day 0.
 
 ### How to Manage It
 
-- Pay to extend a specific soldier if you need him for the next campaign season. Each soldier can only be extended once.
-- AI lord field parties can also pay for one-time extensions, using the same cost formula, if the lord has enough spare gold. Garrisons and militia never use this system.
+- Pay to extend a specific soldier if you need him for the next campaign season. Each soldier can be extended up to **3 times** by default, and every extension costs 50% more than the one before.
+- AI lord field parties extend their own men on the same rules and the same prices, if the lord has spare gold. Garrisons and militia never use this system.
 - Use the MCM preset to choose Light, Moderate, Harsh, or Custom service lengths.
-- One Bannerlord year is about 84 days, so a 45-day service term is a little over half a year in game time.
+- One Bannerlord year is about 84 days. Under the default Moderate preset a tier 1 recruit serves 42 days — half a year — and a tier 6 veteran serves 252 days, or three years.
 - Moving troops between field parties or briefly parking them outside the party no longer resets their service age; short transfers keep the original service record.
 - Newly recruited castle elites and converted prisoners start with age 0 when they join a field party.
 - Promoting a soldier gives him a small service grace period by default, reducing his service age by 5 days without resetting him to age 0.
-- The default balance is conservative: 14-day warnings, 15% daily troop-type departure cap, 10 maximum departures per party per day, and season/crisis pressure disabled unless you enable those realism toggles in MCM.
+- The default balance is conservative: warnings every 3 days, an 8% daily troop-type departure cap, 5 maximum departures per party per day, and season/crisis pressure disabled unless you enable those realism toggles in MCM.
+
+### Sending Soldiers Home Early
+
+You do not have to wait for a term to run out. When a war ends and you want to shrink your army, open **Troop service** from any settlement menu and use the **Send Home** button on any line. Click for one man, Shift+click for five, Ctrl+click for the whole line.
+
+- **It costs nothing.** The men go to the same home settlement, hand back the same manpower, and wait on the same veteran register as if they had served their full term. You can hire them back later at the tier they reached.
+- **Release as many as you like in a day.** The daily departure limits only apply to men leaving on their own; they never hold up a decision you made yourself.
+- **Not during a battle or siege.** Finish the fight first.
+- **It asks before it empties a big line.** Above ten men you get a yes-or-no first. Smaller numbers go on one click.
+- If you have lowered **Manpower returned %** in the settings, some men will not survive the road. The message tells you how many reached the register.
+- This is always better than dismissing troops in the ordinary party screen. Men dismissed that way are simply gone, and the manpower spent raising them is lost.
+
+### Calling Veterans Back
+
+1. **Enter any town, castle or village** you are not at war with.
+2. In the settlement menu, look for **Veteran register (X at home)**. The number is how many discharged soldiers are waiting there. Away from your own realm it reads **(X of your men here)** instead — see below.
+3. **Click it** to open the register. Each line shows the troop, its tier, how many are at home, how many days before they disperse, and what each man costs.
+4. **Click Recall for one man, Shift+click for five, Ctrl+click for the whole line.** You pay the men a bounty in gold to take up arms again, and they cost the settlement's manpower exactly as fresh recruits would. The bounty is the same whether or not the settlement is yours — the money goes to the soldiers, not to its lord.
+5. A recalled veteran rejoins at the tier he was trained to, and his service term starts over from day one.
+
+Things worth knowing:
+
+- **Veterans do not wait forever.** They drift back to civilian life about a year after discharge — 84 days by default.
+- **Raids and conquest scatter them.** If a settlement is raided, or changes kingdom, roughly half its register is lost.
+- **Your own men are always yours.** Any soldier you sent home is yours to collect from wherever he went, even a town or castle in someone else's realm. That is the whole point of sending him home. The only thing that stops you is war: if you are at war with the settlement's owner, the register is shut.
+- **Other lords' veterans follow the setting.** By default any lord of the owning kingdom may hire from a register. The owning clan always may; a kingdom at war with the owner never may. You can widen this to any non-hostile lord, or narrow it to the owning clan only, in MCM. On foreign ground the register shows only your own men, so a line you can see is a line you can take.
+- **Recruit troops abroad and you can still get them back.** Prisoners you converted at a foreign castle, or elites you hired there, go home to that castle when their term ends. Walk back in while you are at peace and they are waiting for you.
+- **The whole feature can be switched off.** Turn off **Veterans return home** in MCM and discharged soldiers simply disperse, as they did before.
 
 ---
 

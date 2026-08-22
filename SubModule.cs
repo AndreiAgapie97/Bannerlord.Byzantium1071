@@ -254,6 +254,7 @@ namespace Byzantium1071
             B1071_DevastationBehavior.ResetDynamicPatchFlag();
             B1071_OverlayController.Reset();
             B1071_DemobilizationScreen.Reset();
+            B1071_VeteranRecallScreen.Reset();
 
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
@@ -284,6 +285,7 @@ namespace Byzantium1071
             Byzantium1071.Campaign.Patches.B1071_ClanSurvivalPatch._alreadyRescued.Clear();
             B1071_OverlayController.Reset();
             B1071_DemobilizationScreen.Reset();
+            B1071_VeteranRecallScreen.Reset();
             _exceptionCounts.Clear();
         }
 

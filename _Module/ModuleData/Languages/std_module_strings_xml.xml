@@ -7,12 +7,12 @@
     <string id="b1071_demob_age" text="Age" />
     <string id="b1071_demob_extend" text="Extend" />
     <string id="b1071_demob_extend_cost" text="Extend Cost" />
-    <string id="b1071_demob_extend_done" text="Extended service for {COUNT} {TROOP} by {DAYS} days for {COST}g." />
-    <string id="b1071_demob_extend_hint" text="Pay {COST}g to extend this soldier once by the configured number of days." />
+    <string id="b1071_demob_extend_done" text="Extended service for {COUNT} {TROOP} by {DAYS} days for {COST}g. Extension {USED} of {MAX}." />
+    <string id="b1071_demob_extend_hint" text="Pay {COST}g per man to keep these soldiers for another term. Extension {NEXT} of {MAX}; each one costs more than the last. When they finally go, they return to {HOME}.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
     <string id="b1071_demob_extend_hint_blocked" text="Not enough gold for this service extension." />
-    <string id="b1071_demob_extend_hint_used" text="This soldier has already used his one allowed service extension." />
+    <string id="b1071_demob_extend_hint_used" text="These soldiers have used all {MAX} of their allowed service extensions. They return to {HOME} when their term ends, and can be hired back from its veteran register." />
     <string id="b1071_demob_extend_no_gold" text="Not enough gold to extend service. Need {COST}g." />
-    <string id="b1071_demob_extend_used" text="This soldier has already used his one allowed service extension." />
+    <string id="b1071_demob_extend_used" text="This soldier has already used all {MAX} of his allowed service extensions." />
     <string id="b1071_demob_no_campaign" text="Load a campaign before opening troop service." />
     <string id="b1071_demob_no_cohorts" text="No tracked soldiers yet. Existing troops are enrolled when the system next reconciles your party." />
     <string id="b1071_demob_no_screen" text="Troop service: no active screen." />
@@ -23,7 +23,7 @@
     <string id="b1071_demob_status_due" text="Due" />
     <string id="b1071_demob_status_serving" text="Serving" />
     <string id="b1071_demob_status_warning" text="Warning" />
-    <string id="b1071_demob_summary" text="{SOLDIERS} soldier service record{SPLURAL} tracked. {WARNINGS} soldier{WPLURAL} within the warning window." />
+    <string id="b1071_demob_summary" text="{RECORDS} service record{SPLURAL} tracked, {SOLDIERS} soldier{TPLURAL}. {MEN} soldier{MPLURAL} within the warning window." />
     <string id="b1071_demob_title" text="Troop Service" />
     <string id="b1071_demob_unavailable" text="Troop service is not available in this campaign." />
     <string id="b1071_demob_warning_text" text="{MEN} service soldier{MPLURAL} will begin leaving within {LEAD} days. Earliest: {TROOP}, {DAYS} day{DPLURAL} remaining." />
@@ -33,7 +33,7 @@
     <string id="b1071_mcm_t_3e91c7ab04" text="Castle cut-off daily regen" />
     <string id="b1071_mcm_t_demob_enable" text="Enable troop demobilization" />
     <string id="b1071_mcm_h_5c2df08b16" text="Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4." />
-    <string id="b1071_mcm_h_demob_enable" text="Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: true." />
+    <string id="b1071_mcm_h_demob_enable" text="Master toggle. Field troops serve for a configurable number of Bannerlord days before gradually leaving. Applies to player and AI field parties. Default: false." />
     <string id="b1071_mcm_t_demob_preset" text="Intensity preset" />
     <string id="b1071_mcm_h_demob_preset" text="0=Light, 1=Moderate, 2=Harsh, 3=Custom. Thresholds use Bannerlord days; one in-game year is about 84 days. Default: Moderate." />
     <string id="b1071_mcm_t_demob_hotkey_enable" text="Enable service screen hotkey" />
@@ -49,7 +49,7 @@
     <string id="b1071_mcm_t_demob_extend_days" text="Extension days" />
     <string id="b1071_mcm_h_demob_extend_days" text="How many Bannerlord days a paid service extension adds to one selected soldier. Each soldier can only be extended once. Default: 21." />
     <string id="b1071_mcm_t_demob_extend_cost" text="Extension gold per tier-day" />
-    <string id="b1071_mcm_h_demob_extend_cost" text="Cost formula per soldier: troop tier x extension days x this value. Default: 5." />
+    <string id="b1071_mcm_h_demob_extend_cost" text="Cost formula per soldier: troop tier x extension days x this value. Each further extension of the same soldier costs 50% more than the last. Default: 2." />
     <string id="b1071_mcm_t_demob_ai_extend" text="AI can pay for extensions" />
     <string id="b1071_mcm_h_demob_ai_extend" text="Allows AI lord field parties to buy the same one-time paid service extension before soldiers leave. Uses the same cost formula and excludes garrisons, militia, caravans, villagers, and bandits. Default: true." />
     <string id="b1071_mcm_t_demob_ai_buffer" text="AI extension treasury buffer" />
@@ -57,9 +57,9 @@
     <string id="b1071_mcm_t_demob_promotion_bonus" text="Promotion bonus days" />
     <string id="b1071_mcm_h_demob_promotion_bonus" text="How many service-age days a genuine troop upgrade removes from the promoted soldier. This never resets age below 0 and does not refresh one-time extensions. Default: 5." />
     <string id="b1071_mcm_t_demob_daily_pct" text="Daily departure cap %" />
-    <string id="b1071_mcm_h_demob_daily_pct" text="Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Default: 15." />
+    <string id="b1071_mcm_h_demob_daily_pct" text="Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Lower values make troops rotate out in waves instead of trickling away every day. Default: 8." />
     <string id="b1071_mcm_t_demob_daily_max" text="Max departures per party/day" />
-    <string id="b1071_mcm_h_demob_daily_max" text="Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 10." />
+    <string id="b1071_mcm_h_demob_daily_max" text="Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 5." />
     <string id="b1071_mcm_t_demob_seasonal" text="Enable service seasonality" />
     <string id="b1071_mcm_h_demob_seasonal" text="Optional realism pressure. Lightly adjusts service thresholds by Bannerlord season, which can shift soldiers closer to or farther from departure. Default: false." />
     <string id="b1071_mcm_t_demob_spring" text="Spring/summer service %" />
@@ -264,7 +264,7 @@
     <string id="b1071_gs_tip_active" text="A stabilization program is already active here." />
     <string id="b1071_gs_tip_need" text="You need at least {COST} denars for Emergency Relief." />
     <string id="b1071_gs_tip_need_exact" text="You need {COST} denars for this stabilization program." />
-    <string id="b1071_gs_body" text="Provincial Stabilization - {SETTLEMENT}\n\nGovernance strain: {STRAIN}   |   Owner: {OWNER}   |   Active program: {ACTIVE}\n\nFund a stabilization program to reduce governance strain immediately and support daily loyalty and security recovery. Duration also serves as cooldown." />
+    <string id="b1071_gs_body" text="Provincial Stabilization - {SETTLEMENT}&#10;&#10;Governance strain: {STRAIN}   |   Owner: {OWNER}   |   Active program: {ACTIVE}&#10;&#10;Fund a stabilization program to reduce governance strain immediately and support daily loyalty and security recovery. Duration also serves as cooldown." />
     <string id="b1071_gs_tier_donative" text="Emergency Relief" />
     <string id="b1071_gs_tier_elites" text="Placate Local Elites" />
     <string id="b1071_gs_tier_amnesty" text="Grant Amnesty" />
@@ -358,9 +358,9 @@
     <string id="b1071_ui_rebel_purge_yes" text="Remove them" />
     <string id="b1071_ui_war_recruit_block" text="{SETTLEMENT} will not raise men for you - your realm is at war with {FACTION}." />
     <string id="b1071_overlay_title" text="Campaign++ Overlay" />
-    <string id="b1071_panel_text" text="Campaign++ Overlay\n[Press M to toggle]" />
-    <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}\n\nPrisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}\n{HIGHTIER}Slave goods in your inventory:      {INV}\nSlaves in {SETTLEMENT} market:  {MARKET}\n\nSell slaves through the Trade screen.\nDaily town bonuses apply as long as slaves are in the market." />
-    <string id="b1071_slave_body_hightier" text="\nPrisoners T{NEXTTIER}+ (not enslaveable): {COUNT}  → take to castle or ransom\n" />
+    <string id="b1071_panel_text" text="Campaign++ Overlay&#10;[Press M to toggle]" />
+    <string id="b1071_slave_body" text="⛓  Slave Trade — {SETTLEMENT}&#10;&#10;Prisoners (T1–{MAXTIER}, enslaveable):   {ENSLAVEABLE}&#10;{HIGHTIER}Slave goods in your inventory:      {INV}&#10;Slaves in {SETTLEMENT} market:  {MARKET}&#10;&#10;Sell slaves through the Trade screen.&#10;Daily town bonuses apply as long as slaves are in the market." />
+    <string id="b1071_slave_body_hightier" text="&#10;Prisoners T{NEXTTIER}+ (not enslaveable): {COUNT}  → take to castle or ransom&#10;" />
     <string id="b1071_slave_daily_msg" text="⛓ {SETTLEMENT}: {COUNT} slave{PLURAL} in market. Daily: +{PROS} prosperity, +{CONS} construction." />
     <string id="b1071_slave_enslave_kept" text="({COUNT} T{TIER}+ kept — take to castle or ransom)" />
     <string id="b1071_slave_enslave_skipped" text="({COUNT} T{TIER}+ prisoner{PLURAL} kept)" />
@@ -390,7 +390,7 @@
     <string id="b1071_tab_villages" text="Villages" />
     <string id="b1071_tab_wars" text="Wars" />
     <string id="b1071_ti_ai_note" text="🏛 {LORD} made a {TIER} investment in {TOWN}." />
-    <string id="b1071_ti_body" text="🏛  Civic Patronage — {TOWN}\n\nProsperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires." />
+    <string id="b1071_ti_body" text="🏛  Civic Patronage — {TOWN}&#10;&#10;Prosperity: {PROSP}   |   Notables: {NOTABLES}   |   Owner: {OWNER}&#10;&#10;Choose an investment tier. Higher tiers cost more but provide stronger prosperity growth, notable relations, influence, and power bonuses.&#10;&#10;Investment duration also serves as cooldown — no re-investment until the current patronage expires." />
     <string id="b1071_ti_civic" text="Civic Patronage" />
     <string id="b1071_ti_enter" text="🏛 Invest in town" />
     <string id="b1071_ti_enter_active" text="🏛 Invest in town  (active — {DAYS} days remaining)" />
@@ -426,7 +426,7 @@
     <string id="b1071_ui_unknown" text="Unknown" />
     <string id="b1071_ui_na" text="N/A" />
     <string id="b1071_vi_ai_note" text="🏠 {LORD} made a {TIER} investment in {VILLAGE}." />
-    <string id="b1071_vi_body" text="🏠  Village Patronage — {VILLAGE}\n\nHearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}\n\nChoose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.\n\nInvestment duration also serves as cooldown — no re-investment until the current patronage expires." />
+    <string id="b1071_vi_body" text="🏠  Village Patronage — {VILLAGE}&#10;&#10;Hearth: {HEARTH}   |   Notables: {NOTABLES}   |   Owner: {OWNER}&#10;&#10;Choose an investment tier. Higher tiers cost more but provide stronger hearth growth, notable relations, influence, and power bonuses.&#10;&#10;Investment duration also serves as cooldown — no re-investment until the current patronage expires." />
     <string id="b1071_vi_enter" text="🏠 Invest in village" />
     <string id="b1071_vi_enter_active" text="🏠 Invest in village  (active — {DAYS} days remaining)" />
     <string id="b1071_vi_enter_need" text="🏠 Invest in village  (need {COST}d)" />
@@ -595,7 +595,7 @@
     <string id="b1071_mcm_h_84904d0932" text="Relation gained with the village owner's clan leader when investing in another clan's village. Creates a diplomatic investment path. Default: 2." />
     <string id="b1071_mcm_h_856a2b5f99" text="How many days the Grand investment hearth bonus lasts. Also serves as the cooldown. Default: 45." />
     <string id="b1071_mcm_h_8671ad36bf" text="After any peace between two kingdoms, block re-declaration for this many days. Only active when truce enforcement is enabled." />
-    <string id="b1071_mcm_h_88f5ff1208" text="Construction progress per slave per day (same scale as vanilla daily rate ~130-180). Visible as 'Slave Labor +XX' in the construction tooltip. At default effectiveness (1.5\u00d7): 0.5 \u00d7 1.5 = 0.75/slave. E.g., 100 slaves = 75 progress/day (capped). Default: 0.5." />
+    <string id="b1071_mcm_h_88f5ff1208" text="Construction progress per slave per day (same scale as vanilla daily rate ~130-180). Visible as 'Slave Labor +XX' in the construction tooltip. At default effectiveness (1.5×): 0.5 × 1.5 = 0.75/slave. E.g., 100 slaves = 75 progress/day (capped). Default: 0.5." />
     <string id="b1071_mcm_h_894831a9bf" text="Base regen penalty applied after siege aftermath." />
     <string id="b1071_mcm_h_8a9832e2bb" text="Pool % at full prosperity. E.g., 100 = thriving settlement has 100% of base pool." />
     <string id="b1071_mcm_h_8b83bc3e79" text="Power added to each town notable from a Generous investment. Default: 10." />
@@ -612,7 +612,7 @@
     <string id="b1071_mcm_h_936c4cc5a4" text="Pool % when prosperity is 0. E.g., 30 = ruined settlement has 30% of base pool." />
     <string id="b1071_mcm_h_953c597a7f" text="Prosperity penalty per day when strain is at the cap. Default: 1.0." />
     <string id="b1071_mcm_h_96e954acef" text="0=M, 1=N, 2=K, 3=F9, 4=F10, 5=F11, 6=F12. Default: 0 (M)." />
-    <string id="b1071_mcm_h_96fcca8a85" text="Maximum construction bonus per day from slave labour. Vanilla daily construction is ~130-180 for a typical town. Default: 150 (200 slaves at default settings max out the cap \u2014 roughly doubling build speed at peak)." />
+    <string id="b1071_mcm_h_96fcca8a85" text="Maximum construction bonus per day from slave labour. Vanilla daily construction is ~130-180 for a typical town. Default: 150 (200 slaves at default settings max out the cap — roughly doubling build speed at peak)." />
     <string id="b1071_mcm_h_9710c9677c" text="Daily regen percent for non-town/non-castle settlements." />
     <string id="b1071_mcm_h_97d3107072" text="Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000." />
     <string id="b1071_mcm_h_9a06e7e9d0" text="Shows a warning when your settlements' manpower drops below the threshold." />
@@ -722,7 +722,7 @@
     <string id="b1071_mcm_h_f83ad71f92" text="Shows a message when an AI lord invests in a town you own. Default: true." />
     <string id="b1071_mcm_h_fa1ea63b89" text="Floor for the combined daily prosperity penalty from Governance Strain + Devastated Hinterlands. Prevents runaway settlement death spirals when both systems stack. Default: -8.0." />
     <string id="b1071_mcm_h_fa9bb5beb0" text="Daily income per clan tier for minor factions NOT under any mercenary contract. Higher than mercenary stipend because they have no employer subsidising them. Default: 400." />
-    <string id="b1071_mcm_h_fdddba79d9" text="Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5\u00d7): 0.0067 \u00d7 1.5 \u2248 0.01/slave. E.g., 100 slaves \u2192 ~1 prosperity/day. Default: 0.0067." />
+    <string id="b1071_mcm_h_fdddba79d9" text="Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5×): 0.0067 × 1.5 ≈ 0.01/slave. E.g., 100 slaves → ~1 prosperity/day. Default: 0.0067." />
     <string id="b1071_mcm_h_ff8b7b8002" text="Applies temporary recovery penalties after raid/siege/conquest events, decaying over time." />
     <string id="b1071_mcm_h_ff96994b56" text="Appends manpower info to settlement property tooltips in campaign UI." />
     <string id="b1071_mcm_h_ffe4431637" text="Minimum daily regen percent of max pool after stacked stress penalties." />
@@ -1203,7 +1203,7 @@
     <string id="b1071_mcm_h_mfwr_wars" text="Minimum number of active kingdom-vs-kingdom wars required for multi-front war relief to activate." />
     <!-- v0.2.8: Casualties tab -->
     <string id="b1071_tab_casualties" text="Casualties" />
-    <string id="b1071_overlay_empty_casualties" text="Casualties Ledger\nNo kingdom battles recorded yet." />
+    <string id="b1071_overlay_empty_casualties" text="Casualties Ledger&#10;No kingdom battles recorded yet." />
     <string id="b1071_overlay_title_casualties" text="Casualties Ledger  ({COUNT} wars)" />
     <string id="b1071_overlay_col_cas_pair" text="Kingdom Pair" />
     <string id="b1071_overlay_col_cas_killa" text="Kills A" />
@@ -1268,5 +1268,78 @@
     <string id="b1071_mcm_h_c9fdabd009" text="Pool capacity bonus per point of prosperity, only used in dynamic mode. Example: 0.005 at 1500 prosperity adds 7 troops. Default: 0.005." />
     <string id="b1071_mcm_t_dafebce110" text="Dynamic pool wall level bonus" />
     <string id="b1071_mcm_h_dafebce110" text="Pool capacity bonus per wall level, only used in dynamic mode. Example: 3 at level 2 walls adds 6 troops. Default: 3." />
+    <string id="b1071_compat_button_rebuild_sources" text="Rebuild Sources" />
+    <string id="b1071_compat_button_rebuild_sources_full" text="Rebuild Recruitment Sources" />
+    <string id="b1071_compat_hint_model_group_status" text="Quick summary of the Core Game Systems scan. 'All systems normal' means no other mod has replaced anything Campaign++ relies on. If an issue is found, hover the individual rows below for details." />
+    <string id="b1071_compat_hint_rebuild_sources" text="Re-scans volunteer boards, re-applies Campaign++ volunteer sanitization, and clears the castle recruitment culture caches. Use this after troop-tree mods are added mid-save or when volunteer boards look stale." />
+    <string id="b1071_compat_label_model_group_status" text="Status" />
+    <string id="b1071_compat_model_group_issues" text="Issue detected — see below" />
+    <string id="b1071_compat_model_group_ok" text="All systems normal" />
+    <string id="b1071_compat_model_group_pending" text="Load a campaign to verify" />
+    <string id="b1071_demob_extend_cost_each" text="Extend (each)" />
+    <string id="b1071_demob_home" text="Home" />
+    <string id="b1071_demob_home_unknown" text="Unknown" />
+    <string id="b1071_demob_menu" text="Manage troop service" />
+    <string id="b1071_demob_menu_veterans" text="Veteran register ({COUNT} at home)" />
+    <string id="b1071_demob_menu_veterans_empty" text="Veteran register (none at home)" />
+    <string id="b1071_demob_menu_veterans_own" text="Veteran register ({COUNT} of your men here)" />
+    <string id="b1071_demob_menu_veterans_tip" text="No veterans are waiting here. Soldiers appear on a settlement's register when they finish their service and go home." />
+    <string id="b1071_demob_release" text="Send Home" />
+    <string id="b1071_demob_release_busy" text="You cannot release soldiers in the middle of a battle." />
+    <string id="b1071_demob_release_confirm" text="Send {COUNT} {TROOP} home now? Hiring them back later costs the re-enlistment bounty and their home settlement's manpower again." />
+    <string id="b1071_demob_release_confirm_title" text="Release Soldiers" />
+    <string id="b1071_demob_release_confirm_yes" text="Send them home" />
+    <string id="b1071_demob_release_hint" text="Send these men home now, before their term is up. It costs nothing: they hand their manpower back to {HOME} and wait on its veteran register, where you can hire them again at this tier.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
+    <string id="b1071_demob_release_hint_off" text="Dismiss these men now. Veteran return is switched off in the mod settings, so they simply leave and their manpower is lost.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
+    <string id="b1071_demob_released_gone" text="Released {COUNT} {TROOP} from service. They left your party." />
+    <string id="b1071_demob_released_home" text="Released {COUNT} {TROOP} from service. They set off for {HOME} and can be hired back from its veteran register." />
+    <string id="b1071_demob_released_partial" text="Released {COUNT} {TROOP} from service. {ARRIVED} reached {HOME} and can be hired back from its veteran register; the rest did not make it home." />
+    <string id="b1071_demob_retired_home" text="{COUNT} soldier{PLURAL} completed service and set off home. First group: {TROOP}, heading for {HOME}. You can hire veterans back from a settlement's veteran register." />
+    <string id="b1071_mcm_g_demob_vets" text="Troop Service - Veterans" />
+    <string id="b1071_mcm_h_demob_max_extends" text="How many times the same soldier may have his service extended. Each extension after the first costs 50% more than the one before it. Default: 3." />
+    <string id="b1071_mcm_h_demob_notify_interval" text="Minimum days between troop-service warning messages and popups. 1 means every day, as before. Default: 3." />
+    <string id="b1071_mcm_h_demob_vet_access" text="Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 1." />
+    <string id="b1071_mcm_h_demob_vet_enable" text="When a soldier finishes his service he walks back to the settlement he was recruited from, returning its manpower and joining that settlement's veteran register. With this off, discharged soldiers simply disappear as they used to. Default: true." />
+    <string id="b1071_mcm_h_demob_vet_gold" text="Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40." />
+    <string id="b1071_mcm_h_demob_vet_manpower" text="How much of a discharged soldier's manpower cost goes back to his home settlement. 100 means every man who survives his term is available to be raised again. Lower it if you want war to permanently thin the countryside. Default: 100." />
+    <string id="b1071_mcm_h_demob_vet_retention" text="How many Bannerlord days a discharged soldier stays available for recall before he settles down for good. His manpower stays in the pool either way. One in-game year is about 84 days. Default: 84." />
+    <string id="b1071_mcm_h_demob_vet_scatter" text="Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50." />
+    <string id="b1071_mcm_t_demob_max_extends" text="Extensions allowed per soldier" />
+    <string id="b1071_mcm_t_demob_notify_interval" text="Days between warning messages" />
+    <string id="b1071_mcm_t_demob_vet_access" text="Recall access restriction" />
+    <string id="b1071_mcm_t_demob_vet_enable" text="Discharged soldiers return home" />
+    <string id="b1071_mcm_t_demob_vet_gold" text="Recall gold per tier" />
+    <string id="b1071_mcm_t_demob_vet_manpower" text="Manpower returned %" />
+    <string id="b1071_mcm_t_demob_vet_retention" text="Veteran register days" />
+    <string id="b1071_mcm_t_demob_vet_scatter" text="Raid/capture scatter %" />
+    <string id="b1071_recall_action" text="Recall" />
+    <string id="b1071_recall_block_access" text="You are not entitled to hire from this settlement's register." />
+    <string id="b1071_recall_block_disabled" text="Veteran return is switched off in the mod settings." />
+    <string id="b1071_recall_block_gold" text="Not enough gold: {COST}g needed per man." />
+    <string id="b1071_recall_block_manpower" text="Not enough manpower here: {COST} needed, {LEFT} left." />
+    <string id="b1071_recall_block_party" text="Your party is full." />
+    <string id="b1071_recall_days" text="Disperse In" />
+    <string id="b1071_recall_done" text="{COUNT} {TROOP} answered the call at {SETTLEMENT} for {COST}g." />
+    <string id="b1071_recall_gold_each" text="Gold Each" />
+    <string id="b1071_recall_hint" text="Call these men back: {GOLD}g and {MANPOWER} manpower each. Their service term starts over, and {SETTLEMENT} becomes their home again. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
+    <string id="b1071_recall_hint_blocked" text="These veterans cannot be called back right now." />
+    <string id="b1071_recall_manpower_each" text="Manpower Each" />
+    <string id="b1071_recall_no_access" text="You may not hire from the veteran register at {SETTLEMENT}." />
+    <string id="b1071_recall_no_campaign" text="Load a campaign before opening the veteran register." />
+    <string id="b1071_recall_no_entitlement" text="You are not entitled to hire from this settlement's veteran register." />
+    <string id="b1071_recall_no_gold" text="Not enough gold to call anyone back: {COST}g per man." />
+    <string id="b1071_recall_no_manpower" text="{SETTLEMENT} has no manpower to spare for veterans." />
+    <string id="b1071_recall_no_screen" text="Veteran register: no active screen." />
+    <string id="b1071_recall_none" text="No veterans are waiting here. Soldiers who finish their service return to the settlement that raised them and appear on its register." />
+    <string id="b1071_recall_notice_own" text="This is not your realm, so only the men you sent home yourself will answer." />
+    <string id="b1071_recall_open_fail" text="Veteran register failed to open: {ERR}" />
+    <string id="b1071_recall_party_full" text="Your party is full." />
+    <string id="b1071_recall_summary" text="{MEN} veteran{MPLURAL} at home here, {TYPES} troop type{TPLURAL}. They disperse {RETENTION} days after discharge." />
+    <string id="b1071_recall_summary_own" text="{MEN} of your own men here, {TYPES} troop type{TPLURAL}. They disperse {RETENTION} days after discharge." />
+    <string id="b1071_recall_title" text="Veteran Register — {SETTLEMENT}" />
+    <string id="b1071_recall_unavailable" text="The veteran register is not available in this campaign." />
+    <string id="b1071_recall_waiting" text="At Home" />
+    <string id="b1071_ui_cancel" text="Cancel" />
+    <string id="b1071_ui_men" text="Men" />
   </strings>
 </base>
