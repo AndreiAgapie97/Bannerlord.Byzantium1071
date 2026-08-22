@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.2.8
+**Version:** 1.0.2.9
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.5.0; Warsails/NavalDLC v1.3.0 verified)  
 **Mod ID:** `Byzantium1071`
 
@@ -382,7 +382,8 @@ AI lord parties currently at a non-hostile castle (same-faction or neutral) auto
 - **Same-clan lords recruit for 50% gold cost** — lords whose clan matches the castle's `OwnerClan` pay half price (same household, shared resources)
 - **Cross-clan lords pay gold** routed to the castle owner via `GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, settlement.Owner, cost)`
 - **Per-unit processing (v0.1.7.1):** AI prisoner recruitment processes one unit at a time, peeking the current depositor and checking affordability before each recruit. This ensures correct depositor attribution when a troop type has mixed depositors in the FIFO queue
-- Elite recruitment drains manpower (if `CastleRecruitDrainsManpower` is enabled, default: yes)
+- **Treasury reserve (v1.0.2.9):** every gold decision on this path runs through `GetAiBufferedAffordableCount(gold, costPerUnit, maxUnits)`, which allows a batch of `n` only while `gold > n x costPerUnit x CastleAiGoldBufferMultiplier` (default **3**). It is `CanAiAfford` generalised from one hero's fee to a batch, so what a lord keeps back grows with the wage bill he is taking on instead of sitting at a flat floor. The elite pool and the prisoner loop share it. Set the multiplier to 1 for the old spend-to-the-last-coin behaviour.
+- Elite recruitment drains manpower (if `CastleRecruitDrainsManpower` is enabled, default: yes). **Since v1.0.2.9 the AI reads the same two manpower values the player does:** the affordability gate is `GetRecruitCostForParty`, which carries the culture discount, and the charge is `GetManpowerChargePerTroop`, which does not. Previously the AI used the flat base cost for both, so a lord recruiting at a castle of his own culture was gated harder than the player standing beside him
 - Prisoner recruitment costs **zero manpower**
 - After modifying a party's roster, `SetMoveGoToSettlement` + `RecalculateShortTermBehavior` is called to re-anchor the party at the castle, preventing the "flickering" bug where roster changes invalidate the AI's cached settlement target
 
@@ -449,7 +450,7 @@ The castle recruitment system uses a **consignment model** for prisoner income. 
 - **Affordability gate (v0.1.7.1):** If the owner cannot afford the depositor's share, the prisoner is **not absorbed** — it stays in prison. This prevents the owner from getting free troops at the depositor's expense
 - Same-clan depositor prisoners are absorbed for free (no compensation needed)
 
-**Elite pool recruitment** is unchanged — elite troops are castle-generated (no depositor). Same-clan free, cross-clan pays castle owner.
+**Elite pool recruitment** is outside the depositor economy — elite troops are castle-generated, so there is nobody to compensate. Pricing is the household rule: same-clan pays 50% of the tier price, cross-clan pays full, and either way the gold goes to the castle owner.
 
 **Net effect:** Both the capturing lord and the castle owner benefit from the prisoner pipeline. A lord who captures 50 prisoners and deposits them at an allied castle receives 70% of all enslavement and recruitment income, even though they moved on to fight elsewhere. The castle owner earns a 30% commission for housing, processing, and providing the infrastructure.
 
@@ -523,9 +524,9 @@ Both dictionaries are flattened into parallel lists for `SyncData` serialization
 ### v0.1.7.2 Audit Fixes
 
 **UI clan-waiver display fix:** The castle recruitment screen now correctly reflects clan waivers.
-- At your own clan's castle: elite troops show "Elite (Free)" and the recruit button is enabled regardless of gold.
+- At your own clan's castle: elite troops show "Elite (50%)" and the button is gated on the half price rather than the full one.
 - Same-clan depositor prisoners show "Ready (Free)" with the button enabled.
-- Hint text: "Recruit one {name} (same clan — free)" for elites, "(clan waivers — free)" for waived prisoners.
+- Hint text: "Recruit one {name} (same clan — 50% cost: {COST} gold)" for elites, "(clan waivers — free)" for waived prisoners.
 - Previously, the UI checked raw gold cost without waivers, graying out buttons even when recruitment was free.
 
 **FIFO depositor tracking fix:** RecordDeposit now always appends new entries instead of consolidating same-hero entries. This preserves strict FIFO ordering when the same lord deposits the same troop type at the same castle with interleaved deposits from other lords. Prevents over-crediting earlier depositors when processing stops midway (e.g., town runs out of gold).

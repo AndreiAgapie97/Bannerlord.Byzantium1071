@@ -2510,8 +2510,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Public entry point for external systems (e.g., castle recruitment) to consume
-        /// manpower from a settlement's pool. Deducts cost based on troop tier.
-        /// Does NOT remove troops from any roster — caller handles that.
+        /// manpower from a settlement's pool. Charges
+        /// <see cref="GetManpowerChargePerTroop"/> per man, which is the flat base cost and
+        /// carries neither the troop's tier nor the culture discount the affordability gate
+        /// applies. Does NOT remove troops from any roster — caller handles that.
         /// Returns the manpower actually taken, which is short of the asking price whenever
         /// the pool could not cover it. Anything that may hand the manpower back later must
         /// credit this figure rather than recompute the price, or the shortfall is minted.

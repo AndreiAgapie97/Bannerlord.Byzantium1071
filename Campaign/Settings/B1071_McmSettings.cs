@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 23;
+        internal const int LATEST_PROFILE_VERSION = 24;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -440,6 +440,17 @@ namespace Byzantium1071.Campaign.Settings
                     DemobilizationVeteranRecallAccess = 2;
                     migrated += "veteran recall access tightened from Kingdom to Clan only — other lords' discharged men now stay with their own clan, while your own veterans remain yours to collect anywhere. ";
                 }
+            }
+
+            // ── Profile v24: AI lords pay for castle elites and keep a reserve ──
+            // A same-clan AI lord recruited from his own clan's castle elite pool for free,
+            // while the player paid the 50% family discount at the same castle. He also spent
+            // down to his last coin on castle elites and prisoners with no cushion behind it.
+            // Both are now the player's rules plus a treasury buffer. The buffer setting ships
+            // its own default, so only the message belongs here.
+            if (SettingsProfileVersion < 24)
+            {
+                migrated += "AI lords now pay the same 50% family discount you do when recruiting from their own clan's castle elite pool, instead of taking those troops for free, and they keep a treasury reserve before spending on castle elites or prisoners. ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1646,6 +1657,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("{=b1071_mcm_t_dafebce110}Dynamic pool wall level bonus", 0, 20, "0", Order = 27, HintText = "{=b1071_mcm_h_dafebce110}Pool capacity bonus per wall level (only used in dynamic mode). E.g., at 3: L2 walls = +6 troops. Default: 3.")]
         public int CastleElitePoolWallBonus { get; set; } = 3;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_cr_ai_buffer}AI recruitment treasury buffer", 1, 50, "0", Order = 28, HintText = "{=b1071_mcm_h_cr_ai_buffer}An AI lord only buys from a castle's elite pool or its converted prisoners while his treasury is worth more than the whole purchase times this multiplier, so recruiting never leaves him unable to pay the men he already has. Higher keeps more in reserve and makes him buy fewer of the expensive troops. 1 lets him spend down to his last coin, as he used to. Separate from the troop service buffer. Default: 3.")]
+        public int CastleAiGoldBufferMultiplier { get; set; } = 3;
 
         // ─── Village Investment (Patronage) ───
 

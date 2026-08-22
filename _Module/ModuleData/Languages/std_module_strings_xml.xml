@@ -1248,6 +1248,9 @@
     <string id="b1071_mcm_h_cr_dyncap_prosp" text="Pool capacity added per prosperity point. E.g., 0.005 + 2000 prosperity = +10 capacity. Default: 0.005." />
     <string id="b1071_mcm_t_cr_dyncap_wall" text="Dynamic cap wall bonus" />
     <string id="b1071_mcm_h_cr_dyncap_wall" text="Pool capacity added per wall level. E.g., 3 per level × wall level 3 = +9 capacity. Default: 3." />
+    <!-- v1.0.2.9: castle recruitment AI parity -->
+    <string id="b1071_mcm_t_cr_ai_buffer" text="AI recruitment treasury buffer" />
+    <string id="b1071_mcm_h_cr_ai_buffer" text="An AI lord only buys from a castle's elite pool or its converted prisoners while his treasury is worth more than the whole purchase times this multiplier, so recruiting never leaves him unable to pay the men he already has. Higher keeps more in reserve and makes him buy fewer of the expensive troops. 1 lets him spend down to his last coin, as he used to. Separate from the troop service buffer. Default: 3." />
     <!-- v0.2.8: Exact MCM keys used by settings attributes -->
     <string id="b1071_mcm_t_8c3e9a1b01" text="Enable slave conversion selection UI" />
     <string id="b1071_mcm_h_8c3e9a1b01" text="When enabled, the 'Enslave prisoners' option at towns opens a selection screen where you choose which prisoners to convert. When disabled, all eligible prisoners are converted in bulk. Default: true." />

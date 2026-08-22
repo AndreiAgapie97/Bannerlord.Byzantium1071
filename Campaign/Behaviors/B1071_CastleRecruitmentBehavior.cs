@@ -873,8 +873,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
         /// <summary>
         /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
-        /// currently at this castle. Same-clan lords recruit for free; cross-clan lords
-        /// pay gold per troop, which is credited to the castle owner.
+        /// currently at this castle. Pricing is the player's: same-clan lords pay 50% of the
+        /// tier price (family discount), cross-clan lords pay full price. Either way the gold
+        /// is credited to the castle owner, exactly as <see cref="TryRecruitElite"/> pays him.
+        /// Spending is held above a treasury reserve — see
+        /// <see cref="GetAiBufferedAffordableCount"/> — so recruiting never leaves a lord
+        /// unable to pay the men he already has.
         /// Non-hostile (same-faction or neutral) lords can recruit; hostile lords cannot.
         /// Prisoner recruitment costs zero manpower; elite recruitment costs manpower
         /// only when <see cref="B1071_McmSettings.CastleRecruitDrainsManpower"/> is on.
@@ -925,7 +929,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     var entries = poolDict.ToList();
                     foreach (var entry in entries)
                     {
-                        if (room <= 0 || (!isSameClan && gold <= 0)) break;
+                        if (room <= 0 || gold <= 0) break;
 
                         string troopId = entry.Key;
                         int available = entry.Value;
@@ -934,10 +938,13 @@ namespace Byzantium1071.Campaign.Behaviors
                         CharacterObject? troop = MBObjectManager.Instance.GetObject<CharacterObject>(troopId);
                         if (troop == null) continue;
 
-                        int costPer = GetGoldCostForTier(troop.Tier);
-                        int affordableByGold = isSameClan
-                            ? available
-                            : (costPer > 0 ? gold / costPer : available);
+                        // Halve per unit rather than halving the batch total: an odd tier
+                        // price must round the same way it does for the player, one man at
+                        // a time, or the AI is quoted a different price than TryRecruitElite.
+                        int fullCostPer = GetGoldCostForTier(troop.Tier);
+                        int costPer = isSameClan ? fullCostPer / 2 : fullCostPer;
+
+                        int affordableByGold = GetAiBufferedAffordableCount(gold, costPer, available);
                         int take = Math.Min(available, Math.Min(room, affordableByGold));
                         if (take <= 0) continue;
 
@@ -948,19 +955,26 @@ namespace Byzantium1071.Campaign.Behaviors
                             if (mp != null)
                             {
                                 mp.GetManpowerPool(settlement, out int curMp, out _, out _);
-                                int mpCostPer = Math.Max(1, Settings.BaseManpowerCostPerTroop);
-                                int affordableByMp = mpCostPer > 0 ? curMp / mpCostPer : take;
+
+                                // Two values, as on the player's path: the gate carries the
+                                // culture discount (CanRecruitCountForPlayer) and the charge
+                                // does not (ConsumeManpowerPublic). Collapsing them into one
+                                // would fix this asymmetry by inventing the opposite one.
+                                int mpGateCostPer = mp.GetRecruitCostForParty(settlement, party, troop);
+                                int mpChargeCostPer = mp.GetManpowerChargePerTroop(troop);
+
+                                int affordableByMp = mpGateCostPer > 0 ? curMp / mpGateCostPer : take;
                                 take = Math.Min(take, affordableByMp);
                                 if (take <= 0) continue;
-                                mp.ConsumeManpowerFlat(settlement, take * mpCostPer);
+                                mp.ConsumeManpowerFlat(settlement, take * mpChargeCostPer);
                             }
                         }
 
                         party.MemberRoster.AddToCounts(troop, take);
                         B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, take, "castle_elite_ai", settlement);
 
-                        // Gold: same-clan = free, cross-clan = pay castle owner.
-                        if (!isSameClan)
+                        // Gold goes to the castle owner at both prices, as it does for the player.
+                        if (costPer > 0)
                         {
                             int totalCost = costPer * take;
                             Hero? owner = settlement.Owner;
@@ -997,7 +1011,7 @@ namespace Byzantium1071.Campaign.Behaviors
                                 string? depositorId = PeekDepositor(castleId, troop.StringId);
                                 int effectiveCost = GetEffectiveGoldCost(settlement, party.LeaderHero, depositorId, prisonerGoldCost);
 
-                                if (effectiveCost > 0 && gold < effectiveCost) break;
+                                if (GetAiBufferedAffordableCount(gold, effectiveCost, 1) < 1) break;
 
                                 // Prisoner recruitment costs zero manpower (by design).
 
@@ -1056,6 +1070,26 @@ namespace Byzantium1071.Campaign.Behaviors
                         .ToString(),
                     new Color(0.3f, 0.7f, 0.9f)));
             }
+        }
+
+        /// <summary>
+        /// How many units an AI lord may buy at <paramref name="costPerUnit"/> each without
+        /// dropping his treasury to or below what the whole purchase costs times
+        /// <see cref="B1071_McmSettings.CastleAiGoldBufferMultiplier"/>. This is
+        /// B1071_DemobilizationBehavior.CanAiAfford generalised to a batch and read against
+        /// this system's own buffer setting: buying n units requires gold &gt; n x costPerUnit
+        /// x multiplier, so what he keeps back grows with the wage bill he is taking on
+        /// rather than sitting at a flat floor. A free unit (cost 0) is never gated.
+        /// Shared by the elite pool and the prisoner loop so one rule governs both.
+        /// </summary>
+        private static int GetAiBufferedAffordableCount(int gold, int costPerUnit, int maxUnits)
+        {
+            if (maxUnits <= 0) return 0;
+            if (costPerUnit <= 0) return maxUnits;
+
+            long buffered = (long)costPerUnit * Math.Max(1, Settings.CastleAiGoldBufferMultiplier);
+            long affordable = (gold - 1) / buffered;
+            return (int)Math.Max(0L, Math.Min(maxUnits, affordable));
         }
 
         // ── 5. Garrison absorbs ready prisoners at auto-recruit rate ──────────────

@@ -1267,6 +1267,9 @@
                                 <string id="b1071_mcm_h_cr_dyncap_prosp" text="Poolkapazitätsbonus pro Wohlstandspunkt, nur im dynamischen Modus verwendet. Beispiel: 0,005 bei 1500 Wohlstand ergibt +7 Truppen. Standard: 0,005." />
                                 <string id="b1071_mcm_t_cr_dyncap_wall" text="Dynamischer Mauerstufenbonus" />
                                 <string id="b1071_mcm_h_cr_dyncap_wall" text="Poolkapazitätsbonus pro Mauerstufe, nur im dynamischen Modus verwendet. Beispiel: 3 bei Mauerstufe 2 ergibt +6 Truppen. Standard: 3." />
+                                <!-- v1.0.2.9: KI-Parität bei der Burgrekrutierung -->
+                                <string id="b1071_mcm_t_cr_ai_buffer" text="KI-Goldpuffer für Rekrutierung" />
+                                <string id="b1071_mcm_h_cr_ai_buffer" text="Ein KI-Lord kauft nur dann aus dem Elitepool einer Burg oder von ihren umgewandelten Gefangenen, wenn sein Vermögen mehr wert ist als der gesamte Kauf mal diesem Multiplikator, damit die Rekrutierung ihn nie außerstande lässt, seine vorhandenen Männer zu bezahlen. Höhere Werte halten mehr zurück und lassen ihn weniger teure Truppen kaufen. 1 lässt ihn bis zur letzten Münze ausgeben, wie bisher. Getrennt vom Puffer des Truppendienstes. Standard: 3." />
     <string id="b1071_compat_button_rebuild_sources" text="Quellen neu aufbauen" />
     <string id="b1071_compat_button_rebuild_sources_full" text="Rekrutierungsquellen neu aufbauen" />
     <string id="b1071_compat_hint_model_group_status" text="Kurzüberblick über die Prüfung der Kernsysteme des Spiels. „Alle Systeme normal“ bedeutet, dass kein anderer Mod etwas ersetzt hat, worauf Campaign++ angewiesen ist. Wird ein Problem gefunden, fahre für Einzelheiten über die Zeilen darunter." />

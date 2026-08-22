@@ -1267,6 +1267,9 @@
     <string id="b1071_mcm_h_cr_dyncap_prosp" text="每点繁荣度提供的兵池容量加成，仅在动态模式中使用。例如：0.005在1500繁荣度时增加7名容量。默认：0.005。" />
     <string id="b1071_mcm_t_cr_dyncap_wall" text="动态兵池城墙等级加成" />
     <string id="b1071_mcm_h_cr_dyncap_wall" text="每级城墙提供的兵池容量加成，仅在动态模式中使用。例如：数值3且2级城墙增加6名容量。默认：3。" />
+    <!-- v1.0.2.9：城堡招募 AI 对等 -->
+    <string id="b1071_mcm_t_cr_ai_buffer" text="AI 招募金库缓冲" />
+    <string id="b1071_mcm_h_cr_ai_buffer" text="只有当 AI 领主的金币高于整批采购费用乘以此倍率时，他才会从城堡精锐兵池或已转化的俸虏中招募，这样招募就不会让他无力支付现有部队的军饱。数值越高，他保留的储备越多，购买昂贵兵种越少。设为 1 则允许他花光最后一枚金币，与此前一致。与部队服役缓冲相互独立。默认：3。" />
     <string id="b1071_compat_button_rebuild_sources" text="重建来源" />
     <string id="b1071_compat_button_rebuild_sources_full" text="重建招募来源" />
     <string id="b1071_compat_hint_model_group_status" text="核心游戏系统扫描的简要结果。“所有系统正常”表示没有其他模组替换过 Campaign++ 所依赖的内容。若发现问题，请将鼠标悬停在下方各行查看详情。" />

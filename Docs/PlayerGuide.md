@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.8 — Everything you need to know, step by step.*
+*Version 1.0.2.9 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
@@ -317,6 +317,13 @@ The `Castle recruitment access` MCM setting controls who can recruit from a cast
 | 2 — Clan + ruler | Only lords in the castle owner's clan or the ruling clan of the owner's kingdom |
 
 This applies identically to **player and AI**. AI lords that fail the restriction check skip castle recruitment entirely.
+
+### AI Lords at Your Castles (New)
+
+AI lords recruit from castles on the same terms you do.
+
+- **A lord of your own clan now pays for elite troops instead of taking them free.** He pays the same half price you pay at a family castle, and the gold goes to whoever holds the fief — so if that is you, a clan-mate filling out his party pays into your purse.
+- **Lords keep money back for wages.** A lord will not empty his treasury on castle troops any more, so expect visiting lords to leave the expensive elites behind unless they are genuinely wealthy. `AI recruitment treasury buffer` in MCM controls how much they hold in reserve; set it to 1 for the old behaviour.
 
 ### Diversified Pool (New)
 

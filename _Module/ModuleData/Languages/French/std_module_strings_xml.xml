@@ -1267,6 +1267,9 @@
     <string id="b1071_mcm_h_cr_dyncap_prosp" text="Bonus de capacité du pool par point de prospérité, utilisé seulement en mode dynamique. Exemple : 0,005 avec 1500 de prospérité ajoute 7 troupes. Par défaut : 0,005." />
     <string id="b1071_mcm_t_cr_dyncap_wall" text="Bonus dynamique de niveau de muraille" />
     <string id="b1071_mcm_h_cr_dyncap_wall" text="Bonus de capacité du pool par niveau de muraille, utilisé seulement en mode dynamique. Exemple : 3 avec des murailles de niveau 2 ajoute 6 troupes. Par défaut : 3." />
+    <!-- v1.0.2.9 : parité IA du recrutement au château -->
+    <string id="b1071_mcm_t_cr_ai_buffer" text="Réserve d'or IA pour le recrutement" />
+    <string id="b1071_mcm_h_cr_ai_buffer" text="Un seigneur IA n'achète dans le pool d'élite d'un château ou parmi ses prisonniers convertis que si son trésor vaut plus que l'achat complet multiplié par ce facteur, afin que le recrutement ne le laisse jamais incapable de payer les hommes qu'il a déjà. Plus la valeur est élevée, plus il garde de réserve et moins il achète de troupes coûteuses. 1 le laisse dépenser jusqu'à sa dernière pièce, comme auparavant. Distinct de la réserve du service des troupes. Par défaut : 3." />
     <string id="b1071_compat_button_rebuild_sources" text="Reconstruire les sources" />
     <string id="b1071_compat_button_rebuild_sources_full" text="Reconstruire les sources de recrutement" />
     <string id="b1071_compat_hint_model_group_status" text="Résumé rapide de l'analyse des systèmes de jeu essentiels. « Tous les systèmes sont normaux » signifie qu'aucun autre mod n'a remplacé un élément dont Campaign++ dépend. Si un problème est détecté, survolez les lignes ci-dessous pour le détail." />

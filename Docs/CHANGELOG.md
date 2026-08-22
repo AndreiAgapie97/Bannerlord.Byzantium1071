@@ -1,5 +1,38 @@
 # Campaign++ — Changelog
 
+## [1.0.2.9] — 2026-08-22
+
+### Fix — AI Lords Recruited From Their Own Castles for Free
+
+**The player pays half price for an elite troop at his own clan's castle. An AI lord of that same clan, standing in that same courtyard, paid nothing at all. `TryRecruitElite` and `AiAutoRecruit` had drifted apart, and the AI branch read `if (!isSameClan)` around the entire gold transfer — so the family discount the player was billed for was, for the AI, a complete exemption.**
+
+- Same-clan AI lords now pay the same **50% of the tier price** the player does, and cross-clan lords the same full price. The gold goes where it always went for the player: `GiveGoldAction.ApplyBetweenCharacters(leader, settlement.Owner, ...)`, a plain hero-to-hero transfer to whoever personally holds the fief. **If you hold the fief yourself, a clan-mate's recruiting now pays into your purse instead of costing nobody anything.**
+- **The discount is taken per man, not off the batch.** `fullCostPer / 2` then multiplied by the count, rather than halving the total — an odd tier price otherwise rounds differently for a lord buying four than for the player buying them one at a time, which is exactly the kind of divergence this release exists to close.
+- **This is visible in play.** A same-clan lord's elite recruiting used to be limited only by party room and the pool's stock; it is now limited by his purse as well. Expect same-clan lords to leave a castle with fewer elite troops than they used to, and to leave the expensive ones behind more often.
+
+### Change — AI Castle Spending Keeps a Reserve
+
+**`AiAutoRecruit` spent a lord's gold down to the last coin. A lord with 5,100 gold would buy one tier 6 prisoner at 5,000 and walk out of the gate with 100 — no wages, no ransom money, nothing. Troop service extensions have reserved a treasury cushion since v1.0.2.2; castle recruitment never did.**
+
+- `AI recruitment treasury buffer` (new, default **3**). A lord buys `n` units only while `gold > n x costPerUnit x multiplier`. Both the elite pool and the converted-prisoner loop run through the one helper, `GetAiBufferedAffordableCount`.
+- **A separate setting from the troop-service buffer, because it gates a different shape of purchase.** That one prices a single soldier's extension fee; this one prices a batch that can run to a whole party's worth of elites. Sharing a number between them would have tied two unrelated balance decisions together.
+- **The reserve scales with the batch rather than sitting at a fixed floor**, so what a lord holds back grows with the wage bill he is taking on. This is `CanAiAfford` generalised from one hero's fee to `n` units, so the mod now has one reserve rule rather than two that have to be compared.
+- **Where it actually bites.** With the default pool weights, 80% of a castle's elite pool is tier 2 at 150 gold — 75 to a clan-mate — so ordinary recruiting barely notices the buffer. It decides the rare tier 5/6 elite, and it decides **every** converted prisoner, since anything at or below tier 3 is auto-enslaved and never reaches the recruitment list at all. At 3, a tier 6 prisoner needs 15,000 gold in hand and leaves 10,000 behind.
+- **Set it to 1 for the old behaviour**, where a lord spends to his last coin.
+
+### Fix — The AI's Manpower Gate Ignored the Culture Discount
+
+**A lord recruiting at a castle of his own culture was gated harder than the player standing next to him. The player's affordability check runs `CanRecruitCountForPlayer`, which applies `CultureCostPercent`; the AI's used the flat base cost, so the same castle would permit the player more men than it permitted an AI lord of the castle's own culture.**
+
+- The AI now reads the same **two** values the player's path reads, not one collapsed value: the gate is `GetRecruitCostForParty` (culture-discounted) and the charge is `GetManpowerChargePerTroop` (flat). The split is deliberate and predates this change — a quoted price has to match what is really billed — and collapsing the two would have traded this asymmetry for a smaller one pointing the other way.
+- **Only the gate actually moves today.** The charge already resolved to the flat base cost on both paths, so the AI's manpower bill per man is unchanged; what changes is how many men the pool will permit. Where cultures match, that is a **loosening** — an AI lord recruiting at home ground will now draw slightly more from a thin pool than he could before, matching what the player would draw there.
+
+### Also
+
+- `ConsumeManpowerPublic`'s summary claimed it "deducts cost based on troop tier". It does not and has not — it charges the flat base cost, which is the whole reason `GetManpowerChargePerTroop` exists beside `GetRecruitCostForParty`. Corrected.
+- Two lines in the mod explanation still described the elite pool as free to same-clan lords, and the UI section still quoted an "Elite (Free)" badge and a "(same clan — free)" hint that the code stopped showing some releases ago. Both now match what the screen actually renders, "Elite (50%)".
+- Settings profile **v24**.
+
 ## [1.0.2.8] — 2026-08-22
 
 ### Feature — Recall Veterans From Anywhere on the Map
