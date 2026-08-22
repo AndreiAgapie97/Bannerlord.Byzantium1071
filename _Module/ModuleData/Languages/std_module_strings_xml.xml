@@ -421,6 +421,7 @@
     <string id="b1071_ui_mp_donehint" text="Manpower: {POOL} needs {NEEDED} for {TROOP}, only {LEFT} left." />
     <string id="b1071_ui_recruit" text="Recruit" />
     <string id="b1071_ui_status" text="Status" />
+    <string id="b1071_ui_settlement" text="Settlement" />
     <string id="b1071_ui_tier" text="Tier" />
     <string id="b1071_ui_troop" text="Troop" />
     <string id="b1071_ui_unknown" text="Unknown" />
@@ -1296,34 +1297,61 @@
     <string id="b1071_demob_released_partial" text="Released {COUNT} {TROOP} from service. {ARRIVED} reached {HOME} and can be hired back from its veteran register; the rest did not make it home." />
     <string id="b1071_demob_retired_home" text="{COUNT} soldier{PLURAL} completed service and set off home. First group: {TROOP}, heading for {HOME}. You can hire veterans back from a settlement's veteran register." />
     <string id="b1071_mcm_g_demob_vets" text="Troop Service - Veterans" />
+    <string id="b1071_mcm_h_demob_ai_recall" text="An AI lord who enters a settlement holding veterans he is entitled to hires them on the spot, paying the same gold and manpower you would. He never travels out of his way for them. Default: true." />
+    <string id="b1071_mcm_h_demob_courier" text="How far a recall order travels in a day, in map distance. A rider covers roughly the width of one region per day at 120. Higher means orders arrive sooner. Default: 120." />
+    <string id="b1071_mcm_h_demob_march" text="How far recalled veterans march in a day on their way to join you, in map distance. They head for wherever you are, recalculated every day. Default: 60." />
     <string id="b1071_mcm_h_demob_max_extends" text="How many times the same soldier may have his service extended. Each extension after the first costs 50% more than the one before it. Default: 3." />
     <string id="b1071_mcm_h_demob_notify_interval" text="Minimum days between troop-service warning messages and popups. 1 means every day, as before. Default: 3." />
-    <string id="b1071_mcm_h_demob_vet_access" text="Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 1." />
+    <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8, 1=F10, 2=F11, 3=F12. Default: F8." />
+    <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="Allows opening the map-wide veteran register from the campaign map. Default: true." />
+    <string id="b1071_mcm_h_demob_remote" text="Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true." />
+    <string id="b1071_mcm_h_demob_vet_access" text="Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 2." />
     <string id="b1071_mcm_h_demob_vet_enable" text="When a soldier finishes his service he walks back to the settlement he was recruited from, returning its manpower and joining that settlement's veteran register. With this off, discharged soldiers simply disappear as they used to. Default: true." />
     <string id="b1071_mcm_h_demob_vet_gold" text="Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40." />
     <string id="b1071_mcm_h_demob_vet_manpower" text="How much of a discharged soldier's manpower cost goes back to his home settlement. 100 means every man who survives his term is available to be raised again. Lower it if you want war to permanently thin the countryside. Default: 100." />
     <string id="b1071_mcm_h_demob_vet_retention" text="How many Bannerlord days a discharged soldier stays available for recall before he settles down for good. His manpower stays in the pool either way. One in-game year is about 84 days. Default: 84." />
     <string id="b1071_mcm_h_demob_vet_scatter" text="Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50." />
+    <string id="b1071_mcm_h_demob_vet_settle" text="How many Bannerlord days a discharged soldier rests at home before he will take service again. Until then he is on the register but nobody can hire him, you or an AI lord. Set this to 0 to allow calling a man back the same day you released him. Default: 7." />
+    <string id="b1071_mcm_t_demob_ai_recall" text="AI lords hire veterans" />
+    <string id="b1071_mcm_t_demob_courier" text="Courier speed" />
+    <string id="b1071_mcm_t_demob_march" text="Veteran march speed" />
     <string id="b1071_mcm_t_demob_max_extends" text="Extensions allowed per soldier" />
     <string id="b1071_mcm_t_demob_notify_interval" text="Days between warning messages" />
+    <string id="b1071_mcm_t_demob_recall_hotkey" text="Register hotkey" />
+    <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="Enable register hotkey" />
+    <string id="b1071_mcm_t_demob_remote" text="Allow recall from a distance" />
     <string id="b1071_mcm_t_demob_vet_access" text="Recall access restriction" />
     <string id="b1071_mcm_t_demob_vet_enable" text="Discharged soldiers return home" />
     <string id="b1071_mcm_t_demob_vet_gold" text="Recall gold per tier" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="Manpower returned %" />
     <string id="b1071_mcm_t_demob_vet_retention" text="Veteran register days" />
     <string id="b1071_mcm_t_demob_vet_scatter" text="Raid/capture scatter %" />
+    <string id="b1071_mcm_t_demob_vet_settle" text="Days at home before recall" />
     <string id="b1071_recall_action" text="Recall" />
+    <string id="b1071_recall_arrived" text="{COUNT} {TROOP} marched in from {SETTLEMENT} and rejoined your party." />
+    <string id="b1071_recall_arrived_partial" text="{COUNT} {TROOP} from {SETTLEMENT} joined your party. {LEFT} more wait alongside for room." />
     <string id="b1071_recall_block_access" text="You are not entitled to hire from this settlement's register." />
     <string id="b1071_recall_block_disabled" text="Veteran return is switched off in the mod settings." />
     <string id="b1071_recall_block_gold" text="Not enough gold: {COST}g needed per man." />
     <string id="b1071_recall_block_manpower" text="Not enough manpower here: {COST} needed, {LEFT} left." />
     <string id="b1071_recall_block_party" text="Your party is full." />
+    <string id="b1071_recall_block_remote" text="You must be at {SETTLEMENT} in person to call these men back." />
+    <string id="b1071_recall_block_settling" text="These men are still resting at home. The first will take service again in {DAYS} day{DPLURAL}." />
+    <string id="b1071_recall_cancel" text="Call Off" />
+    <string id="b1071_recall_cancel_hint" text="Call off the order. The men go back on the register at {SETTLEMENT} and the manpower is returned.{NEWLINE}The {COST}g bounty is not returned — it was paid when the order went out." />
+    <string id="b1071_recall_cancelled" text="{COUNT} {TROOP} stand down and go back on the register at {SETTLEMENT}. The {COST}g bounty is not returned." />
     <string id="b1071_recall_days" text="Disperse In" />
     <string id="b1071_recall_done" text="{COUNT} {TROOP} answered the call at {SETTLEMENT} for {COST}g." />
+    <string id="b1071_recall_eta" text="Arrives In" />
     <string id="b1071_recall_gold_each" text="Gold Each" />
     <string id="b1071_recall_hint" text="Call these men back: {GOLD}g and {MANPOWER} manpower each. Their service term starts over, and {SETTLEMENT} becomes their home again. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
     <string id="b1071_recall_hint_blocked" text="These veterans cannot be called back right now." />
+    <string id="b1071_recall_hint_remote" text="Send for these men: {GOLD}g and {MANPOWER} manpower each, paid when the order goes out. Word has to reach {SETTLEMENT} first, then they march to you — about {ETA} day{EPLURAL} in all. Their service term starts over on arrival. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}." />
+    <string id="b1071_recall_hint_resting" text="{RESTING} more are still resting from their last term and will not sign on for another {WAIT} day{WPLURAL}." />
+    <string id="b1071_recall_hold_battle" text="Waiting for the fighting to end." />
+    <string id="b1071_recall_hold_room" text="Waiting for room in your party." />
     <string id="b1071_recall_manpower_each" text="Manpower Each" />
+    <string id="b1071_recall_must_be_present" text="You must be at {SETTLEMENT} to call these men back." />
     <string id="b1071_recall_no_access" text="You may not hire from the veteran register at {SETTLEMENT}." />
     <string id="b1071_recall_no_campaign" text="Load a campaign before opening the veteran register." />
     <string id="b1071_recall_no_entitlement" text="You are not entitled to hire from this settlement's veteran register." />
@@ -1331,12 +1359,24 @@
     <string id="b1071_recall_no_manpower" text="{SETTLEMENT} has no manpower to spare for veterans." />
     <string id="b1071_recall_no_screen" text="Veteran register: no active screen." />
     <string id="b1071_recall_none" text="No veterans are waiting here. Soldiers who finish their service return to the settlement that raised them and appear on its register." />
+    <string id="b1071_recall_none_map" text="No veterans are waiting on any register you may draw from. Soldiers who finish their service return to the settlement that raised them." />
+    <string id="b1071_recall_notice_map" text="Word must ride out before anyone can set off, and the men then march to wherever you are. Gold and manpower are paid when the order goes out." />
+    <string id="b1071_recall_notice_map_off" text="Recall from a distance is switched off in the mod settings, so you must ride to a settlement in person to call its veterans back." />
     <string id="b1071_recall_notice_own" text="This is not your realm, so only the men you sent home yourself will answer." />
     <string id="b1071_recall_open_fail" text="Veteran register failed to open: {ERR}" />
+    <string id="b1071_recall_ordered" text="Word goes out to {COUNT} {TROOP} at {SETTLEMENT} for {COST}g. They should reach you in about {DAYS} day{DPLURAL}." />
     <string id="b1071_recall_party_full" text="Your party is full." />
+    <string id="b1071_recall_status_courier" text="Rider on the way — about {DAYS} day{DPLURAL}" />
+    <string id="b1071_recall_status_marching" text="Marching to you — about {DAYS} day{DPLURAL}" />
+    <string id="b1071_recall_still_resting" text="Those men are still at home from their last term. The first will take service again in {DAYS} day{DPLURAL}." />
     <string id="b1071_recall_summary" text="{MEN} veteran{MPLURAL} at home here, {TYPES} troop type{TPLURAL}. They disperse {RETENTION} days after discharge." />
+    <string id="b1071_recall_summary_map" text="{MEN} veteran{MPLURAL} across {PLACES} register{PPLURAL} you may draw from." />
     <string id="b1071_recall_summary_own" text="{MEN} of your own men here, {TYPES} troop type{TPLURAL}. They disperse {RETENTION} days after discharge." />
     <string id="b1071_recall_title" text="Veteran Register — {SETTLEMENT}" />
+    <string id="b1071_recall_title_map" text="Veteran Register" />
+    <string id="b1071_recall_transit_paid" text="Paid" />
+    <string id="b1071_recall_transit_status" text="Status" />
+    <string id="b1071_recall_transit_title" text="On the road to you" />
     <string id="b1071_recall_unavailable" text="The veteran register is not available in this campaign." />
     <string id="b1071_recall_waiting" text="At Home" />
     <string id="b1071_ui_cancel" text="Cancel" />

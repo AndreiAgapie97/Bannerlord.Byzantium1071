@@ -1,5 +1,103 @@
 # Campaign++ — Changelog
 
+## [1.0.2.8] — 2026-08-22
+
+### Feature — Recall Veterans From Anywhere on the Map
+
+**The register worked. Reaching it did not. Veterans accumulate at every settlement a party ever recruited from, which after fifty campaign days is a dozen fiefs scattered across three kingdoms, and the only way to collect a man was to ride to the town he was sitting in. The feature the previous release built was, in practice, a reason to spend a season doing laps of Calradia.**
+
+- **New map-wide register screen, default hotkey F8.** `B1071_VeteranRecallScreen.OpenScreen(null)` opens the same Gauntlet screen against every settlement the player may draw from rather than one. `GetAllVeteransForUi()` walks `_veteranRegister` and appends rows per settlement through the same `AppendVeteranRows` the settlement-local list uses, so the two views cannot drift; the map-wide list additionally **drops settlements the player has no access to entirely**, because a screen whose main content is a wall of identical refusals is worse than a shorter screen. Rows gain a **Settlement** and an **Arrives In** column, shown only in map-wide mode, and sort by arrival time first. The existing per-settlement option on the town, castle and village menus is unchanged.
+- **The hotkey is polled, not bound.** `B1071_VeteranRecallScreen.Tick(float)` is dispatched from `SubModule.OnApplicationTick` next to the troop service screen's own tick, and reads `Input.IsKeyPressed`. `Enable register hotkey` (new, default **true**) and `Register hotkey` (new, default **0** = F8; 1/2/3 = F10/F11/F12) gate it. F8 rather than a `HotKeyManager` category because the service screen already establishes the pattern and a second category is a second thing to conflict with someone's rebinds.
+
+**The travel model — courier out, then march in, recomputed daily.**
+
+- A remote recall is **not a `MobileParty`**. Spawning a party for a five-man escort is the single most expensive way to model this: it needs an AI behaviour, a party template, food, a leader, and it becomes a thing enemies can chase, capture and generate map events against. It would also be, by some distance, the most likely thing in this release to corrupt a save. In-transit men are a ledger row — `PendingRecallEntry` — holding a position, a courier distance, and what was already paid.
+- **Phase one, the order rides out.** `CourierRemaining` starts at the map distance between the player and the settlement and is drawn down by `Courier speed` (new, default **120** map units per day) on each daily tick. Nobody moves during this phase; the men do not know they have been called.
+- **Phase two, the men march to wherever the player actually is.** Once the courier arrives, the ledger row carries a live `Vec2` walked toward `MobileParty.MainParty.GetPosition2D` at `Veteran march speed` (new, default **60**) — the target is re-read every day, not fixed at order time. A player who doubles back is met halfway; a player who keeps running is chased. Storing a remaining-distance scalar instead would have been half the code and would have marched the column to a field the player left a week ago.
+- **A day's budget is spent across both phases**, so a courier that arrives at noon does not waste the afternoon.
+- **Gold and manpower are charged when the order goes out**, not on arrival. The bounty buys the march.
+- **The quoted ETA on an order placed today is clamped to a minimum of one day** — the courier has not left yet, and a row reading "0 days" on a settlement across the map reads as a bug.
+
+**Arrival is allowed to fail without losing anyone.**
+
+- `TryDeliverPendingRecall` returns `false` — keeping the row alive for tomorrow — when the party is in a `MapEvent` or `SiegeEvent`, or when there is no room. Adding men to a roster mid-battle is the same unsafe state change early release already refuses. The men wait alongside, the row says why, and they try again on the next daily tick.
+- **Partial arrivals are supported.** Room for three of five signs three in and leaves two on the ledger.
+- **In-flight men count against the party cap.** `CountPendingRecallSoldiers()` is added to `TotalManCount` in both `HasPartyRoomForOne` and `TryRecallVeterans`, so a player cannot place ten standing orders that all come due against a party with room for one.
+- **An order for a troop type that no longer exists is dropped, not retried.** `ResolveTroop` returning null after a submod change would otherwise spin forever.
+
+**Cancelling, and what it costs.**
+
+- `TryCancelPendingRecall(orderId, settlementId, troopId)` finds the order by a **stable handle**, not by its position in the list, and validates the settlement and troop against it as well. A list position would not do: the list re-sorts by ETA between the UI reading it and the player clicking, and two standing orders for the same troop from the same settlement are ordinary, so a positional lookup could stand down a different batch of men than the one the player pointed at. Cancellation credits `ManpowerDrawn` straight back to the origin pool and puts the men back on their original register, the player's own veterans as his and the rest as the local lord's.
+- **The gold is not refunded.** It was paid to the men when the order went out, and a free cancel makes a standing order a costless option on every register on the map.
+
+**Interaction with raids and conquest.** `ScatterVeteransAt` now also calls `ScatterPendingRecallsAt`, before the early return for a settlement with no register — an order can be outstanding against a register that has since emptied. **Only courier-phase orders scatter.** This deliberately narrows the obvious reading: men whose order already reached them are on the road and past the walls, and burning them for a raid on a town they left is punishing the player for a distance the model already made him pay for. Men still sitting at home when the place is sacked take the same roll the register does.
+
+**Save format.** Eleven new parallel lists (`b1071_demob_pendOrderIds`, `pendSettlementIds`, `pendTroopIds`, `pendCounts`, `pendOrderDays`, `pendGold`, `pendManpower`, `pendOwnCounts`, `pendCourier`, `pendPosX`, `pendPosY`). A save written before this release has none of them, which loads as no orders outstanding — the correct answer, not a fallback. Row count is guarded by `Math.Min` over the three required lists; the rest are read defensively by index. Order handles are **rebuilt on load** rather than trusted from the save — `max(OrderId) + 1` seeds the counter and any zero-valued row is issued a fresh handle — because all a handle has to guarantee is that no two outstanding orders share one.
+
+**Settings.** `Allow recall from a distance` (new, default **true**) — off restores the previous behaviour exactly, requiring the player to stand in the settlement, with a per-row block reason saying so rather than a silently missing button.
+
+### Feature — AI Lords Hire Veterans in Passing
+
+**Full parity was the stated bar and the register did not meet it: only the player could ever draw from one. Every discharged AI soldier was a permanent removal from the world, which is the exact leak v1.0.2.7 closed for the player and left open for everyone else.**
+
+- `CampaignEvents.SettlementEntered` → an AI lord's field party that **enters** a settlement holding veterans it is entitled to hires them on the spot, paying the same `GetRecallGoldCost` bounty from the leader's own purse and drawing the same manpower through `CanRecruitCountForPlayer` / `ConsumeManpowerPublic`, then `AddFreshCohort(..., "ai_veteran_recall", ...)` so the men enter the service clock exactly as the player's recalls do.
+- **Deliberately passive.** No new AI pathing, no detours, no teleporting men to a lord across the map. Nothing sends a lord looking for a register; the parity is in the rules, not in an added appetite. Giving the AI a courier system of its own would mean modelling a hundred simultaneous marches to targets that themselves move.
+- **He climbs the same access ladder** (`CanFactionAccessVeteranRegister`) with **no own-men exception** — he may draw only `VeteranClaim.ExceptPlayer`, so the player's discharged men are never on offer to anyone, anywhere, at any access setting.
+- **The player's own clan is excluded entirely.** A companion's party quietly draining a register the player is saving for himself is the opposite of helpful, and his lords' discharges are already his men.
+- He keeps the same gold reserve `CanAiAfford` enforces for service extensions, and the request trims against party room, gold and manpower in the same successive order the player's does, so a register never bankrupts a lord or overfills a party. Every one of those trims can only ever lower the number — see the fix below.
+- `AI lords hire veterans` (new, default **true**).
+
+### Change — Discharged Men Rest at Home Before They Will Sign On Again
+
+**A term of service meant nothing. `SendVeteranHome` stamped a batch with `DischargeDay = today` and nothing anywhere gated hireability on how long ago that was, so a soldier released this morning was on the register and available to recall this afternoon, at the price of a bounty. The register was not a place men went; it was a way of stopping the service clock.**
+
+- `Days at home before recall` (new, default **7**). A discharge batch is hireable only once `today - DischargeDay >= ` the setting. Until then the men are on the register and visible, but nobody may hire them — **not the player and not an AI lord**, so this does not become a rule the AI is quietly exempt from.
+- **Clamped to `Veteran retention - 1`.** The two settings pull against each other — one says how long a man rests, the other how long he stays on the register at all — and left unclamped a settling period at or above retention would age every batch off before it ever became hireable, leaving a register that fills up and never sells anyone. The clamp guarantees at least one day in which a batch can be called.
+- **Set it to 0 for the old behaviour**, where a man can be called back the same day he was released.
+- **Cancelled orders come back already rested.** `TryCancelPendingRecall` returns the men with `DischargeDay = today - settling days`. They had finished their rest once, before the order went out; standing the order down is not a reason to make them sit out a second one.
+- The screen shows resting men rather than hiding them. The **At Home** column and the summary line count everyone on the register; the recall hint says how many of them are still resting and when the first will answer; and a row where *nobody* has finished resting is blocked with the day count rather than a bare "cannot be called back".
+- Recall by hotkey from the map says the same thing out loud, so a player who can plainly see men on the row is told why the click did nothing.
+
+### Change — The Veteran Register Defaults to Your Clan Only
+
+**`Veteran recall access` shipped at 1 = same kingdom, and at that setting walking into any allied town let the player hire every man every other lord of his realm had ever discharged there. That is most of the veterans on the map, available at a gold bounty, with no relationship to whether he had ever recruited or trained a single one of them.**
+
+- Default **1 → 2** (owning clan only). The ladder itself is unchanged: 0 = any non-hostile lord, 1 = same kingdom, 2 = owning clan only; the owning clan always has access and a faction at war never does.
+- **The player's own discharged men are unaffected.** They were never governed by this setting — `TryGetPlayerRegisterAccess` returns them on foreign ground regardless — so the change removes access to *other lords'* countrymen and nothing else.
+- **Profile migration v23** moves an existing config from 1 to 2 **only if it is still on 1**. A player who deliberately chose 0 or 2 keeps his number.
+
+### Change — Veteran Register UI
+
+- The screen now has two lists. The register itself keeps its columns, gaining **Settlement** and **Arrives In** in map-wide mode; below it, **On the road to you** shows every outstanding order with its origin, headcount, live status (`Rider on the way`, `Marching to you`, or the hold reason), the gold already paid, and a **Call Off** button. The section is hidden entirely when nothing is in transit, and the register list's height is bound so it gives the space back when it is.
+- The window widens to 1100×720 in map-wide mode and stays 900×600 for a single settlement, since the map-wide list carries two more columns.
+- Recall hints branch on distance: a settlement the player is standing in reads as before; a remote one quotes the ETA and says plainly that the price is paid when the order goes out.
+
+### Fix — In-Transit Orders
+
+- **A pending order that loaded without a position no longer marches the length of the map.** `PosX` / `PosY` are optional save lists, and a missing one used to read as `0f`, which is not "unknown" — it is the map's origin corner, open sea off the western edge. The column would then be shown as an impossible distance away and would spend weeks walking in from nowhere. The fields now default to `float.NaN`, and `EnsurePendingPosition` repairs a NaN from the order's own settlement (falling back to the player's party) before the position can reach the daily tick, the arrival estimate, or a save file.
+- **Partial deliveries and scattered orders now scale their ledger.** `GoldPaid` and `ManpowerDrawn` describe the whole original order; when three of five men fell in, the remaining row still carried the full figures, so calling off the last two quoted the entire bounty back at the player and logged manpower for men who were already in his party. Both fields are now reduced in proportion to the men who left the row, along with the count of the player's own men in it.
+- **The map-wide summary counts each register once.** The headline "across N registers" walked the list watching for the settlement name to change, and the list is sorted by arrival time, so a town whose troop types were different distances apart was counted once per run of rows. It is a `HashSet` now. Sorting also breaks an ETA tie on settlement name, so one town's rows stay together in the list.
+
+### Fix — Crash on the First Recall of a Session
+
+- **The game hard-crashed the first time a recall was ordered.** `WindowWidth`, `WindowHeight` and `ListHeight` on the register's view model were `int`, and the prefab binds them to `SuggestedWidth` / `SuggestedHeight`, which Gauntlet holds as a `float` and **writes back** into the data source whenever the widget's own size changes. The write-back handed a `Single` to an `Int32` setter and threw inside the binding invoke, where nothing catches it. It fired on the first recall specifically, because that is when the in-transit section appears and the register list's height changes for the first time. All three are `float` now. A sweep of every prefab in the module found no other bound property of a float widget attribute.
+
+### Fix — An AI Lord's Gold Trim Could Raise His Request
+
+- **A rich lord standing over a thin register could hire men who did not exist.** `TryAiHireVeterans` trimmed `wanted` down to what the leader could afford, but the estimate it trimmed to — `Gold / goldPerMan - 1` — ignored the reserve multiplier `CanAiAfford` enforces, so it could come out **larger** than what was asked for, and the loop assigned it anyway. A lord with 1,000 gold at a register holding three T3 veterans came away with seven, four of whom were minted on the spot: past the register's stock, past his party's room, and past the reserve the check exists to protect. The trim now takes `Math.Min` of the request and `(Gold - 1) / (goldPerMan × reserve multiplier)`, then re-tests `CanAiAfford` on the result, so the rule itself has the last word.
+- **The manpower trim beside it is written the same way**, shrinking strictly on each pass. That one could not actually raise the request — its estimate is the exact inverse of the gate it is trimming against — but it used the same idiom, and one of the two being safe only by arithmetic that has to be re-derived is not a distinction worth keeping in the file.
+
+### Fix — Cancelled Orders Returned More Than They Took
+
+- **Manpower could be minted by ordering a remote recall and calling it off.** The recall recorded the manpower *price* and cancellation credited that figure back, but `ConsumeManpowerPublic` hands over only what the pool actually holds. The affordability gate applies the culture discount and the charge does not, so at `Base manpower cost per troop` above 1, a pool thin enough to pass the gate could be charged less than the price and refunded the whole of it. `ConsumeManpowerPublic` now returns what it took, the ledger records that, and cancellation credits exactly it.
+- **A cancelled order no longer signs the player's own veterans over to the local lord.** Whether the men were his was taken from the *access level of the request* rather than from the batches actually drawn, so an order placed with full access to a register — which takes the longest-waiting men first, whoever discharged them — put every one of them back as a foreign veteran. His own men then became unreachable the moment his access to that settlement narrowed. `RemoveVeteransFromRegister` now reports how many came out of his batches, the order carries that count, and cancellation splits the men back onto the register accordingly.
+
+### Fix — Panel Hotkeys Fire on the Map Only
+
+- **F8 and F9 no longer reach through whatever is on top of them.** Both screens listen for their key from the application tick, which hears it wherever the player is — the encyclopedia, the save list, a conversation, a battle. The window was then built onto the campaign map underneath and sat there unreachable until the thing on top was closed. `B1071_HotkeyGuard` requires an active campaign in `MapState` with the map screen actually in front and no escape menu open.
+- **Opening the register or the service screen from a settlement menu still works** — that is deliberate behaviour, fixed in v1.0.2.0, and a settlement menu is a layer on the map screen rather than a screen of its own, so it passes the guard. This is why the guard is built from the game state and the top screen rather than from input focus, which a menu overlay can hold.
+- The bleed was pre-existing on the troop service screen's F9; it is fixed there too.
+
 ## [1.0.2.7] — 2026-08-21
 
 ### Change — Discharged Soldiers Go Home Instead of Ceasing to Exist

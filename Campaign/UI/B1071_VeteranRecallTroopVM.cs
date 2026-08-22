@@ -28,13 +28,16 @@ namespace Byzantium1071.Campaign.UI
 
         private ImageIdentifierVM _visual;
         private string _name = string.Empty;
+        private string _settlementName = string.Empty;
         private string _tier = string.Empty;
         private string _count = string.Empty;
         private string _daysLeft = string.Empty;
+        private string _etaText = string.Empty;
         private string _goldCost = string.Empty;
         private string _manpowerCost = string.Empty;
         private string _recallText = string.Empty;
         private bool _isAlternateRow;
+        private bool _showSettlement;
         private bool _canRecall;
         private HintViewModel? _recallHint;
 
@@ -42,22 +45,32 @@ namespace Byzantium1071.Campaign.UI
 
         private static string L(string id, string fallback) => T(id, fallback).ToString();
 
-        public B1071_VeteranRecallTroopVM(B1071_VeteranRecallVM parent, Settlement settlement, B1071_DemobilizationBehavior.VeteranView row, bool isAlternateRow)
+        public B1071_VeteranRecallTroopVM(B1071_VeteranRecallVM parent, B1071_DemobilizationBehavior.VeteranView row, bool isAlternateRow, bool showSettlement)
         {
             _parent = parent;
-            _settlement = settlement;
+            _settlement = row.Settlement;
             _character = row.Troop;
             _available = row.Count;
             _isAlternateRow = isAlternateRow;
+            _showSettlement = showSettlement;
 
             _visual = new CharacterImageIdentifierVM(CharacterCode.CreateFrom(row.Troop));
             _name = row.Troop.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+            _settlementName = row.SettlementName;
             _tier = row.Tier.ToString();
-            _count = row.Count.ToString();
+
+            // Everyone on the register here, including the men still resting out their days.
+            // They are at home whether or not they will answer today, and hiding them would
+            // make the column disagree with the line at the top of the window.
+            _count = (row.Count + row.RestingCount).ToString();
             _daysLeft = row.DaysUntilGone.ToString();
             _goldCost = row.GoldCostPerMan.ToString();
             _manpowerCost = row.ManpowerCostPerMan.ToString();
             _canRecall = row.CanRecallOne;
+
+            // A dash rather than a zero when the player is standing in the place: the men
+            // fall in as he clicks, so there is no journey to put a number on.
+            _etaText = row.IsRemote ? row.EtaDays.ToString() : "—";
 
             // One labelled button instead of a row of bare numbers. Three buttons reading
             // "1 5 All" sat next to two numeric columns and read as more numbers; the word
@@ -65,18 +78,42 @@ namespace Byzantium1071.Campaign.UI
             // troop service screen.
             _recallText = L("b1071_recall_action", "Recall");
 
-            _recallHint = _canRecall
-                ? new HintViewModel(T("b1071_recall_hint", "Call these men back: {GOLD}g and {MANPOWER} manpower each. Their service term starts over, and {SETTLEMENT} becomes their home again. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}.")
+            if (_canRecall)
+            {
+                string hint = (row.IsRemote
+                        ? T("b1071_recall_hint_remote", "Send for these men: {GOLD}g and {MANPOWER} manpower each, paid when the order goes out. Word has to reach {SETTLEMENT} first, then they march to you — about {ETA} day{EPLURAL} in all. Their service term starts over on arrival. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}.")
+                            .SetTextVariable("ETA", row.EtaDays)
+                            .SetTextVariable("EPLURAL", row.EtaDays == 1 ? string.Empty : "s")
+                        : T("b1071_recall_hint", "Call these men back: {GOLD}g and {MANPOWER} manpower each. Their service term starts over, and {SETTLEMENT} becomes their home again. They disperse in {DAYS} days if left alone.{NEWLINE}Click for one, Shift+click for {BATCH}, Ctrl+click for all {COUNT}."))
                     .SetTextVariable("GOLD", row.GoldCostPerMan)
                     .SetTextVariable("MANPOWER", row.ManpowerCostPerMan)
-                    .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? string.Empty)
+                    .SetTextVariable("SETTLEMENT", row.SettlementName)
                     .SetTextVariable("DAYS", row.DaysUntilGone)
                     .SetTextVariable("BATCH", BatchAmount)
                     .SetTextVariable("COUNT", _available)
-                    .SetTextVariable("NEWLINE", "\n"))
-                : new HintViewModel(string.IsNullOrEmpty(row.BlockReason)
+                    .SetTextVariable("NEWLINE", "\n")
+                    .ToString();
+
+                // The column counts every man at home, but only the rested ones will sign on,
+                // so "all {COUNT}" is the smaller number. Say where the rest of them are, or
+                // the button looks as though it is short-changing the player.
+                if (row.RestingCount > 0)
+                {
+                    hint += "\n" + T("b1071_recall_hint_resting", "{RESTING} more are still resting from their last term and will not sign on for another {WAIT} day{WPLURAL}.")
+                        .SetTextVariable("RESTING", row.RestingCount)
+                        .SetTextVariable("WAIT", row.DaysUntilReady)
+                        .SetTextVariable("WPLURAL", row.DaysUntilReady == 1 ? string.Empty : "s")
+                        .ToString();
+                }
+
+                _recallHint = new HintViewModel(new TextObject(hint));
+            }
+            else
+            {
+                _recallHint = new HintViewModel(string.IsNullOrEmpty(row.BlockReason)
                     ? T("b1071_recall_hint_blocked", "These veterans cannot be called back right now.")
                     : new TextObject(row.BlockReason));
+            }
         }
 
         /// <summary>
@@ -117,6 +154,27 @@ namespace Byzantium1071.Campaign.UI
         {
             get => _name;
             set { if (_name != value) { _name = value; OnPropertyChangedWithValue(value, nameof(Name)); } }
+        }
+
+        [DataSourceProperty]
+        public string SettlementName
+        {
+            get => _settlementName;
+            set { if (_settlementName != value) { _settlementName = value; OnPropertyChangedWithValue(value, nameof(SettlementName)); } }
+        }
+
+        [DataSourceProperty]
+        public bool ShowSettlement
+        {
+            get => _showSettlement;
+            set { if (_showSettlement != value) { _showSettlement = value; OnPropertyChangedWithValue(value, nameof(ShowSettlement)); } }
+        }
+
+        [DataSourceProperty]
+        public string EtaText
+        {
+            get => _etaText;
+            set { if (_etaText != value) { _etaText = value; OnPropertyChangedWithValue(value, nameof(EtaText)); } }
         }
 
         [DataSourceProperty]

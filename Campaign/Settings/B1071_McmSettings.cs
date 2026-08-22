@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 22;
+        internal const int LATEST_PROFILE_VERSION = 23;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -425,6 +425,21 @@ namespace Byzantium1071.Campaign.Settings
                 DemobilizationNotifyIntervalDays = 3;
 
                 migrated += "troop service reworked — discharged soldiers now return to the settlement that raised them and can be recalled from its veteran register, service terms roughly doubled, extensions are cheaper and repeatable up to 3 times, and daily departures and warnings are quieter. ";
+            }
+
+            // ── Profile v23: the veteran register is a clan matter, not a kingdom one ──
+            // Kingdom access let you walk into any allied town and hire the men every other
+            // lord of your realm had discharged there, which is most of the map's veterans.
+            // Clan only keeps other lords' countrymen for their own clan; your own discharged
+            // soldiers are still yours to collect anywhere you are not at war. Only the old
+            // default is moved — 0 and 2 are deliberate choices and are left alone.
+            if (SettingsProfileVersion < 23)
+            {
+                if (DemobilizationVeteranRecallAccess == 1)
+                {
+                    DemobilizationVeteranRecallAccess = 2;
+                    migrated += "veteran recall access tightened from Kingdom to Clan only — other lords' discharged men now stay with their own clan, while your own veterans remain yours to collect anywhere. ";
+                }
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1273,16 +1288,44 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationVeteranRetentionDays { get; set; } = 84;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_scatter}Raid/capture scatter %", 0, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_vet_scatter}Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_settle}Days at home before recall", 0, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_vet_settle}How many Bannerlord days a discharged soldier rests at home before he will take service again. Until then he is on the register but nobody can hire him, you or an AI lord. Set this to 0 to allow calling a man back the same day you released him. Default: 7.")]
+        public int DemobilizationVeteranSettlingDays { get; set; } = 7;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_scatter}Raid/capture scatter %", 0, 100, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_vet_scatter}Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50.")]
         public int DemobilizationVeteranScatterPercent { get; set; } = 50;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_gold}Recall gold per tier", 0, 500, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_vet_gold}Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_gold}Recall gold per tier", 0, 500, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_vet_gold}Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40.")]
         public int DemobilizationRecallGoldPerTier { get; set; } = 40;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_vet_access}Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 1.")]
-        public int DemobilizationVeteranRecallAccess { get; set; } = 1;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 6, HintText = "{=b1071_mcm_h_demob_vet_access}Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 2.")]
+        public int DemobilizationVeteranRecallAccess { get; set; } = 2;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_remote}Allow recall from a distance", Order = 7, HintText = "{=b1071_mcm_h_demob_remote}Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true.")]
+        public bool EnableDemobilizationRemoteRecall { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_recall_hotkey_enable}Enable register hotkey", Order = 8, HintText = "{=b1071_mcm_h_demob_recall_hotkey_enable}Allows opening the map-wide veteran register from the campaign map. Default: true.")]
+        public bool EnableVeteranRecallHotkey { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_recall_hotkey}Register hotkey", 0, 3, "0", Order = 9, HintText = "{=b1071_mcm_h_demob_recall_hotkey}0=F8, 1=F10, 2=F11, 3=F12. Default: F8.")]
+        public int VeteranRecallHotkeyChoice { get; set; } = 0;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_courier}Courier speed", 20, 400, "0", Order = 10, HintText = "{=b1071_mcm_h_demob_courier}How far a recall order travels in a day, in map distance. A rider covers roughly the width of one region per day at 120. Higher means orders arrive sooner. Default: 120.")]
+        public int DemobilizationCourierSpeed { get; set; } = 120;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_march}Veteran march speed", 10, 300, "0", Order = 11, HintText = "{=b1071_mcm_h_demob_march}How far recalled veterans march in a day on their way to join you, in map distance. They head for wherever you are, recalculated every day. Default: 60.")]
+        public int DemobilizationMarchSpeed { get; set; } = 60;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_ai_recall}AI lords hire veterans", Order = 12, HintText = "{=b1071_mcm_h_demob_ai_recall}An AI lord who enters a settlement holding veterans he is entitled to hires them on the spot, paying the same gold and manpower you would. He never travels out of his way for them. Default: true.")]
+        public bool EnableDemobilizationAiRecall { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t1}Custom T1 service days", 1, 300, "0", Order = 0, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]

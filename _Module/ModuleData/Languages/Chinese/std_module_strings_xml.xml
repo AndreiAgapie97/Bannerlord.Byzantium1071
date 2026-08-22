@@ -421,6 +421,7 @@
     <string id="b1071_ui_mp_donehint" text="兵源：{POOL}招募{TROOP}需要 {NEEDED}，但只剩 {LEFT}。" />
     <string id="b1071_ui_recruit" text="招募" />
     <string id="b1071_ui_status" text="状态" />
+    <string id="b1071_ui_settlement" text="定居点" />
     <string id="b1071_ui_tier" text="兵阶" />
     <string id="b1071_ui_troop" text="兵种" />
     <string id="b1071_ui_unknown" text="未知" />
@@ -1294,34 +1295,61 @@
     <string id="b1071_demob_released_partial" text="已让 {COUNT} 名{TROOP}退役。其中 {ARRIVED} 人抵达{HOME}，可从当地的老兵名册重新征召；其余人未能返乡。" />
     <string id="b1071_demob_retired_home" text="{COUNT} 名士兵服役期满，已启程返乡。首批：{TROOP}，前往{HOME}。你可以从定居点的老兵名册重新征召老兵。" />
     <string id="b1071_mcm_g_demob_vets" text="部队服役 - 老兵" />
+    <string id="b1071_mcm_h_demob_ai_recall" text="AI 领主进入存有其有权征调的老兵的定居点时，会当场雇用他们，支付与你相同的金钱与兵源。他绝不会为此绕道。默认值：开启。" />
+    <string id="b1071_mcm_h_demob_courier" text="召回令一天可传送的地图距离。设为 120 时，骑手每天大约走完一个地区的宽度。数值越高命令送达越快。默认值：120。" />
+    <string id="b1071_mcm_h_demob_march" text="被召回的老兵前来会合时一天可行进的地图距离。他们朝你所在之处前进，每天重新计算。默认值：60。" />
     <string id="b1071_mcm_h_demob_max_extends" text="同一名士兵的服役期最多可延长几次。第一次之后，每次延长的花费比上一次高 50%。默认值：3。" />
     <string id="b1071_mcm_h_demob_notify_interval" text="两次部队服役警告消息或弹窗之间的最少天数。设为 1 表示每天提示，与以往相同。默认值：3。" />
-    <string id="b1071_mcm_h_demob_vet_access" text="谁可以从定居点召回其他领主的老兵。0 = 开放（任何未与领主开战的贵族）。1 = 仅限王国（须与领主同属一个王国）。2 = 仅限家族（仅限拥有该定居点的家族）。玩家与 AI 适用相同规则。这从不限制你自己的部下：只要你未与该定居点的领主开战，你亲自遣散的士兵始终可以在其返乡之处召回。默认值：1。" />
+    <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8，1=F10，2=F11，3=F12。默认值：F8。" />
+    <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="允许在战役地图上打开全图老兵名册。默认值：开启。" />
+    <string id="b1071_mcm_h_demob_remote" text="允许向地图上任意定居点发出召回令，无需亲自前往。命令需要时间送达，随后这些人会朝你所在之处行军。金钱与兵源在命令发出时扣除。关闭后必须亲临定居点。默认值：开启。" />
+    <string id="b1071_mcm_h_demob_vet_access" text="谁可以从定居点召回其他领主的老兵。0 = 开放（任何未与领主开战的贵族）。1 = 仅限王国（须与领主同属一个王国）。2 = 仅限家族（仅限拥有该定居点的家族）。玩家与 AI 适用相同规则。这从不限制你自己的部下：只要你未与该定居点的领主开战，你亲自遣散的士兵始终可以在其返乡之处召回。默认值：2。" />
     <string id="b1071_mcm_h_demob_vet_enable" text="士兵服役期满后，会步行返回招募他的定居点，归还兵源并列入该定居点的老兵名册。关闭此项后，退役士兵会像以前一样直接消失。默认值：开启。" />
     <string id="b1071_mcm_h_demob_vet_gold" text="每召回一名老兵支付的重征赏金，并按其兵阶倍增。设为 40 时，5 阶老兵需 200 金币。召回同样会像普通招募那样消耗定居点的兵源。默认值：40。" />
     <string id="b1071_mcm_h_demob_vet_manpower" text="退役士兵所占兵源有多少比例返还其家乡定居点。100 表示每一名熬过服役期的士兵都可再次被征召。若希望战争长久地消耗乡野人口，可调低此值。默认值：100。" />
     <string id="b1071_mcm_h_demob_vet_retention" text="退役士兵在彻底安家之前，还能被召回多少个 Bannerlord 日。无论如何，其兵源都会留在兵源池中。游戏中的一年约为 84 天。默认值：84。" />
     <string id="b1071_mcm_h_demob_vet_scatter" text="定居点遭劫掠或易主于他国时，其老兵名册损失的百分比。家乡被洗劫时，老兵会四散而去。设为 0 则不再流散。默认值：50。" />
+    <string id="b1071_mcm_h_demob_vet_settle" text="退役士兵在家中休整多少个 Bannerlord 日之后才会再次应召。在此之前他虽在名册上，但谁也无法雇用他，你和 AI 领主都不行。设为 0 则可在放人当天就把他召回。默认值：7。" />
+    <string id="b1071_mcm_t_demob_ai_recall" text="AI 领主雇用老兵" />
+    <string id="b1071_mcm_t_demob_courier" text="传令速度" />
+    <string id="b1071_mcm_t_demob_march" text="老兵行军速度" />
     <string id="b1071_mcm_t_demob_max_extends" text="每名士兵可延长次数" />
     <string id="b1071_mcm_t_demob_notify_interval" text="警告消息间隔天数" />
+    <string id="b1071_mcm_t_demob_recall_hotkey" text="名册快捷键" />
+    <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="启用名册快捷键" />
+    <string id="b1071_mcm_t_demob_remote" text="允许远程召回" />
     <string id="b1071_mcm_t_demob_vet_access" text="召回权限限制" />
     <string id="b1071_mcm_t_demob_vet_enable" text="退役士兵返乡" />
     <string id="b1071_mcm_t_demob_vet_gold" text="每兵阶召回金币" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="兵源返还百分比" />
     <string id="b1071_mcm_t_demob_vet_retention" text="老兵名册保留天数" />
     <string id="b1071_mcm_t_demob_vet_scatter" text="劫掠/易主流散百分比" />
+    <string id="b1071_mcm_t_demob_vet_settle" text="召回前的返乡休整天数" />
     <string id="b1071_recall_action" text="召回" />
+    <string id="b1071_recall_arrived" text="{COUNT} 名{TROOP}自{SETTLEMENT}赶到，重新加入你的队伍。" />
+    <string id="b1071_recall_arrived_partial" text="来自{SETTLEMENT}的 {COUNT} 名{TROOP}已加入你的队伍，另有 {LEFT} 人在旁等待空位。" />
     <string id="b1071_recall_block_access" text="你无权从该定居点的名册征召。" />
     <string id="b1071_recall_block_disabled" text="老兵返乡已在模组设置中关闭。" />
     <string id="b1071_recall_block_gold" text="金币不足：每人需 {COST}g。" />
     <string id="b1071_recall_block_manpower" text="此地兵源不足：需 {COST}，仅剩 {LEFT}。" />
     <string id="b1071_recall_block_party" text="你的队伍已满。" />
+    <string id="b1071_recall_block_remote" text="你必须亲自身在{SETTLEMENT}才能召回这些人。" />
+    <string id="b1071_recall_block_settling" text="这些人还在家中休整。最早的一批将在 {DAYS} 天后再次应召。" />
+    <string id="b1071_recall_cancel" text="取消" />
+    <string id="b1071_recall_cancel_hint" text="取消这道命令。这些人会回到{SETTLEMENT}的名册，兵源也会退还。{NEWLINE}{COST}g 的赏金不予退还——命令发出时就已付清。" />
+    <string id="b1071_recall_cancelled" text="{COUNT} 名{TROOP}解散，重回{SETTLEMENT}的名册。{COST}g 的赏金不予退还。" />
     <string id="b1071_recall_days" text="流散剩余" />
     <string id="b1071_recall_done" text="{COUNT} 名{TROOP}在{SETTLEMENT}应召归队，花费 {COST}g。" />
+    <string id="b1071_recall_eta" text="抵达需时" />
     <string id="b1071_recall_gold_each" text="每人金币" />
     <string id="b1071_recall_hint" text="召回这些人：每人 {GOLD}g 和 {MANPOWER} 点兵源。他们的服役期重新开始，{SETTLEMENT}再次成为他们的家乡。若不理会，他们将在 {DAYS} 天后流散。{NEWLINE}点击召回一人，Shift+点击召回 {BATCH} 人，Ctrl+点击召回全部 {COUNT} 人。" />
     <string id="b1071_recall_hint_blocked" text="这些老兵目前无法召回。" />
+    <string id="b1071_recall_hint_remote" text="派人召回这些人：每人 {GOLD}g 和 {MANPOWER} 点兵源，命令发出时即扣除。传令须先送达{SETTLEMENT}，随后他们朝你行军——全程约 {ETA} 天。抵达后服役期重新开始。若不理会，他们将在 {DAYS} 天后流散。{NEWLINE}点击召回一人，Shift+点击召回 {BATCH} 人，Ctrl+点击召回全部 {COUNT} 人。" />
+    <string id="b1071_recall_hint_resting" text="另有 {RESTING} 人仍在从上一段服役中休整，还需 {WAIT} 天才会应召。" />
+    <string id="b1071_recall_hold_battle" text="等待战斗结束。" />
+    <string id="b1071_recall_hold_room" text="等待队伍空位。" />
     <string id="b1071_recall_manpower_each" text="每人兵源" />
+    <string id="b1071_recall_must_be_present" text="你必须身在{SETTLEMENT}才能召回这些人。" />
     <string id="b1071_recall_no_access" text="你无法从{SETTLEMENT}的老兵名册征召。" />
     <string id="b1071_recall_no_campaign" text="请先载入战役，再打开老兵名册。" />
     <string id="b1071_recall_no_entitlement" text="你无权从该定居点的老兵名册征召。" />
@@ -1329,12 +1357,24 @@
     <string id="b1071_recall_no_manpower" text="{SETTLEMENT}没有多余的兵源可供老兵使用。" />
     <string id="b1071_recall_no_screen" text="老兵名册：没有活动界面。" />
     <string id="b1071_recall_none" text="此地没有老兵等待。服役期满的士兵会回到招募他们的定居点，并出现在其名册上。" />
+    <string id="b1071_recall_none_map" text="你有权征调的名册上都没有老兵等待。服役期满的士兵会回到招募他们的定居点。" />
+    <string id="b1071_recall_notice_map" text="传令须先送到当地，随后这些人才会朝你所在之处行军。金钱与兵源在命令发出时即已扣除。" />
+    <string id="b1071_recall_notice_map_off" text="模组设置中已关闭远程召回，你必须亲自前往定居点才能召回当地老兵。" />
     <string id="b1071_recall_notice_own" text="此处不是你的国土，因此只有你亲自遣返的部下才会应召。" />
     <string id="b1071_recall_open_fail" text="老兵名册打开失败：{ERR}" />
+    <string id="b1071_recall_ordered" text="已向{SETTLEMENT}的 {COUNT} 名{TROOP}传令，花费 {COST}g。他们约需 {DAYS} 天与你会合。" />
     <string id="b1071_recall_party_full" text="你的队伍已满。" />
+    <string id="b1071_recall_status_courier" text="传令骑手在途 — 约 {DAYS} 天" />
+    <string id="b1071_recall_status_marching" text="正朝你行军 — 约 {DAYS} 天" />
+    <string id="b1071_recall_still_resting" text="这些人上一段服役结束后仍在家中休整。最早的一批将在 {DAYS} 天后再次应召。" />
     <string id="b1071_recall_summary" text="此地有 {MEN} 名老兵在家乡，共 {TYPES} 种兵种。他们在退役 {RETENTION} 天后流散。" />
+    <string id="b1071_recall_summary_map" text="你有权征调的 {PLACES} 处名册上共有 {MEN} 名老兵。" />
     <string id="b1071_recall_summary_own" text="此地有 {MEN} 名你自己的部下，共 {TYPES} 种兵种。他们在退役 {RETENTION} 天后流散。" />
     <string id="b1071_recall_title" text="老兵名册 — {SETTLEMENT}" />
+    <string id="b1071_recall_title_map" text="老兵名册" />
+    <string id="b1071_recall_transit_paid" text="已付" />
+    <string id="b1071_recall_transit_status" text="状态" />
+    <string id="b1071_recall_transit_title" text="正在赶来" />
     <string id="b1071_recall_unavailable" text="本次战役中无法使用老兵名册。" />
     <string id="b1071_recall_waiting" text="在家乡" />
     <string id="b1071_ui_cancel" text="取消" />

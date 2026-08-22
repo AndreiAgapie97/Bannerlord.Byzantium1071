@@ -421,6 +421,7 @@
     <string id="b1071_ui_mp_donehint" text="Mannstärke: {POOL} benötigt {NEEDED} für {TROOP}, nur noch {LEFT} übrig." />
     <string id="b1071_ui_recruit" text="Rekrutieren" />
     <string id="b1071_ui_status" text="Status" />
+    <string id="b1071_ui_settlement" text="Siedlung" />
     <string id="b1071_ui_tier" text="Stufe" />
     <string id="b1071_ui_troop" text="Truppe" />
     <string id="b1071_ui_unknown" text="Unbekannt" />
@@ -1294,34 +1295,61 @@
     <string id="b1071_demob_released_partial" text="{COUNT} {TROOP} aus dem Dienst entlassen. {ARRIVED} erreichten {HOME} und können dort aus dem Veteranenregister zurückgeholt werden; die Übrigen kamen nicht heim." />
     <string id="b1071_demob_retired_home" text="{COUNT} Soldaten haben ihren Dienst beendet und sind heimgezogen. Erste Gruppe: {TROOP}, unterwegs nach {HOME}. Veteranen kannst du aus dem Veteranenregister einer Siedlung zurückholen." />
     <string id="b1071_mcm_g_demob_vets" text="Truppendienst - Veteranen" />
+    <string id="b1071_mcm_h_demob_ai_recall" text="Ein KI-Lord, der eine Siedlung mit Veteranen betritt, auf die er Anspruch hat, heuert sie an Ort und Stelle an und zahlt dasselbe Gold und dieselbe Mannstärke wie du. Er macht dafür nie einen Umweg. Standard: an." />
+    <string id="b1071_mcm_h_demob_courier" text="Wie weit ein Rückrufbefehl an einem Tag reist, in Kartenentfernung. Bei 120 schafft ein Reiter etwa die Breite einer Region pro Tag. Höher heißt, Befehle kommen früher an. Standard: 120." />
+    <string id="b1071_mcm_h_demob_march" text="Wie weit zurückgerufene Veteranen an einem Tag marschieren, um zu dir zu stoßen, in Kartenentfernung. Sie halten auf deine Position zu, die täglich neu bestimmt wird. Standard: 60." />
     <string id="b1071_mcm_h_demob_max_extends" text="Wie oft der Dienst desselben Soldaten verlängert werden darf. Jede Verlängerung nach der ersten kostet 50 % mehr als die vorherige. Standard: 3." />
     <string id="b1071_mcm_h_demob_notify_interval" text="Mindestzahl an Tagen zwischen Warnmeldungen und Fenstern des Truppendienstes. 1 bedeutet täglich, wie bisher. Standard: 3." />
-    <string id="b1071_mcm_h_demob_vet_access" text="Wer die Veteranen anderer Lords aus einer Siedlung zurückholen darf. 0 = Offen (jeder Lord, der nicht im Krieg mit dem Besitzer steht). 1 = Nur Königreich (man muss dem Königreich des Besitzers angehören). 2 = Nur Klan (nur der Klan, dem die Siedlung gehört). Für Spieler und KI gelten dieselben Regeln. Deine eigenen Männer werden davon nie blockiert: Soldaten, die du selbst entlassen hast, kannst du überall dort abholen, wohin sie heimgegangen sind, solange du nicht im Krieg mit dem Besitzer der Siedlung stehst. Standard: 1." />
+    <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8, 1=F10, 2=F11, 3=F12. Standard: F8." />
+    <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="Erlaubt das Öffnen des kartenweiten Veteranenregisters von der Kampagnenkarte aus. Standard: an." />
+    <string id="b1071_mcm_h_demob_remote" text="Erlaubt es, einen Rückrufbefehl an jede Siedlung der Karte zu schicken, statt selbst hinzureiten. Der Befehl braucht Zeit bis zur Siedlung, danach marschieren die Männer zu dir, wo immer du bist. Gold und Mannstärke werden beim Absenden fällig. Abschalten, um deine Anwesenheit vor Ort zu verlangen. Standard: an." />
+    <string id="b1071_mcm_h_demob_vet_access" text="Wer die Veteranen anderer Lords aus einer Siedlung zurückholen darf. 0 = Offen (jeder Lord, der nicht im Krieg mit dem Besitzer steht). 1 = Nur Königreich (man muss dem Königreich des Besitzers angehören). 2 = Nur Klan (nur der Klan, dem die Siedlung gehört). Für Spieler und KI gelten dieselben Regeln. Deine eigenen Männer werden davon nie blockiert: Soldaten, die du selbst entlassen hast, kannst du überall dort abholen, wohin sie heimgegangen sind, solange du nicht im Krieg mit dem Besitzer der Siedlung stehst. Standard: 2." />
     <string id="b1071_mcm_h_demob_vet_enable" text="Beendet ein Soldat seinen Dienst, geht er zurück in die Siedlung, in der er angeworben wurde, gibt ihr die Mannstärke zurück und tritt in deren Veteranenregister ein. Ist dies abgeschaltet, verschwinden entlassene Soldaten einfach wie früher. Standard: an." />
     <string id="b1071_mcm_h_demob_vet_gold" text="Wiedereintrittsprämie je zurückgeholtem Soldaten, multipliziert mit seiner Truppenstufe. Bei 40 kostet ein Veteran der Stufe 5 also 200 Gold. Das Zurückholen entnimmt der Siedlung außerdem Mannstärke wie eine gewöhnliche Rekrutierung. Standard: 40." />
     <string id="b1071_mcm_h_demob_vet_manpower" text="Wie viel von der Mannstärke eines entlassenen Soldaten an seine Heimatsiedlung zurückgeht. 100 bedeutet, dass jeder Mann, der seine Dienstzeit überlebt, erneut ausgehoben werden kann. Senke den Wert, wenn der Krieg das Land dauerhaft ausdünnen soll. Standard: 100." />
     <string id="b1071_mcm_h_demob_vet_retention" text="Wie viele Bannerlord-Tage ein entlassener Soldat zum Zurückholen bereitsteht, bevor er endgültig sesshaft wird. Seine Mannstärke bleibt in beiden Fällen im Vorrat. Ein Spieljahr hat etwa 84 Tage. Standard: 84." />
     <string id="b1071_mcm_h_demob_vet_scatter" text="Prozentsatz des Veteranenregisters einer Siedlung, der verloren geht, wenn sie geplündert wird oder an ein anderes Reich fällt. Veteranen zerstreuen sich, wenn ihre Heimat geplündert wird. 0 schaltet das Zerstreuen ab. Standard: 50." />
+    <string id="b1071_mcm_h_demob_vet_settle" text="Wie viele Bannerlord-Tage ein entlassener Soldat daheim ruht, ehe er wieder Dienst nimmt. Bis dahin steht er zwar in der Liste, doch niemand kann ihn anwerben, weder Ihr noch ein KI-Lord. Auf 0 stellen, um einen Mann noch am Tag seiner Entlassung zurückrufen zu können. Standard: 7." />
+    <string id="b1071_mcm_t_demob_ai_recall" text="KI-Lords heuern Veteranen an" />
+    <string id="b1071_mcm_t_demob_courier" text="Botengeschwindigkeit" />
+    <string id="b1071_mcm_t_demob_march" text="Marschgeschwindigkeit der Veteranen" />
     <string id="b1071_mcm_t_demob_max_extends" text="Erlaubte Verlängerungen je Soldat" />
     <string id="b1071_mcm_t_demob_notify_interval" text="Tage zwischen Warnmeldungen" />
+    <string id="b1071_mcm_t_demob_recall_hotkey" text="Register-Hotkey" />
+    <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="Register-Hotkey aktivieren" />
+    <string id="b1071_mcm_t_demob_remote" text="Rückruf aus der Ferne erlauben" />
     <string id="b1071_mcm_t_demob_vet_access" text="Zugangsbeschränkung beim Zurückholen" />
     <string id="b1071_mcm_t_demob_vet_enable" text="Entlassene Soldaten kehren heim" />
     <string id="b1071_mcm_t_demob_vet_gold" text="Gold je Stufe beim Zurückholen" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="Zurückgegebene Mannstärke %" />
     <string id="b1071_mcm_t_demob_vet_retention" text="Tage im Veteranenregister" />
     <string id="b1071_mcm_t_demob_vet_scatter" text="Zerstreuung bei Plünderung/Eroberung %" />
+    <string id="b1071_mcm_t_demob_vet_settle" text="Tage daheim vor dem Rückruf" />
     <string id="b1071_recall_action" text="Zurückholen" />
+    <string id="b1071_recall_arrived" text="{COUNT} {TROOP} sind aus {SETTLEMENT} eingetroffen und deiner Gruppe beigetreten." />
+    <string id="b1071_recall_arrived_partial" text="{COUNT} {TROOP} aus {SETTLEMENT} sind deiner Gruppe beigetreten. {LEFT} weitere warten daneben auf Platz." />
     <string id="b1071_recall_block_access" text="Du bist nicht berechtigt, aus dem Register dieser Siedlung anzuwerben." />
     <string id="b1071_recall_block_disabled" text="Die Rückkehr von Veteranen ist in den Mod-Einstellungen abgeschaltet." />
     <string id="b1071_recall_block_gold" text="Nicht genug Gold: {COST}g je Mann nötig." />
     <string id="b1071_recall_block_manpower" text="Nicht genug Mannstärke hier: {COST} nötig, {LEFT} übrig." />
     <string id="b1071_recall_block_party" text="Deine Gruppe ist voll." />
+    <string id="b1071_recall_block_remote" text="Du musst persönlich in {SETTLEMENT} sein, um diese Männer zurückzuholen." />
+    <string id="b1071_recall_block_settling" text="Diese Männer ruhen noch daheim. Der Erste nimmt in {DAYS} Tag{DPLURAL} wieder Dienst." />
+    <string id="b1071_recall_cancel" text="Abblasen" />
+    <string id="b1071_recall_cancel_hint" text="Blase den Befehl ab. Die Männer kehren ins Register von {SETTLEMENT} zurück und die Mannstärke wird gutgeschrieben.{NEWLINE}Die Prämie von {COST}g gibt es nicht zurück — sie wurde beim Absenden gezahlt." />
+    <string id="b1071_recall_cancelled" text="{COUNT} {TROOP} treten ab und kehren ins Register von {SETTLEMENT} zurück. Die Prämie von {COST}g gibt es nicht zurück." />
     <string id="b1071_recall_days" text="Zerstreuen in" />
     <string id="b1071_recall_done" text="{COUNT} {TROOP} folgten dem Ruf in {SETTLEMENT} für {COST}g." />
+    <string id="b1071_recall_eta" text="Ankunft in" />
     <string id="b1071_recall_gold_each" text="Gold je Mann" />
     <string id="b1071_recall_hint" text="Hole diese Männer zurück: {GOLD}g und {MANPOWER} Mannstärke je Mann. Ihre Dienstzeit beginnt von vorn und {SETTLEMENT} wird wieder ihre Heimat. Ohne Zutun zerstreuen sie sich in {DAYS} Tagen.{NEWLINE}Klick für einen, Umschalt+Klick für {BATCH}, Strg+Klick für alle {COUNT}." />
     <string id="b1071_recall_hint_blocked" text="Diese Veteranen können gerade nicht zurückgeholt werden." />
+    <string id="b1071_recall_hint_remote" text="Lass diese Männer holen: {GOLD}g und {MANPOWER} Mannstärke je Mann, fällig beim Absenden des Befehls. Erst muss die Nachricht {SETTLEMENT} erreichen, dann marschieren sie zu dir — etwa {ETA} Tage insgesamt. Ihre Dienstzeit beginnt bei der Ankunft von vorn. Ohne Zutun zerstreuen sie sich in {DAYS} Tagen.{NEWLINE}Klick für einen, Umschalt+Klick für {BATCH}, Strg+Klick für alle {COUNT}." />
+    <string id="b1071_recall_hint_resting" text="{RESTING} weitere ruhen sich noch von ihrem letzten Dienst aus und nehmen erst in {WAIT} Tag{WPLURAL} wieder Dienst." />
+    <string id="b1071_recall_hold_battle" text="Warten auf das Ende des Kampfes." />
+    <string id="b1071_recall_hold_room" text="Warten auf Platz in deiner Gruppe." />
     <string id="b1071_recall_manpower_each" text="Mannstärke je Mann" />
+    <string id="b1071_recall_must_be_present" text="Du musst in {SETTLEMENT} sein, um diese Männer zurückzuholen." />
     <string id="b1071_recall_no_access" text="Du darfst aus dem Veteranenregister von {SETTLEMENT} nicht anwerben." />
     <string id="b1071_recall_no_campaign" text="Lade eine Kampagne, bevor du das Veteranenregister öffnest." />
     <string id="b1071_recall_no_entitlement" text="Du bist nicht berechtigt, aus dem Veteranenregister dieser Siedlung anzuwerben." />
@@ -1329,12 +1357,24 @@
     <string id="b1071_recall_no_manpower" text="{SETTLEMENT} hat keine Mannstärke für Veteranen übrig." />
     <string id="b1071_recall_no_screen" text="Veteranenregister: kein aktiver Bildschirm." />
     <string id="b1071_recall_none" text="Hier warten keine Veteranen. Soldaten, die ihren Dienst beenden, kehren in die Siedlung zurück, die sie ausgehoben hat, und erscheinen in deren Register." />
+    <string id="b1071_recall_none_map" text="Auf keinem Register, aus dem du schöpfen darfst, warten Veteranen. Soldaten, die ihren Dienst beenden, kehren in die Siedlung zurück, die sie ausgehoben hat." />
+    <string id="b1071_recall_notice_map" text="Erst muss die Nachricht hinreiten, dann marschieren die Männer zu dir, wo immer du bist. Gold und Mannstärke werden beim Absenden des Befehls fällig." />
+    <string id="b1071_recall_notice_map_off" text="Der Rückruf aus der Ferne ist in den Mod-Einstellungen abgeschaltet, du musst also persönlich zur Siedlung reiten, um ihre Veteranen zurückzuholen." />
     <string id="b1071_recall_notice_own" text="Dies ist nicht dein Reich, daher antworten nur die Männer, die du selbst heimgeschickt hast." />
     <string id="b1071_recall_open_fail" text="Veteranenregister konnte nicht geöffnet werden: {ERR}" />
+    <string id="b1071_recall_ordered" text="Der Ruf geht an {COUNT} {TROOP} in {SETTLEMENT} für {COST}g. In etwa {DAYS} Tagen sollten sie bei dir sein." />
     <string id="b1071_recall_party_full" text="Deine Gruppe ist voll." />
+    <string id="b1071_recall_status_courier" text="Bote unterwegs — etwa {DAYS} Tage" />
+    <string id="b1071_recall_status_marching" text="Auf dem Marsch zu dir — etwa {DAYS} Tage" />
+    <string id="b1071_recall_still_resting" text="Diese Männer sind seit ihrem letzten Dienst noch daheim. Der Erste nimmt in {DAYS} Tag{DPLURAL} wieder Dienst." />
     <string id="b1071_recall_summary" text="{MEN} Veteranen hier daheim, {TYPES} Truppenarten. Sie zerstreuen sich {RETENTION} Tage nach der Entlassung." />
+    <string id="b1071_recall_summary_map" text="{MEN} Veteranen auf {PLACES} Registern, aus denen du schöpfen darfst." />
     <string id="b1071_recall_summary_own" text="{MEN} deiner eigenen Männer hier, {TYPES} Truppenarten. Sie zerstreuen sich {RETENTION} Tage nach der Entlassung." />
     <string id="b1071_recall_title" text="Veteranenregister — {SETTLEMENT}" />
+    <string id="b1071_recall_title_map" text="Veteranenregister" />
+    <string id="b1071_recall_transit_paid" text="Bezahlt" />
+    <string id="b1071_recall_transit_status" text="Status" />
+    <string id="b1071_recall_transit_title" text="Unterwegs zu dir" />
     <string id="b1071_recall_unavailable" text="Das Veteranenregister ist in dieser Kampagne nicht verfügbar." />
     <string id="b1071_recall_waiting" text="Daheim" />
     <string id="b1071_ui_cancel" text="Abbrechen" />

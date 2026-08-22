@@ -421,6 +421,7 @@
     <string id="b1071_ui_mp_donehint" text="Effectif : {POOL} a besoin de {NEEDED} pour {TROOP}, il ne reste que {LEFT}." />
     <string id="b1071_ui_recruit" text="Recruter" />
     <string id="b1071_ui_status" text="Statut" />
+    <string id="b1071_ui_settlement" text="Fief" />
     <string id="b1071_ui_tier" text="Rang" />
     <string id="b1071_ui_troop" text="Troupe" />
     <string id="b1071_ui_unknown" text="Inconnu" />
@@ -1294,34 +1295,61 @@
     <string id="b1071_demob_released_partial" text="{COUNT} {TROOP} libérés du service. {ARRIVED} ont atteint {HOME} et pourront être réengagés depuis son registre des vétérans ; les autres ne sont pas rentrés." />
     <string id="b1071_demob_retired_home" text="{COUNT} soldat{PLURAL} ont achevé leur service et sont rentrés chez eux. Premier groupe : {TROOP}, en route pour {HOME}. Vous pouvez réengager des vétérans depuis le registre des vétérans d'un fief." />
     <string id="b1071_mcm_g_demob_vets" text="Service des troupes - Vétérans" />
+    <string id="b1071_mcm_h_demob_ai_recall" text="Un seigneur IA qui entre dans un fief où l'attendent des vétérans auxquels il a droit les engage sur place, en payant le même or et le même effectif que vous. Il ne se détourne jamais de sa route pour eux. Par défaut : activé." />
+    <string id="b1071_mcm_h_demob_courier" text="Distance parcourue en un jour par un ordre de rappel, en distance de carte. À 120, un cavalier couvre environ la largeur d'une région par jour. Plus la valeur est haute, plus les ordres arrivent vite. Par défaut : 120." />
+    <string id="b1071_mcm_h_demob_march" text="Distance parcourue en un jour par les vétérans rappelés qui viennent vous rejoindre, en distance de carte. Ils se dirigent vers votre position, recalculée chaque jour. Par défaut : 60." />
     <string id="b1071_mcm_h_demob_max_extends" text="Combien de fois le service d'un même soldat peut être prolongé. Chaque prolongation après la première coûte 50 % de plus que la précédente. Par défaut : 3." />
     <string id="b1071_mcm_h_demob_notify_interval" text="Nombre minimal de jours entre deux avertissements ou fenêtres du service des troupes. 1 signifie chaque jour, comme auparavant. Par défaut : 3." />
-    <string id="b1071_mcm_h_demob_vet_access" text="Qui peut rappeler les vétérans des autres seigneurs depuis un fief. 0 = Libre (tout seigneur qui n'est pas en guerre avec le propriétaire). 1 = Royaume uniquement (il faut partager le royaume du propriétaire). 2 = Clan uniquement (seul le clan propriétaire du fief). Les mêmes règles s'appliquent au joueur et à l'IA. Vos propres hommes ne sont jamais bloqués : les soldats que vous avez libérés vous-même peuvent toujours être récupérés là où ils sont rentrés, tant que vous n'êtes pas en guerre avec le propriétaire du fief. Par défaut : 1." />
+    <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8, 1=F10, 2=F11, 3=F12. Par défaut : F8." />
+    <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="Permet d'ouvrir le registre des vétérans de toute la carte depuis la carte de campagne. Par défaut : activé." />
+    <string id="b1071_mcm_h_demob_remote" text="Permet d'envoyer un ordre de rappel à n'importe quel fief de la carte au lieu de vous y rendre. L'ordre met du temps à parvenir sur place, puis les hommes marchent jusqu'à vous où que vous soyez. L'or et l'effectif sont prélevés au départ de l'ordre. Désactivez pour exiger votre présence sur place. Par défaut : activé." />
+    <string id="b1071_mcm_h_demob_vet_access" text="Qui peut rappeler les vétérans des autres seigneurs depuis un fief. 0 = Libre (tout seigneur qui n'est pas en guerre avec le propriétaire). 1 = Royaume uniquement (il faut partager le royaume du propriétaire). 2 = Clan uniquement (seul le clan propriétaire du fief). Les mêmes règles s'appliquent au joueur et à l'IA. Vos propres hommes ne sont jamais bloqués : les soldats que vous avez libérés vous-même peuvent toujours être récupérés là où ils sont rentrés, tant que vous n'êtes pas en guerre avec le propriétaire du fief. Par défaut : 2." />
     <string id="b1071_mcm_h_demob_vet_enable" text="Lorsqu'un soldat achève son service, il retourne à pied au fief où il a été recruté, lui rend son effectif et rejoint son registre des vétérans. Si cette option est désactivée, les soldats libérés disparaissent simplement, comme avant. Par défaut : activé." />
     <string id="b1071_mcm_h_demob_vet_gold" text="Prime de rengagement payée par vétéran rappelé, multipliée par son rang. Un vétéran de rang 5 coûte 200 pièces d'or si la valeur est de 40. Le rappel puise aussi dans l'effectif du fief, exactement comme une recrue ordinaire. Par défaut : 40." />
     <string id="b1071_mcm_h_demob_vet_manpower" text="Quelle part du coût en effectif d'un soldat libéré retourne à son fief d'origine. 100 signifie que chaque homme qui survit à son terme peut être levé de nouveau. Baissez cette valeur si vous voulez que la guerre vide durablement les campagnes. Par défaut : 100." />
     <string id="b1071_mcm_h_demob_vet_retention" text="Combien de jours de Bannerlord un soldat libéré reste disponible au rappel avant de s'établir définitivement. Son effectif reste dans le réservoir dans les deux cas. Une année de jeu fait environ 84 jours. Par défaut : 84." />
     <string id="b1071_mcm_h_demob_vet_scatter" text="Pourcentage du registre des vétérans d'un fief perdu lorsque celui-ci est pillé ou passe à un autre royaume. Les vétérans se dispersent quand leur foyer est mis à sac. 0 désactive la dispersion. Par défaut : 50." />
+    <string id="b1071_mcm_h_demob_vet_settle" text="Nombre de jours de Bannerlord qu'un soldat libéré passe chez lui avant de reprendre du service. Jusque-là il figure au registre, mais personne ne peut l'engager, ni vous ni un seigneur IA. Mettez 0 pour pouvoir rappeler un homme le jour même où vous l'avez libéré. Par défaut : 7." />
+    <string id="b1071_mcm_t_demob_ai_recall" text="Les seigneurs IA engagent des vétérans" />
+    <string id="b1071_mcm_t_demob_courier" text="Vitesse du messager" />
+    <string id="b1071_mcm_t_demob_march" text="Vitesse de marche des vétérans" />
     <string id="b1071_mcm_t_demob_max_extends" text="Prolongations autorisées par soldat" />
     <string id="b1071_mcm_t_demob_notify_interval" text="Jours entre les avertissements" />
+    <string id="b1071_mcm_t_demob_recall_hotkey" text="Raccourci du registre" />
+    <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="Activer le raccourci du registre" />
+    <string id="b1071_mcm_t_demob_remote" text="Autoriser le rappel à distance" />
     <string id="b1071_mcm_t_demob_vet_access" text="Restriction d'accès au rappel" />
     <string id="b1071_mcm_t_demob_vet_enable" text="Les soldats libérés rentrent chez eux" />
     <string id="b1071_mcm_t_demob_vet_gold" text="Or de rappel par rang" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="% d'effectif rendu" />
     <string id="b1071_mcm_t_demob_vet_retention" text="Jours au registre des vétérans" />
     <string id="b1071_mcm_t_demob_vet_scatter" text="% de dispersion (pillage/prise)" />
+    <string id="b1071_mcm_t_demob_vet_settle" text="Jours au foyer avant rappel" />
     <string id="b1071_recall_action" text="Rappeler" />
+    <string id="b1071_recall_arrived" text="{COUNT} {TROOP} sont arrivés de {SETTLEMENT} et ont rejoint votre groupe." />
+    <string id="b1071_recall_arrived_partial" text="{COUNT} {TROOP} de {SETTLEMENT} ont rejoint votre groupe. {LEFT} autres attendent à côté qu'une place se libère." />
     <string id="b1071_recall_block_access" text="Vous n'avez pas le droit de recruter sur le registre de ce fief." />
     <string id="b1071_recall_block_disabled" text="Le retour des vétérans est désactivé dans les options du mod." />
     <string id="b1071_recall_block_gold" text="Or insuffisant : {COST}g par homme." />
     <string id="b1071_recall_block_manpower" text="Effectif insuffisant ici : {COST} nécessaires, {LEFT} restants." />
     <string id="b1071_recall_block_party" text="Votre groupe est plein." />
+    <string id="b1071_recall_block_remote" text="Vous devez vous rendre en personne à {SETTLEMENT} pour rappeler ces hommes." />
+    <string id="b1071_recall_block_settling" text="Ces hommes se reposent encore chez eux. Le premier reprendra du service dans {DAYS} jour{DPLURAL}." />
+    <string id="b1071_recall_cancel" text="Annuler" />
+    <string id="b1071_recall_cancel_hint" text="Annulez l'ordre. Les hommes retournent au registre de {SETTLEMENT} et l'effectif est restitué.{NEWLINE}La prime de {COST}g n'est pas rendue : elle a été versée au départ de l'ordre." />
+    <string id="b1071_recall_cancelled" text="{COUNT} {TROOP} rompent les rangs et retournent au registre de {SETTLEMENT}. La prime de {COST}g n'est pas rendue." />
     <string id="b1071_recall_days" text="Dispersion dans" />
     <string id="b1071_recall_done" text="{COUNT} {TROOP} ont répondu à l'appel à {SETTLEMENT} pour {COST}g." />
+    <string id="b1071_recall_eta" text="Arrivée dans" />
     <string id="b1071_recall_gold_each" text="Or / homme" />
     <string id="b1071_recall_hint" text="Rappelez ces hommes : {GOLD}g et {MANPOWER} d'effectif par homme. Leur terme de service repart de zéro et {SETTLEMENT} redevient leur foyer. Ils se dispersent dans {DAYS} jours si on les laisse.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
     <string id="b1071_recall_hint_blocked" text="Ces vétérans ne peuvent pas être rappelés pour l'instant." />
+    <string id="b1071_recall_hint_remote" text="Faites venir ces hommes : {GOLD}g et {MANPOWER} d'effectif par homme, versés au départ de l'ordre. Le message doit d'abord atteindre {SETTLEMENT}, puis ils marchent jusqu'à vous — environ {ETA} jour{EPLURAL} en tout. Leur terme de service repart de zéro à l'arrivée. Ils se dispersent dans {DAYS} jours si on les laisse.{NEWLINE}Clic pour un homme, Maj+clic pour {BATCH}, Ctrl+clic pour les {COUNT}." />
+    <string id="b1071_recall_hint_resting" text="{RESTING} autres se reposent encore de leur dernier terme et ne reprendront pas du service avant {WAIT} jour{WPLURAL}." />
+    <string id="b1071_recall_hold_battle" text="En attente de la fin des combats." />
+    <string id="b1071_recall_hold_room" text="En attente de place dans votre groupe." />
     <string id="b1071_recall_manpower_each" text="Effectif / homme" />
+    <string id="b1071_recall_must_be_present" text="Vous devez être à {SETTLEMENT} pour rappeler ces hommes." />
     <string id="b1071_recall_no_access" text="Vous ne pouvez pas recruter sur le registre des vétérans de {SETTLEMENT}." />
     <string id="b1071_recall_no_campaign" text="Chargez une campagne avant d'ouvrir le registre des vétérans." />
     <string id="b1071_recall_no_entitlement" text="Vous n'avez pas le droit de recruter sur le registre des vétérans de ce fief." />
@@ -1329,12 +1357,24 @@
     <string id="b1071_recall_no_manpower" text="{SETTLEMENT} n'a plus d'effectif à consacrer aux vétérans." />
     <string id="b1071_recall_no_screen" text="Registre des vétérans : aucun écran actif." />
     <string id="b1071_recall_none" text="Aucun vétéran n'attend ici. Les soldats qui achèvent leur service retournent au fief qui les a levés et apparaissent sur son registre." />
+    <string id="b1071_recall_none_map" text="Aucun vétéran n'attend sur un registre auquel vous avez droit. Les soldats qui achèvent leur service retournent au fief qui les a levés." />
+    <string id="b1071_recall_notice_map" text="Le message doit d'abord parvenir sur place, puis les hommes marchent jusqu'à vous où que vous soyez. L'or et l'effectif sont versés au départ de l'ordre." />
+    <string id="b1071_recall_notice_map_off" text="Le rappel à distance est désactivé dans les réglages du mod : vous devez vous rendre en personne au fief pour rappeler ses vétérans." />
     <string id="b1071_recall_notice_own" text="Ce n'est pas votre royaume : seuls les hommes que vous avez renvoyés vous-même répondront." />
     <string id="b1071_recall_open_fail" text="Échec de l'ouverture du registre des vétérans : {ERR}" />
+    <string id="b1071_recall_ordered" text="L'ordre part pour {COUNT} {TROOP} à {SETTLEMENT} pour {COST}g. Ils devraient vous rejoindre dans {DAYS} jour{DPLURAL} environ." />
     <string id="b1071_recall_party_full" text="Votre groupe est plein." />
+    <string id="b1071_recall_status_courier" text="Messager en route — environ {DAYS} jour{DPLURAL}" />
+    <string id="b1071_recall_status_marching" text="En marche vers vous — environ {DAYS} jour{DPLURAL}" />
+    <string id="b1071_recall_still_resting" text="Ces hommes sont encore chez eux depuis leur dernier terme. Le premier reprendra du service dans {DAYS} jour{DPLURAL}." />
     <string id="b1071_recall_summary" text="{MEN} vétéran{MPLURAL} au foyer ici, {TYPES} type{TPLURAL} de troupe. Ils se dispersent {RETENTION} jours après leur libération." />
+    <string id="b1071_recall_summary_map" text="{MEN} vétéran{MPLURAL} sur {PLACES} registre{PPLURAL} auxquels vous avez droit." />
     <string id="b1071_recall_summary_own" text="{MEN} de vos propres hommes ici, {TYPES} type{TPLURAL} de troupe. Ils se dispersent {RETENTION} jours après leur libération." />
     <string id="b1071_recall_title" text="Registre des vétérans — {SETTLEMENT}" />
+    <string id="b1071_recall_title_map" text="Registre des vétérans" />
+    <string id="b1071_recall_transit_paid" text="Payé" />
+    <string id="b1071_recall_transit_status" text="État" />
+    <string id="b1071_recall_transit_title" text="En route vers vous" />
     <string id="b1071_recall_unavailable" text="Le registre des vétérans n'est pas disponible dans cette campagne." />
     <string id="b1071_recall_waiting" text="Au foyer" />
     <string id="b1071_ui_cancel" text="Annuler" />

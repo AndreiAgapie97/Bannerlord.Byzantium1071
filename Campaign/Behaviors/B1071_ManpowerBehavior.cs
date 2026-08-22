@@ -2512,25 +2512,29 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Public entry point for external systems (e.g., castle recruitment) to consume
         /// manpower from a settlement's pool. Deducts cost based on troop tier.
         /// Does NOT remove troops from any roster — caller handles that.
+        /// Returns the manpower actually taken, which is short of the asking price whenever
+        /// the pool could not cover it. Anything that may hand the manpower back later must
+        /// credit this figure rather than recompute the price, or the shortfall is minted.
         /// </summary>
-        internal void ConsumeManpowerPublic(Settlement recruitmentSettlement, CharacterObject troop, int amount)
+        internal int ConsumeManpowerPublic(Settlement recruitmentSettlement, CharacterObject troop, int amount)
         {
-            if (recruitmentSettlement == null || troop == null || amount <= 0) return;
+            if (recruitmentSettlement == null || troop == null || amount <= 0) return 0;
 
             Settlement? pool = GetPoolSettlement(recruitmentSettlement);
-            if (pool == null) return;
+            if (pool == null) return 0;
             EnsureEntry(pool);
 
             string poolId = pool.StringId;
-            if (string.IsNullOrEmpty(poolId)) return;
+            if (string.IsNullOrEmpty(poolId)) return 0;
 
             int costPer = GetManpowerCostPerTroop(troop);
-            if (costPer <= 0) return;
+            if (costPer <= 0) return 0;
 
             int max = GetMaxManpowerCached(pool);
             int available = _manpowerByPoolId.TryGetValue(poolId, out int v) ? v : max;
             int consumed = Math.Min(available, costPer * amount);
             _manpowerByPoolId[poolId] = Math.Max(0, available - consumed);
+            return consumed;
         }
 
         /// <summary>

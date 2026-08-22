@@ -67,6 +67,137 @@ namespace Byzantium1071.Campaign.Behaviors
             public bool FromPlayer;
         }
 
+        /// <summary>
+        /// Which discharge batches a hirer may draw from. The register records only whether
+        /// the player discharged a batch, so an AI lord cannot pick his own men out of a
+        /// stranger's register the way the player can — but the player's men are never his
+        /// to take either, which is the half that matters.
+        /// </summary>
+        private enum VeteranClaim
+        {
+            /// <summary>Everyone waiting here, whoever sent them home.</summary>
+            Anyone,
+
+            /// <summary>Only men the player discharged himself.</summary>
+            PlayerOnly,
+
+            /// <summary>Everyone except the player's own men — what an AI lord may hire.</summary>
+            ExceptPlayer
+        }
+
+        private static bool Matches(VeteranEntry entry, VeteranClaim claim)
+        {
+            switch (claim)
+            {
+                case VeteranClaim.PlayerOnly: return entry.FromPlayer;
+                case VeteranClaim.ExceptPlayer: return !entry.FromPlayer;
+                default: return true;
+            }
+        }
+
+        /// <summary>
+        /// Days a discharged man spends at home before he will sign on again. Without this a
+        /// term of service means nothing: you could release a soldier the day before a battle
+        /// and buy him straight back, so the register would be a way of dodging the clock
+        /// rather than a place men go. Clamped below the register's own retention so a pair of
+        /// settings can never leave a window of zero days in which anyone is hireable.
+        /// </summary>
+        private static int VeteranSettlingDays()
+        {
+            int retentionDays = Math.Max(1, Settings.DemobilizationVeteranRetentionDays);
+            return ClampInt(Settings.DemobilizationVeteranSettlingDays, 0, retentionDays - 1);
+        }
+
+        /// <summary>True once this batch has been home long enough to answer another call.</summary>
+        private static bool IsSettled(VeteranEntry entry, int today)
+            => today - entry.DischargeDay >= VeteranSettlingDays();
+
+        /// <summary>Days before this batch will sign on again. Zero once it will.</summary>
+        private static int DaysUntilSettled(VeteranEntry entry, int today)
+            => Math.Max(0, VeteranSettlingDays() - (today - entry.DischargeDay));
+
+        /// <summary>Men in this batch a given hirer may sign up today.</summary>
+        private static bool IsHireable(VeteranEntry entry, VeteranClaim claim, int today)
+            => entry.Count > 0 && Matches(entry, claim) && IsSettled(entry, today);
+
+        /// <summary>
+        /// A recall the player ordered from somewhere he was not standing. Deliberately a
+        /// ledger row and not a <see cref="MobileParty"/>: spawning map entities for every
+        /// order would multiply the things the game has to path, feed, and save, and a
+        /// half-tracked party is exactly the kind of object that corrupts a campaign.
+        /// The men exist as a position, a heading and a countdown, nothing more.
+        /// </summary>
+        private sealed class PendingRecallEntry
+        {
+            /// <summary>
+            /// Stable handle for this order. The screen hands one back when the player calls an
+            /// order off, and a position in the list would not do: an earlier order landing or
+            /// being cancelled shifts every row below it, so the click would stand down a
+            /// different batch of men than the one the player pointed at.
+            /// </summary>
+            public int OrderId;
+
+            /// <summary>Settlement the men were called from; also where a cancelled order returns them.</summary>
+            public string SettlementId = string.Empty;
+            public string TroopId = string.Empty;
+            public int Count;
+            public int OrderDay;
+
+            /// <summary>Bounty already handed over. Never refunded — the men were paid to march.</summary>
+            public int GoldPaid;
+
+            /// <summary>
+            /// Manpower the origin pool actually gave up for these men, credited back in full
+            /// if the order is cancelled. What was taken, not what was quoted: a pool too thin
+            /// to cover the whole price hands over what it has, and refunding the price instead
+            /// would put manpower on the map that never existed.
+            /// </summary>
+            public int ManpowerDrawn;
+
+            /// <summary>
+            /// How many of these men came out of the player's own discharge batches. A count
+            /// rather than a flag, because a recall with full access to a register draws the
+            /// longest-waiting men first whoever discharged them, so one order can carry both.
+            /// Cancelling has to put his men back as his and the rest back as the local lord's.
+            /// </summary>
+            public int PlayerOwnedCount;
+
+            /// <summary>Map distance the written order still has to cover before anyone hears it.</summary>
+            public float CourierRemaining;
+
+            /// <summary>
+            /// Where the column is right now. Holds the settlement's position while the
+            /// courier is still riding, then walks toward the player a day at a time.
+            /// NaN means a save gave us no position; <see cref="EnsurePendingPosition"/>
+            /// puts the men back at their settlement before anything reads it.
+            /// </summary>
+            public float PosX = float.NaN;
+            public float PosY = float.NaN;
+        }
+
+        /// <summary>Read-only row describing one recall order still on the road.</summary>
+        public sealed class PendingRecallView
+        {
+            /// <summary>Handle to hand back to <see cref="TryCancelPendingRecall"/>.</summary>
+            public int OrderId;
+            public string SettlementId = string.Empty;
+            public string SettlementName = string.Empty;
+            public string TroopId = string.Empty;
+            public CharacterObject Troop = null!;
+            public int Count;
+            public int Tier;
+            public int GoldPaid;
+
+            /// <summary>True while the order itself is still being carried to the settlement.</summary>
+            public bool CourierStillRiding;
+
+            /// <summary>Whole days until the men reach the player, at today's distance.</summary>
+            public int EtaDays;
+
+            /// <summary>Set when the men are alongside but cannot join yet — a battle, or a full party.</summary>
+            public string HoldReason = string.Empty;
+        }
+
         private sealed class OverdueCandidate
         {
             public string TroopId = string.Empty;
@@ -113,15 +244,34 @@ namespace Byzantium1071.Campaign.Behaviors
         public sealed class VeteranView
         {
             public string SettlementId = string.Empty;
+            public string SettlementName = string.Empty;
             public string TroopId = string.Empty;
             public CharacterObject Troop = null!;
+
+            /// <summary>Men here who will sign on today. The recall acts on these and no others.</summary>
             public int Count;
+
+            /// <summary>Men here who are still resting out their days at home and will not sign on yet.</summary>
+            public int RestingCount;
+
+            /// <summary>Days before the first of the resting men answers a call. Zero when none are resting.</summary>
+            public int DaysUntilReady;
+
             public int Tier;
             public int GoldCostPerMan;
             public int ManpowerCostPerMan;
+
+            /// <summary>The register's settlement, carried so the map-wide screen can act on a row.</summary>
+            public Settlement Settlement = null!;
             public int DaysUntilGone;
             public bool CanRecallOne;
             public string BlockReason = string.Empty;
+
+            /// <summary>False when the player is standing in this settlement, so the men join at once.</summary>
+            public bool IsRemote;
+
+            /// <summary>Whole days before a recall ordered today would reach the player. Zero when he is here.</summary>
+            public int EtaDays;
         }
 
         private readonly Dictionary<string, Dictionary<string, List<CohortEntry>>> _serviceCohorts
@@ -136,6 +286,12 @@ namespace Byzantium1071.Campaign.Behaviors
         // settlementId -> troopId -> discharge batches
         private readonly Dictionary<string, Dictionary<string, List<VeteranEntry>>> _veteranRegister
             = new Dictionary<string, Dictionary<string, List<VeteranEntry>>>();
+
+        /// <summary>Recall orders in flight, oldest first. Player-only; the AI hires on the spot.</summary>
+        private readonly List<PendingRecallEntry> _pendingRecalls = new List<PendingRecallEntry>();
+
+        /// <summary>Next free order handle. Rebuilt from the loaded orders rather than saved.</summary>
+        private int _nextRecallOrderId = 1;
 
         private List<string>? _savedPartyIds;
         private List<string>? _savedTroopIds;
@@ -159,6 +315,18 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<int>? _savedVeteranCounts;
         private List<bool>? _savedVeteranFromPlayer;
 
+        private List<int>? _savedPendingOrderIds;
+        private List<string>? _savedPendingSettlementIds;
+        private List<string>? _savedPendingTroopIds;
+        private List<int>? _savedPendingCounts;
+        private List<int>? _savedPendingOrderDays;
+        private List<int>? _savedPendingGold;
+        private List<int>? _savedPendingManpower;
+        private List<int>? _savedPendingOwnCounts;
+        private List<float>? _savedPendingCourier;
+        private List<float>? _savedPendingPosX;
+        private List<float>? _savedPendingPosY;
+
         private int _lastWarningDay = -1;
         private int _lastWarningEvalDay = -1;
         private int _lastPopupDay = -1;
@@ -171,6 +339,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnUnitRecruitedEvent.AddNonSerializedListener(this, OnUnitRecruited);
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, OnRaidCompleted);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
+            CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -194,6 +363,17 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedVeteranDischargeDays ??= new List<int>();
             _savedVeteranCounts ??= new List<int>();
             _savedVeteranFromPlayer ??= new List<bool>();
+            _savedPendingOrderIds ??= new List<int>();
+            _savedPendingSettlementIds ??= new List<string>();
+            _savedPendingTroopIds ??= new List<string>();
+            _savedPendingCounts ??= new List<int>();
+            _savedPendingOrderDays ??= new List<int>();
+            _savedPendingGold ??= new List<int>();
+            _savedPendingManpower ??= new List<int>();
+            _savedPendingOwnCounts ??= new List<int>();
+            _savedPendingCourier ??= new List<float>();
+            _savedPendingPosX ??= new List<float>();
+            _savedPendingPosY ??= new List<float>();
 
             if (!dataStore.IsLoading)
             {
@@ -216,6 +396,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedVeteranDischargeDays.Clear();
                 _savedVeteranCounts.Clear();
                 _savedVeteranFromPlayer.Clear();
+                _savedPendingOrderIds.Clear();
+                _savedPendingSettlementIds.Clear();
+                _savedPendingTroopIds.Clear();
+                _savedPendingCounts.Clear();
+                _savedPendingOrderDays.Clear();
+                _savedPendingGold.Clear();
+                _savedPendingManpower.Clear();
+                _savedPendingOwnCounts.Clear();
+                _savedPendingCourier.Clear();
+                _savedPendingPosX.Clear();
+                _savedPendingPosY.Clear();
 
                 foreach (var partyKvp in _serviceCohorts)
                 {
@@ -273,6 +464,28 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
                     }
                 }
+
+                foreach (PendingRecallEntry pending in _pendingRecalls)
+                {
+                    if (pending.Count <= 0) continue;
+
+                    // A save taken before the first daily tick after a load can still be
+                    // carrying a position we never filled in. Settle it now rather than
+                    // writing a NaN into the save file.
+                    EnsurePendingPosition(pending);
+
+                    _savedPendingOrderIds.Add(pending.OrderId);
+                    _savedPendingSettlementIds.Add(pending.SettlementId);
+                    _savedPendingTroopIds.Add(pending.TroopId);
+                    _savedPendingCounts.Add(pending.Count);
+                    _savedPendingOrderDays.Add(pending.OrderDay);
+                    _savedPendingGold.Add(pending.GoldPaid);
+                    _savedPendingManpower.Add(pending.ManpowerDrawn);
+                    _savedPendingOwnCounts.Add(pending.PlayerOwnedCount);
+                    _savedPendingCourier.Add(pending.CourierRemaining);
+                    _savedPendingPosX.Add(pending.PosX);
+                    _savedPendingPosY.Add(pending.PosY);
+                }
             }
 
             dataStore.SyncData("b1071_demob_partyIds", ref _savedPartyIds);
@@ -294,6 +507,17 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("b1071_demob_vetDischargeDays", ref _savedVeteranDischargeDays);
             dataStore.SyncData("b1071_demob_vetCounts", ref _savedVeteranCounts);
             dataStore.SyncData("b1071_demob_vetFromPlayer", ref _savedVeteranFromPlayer);
+            dataStore.SyncData("b1071_demob_pendOrderIds", ref _savedPendingOrderIds);
+            dataStore.SyncData("b1071_demob_pendSettlementIds", ref _savedPendingSettlementIds);
+            dataStore.SyncData("b1071_demob_pendTroopIds", ref _savedPendingTroopIds);
+            dataStore.SyncData("b1071_demob_pendCounts", ref _savedPendingCounts);
+            dataStore.SyncData("b1071_demob_pendOrderDays", ref _savedPendingOrderDays);
+            dataStore.SyncData("b1071_demob_pendGold", ref _savedPendingGold);
+            dataStore.SyncData("b1071_demob_pendManpower", ref _savedPendingManpower);
+            dataStore.SyncData("b1071_demob_pendOwnCounts", ref _savedPendingOwnCounts);
+            dataStore.SyncData("b1071_demob_pendCourier", ref _savedPendingCourier);
+            dataStore.SyncData("b1071_demob_pendPosX", ref _savedPendingPosX);
+            dataStore.SyncData("b1071_demob_pendPosY", ref _savedPendingPosY);
 
             _savedPartyIds ??= new List<string>();
             _savedTroopIds ??= new List<string>();
@@ -314,12 +538,24 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedVeteranDischargeDays ??= new List<int>();
             _savedVeteranCounts ??= new List<int>();
             _savedVeteranFromPlayer ??= new List<bool>();
+            _savedPendingOrderIds ??= new List<int>();
+            _savedPendingSettlementIds ??= new List<string>();
+            _savedPendingTroopIds ??= new List<string>();
+            _savedPendingCounts ??= new List<int>();
+            _savedPendingOrderDays ??= new List<int>();
+            _savedPendingGold ??= new List<int>();
+            _savedPendingManpower ??= new List<int>();
+            _savedPendingOwnCounts ??= new List<int>();
+            _savedPendingCourier ??= new List<float>();
+            _savedPendingPosX ??= new List<float>();
+            _savedPendingPosY ??= new List<float>();
 
             if (dataStore.IsLoading)
             {
                 _serviceCohorts.Clear();
                 _transferReserve.Clear();
                 _veteranRegister.Clear();
+                _pendingRecalls.Clear();
                 int n = Math.Min(_savedPartyIds.Count,
                     Math.Min(_savedTroopIds.Count, Math.Min(_savedJoinDays.Count, _savedCounts.Count)));
 
@@ -426,7 +662,62 @@ namespace Byzantium1071.Campaign.Behaviors
                     });
                 }
 
-                B1071_VerboseLog.Log(LogTag, $"Loaded {CountTrackedSoldiers()} tracked soldier service entr{(CountTrackedSoldiers() == 1 ? "y" : "ies")} across {_serviceCohorts.Count} part{(_serviceCohorts.Count == 1 ? "y" : "ies")}; transferReserve={CountReservedSoldiers()}, veterans={CountRegisteredVeterans()} at {_veteranRegister.Count} settlement(s).");
+                // Recall orders in flight arrived in v1.0.2.8. Every earlier save simply has
+                // no lists here, which loads as no orders outstanding — the correct answer.
+                int pendingRows = Math.Min(_savedPendingSettlementIds.Count,
+                    Math.Min(_savedPendingTroopIds.Count, _savedPendingCounts.Count));
+
+                for (int i = 0; i < pendingRows; i++)
+                {
+                    string settlementId = _savedPendingSettlementIds[i];
+                    string troopId = _savedPendingTroopIds[i];
+                    int count = _savedPendingCounts[i];
+                    if (string.IsNullOrEmpty(settlementId) || string.IsNullOrEmpty(troopId) || count <= 0) continue;
+
+                    // A missing position is left as NaN rather than read as map origin, which
+                    // is open sea off the western edge: the column would have marched the
+                    // whole map. EnsurePendingPosition puts them back at their settlement,
+                    // once the object manager is certain to answer.
+                    bool hasPosition = i < _savedPendingPosX.Count && i < _savedPendingPosY.Count;
+
+                    _pendingRecalls.Add(new PendingRecallEntry
+                    {
+                        OrderId = i < _savedPendingOrderIds.Count ? _savedPendingOrderIds[i] : 0,
+                        SettlementId = settlementId,
+                        TroopId = troopId,
+                        Count = count,
+                        OrderDay = i < _savedPendingOrderDays.Count ? _savedPendingOrderDays[i] : GetToday(),
+                        GoldPaid = i < _savedPendingGold.Count ? _savedPendingGold[i] : 0,
+                        ManpowerDrawn = i < _savedPendingManpower.Count ? _savedPendingManpower[i] : 0,
+
+                        // Missing means none of them are his, which is the safe reading: it
+                        // hands the local lord men that were the player's rather than the
+                        // other way round, and only for orders already on the road.
+                        PlayerOwnedCount = i < _savedPendingOwnCounts.Count
+                            ? ClampInt(_savedPendingOwnCounts[i], 0, count)
+                            : 0,
+                        CourierRemaining = i < _savedPendingCourier.Count ? _savedPendingCourier[i] : 0f,
+                        PosX = hasPosition ? _savedPendingPosX[i] : float.NaN,
+                        PosY = hasPosition ? _savedPendingPosY[i] : float.NaN
+                    });
+                }
+
+                // Handles are rebuilt rather than saved: all that matters is that no two
+                // outstanding orders share one and that the next order gets a free number.
+                _nextRecallOrderId = 1;
+                foreach (PendingRecallEntry pending in _pendingRecalls)
+                {
+                    if (pending.OrderId >= _nextRecallOrderId)
+                        _nextRecallOrderId = pending.OrderId + 1;
+                }
+
+                foreach (PendingRecallEntry pending in _pendingRecalls)
+                {
+                    if (pending.OrderId <= 0)
+                        pending.OrderId = _nextRecallOrderId++;
+                }
+
+                B1071_VerboseLog.Log(LogTag, $"Loaded {CountTrackedSoldiers()} tracked soldier service entr{(CountTrackedSoldiers() == 1 ? "y" : "ies")} across {_serviceCohorts.Count} part{(_serviceCohorts.Count == 1 ? "y" : "ies")}; transferReserve={CountReservedSoldiers()}, veterans={CountRegisteredVeterans()} at {_veteranRegister.Count} settlement(s), pendingRecalls={_pendingRecalls.Count}.");
             }
         }
 
@@ -638,8 +929,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 CleanupVeteranRegister(today);
+                AdvancePendingRecalls(today);
                 ShowMainPartyWarningIfNeeded(today);
-                B1071_VerboseLog.Log(LogTag, $"Daily tick day={today}: processedParties={eligibleParties.Count}, trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}, transferReserve={CountReservedSoldiers()}, veteransOnRegister={CountRegisteredVeterans()}, registeredSettlements={_veteranRegister.Count}.");
+                B1071_VerboseLog.Log(LogTag, $"Daily tick day={today}: processedParties={eligibleParties.Count}, trackedSoldiers={CountTrackedSoldiers()}, trackedParties={_serviceCohorts.Count}, transferReserve={CountReservedSoldiers()}, veteransOnRegister={CountRegisteredVeterans()}, registeredSettlements={_veteranRegister.Count}, pendingRecalls={_pendingRecalls.Count}.");
             }
             catch (Exception ex)
             {
@@ -1194,7 +1486,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 if (extended >= cap) break;
                 if (candidate.Cohort.Count <= 0 || candidate.Cohort.ExtensionCount >= GetMaxExtensions()) continue;
-                if (!CanAiAffordExtension(leader, candidate.Cost)) continue;
+                if (!CanAiAfford(leader, candidate.Cost)) continue;
 
                 if (candidate.Cost > 0)
                     GiveGoldAction.ApplyBetweenCharacters(leader, null, candidate.Cost, disableNotification: true);
@@ -1214,7 +1506,12 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
-        private static bool CanAiAffordExtension(Hero hero, int cost)
+        /// <summary>
+        /// Whether an AI lord will spend on this. He keeps a multiple of the price in reserve
+        /// so that paying for soldiers never leaves him unable to feed the ones he has.
+        /// Shared by service extensions and by hiring veterans off a register.
+        /// </summary>
+        private static bool CanAiAfford(Hero hero, int cost)
         {
             if (cost <= 0) return true;
             int bufferMultiplier = Math.Max(1, Settings.DemobilizationAiExtensionGoldBufferMultiplier);
@@ -1580,10 +1877,15 @@ namespace Byzantium1071.Campaign.Behaviors
         private void ScatterVeteransAt(Settlement? settlement, string reason)
         {
             if (settlement == null || string.IsNullOrEmpty(settlement.StringId)) return;
-            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return;
 
             int scatterPercent = ClampInt(Settings.DemobilizationVeteranScatterPercent, 0, 100);
             if (scatterPercent <= 0) return;
+
+            // Men whose recall order has not reached them yet are still sitting here when the
+            // place is sacked, so they take the same chance as the register does.
+            ScatterPendingRecallsAt(settlement.StringId, scatterPercent);
+
+            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return;
 
             int scattered = 0;
             var troopIds = new List<string>(troopDict.Keys);
@@ -1787,13 +2089,89 @@ namespace Byzantium1071.Campaign.Behaviors
             var rows = new List<VeteranView>();
             if (settlement == null || string.IsNullOrEmpty(settlement.StringId)) return rows;
 
-            int today = GetToday();
-            CleanupVeteranRegister(today);
-            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return rows;
+            CleanupVeteranRegister(GetToday());
+            AppendVeteranRows(settlement, rows, mapWide: false);
+            SortVeteranRows(rows, byArrival: false);
+            return rows;
+        }
 
+        /// <summary>
+        /// Every register on the map the player may draw from, for the map-wide recall screen.
+        /// Sorted by how soon the men would reach him, because at range that is the figure he
+        /// is really choosing between. Settlements he has no claim on are left out entirely
+        /// rather than listed as a wall of refusals.
+        /// </summary>
+        public List<VeteranView> GetAllVeteransForUi()
+        {
+            var rows = new List<VeteranView>();
+            CleanupVeteranRegister(GetToday());
+
+            var settlementIds = new List<string>(_veteranRegister.Keys);
+            foreach (string settlementId in settlementIds)
+            {
+                Settlement? settlement = ResolveSettlement(settlementId);
+                if (settlement == null) continue;
+                AppendVeteranRows(settlement, rows, mapWide: true);
+            }
+
+            SortVeteranRows(rows, byArrival: true);
+            return rows;
+        }
+
+        private static void SortVeteranRows(List<VeteranView> rows, bool byArrival)
+        {
+            rows.Sort((a, b) =>
+            {
+                if (byArrival)
+                {
+                    int arrival = a.EtaDays.CompareTo(b.EtaDays);
+                    if (arrival != 0) return arrival;
+
+                    // Two registers can be the same number of days away. Break the tie on the
+                    // place so one settlement's men stay together instead of interleaving.
+                    int place = string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal);
+                    if (place != 0) return place;
+                }
+
+                int compare = b.Tier.CompareTo(a.Tier);
+                if (compare != 0) return compare;
+                compare = a.DaysUntilGone.CompareTo(b.DaysUntilGone);
+                if (compare != 0) return compare;
+                return string.Compare(a.Troop.Name?.ToString(), b.Troop.Name?.ToString(), StringComparison.Ordinal);
+            });
+        }
+
+        /// <summary>
+        /// Days before men called from this settlement would reach the player: the ride out
+        /// with the order, then the march back to where he stands now.
+        /// </summary>
+        private static int EstimateRecallDays(Settlement settlement, MobileParty? party)
+        {
+            if (party == null) return 0;
+            float distance = settlement.GetPosition2D.Distance(party.GetPosition2D);
+            float days = distance / CourierSpeedPerDay() + distance / MarchSpeedPerDay();
+            return Math.Max(1, (int)Math.Ceiling(days));
+        }
+
+        /// <summary>
+        /// Builds the rows for one settlement's register and appends them, so a row means the
+        /// same thing on the settlement screen and on the map-wide one.
+        /// </summary>
+        private void AppendVeteranRows(Settlement settlement, List<VeteranView> rows, bool mapWide)
+        {
+            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return;
+
+            int today = GetToday();
             int retentionDays = Math.Max(1, Settings.DemobilizationVeteranRetentionDays);
             bool hasAccess = TryGetPlayerRegisterAccess(settlement, out bool ownMenOnly);
             MobileParty? mainParty = MobileParty.MainParty;
+
+            // On the map-wide list a settlement he cannot draw from is simply not his business.
+            if (mapWide && !hasAccess) return;
+
+            bool remote = !IsPlayerAt(settlement);
+            int etaDays = remote ? EstimateRecallDays(settlement, mainParty) : 0;
+            string settlementName = settlement.Name?.ToString() ?? string.Empty;
 
             foreach (var troopKvp in troopDict)
             {
@@ -1803,17 +2181,34 @@ namespace Byzantium1071.Campaign.Behaviors
                 // On foreign ground the screen shows only the player's own veterans. Listing
                 // the local lord's men he cannot touch would just be a wall of blocked rows.
                 int count = 0;
+                int resting = 0;
+                int daysUntilReady = int.MaxValue;
                 int oldestDischargeDay = int.MaxValue;
                 foreach (VeteranEntry entry in troopKvp.Value)
                 {
                     if (entry.Count <= 0) continue;
                     if (ownMenOnly && !entry.FromPlayer) continue;
-                    count += entry.Count;
+
+                    if (IsSettled(entry, today))
+                    {
+                        count += entry.Count;
+                    }
+                    else
+                    {
+                        // Still resting. They belong on the row so the player can see they
+                        // exist and when they will come, but nothing may hire them yet.
+                        resting += entry.Count;
+                        int wait = DaysUntilSettled(entry, today);
+                        if (wait < daysUntilReady)
+                            daysUntilReady = wait;
+                    }
+
                     if (entry.DischargeDay < oldestDischargeDay)
                         oldestDischargeDay = entry.DischargeDay;
                 }
 
-                if (count <= 0) continue;
+                if (count + resting <= 0) continue;
+                if (daysUntilReady == int.MaxValue) daysUntilReady = 0;
 
                 int goldPerMan = GetRecallGoldCost(troop, 1);
                 int manpowerPerMan = 1;
@@ -1832,6 +2227,19 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     canRecallOne = false;
                     blockReason = new TextObject("{=b1071_recall_block_access}You are not entitled to hire from this settlement's register.").ToString();
+                }
+                else if (count <= 0)
+                {
+                    canRecallOne = false;
+                    blockReason = new TextObject("{=b1071_recall_block_settling}These men are still resting at home. The first will take service again in {DAYS} day{DPLURAL}.")
+                        .SetTextVariable("DAYS", daysUntilReady)
+                        .SetTextVariable("DPLURAL", daysUntilReady == 1 ? string.Empty : "s").ToString();
+                }
+                else if (remote && !Settings.EnableDemobilizationRemoteRecall)
+                {
+                    canRecallOne = false;
+                    blockReason = new TextObject("{=b1071_recall_block_remote}You must be at {SETTLEMENT} in person to call these men back.")
+                        .SetTextVariable("SETTLEMENT", settlementName).ToString();
                 }
                 else if (Hero.MainHero == null || Hero.MainHero.Gold < goldPerMan)
                 {
@@ -1855,9 +2263,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 rows.Add(new VeteranView
                 {
                     SettlementId = settlement.StringId,
+                    SettlementName = settlementName,
+                    Settlement = settlement,
                     TroopId = troopKvp.Key,
                     Troop = troop,
                     Count = count,
+                    RestingCount = resting,
+                    DaysUntilReady = daysUntilReady,
                     Tier = troop.Tier,
                     GoldCostPerMan = goldPerMan,
                     ManpowerCostPerMan = manpowerPerMan,
@@ -1865,26 +2277,21 @@ namespace Byzantium1071.Campaign.Behaviors
                         ? retentionDays
                         : Math.Max(0, retentionDays - (today - oldestDischargeDay)),
                     CanRecallOne = canRecallOne,
-                    BlockReason = blockReason
+                    BlockReason = blockReason,
+                    IsRemote = remote,
+                    EtaDays = etaDays
                 });
             }
-
-            rows.Sort((a, b) =>
-            {
-                int compare = b.Tier.CompareTo(a.Tier);
-                if (compare != 0) return compare;
-                compare = a.DaysUntilGone.CompareTo(b.DaysUntilGone);
-                if (compare != 0) return compare;
-                return string.Compare(a.Troop.Name?.ToString(), b.Troop.Name?.ToString(), StringComparison.Ordinal);
-            });
-
-            return rows;
         }
 
-        private static bool HasPartyRoomForOne(MobileParty? party)
+        /// <summary>
+        /// Room for one more man. Soldiers already marching to the player count against the
+        /// cap, or a stack of standing orders would all arrive to a party with no space.
+        /// </summary>
+        private bool HasPartyRoomForOne(MobileParty? party)
         {
             if (party == null) return false;
-            return party.MemberRoster.TotalManCount < party.Party.PartySizeLimit;
+            return party.MemberRoster.TotalManCount + CountPendingRecallSoldiers() < party.Party.PartySizeLimit;
         }
 
         private static bool HasManpowerForOne(Settlement settlement, MobileParty? party, CharacterObject troop, out int available)
@@ -1900,7 +2307,9 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Hires <paramref name="requested"/> veterans of one troop type back into the main party.
         /// Charges the re-enlistment bounty and draws manpower exactly like ordinary recruitment,
         /// then starts their service clock fresh with this settlement as their home.
-        /// Returns how many actually re-enlisted.
+        /// Standing inside the settlement, the men fall in at once. From anywhere else this
+        /// sends a recall order instead: gold and manpower are charged now, and the men arrive
+        /// after the ride there and the march back. Returns how many were signed up either way.
         /// </summary>
         public int TryRecallVeterans(Settlement? settlement, CharacterObject? troop, int requested)
         {
@@ -1928,18 +2337,58 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return 0;
                 if (!troopDict.TryGetValue(troop.StringId, out var entries)) return 0;
 
+                VeteranClaim claim = ownMenOnly ? VeteranClaim.PlayerOnly : VeteranClaim.Anyone;
+
                 int registered = 0;
+                int resting = 0;
+                int daysUntilReady = int.MaxValue;
                 foreach (VeteranEntry entry in entries)
                 {
-                    if (ownMenOnly && !entry.FromPlayer) continue;
-                    registered += Math.Max(0, entry.Count);
+                    if (entry.Count <= 0 || !Matches(entry, claim)) continue;
+
+                    if (IsSettled(entry, today))
+                    {
+                        registered += entry.Count;
+                        continue;
+                    }
+
+                    resting += entry.Count;
+                    int wait = DaysUntilSettled(entry, today);
+                    if (wait < daysUntilReady)
+                        daysUntilReady = wait;
                 }
-                if (registered <= 0) return 0;
+
+                if (registered <= 0)
+                {
+                    // Nobody has finished resting. Say when the first of them will, or the
+                    // screen looks broken to a player who can plainly see men on the row.
+                    if (resting > 0)
+                    {
+                        InformationManager.DisplayMessage(new InformationMessage(
+                            new TextObject("{=b1071_recall_still_resting}Those men are still at home from their last term. The first will take service again in {DAYS} day{DPLURAL}.")
+                                .SetTextVariable("DAYS", daysUntilReady == int.MaxValue ? 0 : daysUntilReady)
+                                .SetTextVariable("DPLURAL", daysUntilReady == 1 ? string.Empty : "s")
+                                .ToString(), Colors.Red));
+                    }
+
+                    return 0;
+                }
 
                 int wanted = Math.Min(requested, registered);
 
-                // Trim to what the party can hold.
-                int room = Math.Max(0, party.Party.PartySizeLimit - party.MemberRoster.TotalManCount);
+                bool remote = !IsPlayerAt(settlement);
+                if (remote && !Settings.EnableDemobilizationRemoteRecall)
+                {
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=b1071_recall_must_be_present}You must be at {SETTLEMENT} to call these men back.")
+                            .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? string.Empty)
+                            .ToString(), Colors.Red));
+                    return 0;
+                }
+
+                // Trim to what the party can hold. Men already marching to you count against
+                // the same room, or a dozen standing orders would all arrive to a full party.
+                int room = Math.Max(0, party.Party.PartySizeLimit - party.MemberRoster.TotalManCount - CountPendingRecallSoldiers());
                 if (room <= 0)
                 {
                     InformationManager.DisplayMessage(new InformationMessage(
@@ -1999,21 +2448,66 @@ namespace Byzantium1071.Campaign.Behaviors
                     GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, null, goldCost, disableNotification: true);
                 }
 
-                manpower?.ConsumeManpowerPublic(settlement, troop, wanted);
-                party.MemberRoster.AddToCounts(troop, wanted);
-                RemoveVeteransFromRegister(settlement.StringId, troop.StringId, wanted, ownMenOnly);
+                // What the pool actually gave up, not what it was billed. The affordability
+                // gate applies the culture discount and the charge does not, so a thin pool
+                // can pass the gate and then hand over less than the price — and a cancelled
+                // order that refunded the price would put the difference on the map.
+                int manpowerDrawn = manpower != null ? manpower.ConsumeManpowerPublic(settlement, troop, wanted) : 0;
+                RemoveVeteransFromRegister(settlement.StringId, troop.StringId, wanted, claim, today, out int ownMenTaken);
 
-                // Their term starts over, and this settlement is now formally their home.
-                AddFreshCohort(party, troop, wanted, today, "veteran_recall", settlement.StringId);
+                string troopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
 
-                B1071_VerboseLog.Log(LogTag, $"Veterans recalled: settlement={settlement.StringId}, troop={troop.StringId}, soldiers={wanted}, gold={goldCost}, remainingAtSettlement={GetVeteranCountAt(settlement)}.");
+                if (!remote)
+                {
+                    party.MemberRoster.AddToCounts(troop, wanted);
+
+                    // Their term starts over, and this settlement is now formally their home.
+                    AddFreshCohort(party, troop, wanted, today, "veteran_recall", settlement.StringId);
+
+                    B1071_VerboseLog.Log(LogTag, $"Veterans recalled: settlement={settlement.StringId}, troop={troop.StringId}, soldiers={wanted}, gold={goldCost}, remainingAtSettlement={GetVeteranCountAt(settlement)}.");
+
+                    InformationManager.DisplayMessage(new InformationMessage(
+                        new TextObject("{=b1071_recall_done}{COUNT} {TROOP} answered the call at {SETTLEMENT} for {COST}g.")
+                            .SetTextVariable("COUNT", wanted)
+                            .SetTextVariable("TROOP", troopName)
+                            .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? string.Empty)
+                            .SetTextVariable("COST", goldCost)
+                            .ToString(), new Color(0.35f, 0.75f, 0.55f)));
+
+                    return wanted;
+                }
+
+                // The order has to reach them before anyone can set off, so the courier rides
+                // the distance that separated you from the settlement when you sent word.
+                Vec2 origin = settlement.GetPosition2D;
+                var pending = new PendingRecallEntry
+                {
+                    OrderId = _nextRecallOrderId++,
+                    SettlementId = settlement.StringId,
+                    TroopId = troop.StringId,
+                    Count = wanted,
+                    OrderDay = today,
+                    GoldPaid = goldCost,
+                    ManpowerDrawn = manpowerDrawn,
+                    PlayerOwnedCount = ownMenTaken,
+                    CourierRemaining = origin.Distance(party.GetPosition2D),
+                    PosX = origin.x,
+                    PosY = origin.y
+                };
+                _pendingRecalls.Add(pending);
+
+                // An order placed today never reads "0 days" — the courier has not even left.
+                int eta = Math.Max(1, EstimateArrivalDays(pending, party.GetPosition2D));
+                B1071_VerboseLog.Log(LogTag, $"Recall ordered at range: settlement={settlement.StringId}, troop={troop.StringId}, soldiers={wanted}, gold={goldCost}, manpower={manpowerDrawn}, courierDistance={pending.CourierRemaining:F1}, etaDays={eta}.");
 
                 InformationManager.DisplayMessage(new InformationMessage(
-                    new TextObject("{=b1071_recall_done}{COUNT} {TROOP} answered the call at {SETTLEMENT} for {COST}g.")
+                    new TextObject("{=b1071_recall_ordered}Word goes out to {COUNT} {TROOP} at {SETTLEMENT} for {COST}g. They should reach you in about {DAYS} day{DPLURAL}.")
                         .SetTextVariable("COUNT", wanted)
-                        .SetTextVariable("TROOP", troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString())
+                        .SetTextVariable("TROOP", troopName)
                         .SetTextVariable("SETTLEMENT", settlement.Name?.ToString() ?? string.Empty)
                         .SetTextVariable("COST", goldCost)
+                        .SetTextVariable("DAYS", eta)
+                        .SetTextVariable("DPLURAL", eta == 1 ? string.Empty : "s")
                         .ToString(), new Color(0.35f, 0.75f, 0.55f)));
 
                 return wanted;
@@ -2026,22 +2520,35 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>Removes recalled men, longest-waiting first.</summary>
-        private void RemoveVeteransFromRegister(string settlementId, string troopId, int count, bool ownMenOnly)
+        private void RemoveVeteransFromRegister(string settlementId, string troopId, int count, VeteranClaim claim, int today)
+            => RemoveVeteransFromRegister(settlementId, troopId, count, claim, today, out _);
+
+        /// <summary>
+        /// Removes recalled men, longest-waiting first. <paramref name="fromPlayerTaken"/> reports
+        /// how many of them came out of the player's own batches — which the request cannot say
+        /// on its own, since full access draws the longest-waiting men whoever discharged them.
+        /// An order that is later called off needs it to put his men back as his.
+        /// </summary>
+        private void RemoveVeteransFromRegister(string settlementId, string troopId, int count, VeteranClaim claim, int today, out int fromPlayerTaken)
         {
+            fromPlayerTaken = 0;
+
             if (count <= 0 || !_veteranRegister.TryGetValue(settlementId, out var troopDict)) return;
             if (!troopDict.TryGetValue(troopId, out var entries)) return;
 
             entries.Sort((a, b) => a.DischargeDay.CompareTo(b.DischargeDay));
 
             // Draw from the same batches the count was taken from, or a recall on foreign
-            // ground would quietly pocket the local lord's veterans instead of the player's.
+            // ground would quietly pocket the local lord's veterans instead of the player's —
+            // and men still resting out their days would be marched off before their time.
             int remaining = count;
             for (int i = 0; i < entries.Count && remaining > 0; i++)
             {
-                if (ownMenOnly && !entries[i].FromPlayer) continue;
+                if (!IsHireable(entries[i], claim, today)) continue;
                 int take = Math.Min(entries[i].Count, remaining);
                 entries[i].Count -= take;
                 remaining -= take;
+                if (entries[i].FromPlayer) fromPlayerTaken += take;
             }
 
             entries.RemoveAll(e => e.Count <= 0);
@@ -2049,6 +2556,505 @@ namespace Byzantium1071.Campaign.Behaviors
                 troopDict.Remove(troopId);
             if (troopDict.Count == 0)
                 _veteranRegister.Remove(settlementId);
+        }
+
+        /// <summary>Men of this type a given hirer could sign up here today, resting men excluded.</summary>
+        private int CountVeterans(string settlementId, string troopId, VeteranClaim claim, int today)
+        {
+            if (!_veteranRegister.TryGetValue(settlementId, out var troopDict)) return 0;
+            if (!troopDict.TryGetValue(troopId, out var entries)) return 0;
+
+            int total = 0;
+            foreach (VeteranEntry entry in entries)
+            {
+                if (!IsHireable(entry, claim, today)) continue;
+                total += entry.Count;
+            }
+
+            return total;
+        }
+
+        // ── Recalls in transit ────────────────────────────────────────────────────
+
+        /// <summary>True when the main party is inside this settlement, so a recall is instant.</summary>
+        private static bool IsPlayerAt(Settlement settlement)
+        {
+            MobileParty? party = MobileParty.MainParty;
+            if (party == null) return false;
+            return party.CurrentSettlement == settlement || Settlement.CurrentSettlement == settlement;
+        }
+
+        private static float CourierSpeedPerDay() => Math.Max(1, Settings.DemobilizationCourierSpeed);
+
+        private static float MarchSpeedPerDay() => Math.Max(1, Settings.DemobilizationMarchSpeed);
+
+        /// <summary>
+        /// Whole days before this order lands, from where the men stand now to where the
+        /// player stands now. An estimate by nature — he keeps moving — so it is recomputed
+        /// every time it is asked for rather than stored on the order.
+        /// </summary>
+        private static int EstimateArrivalDays(PendingRecallEntry entry, Vec2 target)
+        {
+            float days = entry.CourierRemaining > 0f ? entry.CourierRemaining / CourierSpeedPerDay() : 0f;
+            days += new Vec2(entry.PosX, entry.PosY).Distance(target) / MarchSpeedPerDay();
+            return Math.Max(0, (int)Math.Ceiling(days));
+        }
+
+        /// <summary>
+        /// Puts a position on an order that loaded without one. Reading a missing coordinate
+        /// as zero would place the column at map origin — open water off the far corner of
+        /// the map — and set it marching across the whole continent. They start where they
+        /// have always been instead: at the settlement they were called from.
+        /// </summary>
+        private void EnsurePendingPosition(PendingRecallEntry entry)
+        {
+            if (!float.IsNaN(entry.PosX) && !float.IsNaN(entry.PosY)) return;
+
+            Vec2 fallback = ResolveSettlement(entry.SettlementId)?.GetPosition2D
+                ?? MobileParty.MainParty?.GetPosition2D
+                ?? default(Vec2);
+
+            entry.PosX = fallback.x;
+            entry.PosY = fallback.y;
+        }
+
+        /// <summary>Men already spoken for and on their way, counted against the party cap.</summary>
+        private int CountPendingRecallSoldiers()
+        {
+            int total = 0;
+            foreach (PendingRecallEntry entry in _pendingRecalls)
+                total += Math.Max(0, entry.Count);
+            return total;
+        }
+
+        /// <summary>
+        /// Moves every outstanding recall one day closer. The written order rides to the
+        /// settlement first; once it lands the men walk toward wherever the player is standing
+        /// today. The heading is recomputed each day rather than fixed at order time, so a
+        /// column does not march to an empty field the player left a week ago.
+        /// </summary>
+        private void AdvancePendingRecalls(int today)
+        {
+            if (_pendingRecalls.Count == 0) return;
+
+            MobileParty? party = MobileParty.MainParty;
+            if (party == null) return;
+
+            Vec2 target = party.GetPosition2D;
+            float courier = CourierSpeedPerDay();
+            float march = MarchSpeedPerDay();
+
+            for (int i = _pendingRecalls.Count - 1; i >= 0; i--)
+            {
+                PendingRecallEntry entry = _pendingRecalls[i];
+                if (entry.Count <= 0)
+                {
+                    _pendingRecalls.RemoveAt(i);
+                    continue;
+                }
+
+                EnsurePendingPosition(entry);
+
+                // One day, spent first on the ride out and then on whatever marching is left.
+                float budget = 1f;
+
+                if (entry.CourierRemaining > 0f)
+                {
+                    float rideDays = entry.CourierRemaining / courier;
+                    if (rideDays >= budget)
+                    {
+                        entry.CourierRemaining -= courier * budget;
+                        continue;
+                    }
+
+                    entry.CourierRemaining = 0f;
+                    budget -= rideDays;
+                }
+
+                var position = new Vec2(entry.PosX, entry.PosY);
+                Vec2 delta = target - position;
+                float distance = delta.Length;
+                float step = march * budget;
+
+                if (distance > step && distance > 0.0001f)
+                {
+                    position += delta * (step / distance);
+                    entry.PosX = position.x;
+                    entry.PosY = position.y;
+                    continue;
+                }
+
+                // They have caught up. Whether they can fall in today is another question.
+                entry.PosX = target.x;
+                entry.PosY = target.y;
+
+                if (TryDeliverPendingRecall(entry, party, today))
+                    _pendingRecalls.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Signs arrived men into the party. Returns false when some of them must wait —
+        /// a battle under way, or not enough room — in which case they stay alongside and
+        /// try again on the next daily tick.
+        /// </summary>
+        private bool TryDeliverPendingRecall(PendingRecallEntry entry, MobileParty party, int today)
+        {
+            CharacterObject? troop = ResolveTroop(entry.TroopId);
+            if (troop == null)
+            {
+                // The troop type no longer exists — a submod removed between saves. There is
+                // nobody left to deliver, so drop the order rather than retry it forever.
+                B1071_VerboseLog.Log(LogTag, $"Pending recall dropped, troop no longer exists: troop={entry.TroopId}, soldiers={entry.Count}.");
+                return true;
+            }
+
+            // Adding men to a roster mid-battle is the same unsafe state change that early
+            // release refuses. They wait outside until the fighting is over.
+            if (party.MapEvent != null || party.SiegeEvent != null || party.MemberRoster == null) return false;
+
+            int room = Math.Max(0, party.Party.PartySizeLimit - party.MemberRoster.TotalManCount);
+            if (room <= 0) return false;
+
+            int ordered = entry.Count;
+            int joining = Math.Min(ordered, room);
+            party.MemberRoster.AddToCounts(troop, joining);
+
+            // Their term starts over, and the settlement they came from is home again.
+            AddFreshCohort(party, troop, joining, today, "veteran_recall_remote", entry.SettlementId);
+            entry.Count -= joining;
+
+            // The ledger keeps only what the men still outside were paid and drawn for. Left
+            // whole it would quote the full original bounty back at the player if he called
+            // off the remainder, and log a manpower figure for men who already fell in.
+            if (entry.Count > 0 && ordered > 0)
+            {
+                entry.GoldPaid -= entry.GoldPaid * joining / ordered;
+                entry.ManpowerDrawn -= entry.ManpowerDrawn * joining / ordered;
+
+                // Nothing records which men fell in first, so his share of the column shrinks
+                // with it. Clamped, so rounding can never leave the ledger claiming more of
+                // his men than there are men left standing outside.
+                entry.PlayerOwnedCount = Math.Min(entry.Count,
+                    entry.PlayerOwnedCount - entry.PlayerOwnedCount * joining / ordered);
+            }
+
+            string troopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
+            string originName = GetHomeDisplayName(entry.SettlementId);
+
+            B1071_VerboseLog.Log(LogTag, $"Recalled veterans arrived: settlement={entry.SettlementId}, troop={entry.TroopId}, joined={joining}, stillWaiting={entry.Count}, orderedDay={entry.OrderDay}, day={today}.");
+
+            if (entry.Count > 0)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TextObject("{=b1071_recall_arrived_partial}{COUNT} {TROOP} from {SETTLEMENT} joined your party. {LEFT} more wait alongside for room.")
+                        .SetTextVariable("COUNT", joining)
+                        .SetTextVariable("TROOP", troopName)
+                        .SetTextVariable("SETTLEMENT", originName)
+                        .SetTextVariable("LEFT", entry.Count)
+                        .ToString(), new Color(0.85f, 0.55f, 0.25f)));
+                return false;
+            }
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                new TextObject("{=b1071_recall_arrived}{COUNT} {TROOP} marched in from {SETTLEMENT} and rejoined your party.")
+                    .SetTextVariable("COUNT", joining)
+                    .SetTextVariable("TROOP", troopName)
+                    .SetTextVariable("SETTLEMENT", originName)
+                    .ToString(), new Color(0.35f, 0.75f, 0.55f)));
+            return true;
+        }
+
+        /// <summary>Read-only snapshot of every recall order still on the road, soonest first.</summary>
+        public List<PendingRecallView> GetPendingRecallsForUi()
+        {
+            var rows = new List<PendingRecallView>();
+            MobileParty? party = MobileParty.MainParty;
+            Vec2 target = party?.GetPosition2D ?? default(Vec2);
+
+            for (int i = 0; i < _pendingRecalls.Count; i++)
+            {
+                PendingRecallEntry entry = _pendingRecalls[i];
+                if (entry.Count <= 0) continue;
+
+                CharacterObject? troop = ResolveTroop(entry.TroopId);
+                if (troop == null) continue;
+
+                EnsurePendingPosition(entry);
+                int eta = EstimateArrivalDays(entry, target);
+
+                // Zero days out and still on the list means something is stopping them from
+                // falling in. Say which, so a stuck order never looks like a broken one.
+                string hold = string.Empty;
+                if (eta <= 0 && party != null)
+                {
+                    if (party.MapEvent != null || party.SiegeEvent != null)
+                        hold = new TextObject("{=b1071_recall_hold_battle}Waiting for the fighting to end.").ToString();
+                    else if (party.MemberRoster != null && party.MemberRoster.TotalManCount >= party.Party.PartySizeLimit)
+                        hold = new TextObject("{=b1071_recall_hold_room}Waiting for room in your party.").ToString();
+                }
+
+                rows.Add(new PendingRecallView
+                {
+                    OrderId = entry.OrderId,
+                    SettlementId = entry.SettlementId,
+                    SettlementName = GetHomeDisplayName(entry.SettlementId),
+                    TroopId = entry.TroopId,
+                    Troop = troop,
+                    Count = entry.Count,
+                    Tier = troop.Tier,
+                    GoldPaid = entry.GoldPaid,
+                    CourierStillRiding = entry.CourierRemaining > 0f,
+                    EtaDays = eta,
+                    HoldReason = hold
+                });
+            }
+
+            rows.Sort((a, b) =>
+            {
+                int compare = a.EtaDays.CompareTo(b.EtaDays);
+                if (compare != 0) return compare;
+                return string.Compare(a.Troop.Name?.ToString(), b.Troop.Name?.ToString(), StringComparison.Ordinal);
+            });
+
+            return rows;
+        }
+
+        /// <summary>
+        /// Calls off a recall order. The men turn around and go back on their settlement's
+        /// register, and the manpower goes back into its pool. The bounty does not come back:
+        /// it was handed over when the order went out, and they kept it.
+        /// </summary>
+        public bool TryCancelPendingRecall(int orderId, string settlementId, string troopId)
+        {
+            try
+            {
+                // Found by handle, never by position: two orders for the same men from the
+                // same place are ordinary, and one of them landing shifts the other's row.
+                int index = -1;
+                for (int i = 0; i < _pendingRecalls.Count; i++)
+                {
+                    if (_pendingRecalls[i].OrderId != orderId) continue;
+                    index = i;
+                    break;
+                }
+
+                if (index < 0) return false;
+
+                PendingRecallEntry entry = _pendingRecalls[index];
+                // The row the screen was built from should still describe this order.
+                if (!string.Equals(entry.SettlementId, settlementId, StringComparison.Ordinal)) return false;
+                if (!string.Equals(entry.TroopId, troopId, StringComparison.Ordinal)) return false;
+
+                int today = GetToday();
+                Settlement? origin = ResolveSettlement(entry.SettlementId);
+                CharacterObject? troop = ResolveTroop(entry.TroopId);
+
+                if (origin != null && troop != null)
+                {
+                    // Exactly what the pool gave up for the men still on the road, which the
+                    // ledger has been carrying and trimming as men fell in or scattered.
+                    // Recomputing it from the price here would credit back manpower a thin
+                    // pool never actually had to give.
+                    B1071_ManpowerBehavior.Instance?.AddManpowerToSettlement(origin, entry.ManpowerDrawn);
+
+                    // Back on the register as men who have already done their resting. They
+                    // had finished it once, before the order went out; standing them down
+                    // again is not a reason to make them sit out a second term at home.
+                    // The player's own men go back as his: an order sent with full access to
+                    // the register can carry his veterans and the local lord's together, and
+                    // returning the lot as the lord's would quietly sign his own men away.
+                    int settledDay = today - VeteranSettlingDays();
+                    int ownMen = ClampInt(entry.PlayerOwnedCount, 0, entry.Count);
+
+                    if (ownMen > 0)
+                        AddVeteransToRegister(entry.SettlementId, entry.TroopId, ownMen, settledDay, true);
+                    if (entry.Count > ownMen)
+                        AddVeteransToRegister(entry.SettlementId, entry.TroopId, entry.Count - ownMen, settledDay, false);
+                }
+
+                _pendingRecalls.RemoveAt(index);
+
+                B1071_VerboseLog.Log(LogTag, $"Recall cancelled: settlement={entry.SettlementId}, troop={entry.TroopId}, soldiers={entry.Count}, goldForfeited={entry.GoldPaid}, manpowerReturned={entry.ManpowerDrawn}.");
+
+                InformationManager.DisplayMessage(new InformationMessage(
+                    new TextObject("{=b1071_recall_cancelled}{COUNT} {TROOP} stand down and go back on the register at {SETTLEMENT}. The {COST}g bounty is not returned.")
+                        .SetTextVariable("COUNT", entry.Count)
+                        .SetTextVariable("TROOP", troop?.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString())
+                        .SetTextVariable("SETTLEMENT", GetHomeDisplayName(entry.SettlementId))
+                        .SetTextVariable("COST", entry.GoldPaid)
+                        .ToString(), new Color(0.85f, 0.55f, 0.25f)));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"TryCancelPendingRecall failed: {ex.GetType().Name}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Men whose recall order has not reached them yet are still sitting in the settlement
+        /// when it is sacked, so they scatter alongside the register. Columns already on the
+        /// road are past the walls and out of it, and are left alone.
+        /// </summary>
+        private void ScatterPendingRecallsAt(string settlementId, int scatterPercent)
+        {
+            if (scatterPercent <= 0 || _pendingRecalls.Count == 0) return;
+
+            int scattered = 0;
+            for (int i = _pendingRecalls.Count - 1; i >= 0; i--)
+            {
+                PendingRecallEntry entry = _pendingRecalls[i];
+                if (entry.CourierRemaining <= 0f) continue;
+                if (!string.Equals(entry.SettlementId, settlementId, StringComparison.Ordinal)) continue;
+
+                int lost = entry.Count * scatterPercent / 100;
+                if (lost <= 0 && MBRandom.RandomInt(100) < scatterPercent)
+                    lost = 1;
+
+                lost = Math.Min(lost, entry.Count);
+                if (lost <= 0) continue;
+
+                int ordered = entry.Count;
+                entry.Count -= lost;
+                scattered += lost;
+
+                // Keep the ledger about the men who are left, so calling off what remains
+                // quotes their share of the bounty rather than the whole original order.
+                if (entry.Count > 0)
+                {
+                    entry.GoldPaid -= entry.GoldPaid * lost / ordered;
+                    entry.ManpowerDrawn -= entry.ManpowerDrawn * lost / ordered;
+                    entry.PlayerOwnedCount = Math.Min(entry.Count,
+                        entry.PlayerOwnedCount - entry.PlayerOwnedCount * lost / ordered);
+                }
+
+                if (entry.Count <= 0)
+                    _pendingRecalls.RemoveAt(i);
+            }
+
+            if (scattered > 0)
+                B1071_VerboseLog.Log(LogTag, $"Pending recalls scattered: settlement={settlementId}, soldiers={scattered}, percent={scatterPercent}.");
+        }
+
+        // ── AI hiring ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// An AI lord who happens to enter a settlement hires the veterans waiting there,
+        /// paying the same bounty and drawing the same manpower the player would. Deliberately
+        /// passive: nothing sends him looking for a register, so this never redirects the AI's
+        /// own plans — it only lets him pick men up on his way through.
+        /// </summary>
+        private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
+        {
+            try
+            {
+                if (!Settings.EnableDemobilizationSystem || !Settings.EnableDemobilizationVeteranReturn) return;
+                if (!Settings.EnableDemobilizationAiRecall) return;
+                if (party == null || settlement == null) return;
+                if (party == MobileParty.MainParty) return;
+                if (!IsEligibleFieldParty(party)) return;
+
+                Clan? clan = party.ActualClan ?? party.LeaderHero?.Clan;
+                if (clan == null) return;
+
+                // The player's own lords keep their hands off. Their discharges count as his
+                // men, and having a companion quietly drain a register he is saving for
+                // himself would be the opposite of helpful.
+                if (clan == Clan.PlayerClan) return;
+
+                TryAiHireVeterans(party, clan, settlement);
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"OnSettlementEntered skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private void TryAiHireVeterans(MobileParty party, Clan clan, Settlement settlement)
+        {
+            if (party.MemberRoster == null || party.MapEvent != null || party.SiegeEvent != null) return;
+            if (string.IsNullOrEmpty(settlement.StringId)) return;
+            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict) || troopDict.Count == 0) return;
+
+            // Same access ladder the player climbs. He gets no own-men exception: the register
+            // records only whose men are the player's, and those are never on offer to anyone.
+            if (!CanFactionAccessVeteranRegister(clan.MapFaction, clan, settlement)) return;
+
+            Hero? leader = party.LeaderHero;
+            if (leader == null) return;
+
+            int room = Math.Max(0, party.Party.PartySizeLimit - party.MemberRoster.TotalManCount);
+            if (room <= 0) return;
+
+            int today = GetToday();
+            B1071_ManpowerBehavior? manpower = B1071_ManpowerBehavior.Instance;
+            int hiredTotal = 0;
+            int spentTotal = 0;
+
+            var troopIds = new List<string>(troopDict.Keys);
+            foreach (string troopId in troopIds)
+            {
+                if (room <= 0) break;
+
+                CharacterObject? troop = ResolveTroop(troopId);
+                if (troop == null) continue;
+
+                int wanted = Math.Min(CountVeterans(settlement.StringId, troopId, VeteranClaim.ExceptPlayer, today), room);
+                if (wanted <= 0) continue;
+
+                // He pays out of his own purse and keeps the same reserve he keeps for
+                // service extensions, so a register never bankrupts a lord.
+                int goldPerMan = GetRecallGoldCost(troop, 1);
+                if (goldPerMan > 0)
+                {
+                    // The most men his purse allows with the reserve still standing. Purely a
+                    // trim on what he asked for: read as a fresh figure it would let a rich
+                    // lord walk off with more men than the register holds and more than his
+                    // party can carry, conjuring the difference out of nothing.
+                    long buffered = (long)goldPerMan * Math.Max(1, Settings.DemobilizationAiExtensionGoldBufferMultiplier);
+                    wanted = (int)Math.Min(wanted, (leader.Gold - 1) / buffered);
+                }
+                if (wanted <= 0) continue;
+
+                // The affordability rule itself has the last word, so this stays honest if the
+                // reserve ever stops being a flat multiple of the price.
+                if (!CanAiAfford(leader, GetRecallGoldCost(troop, wanted))) continue;
+
+                if (manpower != null)
+                {
+                    while (wanted > 0 && !manpower.CanRecruitCountForPlayer(
+                               settlement, party, troop, wanted, out int available, out int costPer, out _))
+                    {
+                        // Downward only, and strictly: a refusal is not an offer, and the pool
+                        // reporting room for more than was asked for would have meant the gate
+                        // let it through in the first place.
+                        int affordable = costPer > 0 ? available / costPer : 0;
+                        wanted = Math.Min(wanted - 1, affordable);
+                    }
+                }
+                if (wanted <= 0) continue;
+
+                int goldCost = GetRecallGoldCost(troop, wanted);
+                if (goldCost > 0)
+                    GiveGoldAction.ApplyBetweenCharacters(leader, null, goldCost, disableNotification: true);
+
+                manpower?.ConsumeManpowerPublic(settlement, troop, wanted);
+                RemoveVeteransFromRegister(settlement.StringId, troopId, wanted, VeteranClaim.ExceptPlayer, today);
+                party.MemberRoster.AddToCounts(troop, wanted);
+                AddFreshCohort(party, troop, wanted, today, "ai_veteran_recall", settlement.StringId);
+
+                room -= wanted;
+                hiredTotal += wanted;
+                spentTotal += goldCost;
+            }
+
+            if (hiredTotal > 0)
+            {
+                B1071_VerboseLog.Log(LogTag, $"AI hired veterans in passing: party={PartyLogName(party)}, settlement={settlement.StringId}, soldiers={hiredTotal}, gold={spentTotal}, remainingAtSettlement={GetVeteranCountAt(settlement)}.");
+            }
         }
 
         private Dictionary<string, int> GetRosterCounts(TroopRoster roster)

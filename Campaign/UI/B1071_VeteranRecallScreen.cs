@@ -1,8 +1,10 @@
 using Byzantium1071.Campaign.Behaviors;
+using Byzantium1071.Campaign.Settings;
 using System;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Engine.GauntletUI;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ScreenSystem;
@@ -24,7 +26,7 @@ namespace Byzantium1071.Campaign.UI
 
         public bool IsAlive => _gauntletLayer != null;
 
-        private B1071_VeteranRecallScreen(ScreenBase parentScreen, Settlement settlement)
+        private B1071_VeteranRecallScreen(ScreenBase parentScreen, Settlement? settlement)
         {
             _parentScreen = parentScreen;
 
@@ -73,7 +75,13 @@ namespace Byzantium1071.Campaign.UI
             _current = null;
         }
 
-        public static void OpenScreen(Settlement settlement)
+        /// <summary>
+        /// The register of every settlement the player may draw from, opened from the campaign
+        /// map. Recalls placed here are sent by courier rather than answered on the spot.
+        /// </summary>
+        public static void OpenScreen() => OpenScreen(null);
+
+        public static void OpenScreen(Settlement? settlement)
         {
             if (_current != null && !_current.IsAlive)
                 _current = null;
@@ -95,12 +103,43 @@ namespace Byzantium1071.Campaign.UI
                 return;
             }
 
-            B1071_VerboseLog.Log("Demobilization", $"Opening veteran register for {settlement.StringId} on top screen '{screen.GetType().Name}'.");
+            B1071_VerboseLog.Log("Demobilization", $"Opening veteran register for {settlement?.StringId ?? "<map-wide>"} on top screen '{screen.GetType().Name}'.");
             _current = new B1071_VeteranRecallScreen(screen, settlement);
             if (!_current.IsAlive)
             {
                 _current = null;
                 B1071_VerboseLog.Log("Demobilization", "Veteran register failed to initialise (Gauntlet layer null after construction).");
+            }
+        }
+
+        /// <summary>
+        /// Watches for the register hotkey on the campaign map, the same way the troop service
+        /// screen watches for its own. Driven from SubModule.OnApplicationTick.
+        /// </summary>
+        internal static void Tick(float dt)
+        {
+            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
+            if (!settings.EnableDemobilizationSystem || !settings.EnableDemobilizationVeteranReturn) return;
+            if (!settings.EnableVeteranRecallHotkey) return;
+            if (TaleWorlds.CampaignSystem.Campaign.Current == null || MobileParty.MainParty == null) return;
+            if (B1071_HotkeyGuard.BlocksPanelHotkey()) return;
+
+            InputKey hotkey = GetConfiguredHotkey(settings.VeteranRecallHotkeyChoice);
+            if (Input.IsKeyPressed(hotkey))
+            {
+                B1071_VerboseLog.Log("Demobilization", $"Register hotkey {hotkey} detected; opening map-wide veteran register.");
+                OpenScreen();
+            }
+        }
+
+        private static InputKey GetConfiguredHotkey(int choice)
+        {
+            switch (choice)
+            {
+                case 1: return InputKey.F10;
+                case 2: return InputKey.F11;
+                case 3: return InputKey.F12;
+                default: return InputKey.F8;
             }
         }
 

@@ -90,17 +90,20 @@ if (behavior != null)
 - `GetMainPartyCohortsForUi()` → `List<CohortView>` — one row per group of interchangeable soldiers in the player's main party. Records are stored one man apiece; this method collapses men who share a troop, a home, an enlistment day and an extension count into a single row, so `Count` is the size of the group and `CohortIndex` is the first record in it *(grouping added in v1.0.2.7)*
 - `CanPlayerAccessVeteranRegister(Settlement? settlement)` → `bool` *(static)* — whether the player may hire **anyone** from this settlement's veteran register under the configured access level *(v1.0.2.7)*
 - `TryGetPlayerRegisterAccess(Settlement? settlement, out bool ownMenOnly)` → `bool` *(static)* — whether the register opens at all, and on what terms. `false` when the player is at war with the owner. `true` with `ownMenOnly == false` is full access; `true` with `ownMenOnly == true` means he may take back only the men he discharged there himself. Prefer this over `CanPlayerAccessVeteranRegister`, which answers only the first half *(v1.0.2.7)*
-- `GetVeteranCountAt(Settlement? settlement)` → `int` — how many discharged veterans are waiting at a settlement; `0` for null and for a settlement with no register. It reports the stock, not your ability to hire it: it does **not** consult `EnableDemobilizationVeteranReturn`, so pair it with `TryGetPlayerRegisterAccess` before offering the player anything *(v1.0.2.7)*
+- `GetVeteranCountAt(Settlement? settlement)` → `int` — how many discharged veterans are waiting at a settlement; `0` for null and for a settlement with no register. It reports the stock, not your ability to hire it: it does **not** consult `EnableDemobilizationVeteranReturn`, and from v1.0.2.8 it also includes men still inside their settling period who nobody may hire yet, so pair it with `TryGetPlayerRegisterAccess` and read `VeteranView.Count` before offering the player anything *(v1.0.2.7)*
 - `GetVeteranCountAt(Settlement? settlement, bool ownMenOnly)` → `int` — same, counting only the player's own discharged men when `ownMenOnly` is set. Feed it the flag from `TryGetPlayerRegisterAccess` *(v1.0.2.7)*
 
 **Public mutating methods:**
 - `GetVeteransForUi(Settlement? settlement)` → `List<VeteranView>` — one row per troop type on that settlement's register, with prices and the per-row block reason. Listed here rather than above because it runs `CleanupVeteranRegister` first: reading the register is what ages expired entries off it *(v1.0.2.7)*
+- `GetAllVeteransForUi()` → `List<VeteranView>` — the same rows for **every** settlement on the map, sorted by arrival time. Settlements the player has no access to are omitted entirely rather than returned with a block reason, so this list is shorter than the sum of the per-settlement ones. Also runs `CleanupVeteranRegister` *(v1.0.2.8)*
+- `GetPendingRecallsForUi()` → `List<PendingRecallView>` — one row per recall order still in transit, sorted by ETA. `OrderId` is the order's own handle, unaffected by the sort, and is what `TryCancelPendingRecall` expects *(v1.0.2.8)*
+- `TryCancelPendingRecall(int orderId, string settlementId, string troopId)` → `bool` — call off an order in transit, found by its `OrderId`. The settlement and troop are validated against it as well, so a stale row from a list that has since re-sorted is refused rather than cancelling the wrong order. The manpower is credited back and the men return to their original register, already past their settling period; the gold is **not** refunded *(v1.0.2.8)*
 - `RegisterDirectRecruitment(MobileParty party, CharacterObject troop, int amount, string source)` → `int` — register soldiers added outside a vanilla recruitment event so they start at service age 0
 - `RegisterDirectRecruitment(MobileParty party, CharacterObject troop, int amount, string source, Settlement? homeSettlement)` → `int` — same, but records the settlement the men return to on discharge. The four-argument overload is kept and simply passes `null`. *(v1.0.2.7)*
 - `TryExtendCohort(string partyId, string troopId, int cohortIndex)` → `bool` — buy one service extension for a single tracked record; fails if gold is short or the extension cap is reached. Records hold one man, so this extends one man
 - `TryExtendCohortGroup(string partyId, string troopId, string homeId, int joinDay, int extensionCount, int requested)` → `int` — extend service for men on one `CohortView` row, identified by the row's `TroopId`, `HomeId`, `JoinDay` and `ExtensionCount`. Every man carries the same fee, so the bill is `CohortView.ExtendCost` times the number extended; a batch the player cannot fully afford shrinks to what his gold covers rather than failing. Returns how many were kept on *(v1.0.2.7)*
 - `TryDischargeCohort(string partyId, string troopId, string homeId, int joinDay, int extensionCount, int requested)` → `int` — release men from one `CohortView` row before their term ends, main party only. Returns how many actually left, trimmed to the row's headcount. Free, and exempt from the daily departure caps, but refused outright while the party is in a `MapEvent` or `SiegeEvent`. Routes through the same `SendVeteranHome` as a completed term, so the manpower credit, the return roll and the register entry are identical *(v1.0.2.7)*
-- `TryRecallVeterans(Settlement? settlement, CharacterObject? troop, int requested)` → `int` — hire veterans back. Returns how many actually joined: the request is trimmed successively by register stock, party room, the player's gold, and the settlement's manpower, so asking for more than is possible returns a smaller number rather than failing. *(v1.0.2.7)*
+- `TryRecallVeterans(Settlement? settlement, CharacterObject? troop, int requested)` → `int` — hire veterans back. Returns how many actually joined: the request is trimmed successively by register stock, party room, the player's gold, and the settlement's manpower, so asking for more than is possible returns a smaller number rather than failing. **Since v1.0.2.8 the return value is how many were *ordered*, not how many are in the party** — when the player is not standing in the settlement the men are placed on the pending-arrival ledger and join over the following days. Party room is measured against `TotalManCount` plus everyone already in transit *(v1.0.2.7)*
 
 **View types:**
 
@@ -125,11 +128,29 @@ public sealed class VeteranView                 // v1.0.2.7
 {
     public string SettlementId, TroopId;
     public CharacterObject Troop;
-    public int Count, Tier;
+    public int Count, Tier;                     // Count is the men who will sign on today
     public int GoldCostPerMan, ManpowerCostPerMan;
     public int DaysUntilGone;
     public bool CanRecallOne;
     public string BlockReason;
+    public string SettlementName;               // v1.0.2.8
+    public Settlement Settlement;               // v1.0.2.8 - act on a row from a map-wide list
+    public bool IsRemote;                       // v1.0.2.8 - false when the player is standing here
+    public int EtaDays;                         // v1.0.2.8 - 0 when IsRemote is false
+    public int RestingCount;                    // v1.0.2.8 - here, but not hireable yet
+    public int DaysUntilReady;                  // v1.0.2.8 - 0 when nobody is resting
+}
+
+public sealed class PendingRecallView           // v1.0.2.8
+{
+    public int OrderId;                         // stable handle, not a list position
+    public string SettlementId, SettlementName;
+    public string TroopId;
+    public CharacterObject Troop;
+    public int Count, Tier, GoldPaid;
+    public bool CourierStillRiding;             // the order has not reached the men yet
+    public int EtaDays;
+    public string HoldReason;                   // set when they are alongside but cannot join
 }
 ```
 
@@ -140,8 +161,8 @@ public sealed class VeteranView                 // v1.0.2.7
 **Intended use:** Display service state in an overlay, add your own recruitment source that participates in the service clock, or offer veterans through a different UI
 
 **Off-limits:**
-- `_serviceCohorts`, `_transferReserve`, `_veteranRegister` dicts (internal state)
-- `SendVeteranHome`, `ScatterVeteransAt`, `CleanupVeteranRegister`, `RetireOverdueCohorts` (daily-tick lifecycle)
+- `_serviceCohorts`, `_transferReserve`, `_veteranRegister`, `_pendingRecalls` (internal state)
+- `SendVeteranHome`, `ScatterVeteransAt`, `CleanupVeteranRegister`, `RetireOverdueCohorts`, `AdvancePendingRecalls` (daily-tick lifecycle)
 - Removing troops from a roster yourself to "discharge" them — that is the manpower leak this system exists to close. Let the daily tick do it, or call `TryDischargeCohort` if you need it to happen now
 
 **Example:**

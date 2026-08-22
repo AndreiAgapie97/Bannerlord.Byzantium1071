@@ -1,4 +1,4 @@
-﻿using Byzantium1071.Campaign.Behaviors;
+using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using Byzantium1071.Campaign.UI;
 using Bannerlord.UIExtenderEx;
@@ -378,6 +378,7 @@ namespace Byzantium1071
             {
                 B1071_OverlayController.Tick(dt);
                 B1071_DemobilizationScreen.Tick(dt);
+                B1071_VeteranRecallScreen.Tick(dt);
             }
             catch (System.Exception ex)
             {
