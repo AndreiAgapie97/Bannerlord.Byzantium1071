@@ -1893,7 +1893,7 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Clan Survival ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyBool("{=b1071_mcm_t_e01075c9d2}Enable clan survival", Order = 0, HintText = "{=b1071_mcm_h_c6dedb0344}Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_e01075c9d2}Enable clan survival", Order = 0, HintText = "{=b1071_mcm_h_c6dedb0344}Master toggle for new rescues. When disabled, Campaign++ stops rescuing additional clans but safely maintains clans already rescued until they join a kingdom or vanilla destroys them after a leader death. Default: on.")]
         public bool EnableClanSurvival { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
@@ -1905,11 +1905,11 @@ namespace Byzantium1071.Campaign.Settings
         public bool PurgeLeftoverRebelClans { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyInteger("{=b1071_mcm_t_8c4c2be8dc}Grace period (days)", 1, 120, "0", Order = 1, HintText = "{=b1071_mcm_h_b41e07e2b2}Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_8c4c2be8dc}Grace period (days)", 1, 120, "0", Order = 1, HintText = "{=b1071_mcm_h_b41e07e2b2}Currently unused. Reserved for a possible future clan auto-placement flow. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 30.")]
         public int ClanSurvivalGracePeriodDays { get; set; } = 30;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}Currently unused. Reserved for possible future culture-based clan placement scoring. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 2.0.")]
         public float ClanSurvivalCultureWeight { get; set; } = 2.0f;
 
     }

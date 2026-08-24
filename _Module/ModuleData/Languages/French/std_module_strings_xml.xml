@@ -233,7 +233,7 @@
     <string id="b1071_qs_name_elite_survivability" text="Survie des troupes d'élite" />
     <string id="b1071_qs_hint_elite_survivability" text="Résistance des troupes de niveau supérieur dans les batailles résolues automatiquement. 0 = Vanilla, 1 = Léger, 2 = Modéré, 3 = Fort." />
     <string id="b1071_qs_name_clan_survival" text="Survie du clan" />
-    <string id="b1071_qs_hint_clan_survival" text="Empêche l'anéantissement du clan lorsque leur royaume est détruit. Les clans sauvés recherchent le service mercenaire." />
+    <string id="b1071_qs_hint_clan_survival" text="Sauve les clans éligibles lorsque leur royaume est détruit. Ils restent indépendants jusqu'à ce qu'ils rejoignent plus tard un royaume via le jeu de base ou un autre mod, ou qu'ils soient légitimement détruits après avoir perdu leur dernier chef valide." />
     <string id="b1071_qs_name_governance" text="Pression sur la gouvernance" />
     <string id="b1071_qs_hint_governance" text="Les guerres, sièges, raids et conquêtes créent de la tension dans les fiefs. Une forte tension réduit la loyauté, la sécurité et la prospérité ; les actions de stabilisation aident à la récupération." />
     <string id="b1071_qs_name_devastation" text="Dévastation des frontières" />
@@ -646,7 +646,7 @@
     <string id="b1071_mcm_h_b378426501" text="Si de petits pools sont activés, poolSize = max(minTinyPool, poolSize / divisor)." />
     <string id="b1071_mcm_h_b3c4d5e602" text="Coût en or pour recruter un soldat de niveau 3 depuis le vivier diversifié du château. Pertinent uniquement lorsque le vivier diversifié est activé. Par défaut : 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Bonus de croissance de prospérité quotidien provenant d’un investissement généreux dans la ville. Par défaut : 1.0." />
-    <string id="b1071_mcm_h_b41e07e2b2" text="Nombre de jours en jeu pendant lesquels un clan sauvé reste indépendant avant de solliciter le service mercenaire. Pendant cette période, ils patrouillent à proximité de leur campement d'origine. Par défaut : 30." />
+    <string id="b1071_mcm_h_b41e07e2b2" text="Actuellement inutilisé. Réservé à un éventuel futur système de placement automatique des clans. Modifier ce paramètre n'a aucun effet dans la version actuelle. Conservé pour assurer la compatibilité des configurations. Valeur par défaut : 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Plafond strict sur la régénération quotidienne en pourcentage de la réserve maximale. Par exemple, 2,0 signifie qu'une ville avec une réserve de 3 000 se régénère au maximum à 60/jour (~50 jours pour remplir)." />
     <string id="b1071_mcm_h_b5c09f9d63" text="Relation acquise avec chaque village notable grâce à un grand investissement. Par défaut : 10." />
     <string id="b1071_mcm_h_b68162ad3f" text="Nombre maximal de troupes d'élite culturelles (T4-T6) qu'un château peut contenir. La réserve se régénère chaque jour grâce à la main-d'œuvre du château. Par défaut : 20." />
@@ -660,7 +660,7 @@
     <string id="b1071_mcm_h_c3dadc496c" text="% du pool maximum conservé après avoir choisi Pillage." />
     <string id="b1071_mcm_h_c4e1a056bd" text="Salaire total du groupe de garnison en pourcentage de ce que coûteraient les mêmes troupes dans un groupe de campagne. 80 = la garnison paie 80 % (20 % de réduction). 100 = pas de réduction. Par défaut : 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Réduit toutes les tailles de pool par le diviseur ci-dessous." />
-    <string id="b1071_mcm_h_c6dedb0344" text="Bascule principale. Lorsqu'un royaume est détruit, les clans éligibles sont sauvés au lieu d'être anéantis. Ils deviennent des factions indépendantes pendant une période de grâce, puis recherchent le service mercenaire dans un royaume pondéré par leur culture. Par défaut : vrai." />
+    <string id="b1071_mcm_h_c6dedb0344" text="Interrupteur pour les nouveaux sauvetages. Lorsqu'il est désactivé, Campaign++ ne sauve plus de nouveaux clans, mais continue de gérer les clans déjà sauvés jusqu'à ce qu'ils rejoignent un royaume ou que le jeu de base les détruise après la mort d'un chef. Par défaut : activé." />
     <string id="b1071_mcm_h_c7d953daef" text="Chaque perte au combat draine cette main-d'œuvre × 1 de la réserve du groupe." />
     <string id="b1071_mcm_h_c80a8ee7a4" text="Lorsque la réserve est inférieure au seuil épuisé, l'efficacité de la pénalité de récupération est réduite de moitié. Empêche les sanctions d'écraser les colonies déjà en ruine qui n'ont plus rien à pénaliser." />
     <string id="b1071_mcm_h_c8401bec75" text="L'IA n'investira que lorsque son or dépassera le coût du niveau multiplié par cette valeur. Plus élevé pour les villes puisque les coûts sont plus élevés (par exemple, 15 signifie qu'un seigneur a besoin de 600 000 d pour Grand). Par défaut : 15." />
@@ -700,7 +700,7 @@
     <string id="b1071_mcm_h_dfbdd67eaa" text="Décalage horizontal par rapport au bord gauche pour le panneau racine de superposition." />
     <string id="b1071_mcm_h_e1a2720769" text="[OBSOLÈTE — NON UTILISÉ] Ce paramètre n'est plus actif. Remplacé par le préréglage de survie des troupes d'élite dans Réalisme de combat, qui définit ensemble la réduction des dégâts et le bonus de survie afin qu'ils ne se cumulent plus. Conservé pour la compatibilité des sauvegardes." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Puissance ajoutée à chaque ville notable grâce à un grand investissement. Par défaut : 20." />
-    <string id="b1071_mcm_h_e5ffddeee0" text="Dans quelle mesure les royaumes de même culture sont-ils préférés lors de l'affectation de services mercenaires ? Des valeurs plus élevées rendent la culture presque obligatoire. À 2,0, les royaumes de même culture obtiennent un score 3 fois plus élevé. Par défaut : 2.0." />
+    <string id="b1071_mcm_h_e5ffddeee0" text="Actuellement inutilisé. Réservé à un éventuel futur calcul du placement des clans selon la culture. Modifier ce paramètre n'a aucun effet dans la version actuelle. Conservé pour assurer la compatibilité des configurations. Valeur par défaut : 2,0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence obtenue grâce à un investissement modeste (uniquement si le village se trouve dans votre royaume). Par défaut : 2,5." />
     <string id="b1071_mcm_h_e6b821a5cd" text="Jours pendant lesquels un prisonnier de niveau 4 doit être détenu avant de pouvoir être recruté. Représente le temps nécessaire pour briser la résistance et négocier la loyauté. Par défaut : 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Les troupes de garnison paient un salaire réduit par rapport aux troupes de campagne. Historiquement exact : les soldats de la garnison recevaient souvent un salaire inférieur, complété par un abri et des rations. S'applique en plus des avantages vanille et des réductions sur les bâtiments." />

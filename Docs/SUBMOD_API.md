@@ -217,12 +217,41 @@ if (behavior != null && B1071_DemobilizationBehavior.TryGetPlayerRegisterAccess(
 **Access:** `B1071_ClanSurvivalBehavior.Instance`
 
 **Public read-only methods:**
-- `IsRebelClanOrigin(Clan clan)` → `bool` — check if a clan is (or originated from) a rebellion
+- `IsTracked(Clan clan)` → `bool` — whether the clan's StringId is present in Campaign++'s persisted rescued-clan tracking dictionary. This reports tracking state only; it does **not** guarantee that the clan is protectable at the current instant.
+- `TrackedClanCount` → `int` — number of entries currently present in the rescued-clan tracking dictionary.
 
-**Intended use:** Identify rebel clans for custom event handling or diplomatic logic
+**Public mutating methods:**
+- `RegisterRescuedClan(Clan clan)` — adds or refreshes the clan's persisted tracking entry. This performs **no** eligibility check, kingdom detach, rebel normalization, succession, diplomacy, or fief handling. Call it only after your own integration has already established a valid independent clan with a living leader. Passing `null` is a no-op.
+
+**Lifecycle contract:**
+- Tracking is protective only while the clan is independent, not eliminated, and has a valid living leader whose `Clan` still points to that clan. Campaign++ re-checks those conditions at every destruction boundary.
+- Vanilla owns succession. Do not call `ChangeClanLeaderAction`, `DestroyClanAction`, fief-transfer actions, or diplomacy actions from inside Campaign++'s rescue callbacks or a prefix on the same destruction methods.
+- `EnableClanSurvival == false` stops new Campaign++ rescues but does not empty existing tracking. Daily war cleanup and safe maintenance continue for already-tracked clans.
+- A tracked clan with a dead, missing, or detached leader can remain visible through `IsTracked` during daily containment. Campaign++ issues no corrective campaign action there; when vanilla next requests clan destruction, tracking is cleared and that call is allowed to finish.
+- There is no public rescue event and no public rebel-origin classifier. If a submod needs a notification surface or origin query, request a dedicated API instead of reflecting into lifecycle internals.
+
+**Intended use:** Inspect Campaign++ tracking for overlays, reports, or compatibility decisions. `RegisterRescuedClan` is for integrations that deliberately create a fully initialized independent clan; it is not a general-purpose “rescue this clan” operation.
 
 **Off-limits:**
-- `ScanAndRescueHomelessRebelClans`, `NormalizeRebelClan` (lifecycle methods)
+- `_rescuedClans` and `_alreadyRescued` (persistent state and session guard)
+- `ScanAndRescueHomelessRebelClans`, `NormalizeRebelClan`, `IsRebelClanOrigin`, `UnregisterRescuedClan`, and `StopTracking` (private/internal lifecycle methods)
+- Treating `IsTracked(clan)` as proof that a dead or leaderless clan should be kept alive
+
+**Example:**
+```csharp
+var behavior = B1071_ClanSurvivalBehavior.Instance;
+if (behavior != null && behavior.IsTracked(clan))
+{
+    bool currentlyProtectable =
+        !clan.IsEliminated &&
+        clan.Kingdom == null &&
+        clan.Leader != null &&
+        clan.Leader.IsAlive &&
+        clan.Leader.Clan == clan;
+
+    // Display tracking/protection state. Do not launch succession or destruction here.
+}
+```
 
 ---
 

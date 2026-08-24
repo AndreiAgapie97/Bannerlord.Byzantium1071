@@ -233,7 +233,7 @@
     <string id="b1071_qs_name_elite_survivability" text="Elite-Überlebensfähigkeit" />
     <string id="b1071_qs_hint_elite_survivability" text="Wie widerstandsfähig höherstufige Truppen in automatisch aufgelösten Gefechten sind. 0 = Vanilla, 1 = Leicht, 2 = Mittel, 3 = Stark." />
     <string id="b1071_qs_name_clan_survival" text="Clan-Überleben" />
-    <string id="b1071_qs_hint_clan_survival" text="Verhindert die Vernichtung eines Clans, wenn sein Königreich zerstört wird. Gerettete Clans suchen Söldnerdienste." />
+    <string id="b1071_qs_hint_clan_survival" text="Rettet berechtigte Clans, wenn ihr Königreich zerstört wird. Sie bleiben unabhängig, bis sie später durch das Grundspiel oder eine andere Mod einem Königreich beitreten oder nach dem Verlust ihres letzten gültigen Anführers regulär vernichtet werden." />
     <string id="b1071_qs_name_governance" text="Governance-Belastung" />
     <string id="b1071_qs_hint_governance" text="Kriege, Belagerungen, Plünderungen und Eroberungen belasten eine Siedlung. Hohe Belastung senkt Loyalität, Sicherheit und Wohlstand; Stabilisierungen helfen bei der Erholung." />
     <string id="b1071_qs_name_devastation" text="Grenzverwüstung" />
@@ -646,7 +646,7 @@
     <string id="b1071_mcm_h_b378426501" text="Wenn kleine Pools aktiviert sind, gilt poolSize = max(minTinyPool, poolSize / divisor)." />
     <string id="b1071_mcm_h_b3c4d5e602" text="Goldkosten für die Rekrutierung eines Tier-3-Soldaten aus dem diversifizierten Burgpool. Nur relevant, wenn der diversifizierte Pool aktiviert ist. Standard: 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Täglicher Wohlstandswachstumsbonus durch eine großzügige Stadtinvestition. Standard: 1.0." />
-    <string id="b1071_mcm_h_b41e07e2b2" text="Anzahl der Tage im Spiel, an denen ein geretteter Clan unabhängig bleibt, bevor er Söldnerdienste in Anspruch nimmt. Während dieser Zeit patrouillieren sie in der Nähe ihrer Heimatsiedlung. Standard: 30." />
+    <string id="b1071_mcm_h_b41e07e2b2" text="Derzeit ungenutzt. Für eine mögliche künftige automatische Clan-Zuweisung reserviert. Änderungen an dieser Einstellung haben in der aktuellen Version keine Auswirkung. Aus Kompatibilitätsgründen beibehalten. Standard: 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Feste Obergrenze für die tägliche Regeneration als Prozentsatz des maximalen Pools. Beispielsweise bedeutet 2,0, dass sich eine Stadt mit 3000 Pools höchstens 60 Mal pro Tag regeneriert (ca. 50 Tage bis sie voll ist)." />
     <string id="b1071_mcm_h_b5c09f9d63" text="Durch eine große Investition entsteht eine Beziehung zu jeder Stadt. Standard: 10." />
     <string id="b1071_mcm_h_b68162ad3f" text="Maximale Anzahl an kulturbasierten Elitetruppen (T4-T6), die eine Burg gleichzeitig aufnehmen kann. Der Pool regeneriert sich täglich durch die Mannstärke des Schlosses. Standard: 20." />
@@ -660,7 +660,7 @@
     <string id="b1071_mcm_h_c3dadc496c" text="% des maximalen Pools bleiben erhalten, nachdem „Plünderung“ ausgewählt wurde." />
     <string id="b1071_mcm_h_c4e1a056bd" text="Gesamtlohn der Garnisonsgruppe als Prozentsatz dessen, was die gleichen Truppen in einer Feldgruppe kosten würden. 80 = Garnison zahlt 80 % (20 % Rabatt). 100 = kein Rabatt. Standard: 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Verkleinert alle Poolgrößen um den untenstehenden Divisor." />
-    <string id="b1071_mcm_h_c6dedb0344" text="Master-Umschaltung. Wenn ein Königreich zerstört wird, werden berechtigte Clans gerettet statt vernichtet. Während einer Gnadenfrist werden sie zu unabhängigen Fraktionen und suchen dann Söldnerdienste in einem kulturbetonten Königreich. Standard: true." />
+    <string id="b1071_mcm_h_c6dedb0344" text="Schalter für neue Rettungen. Wenn deaktiviert, rettet Campaign++ keine weiteren Clans, betreut aber bereits gerettete Clans weiter, bis sie einem Königreich beitreten oder nach dem Tod eines Anführers vom Grundspiel aufgelöst werden. Standard: aktiviert." />
     <string id="b1071_mcm_h_c7d953daef" text="Jeder Gefechtsverlust verbraucht diese × 1 Mannkraft aus dem Heimatvorrat der Gruppe." />
     <string id="b1071_mcm_h_c80a8ee7a4" text="Wenn der Pool unter dem erschöpften Schwellenwert liegt, wird die Wirksamkeit der Wiederherstellungsstrafe halbiert. Verhindert, dass Strafen bereits zerstörte Siedlungen zerstören, die nichts mehr zu bestrafen haben." />
     <string id="b1071_mcm_h_c8401bec75" text="Die KI wird nur dann investieren, wenn ihr Gold die mit diesem Wert multiplizierten Stufenkosten übersteigt. Höher für Städte, da die Kosten höher sind (z. B. 15 bedeutet, dass ein Lord 600.000 D für Grand benötigt). Standard: 15." />
@@ -700,7 +700,7 @@
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontaler Versatz vom linken Bildschirmrand für das Overlay-Hauptpanel." />
     <string id="b1071_mcm_h_e1a2720769" text="[VERALTET — NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Ersetzt durch die Voreinstellung für Elite-Überlebensfähigkeit unter Kampfrealismus, die Schadensreduzierung und Überlebensbonus gemeinsam festlegt, sodass sie sich nicht mehr addieren. Zur Speicherkompatibilität beibehalten." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Jeder bemerkenswerten Stadt wird durch eine Großinvestition mehr Macht verliehen. Standard: 20." />
-    <string id="b1071_mcm_h_e5ffddeee0" text="Wie stark Königreiche gleicher Kultur bei der Zuweisung von Söldnerdiensten bevorzugt werden. Höhere Werte machen Kultur fast zur Pflicht. Bei 2,0 erzielen Königreiche gleicher Kultur eine dreifach höhere Punktzahl. Standard: 2.0." />
+    <string id="b1071_mcm_h_e5ffddeee0" text="Derzeit ungenutzt. Für eine mögliche künftige kulturbasierte Bewertung bei der Clan-Zuweisung reserviert. Änderungen an dieser Einstellung haben in der aktuellen Version keine Auswirkung. Aus Kompatibilitätsgründen beibehalten. Standard: 2,0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Einfluss, der durch eine bescheidene Investition erzielt wird (nur wenn das Dorf in Ihrem Königreich liegt). Standard: 2.5." />
     <string id="b1071_mcm_h_e6b821a5cd" text="Tage, die ein Häftling der Stufe 4 festgehalten werden muss, bevor er rekrutiert werden kann. Stellt die Zeit dar, die benötigt wird, um Widerstand zu brechen und Loyalität auszuhandeln. Standard: 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garnisonsparteien zahlen im Vergleich zu Feldtruppen einen geringeren Lohn. Historisch korrekt: Garnisonssoldaten erhielten oft einen geringeren Lohn, ergänzt durch Unterkunft und Verpflegung. Gilt zusätzlich zu Vanilla-Vergünstigungen und Baurabatten." />

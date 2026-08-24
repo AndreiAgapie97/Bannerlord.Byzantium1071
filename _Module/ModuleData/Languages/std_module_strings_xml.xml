@@ -233,7 +233,7 @@
     <string id="b1071_qs_name_elite_survivability" text="Elite Survivability" />
     <string id="b1071_qs_hint_elite_survivability" text="How much tougher high-tier troops are in battles resolved for you. 0 = Vanilla, 1 = Light, 2 = Moderate, 3 = Strong." />
     <string id="b1071_qs_name_clan_survival" text="Clan Survival" />
-    <string id="b1071_qs_hint_clan_survival" text="Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service." />
+    <string id="b1071_qs_hint_clan_survival" text="Rescues eligible clans when their kingdom is destroyed. They remain independent until they later join a kingdom through vanilla behavior or another mod, or are legitimately destroyed after losing their final valid leader." />
     <string id="b1071_qs_name_governance" text="Governance Strain" />
     <string id="b1071_qs_hint_governance" text="Wars, sieges, raids, and conquest create settlement strain. High strain reduces loyalty, security, and prosperity; stabilization actions can help recovery." />
     <string id="b1071_qs_name_devastation" text="Frontier Devastation" />
@@ -646,7 +646,7 @@
     <string id="b1071_mcm_h_b378426501" text="If tiny pools are enabled, poolSize = max(minTinyPool, poolSize / divisor)." />
     <string id="b1071_mcm_h_b3c4d5e602" text="Gold cost to recruit a Tier 3 troop from the castle's diversified pool. Only relevant when diversified pool is enabled. Default: 400." />
     <string id="b1071_mcm_h_b406de84cb" text="Daily prosperity growth bonus from a Generous town investment. Default: 1.0." />
-    <string id="b1071_mcm_h_b41e07e2b2" text="Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30." />
+    <string id="b1071_mcm_h_b41e07e2b2" text="Currently unused. Reserved for a possible future clan auto-placement flow. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 30." />
     <string id="b1071_mcm_h_b58ccac776" text="Hard cap on daily regen as a percent of max pool. E.g., 2.0 means a 3000-pool town regens at most 60/day (~50 days to full)." />
     <string id="b1071_mcm_h_b5c09f9d63" text="Relation gained with each town notable from a Grand investment. Default: 10." />
     <string id="b1071_mcm_h_b68162ad3f" text="Maximum number of culture-based elite troops (T4-T6) a castle can hold at once. The pool regenerates daily from the castle's manpower. Default: 20." />
@@ -660,7 +660,7 @@
     <string id="b1071_mcm_h_c3dadc496c" text="% of max pool retained after choosing Pillage." />
     <string id="b1071_mcm_h_c4e1a056bd" text="Garrison party total wage as a percentage of what the same troops would cost in a field party. 80 = garrison pays 80% (20% discount). 100 = no discount. Default: 80." />
     <string id="b1071_mcm_h_c5e730055f" text="Scales down all pool sizes by the divisor below." />
-    <string id="b1071_mcm_h_c6dedb0344" text="Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true." />
+    <string id="b1071_mcm_h_c6dedb0344" text="Master toggle for new rescues. When disabled, Campaign++ stops rescuing additional clans but safely maintains clans already rescued until they join a kingdom or vanilla destroys them after a leader death. Default: on." />
     <string id="b1071_mcm_h_c7d953daef" text="Each battle casualty drains this × 1 manpower from the party's home pool." />
     <string id="b1071_mcm_h_c80a8ee7a4" text="When pool is below the depleted threshold, recovery penalty effectiveness is halved. Prevents penalties from crushing already-ruined settlements that have nothing left to penalize." />
     <string id="b1071_mcm_h_c8401bec75" text="AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15." />
@@ -700,7 +700,7 @@
     <string id="b1071_mcm_h_dfbdd67eaa" text="Horizontal offset from the left edge for the overlay root panel." />
     <string id="b1071_mcm_h_e1a2720769" text="[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility." />
     <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
-    <string id="b1071_mcm_h_e5ffddeee0" text="How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0." />
+    <string id="b1071_mcm_h_e5ffddeee0" text="Currently unused. Reserved for possible future culture-based clan placement scoring. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5." />
     <string id="b1071_mcm_h_e6b821a5cd" text="Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garrison parties pay a reduced wage relative to field troops. Historically accurate: garrison soldiers often received lower pay, supplemented by shelter and rations. Applies on top of vanilla perk and building discounts." />

@@ -1,5 +1,27 @@
 # Campaign++ — Changelog
 
+## [1.0.3.2] — 2026-08-24
+
+### Fix — Clan Survival Destruction Boundaries
+
+**Restructured clan rescue so Campaign++ does not start succession, fief-transfer, diplomacy, or destruction actions from inside Bannerlord's clan-destruction callback.** This is the unsafe boundary implicated by a historical native crash after a rescued rebel leader died. The available log did not identify the native null-read's owner, so this change removes the re-entrant action pattern without claiming that the old Bannerlord 1.4.8 / War Sails 1.2.8 crash has been reproduced or conclusively attributed.
+
+- **Vanilla owns succession.** A clan is protected only when it already has a valid living leader who still belongs to that clan. A dead, missing, or detached leader clears existing tracking and releases the current vanilla destruction call; Campaign++ never promotes an heir from the prefix or startup scan.
+- **Rescue is commit-based.** A new rescue suppresses vanilla destruction only after kingdom detach succeeds and persistent tracking is registered and verified. If the campaign behavior is unavailable, detach fails, or registration cannot be confirmed, the rescue logs `RESCUE_ABORTED` and the current vanilla call proceeds.
+- **Existing rescues remain maintained when the master toggle is switched off.** The toggle prevents new rescues; it does not abandon already-tracked independent clans. Daily maintenance still removes stale non-permanent wars and stops tracking clans that join a kingdom.
+- **Invalid legacy states are contained, not mutated on the daily tick.** A tracked clan with a dead, missing, or detached leader logs `TRACKED_INVALID_LEADER` and receives no Campaign++ campaign action. A later vanilla destruction boundary decides its fate.
+- **Rebel normalization now has a verified critical invariant.** A rebel rescue commits only when `IsRebelClan == false` and `IsMinorFaction == true`. Failure aborts the rescue and rolls back the rebel flag when possible; private-dictionary removal and warband renaming remain logged, best-effort cleanup.
+- **Diagnostics distinguish who suppressed destruction.** The postfix logs `DESTRUCTION_PIPELINE_RETURNED` and whether the original method ran, making another mod's prefix suppression visible instead of attributing every missing destruction to Campaign++.
+- Added decision-table coverage for tracked-clan protection and rebel normalization, binding checks for both `DestroyClanAction` entry points, and guards against reintroducing nested succession into the rescue implementation.
+
+### Documentation — Clan Survival
+
+- Corrected the Player Guide, technical explanation, and submod API to match the current rescue lifecycle, public tracking surface, fief handling, daily war cleanup, startup scan, master-toggle behavior, and unused placement settings.
+- Corrected the MCM and Quick Settings hints in English, French, German, and Chinese: Grace Period and Culture Match Weight are retained for configuration compatibility but are currently unused, and rescued clans are no longer described as automatically seeking mercenary service.
+- Replaced the nonexistent ROT workaround setting name with the actual **Rescue crushed rebel clans** and cleanup controls. There is still no automatic ROT-specific guard for rescued rebel-origin warbands.
+- Replaced the blanket War Sails compatibility guarantee with version-specific guidance and the status of the un-reproduced historical native crash.
+- Earlier changelog entries are intentionally preserved as release history; this entry supersedes their old heir-promotion, fief-transfer, and forced-placement descriptions for the current build.
+
 ## [1.0.3.1] — 2026-08-22
 
 ### Engineering

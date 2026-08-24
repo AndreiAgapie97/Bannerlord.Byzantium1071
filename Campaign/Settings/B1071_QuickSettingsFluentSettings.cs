@@ -131,7 +131,7 @@ namespace Byzantium1071.Campaign.Settings
                         2, 0, 3, () => s.EliteSurvivabilityPreset, v => s.EliteSurvivabilityPreset = v);
 
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),
-                        L("b1071_qs_hint_clan_survival", "Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service."),
+                        L("b1071_qs_hint_clan_survival", "Rescues eligible clans when their kingdom is destroyed. They remain independent until they later join a kingdom through vanilla behavior or another mod, or are legitimately destroyed after losing their final valid leader."),
                         4, () => s.EnableClanSurvival, v => s.EnableClanSurvival = v);
 
                     AddToggle(g, "qs_demobilization", L("b1071_qs_name_demobilization", "Troop Service"),

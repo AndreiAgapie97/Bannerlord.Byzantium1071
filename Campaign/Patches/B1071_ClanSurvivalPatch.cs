@@ -33,8 +33,10 @@ namespace Byzantium1071.Campaign.Patches
     ///      wars. Handles Path A completely.
     ///
     ///   2. <c>DestroyClanAction.Apply/ApplyByClanLeaderDeath</c> prefixes (SAFETY NET) —
-    ///      handles Path B. If the clan was already rescued by the event handler,
-    ///      skips vanilla destruction. If not yet rescued, rescues it.
+    ///      handles Path B. A tracked independent clan is protected only while it has a
+    ///      living leader. If vanilla reaches destruction with a dead or missing leader,
+    ///      tracking is cleared and the current vanilla action is allowed to finish.
+    ///      If the clan was not previously rescued, the normal eligibility flow applies.
     ///
     ///   3. <c>Kingdom.DeactivateKingdom</c> postfix (DIAGNOSTIC) — logs for debugging.
     ///      In Path A, clans are already gone by this point. In Path B, the ClanDestroy
@@ -102,34 +104,17 @@ namespace Byzantium1071.Campaign.Patches
                 return false;
             }
 
-            // If the leader is dead, try to promote an heir.
-            if (clan.Leader == null || !clan.Leader.IsAlive)
+            // Vanilla resolves succession synchronously when a leader dies. Reaching a
+            // rescue boundary with no living leader means vanilla found no successor, or
+            // another mod/save has already left the clan inconsistent. Do not start a
+            // nested ChangeClanLeaderAction from a campaign callback or Harmony prefix.
+            if (clan.Leader == null || !clan.Leader.IsAlive || clan.Leader.Clan != clan)
             {
-                var heirs = clan.GetHeirApparents();
-                if (heirs.Count == 0)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': leader dead, no heir apparents");
-                    return false;
-                }
-
-                try
-                {
-                    ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
-                }
-                catch (Exception ex)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': heir promotion threw: {ex.Message}");
-                    return false;
-                }
-
-                if (clan.Leader == null || !clan.Leader.IsAlive)
-                {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': heir promotion failed");
-                    return false;
-                }
-                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] '{clanId}' heir promoted to {clan.Leader.Name}");
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] SKIP '{clanId}': " +
+                    "dead, missing, or detached leader after vanilla succession");
                 B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                    $"[{context}] '{clanId}' heir promoted to {clan.Leader.Name}");
+                    $"[{context}] SKIP '{clanId}': dead, missing, or detached leader after vanilla succession");
+                return false;
             }
 
             Debug.Print($"[Byzantium1071][ClanSurvival][{context}] '{clanId}' ELIGIBLE " +
@@ -138,7 +123,6 @@ namespace Byzantium1071.Campaign.Patches
                 $"[{context}] '{clanId}' ELIGIBLE ({livingAdults.Count} heroes, leader: {clan.Leader?.Name})");
             return true;
         }
-
         // ── Shared rescue logic ─────────────────────────────────────
 
         /// <summary>
@@ -157,11 +141,22 @@ namespace Byzantium1071.Campaign.Patches
         /// For rebel clans, <paramref name="dyingKingdom"/> may be null (rebels
         /// have no kingdom). In that case, kingdom detach is skipped.
         /// </summary>
-        internal static void PerformRescue(Clan clan, Kingdom? dyingKingdom, string callPath)
+        /// <returns>True only when tracking was registered and verified.</returns>
+        internal static bool PerformRescue(Clan clan, Kingdom? dyingKingdom, string callPath)
         {
             string clanName = clan.Name?.ToString() ?? clan.StringId;
             string kingdomName = dyingKingdom?.Name?.ToString() ?? dyingKingdom?.StringId ?? "none (rebel)";
             int heroCount = clan.Heroes.Count(h => h.IsAlive);
+            var behavior = B1071_ClanSurvivalBehavior.Instance;
+
+            if (behavior == null)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival] Rescue aborted for {clanName}: " +
+                    "tracking behavior is unavailable.");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"RESCUE_ABORTED {clanName}: tracking behavior unavailable ({callPath}).");
+                return false;
+            }
 
             Debug.Print($"[Byzantium1071][ClanSurvival] Rescuing {clanName} " +
                 $"({heroCount} heroes, leader: {clan.Leader?.Name}) " +
@@ -175,12 +170,15 @@ namespace Byzantium1071.Campaign.Patches
             {
                 if (clan.Kingdom != null)
                     clan.Kingdom = null;
+                if (clan.Kingdom != null)
+                    throw new InvalidOperationException("kingdom detach verification failed");
             }
             catch (Exception ex)
             {
                 Debug.Print($"[Byzantium1071][ClanSurvival] Kingdom detach error for {clanName}: {ex.Message}");
                 B1071_SessionFileLog.WriteTagged("ClanSurvival",
                     $"ERROR kingdom detach for {clanName}: {ex.Message}");
+                return false;
             }
 
             // ── Step 2: Register for tracking (daily tick clears inherited wars) ──
@@ -192,13 +190,17 @@ namespace Byzantium1071.Campaign.Patches
             // The daily tick (OnDailyTick) clears all inherited wars within 1 campaign day.
             try
             {
-                B1071_ClanSurvivalBehavior.Instance?.RegisterRescuedClan(clan);
+                behavior.RegisterRescuedClan(clan);
+                if (!behavior.IsTracked(clan))
+                    throw new InvalidOperationException("tracking verification failed");
             }
             catch (Exception ex)
             {
+                behavior.UnregisterRescuedClan(clan);
                 Debug.Print($"[Byzantium1071][ClanSurvival] Registration error for {clanName}: {ex.Message}");
                 B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                    $"ERROR registration for {clanName}: {ex.Message}");
+                    $"RESCUE_ABORTED {clanName}: registration failed: {ex.Message} ({callPath}).");
+                return false;
             }
 
             // Mark as rescued
@@ -213,6 +215,7 @@ namespace Byzantium1071.Campaign.Patches
             B1071_VerboseLog.Log("ClanSurvival",
                 $"Rescued {clanName} ({heroCount} heroes, leader: {clan.Leader?.Name}) " +
                 $"from destruction of {kingdomName} (path: {callPath}).");
+            return true;
         }
     }
 
@@ -273,24 +276,50 @@ namespace Byzantium1071.Campaign.Patches
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.Apply))]
-        static bool ApplyPrefix(Clan destroyedClan)
+        static bool ApplyPrefix(Clan destroyedClan, out bool __state)
         {
             Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyPrefix FIRED " +
                 $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
             B1071_SessionFileLog.WriteTagged("ClanSurvival",
                 $"PREFIX DestroyClanAction.Apply FIRED for '{destroyedClan?.Name}' ({destroyedClan?.StringId})");
-            return !HandleDestroyClan(destroyedClan!, "DestroyClanAction.Apply");
+            __state = !HandleDestroyClan(destroyedClan!, "DestroyClanAction.Apply");
+            return __state;
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.Apply))]
+        static void ApplyPostfix(Clan destroyedClan, bool __state, bool __runOriginal)
+        {
+            if (__state)
+                LogDestructionPipelineReturned(
+                    destroyedClan, "DestroyClanAction.Apply", __runOriginal);
         }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.ApplyByClanLeaderDeath))]
-        static bool ApplyByClanLeaderDeathPrefix(Clan destroyedClan)
+        static bool ApplyByClanLeaderDeathPrefix(Clan destroyedClan, out bool __state)
         {
             Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] ApplyByClanLeaderDeathPrefix FIRED " +
                 $"for '{destroyedClan?.Name}' (StringId: {destroyedClan?.StringId})");
             B1071_SessionFileLog.WriteTagged("ClanSurvival",
                 $"PREFIX DestroyClanAction.ApplyByClanLeaderDeath FIRED for '{destroyedClan?.Name}' ({destroyedClan?.StringId})");
-            return !HandleDestroyClan(destroyedClan!, "DestroyClanAction.ApplyByClanLeaderDeath");
+            __state = !HandleDestroyClan(
+                destroyedClan!, "DestroyClanAction.ApplyByClanLeaderDeath");
+            return __state;
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(DestroyClanAction), nameof(DestroyClanAction.ApplyByClanLeaderDeath))]
+        static void ApplyByClanLeaderDeathPostfix(
+            Clan destroyedClan,
+            bool __state,
+            bool __runOriginal)
+        {
+            if (__state)
+                LogDestructionPipelineReturned(
+                    destroyedClan,
+                    "DestroyClanAction.ApplyByClanLeaderDeath",
+                    __runOriginal);
         }
 
         /// <summary>
@@ -315,30 +344,49 @@ namespace Byzantium1071.Campaign.Patches
 
                 var behavior = B1071_ClanSurvivalBehavior.Instance;
 
-                // Already rescued by event handler or OnSettlementOwnerChanged?
-                if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId))
+                if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId) &&
+                    (behavior == null || !behavior.IsTracked(clan)))
                 {
-                    if (behavior != null && behavior.IsTracked(clan))
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' already rescued " +
-                            $"and tracked — skipping vanilla destruction.");
-                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                            $"PREFIX '{clan.Name}' already rescued — skipping vanilla destruction ({callPath}).");
-                        return true; // Skip vanilla
-                    }
-
-                    // Stale marker from an earlier rescue lifecycle; do not treat as authoritative.
+                    // Stale marker from an earlier rescue lifecycle; do not treat it as authoritative.
                     B1071_ClanSurvivalPatch._alreadyRescued.Remove(clan.StringId);
                 }
 
-                // Already rescued and tracked (e.g. from a previous event)?
                 if (behavior != null && behavior.IsTracked(clan))
                 {
-                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is tracked " +
-                        $"— skipping vanilla destruction.");
+                    bool hasValidLivingLeader = clan.Leader != null &&
+                        clan.Leader.IsAlive &&
+                        clan.Leader.Clan == clan;
+                    if (ShouldSuppressTrackedClanDestruction(
+                            clan.IsEliminated,
+                            clan.Kingdom != null,
+                            hasValidLivingLeader))
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] '{clan.Name}' is tracked " +
+                            "with a living leader — skipping vanilla destruction.");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"SUPPRESS_LIVING_LEADER '{clan.Name}' ({clan.StringId}); " +
+                            $"leader={clan.Leader?.Name}, path={callPath}.");
+                        return true;
+                    }
+
+                    int aliveHeroes = clan.Heroes.Count(h => h.IsAlive);
+                    int aliveLords = clan.Heroes.Count(h => h.IsAlive && !h.IsChild && h.IsLord);
+                    string releaseReason = clan.IsEliminated
+                        ? "already eliminated"
+                        : clan.Kingdom != null
+                            ? "joined a kingdom"
+                            : "dead, missing, or detached leader";
+
+                    behavior.UnregisterRescuedClan(clan);
+                    Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] Released tracked clan " +
+                        $"'{clan.Name}' to the current vanilla destruction call: {releaseReason}.");
                     B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                        $"PREFIX '{clan.Name}' already tracked — skipping vanilla destruction ({callPath}).");
-                    return true; // Skip vanilla
+                        $"RELEASE_TRACKED_CLAN '{clan.Name}' ({clan.StringId}); reason={releaseReason}, " +
+                        $"leader={clan.Leader?.Name}, validLivingLeader={hasValidLivingLeader}, " +
+                        $"aliveHeroes={aliveHeroes}, aliveLords={aliveLords}, " +
+                        $"isMinorFaction={clan.IsMinorFaction}, isRebelClan={clan.IsRebelClan}, " +
+                        $"path={callPath}.");
+                    return false;
                 }
 
                 // ── Case 1: Regular kingdom clan — kingdom must be eliminated ──
@@ -347,8 +395,8 @@ namespace Byzantium1071.Campaign.Patches
                 {
                     if (B1071_ClanSurvivalPatch.IsClanEligibleForRescue(clan, kingdom, callPath))
                     {
-                        B1071_ClanSurvivalPatch.PerformRescue(clan, kingdom, callPath);
-                        return true; // Skip vanilla
+                        return B1071_ClanSurvivalPatch.PerformRescue(
+                            clan, kingdom, callPath); // Skip vanilla only after tracking commits
                     }
                     return false;
                 }
@@ -392,9 +440,10 @@ namespace Byzantium1071.Campaign.Patches
                     if (B1071_ClanSurvivalPatch.IsClanEligibleForRescue(clan, null, callPath))
                     {
                         // Normalize rebel state and rescue
-                        B1071_ClanSurvivalBehavior.NormalizeRebelClan(clan, callPath);
-                        B1071_ClanSurvivalPatch.PerformRescue(clan, null, callPath);
-                        return true; // Skip vanilla
+                        if (!B1071_ClanSurvivalBehavior.NormalizeRebelClan(clan, callPath))
+                            return false;
+                        return B1071_ClanSurvivalPatch.PerformRescue(
+                            clan, null, callPath); // Skip vanilla only after tracking commits
                     }
 
                     Debug.Print($"[Byzantium1071][ClanSurvival][PREFIX] " +
@@ -413,6 +462,26 @@ namespace Byzantium1071.Campaign.Patches
                     $"FATAL ERROR in HandleDestroyClan for {clan?.Name}: {ex.Message}");
                 return false; // Safe fallback
             }
+        }
+
+        internal static bool ShouldSuppressTrackedClanDestruction(
+            bool isEliminated,
+            bool hasKingdom,
+            bool hasValidLivingLeader) =>
+            !isEliminated && !hasKingdom && hasValidLivingLeader;
+
+        private static void LogDestructionPipelineReturned(
+            Clan clan,
+            string callPath,
+            bool originalRan)
+        {
+            int aliveHeroes = clan?.Heroes?.Count(h => h.IsAlive) ?? 0;
+            string message = $"DESTRUCTION_PIPELINE_RETURNED '{clan?.Name}' ({clan?.StringId}); " +
+                $"originalRan={originalRan}, isEliminated={clan?.IsEliminated}, " +
+                $"aliveHeroes={aliveHeroes}, path={callPath}.";
+
+            Debug.Print($"[Byzantium1071][ClanSurvival][POSTFIX] {message}");
+            B1071_SessionFileLog.WriteTagged("ClanSurvival", message);
         }
     }
 

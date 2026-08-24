@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.1 — Everything you need to know, step by step.*
+*Version 1.0.3.2 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
@@ -748,23 +748,25 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 
 ## 14. Clan Survival
 
-When a kingdom is destroyed in vanilla, all member clans are annihilated and their heroes killed. Campaign++ rescues eligible clans instead.
+Bannerlord can process a collapsing kingdom through several different lifecycle paths. Some paths detach clans; another may call clan destruction and eliminate their heroes and parties. Campaign++ applies one survival policy across those paths so eligible noble clans can continue as independent factions.
 
 ### What Happens
 
-1. **Kingdom falls** — the kingdom is destroyed via war, diplomacy, or leader death with no successor.
-2. **Rescue check** — each clan is evaluated: do they have living adult lords? If yes, they're rescued. If no surviving heroes exist, vanilla destruction proceeds normally.
-3. **Fiefs transferred** — any settlements owned by the rescued clan go to a suitable heir clan (same as vanilla's fief inheritance).
-4. **Independent survival** — the clan detaches from the dead kingdom and becomes an independent faction.
-5. **War reset** — inherited wars are cleared so the rescued clan starts neutral.
-6. **Tracking** — the mod keeps rescued clans alive and tracked while they are independent; if they join a kingdom later through vanilla systems or other mods, tracking ends.
+1. **Kingdom falls** — the kingdom reaches a destruction path through settlement loss or leader death.
+2. **Rescue check** — an eligible clan must be non-player, non-bandit, have a living adult hero, and already have a valid living leader after vanilla succession has run.
+3. **Independent survival** — the clan is detached from the dying kingdom and registered as an independent faction. Campaign++ suppresses the current vanilla destruction call only after that registration succeeds.
+4. **Fiefs stay put** — these clans normally have no settlements by this point. If an unusual game or mod path leaves one behind, Campaign++ does not start a nested ownership transfer; the independent clan keeps it.
+5. **War cleanup** — on later daily ticks, inherited non-permanent wars are cleared on a best-effort basis so the clan can remain neutral.
+6. **Tracking** — maintenance continues while the clan is independent. Tracking ends if it joins a kingdom. If it later reaches a genuine final-leader destruction state, Campaign++ releases it to the current vanilla destruction call.
 
 ### What's NOT Rescued
 
 - Clans destroyed by **failed rebellions** (legitimate consequence — the rebellion itself was defeated)
 - **Rebel clans whose rebellion was crushed** — since v1.0.2.6 these die as they do in vanilla, whether they lose their last town or their leader dies. See below if you want the old behaviour back.
 - Clans with **no living adult heroes** (no one to carry on)
+- Clans with a **dead, missing, or detached leader** at the rescue boundary. Campaign++ does not start succession from inside a destruction callback; vanilla must establish the successor first.
 - The **player's own clan** (vanilla handles this separately)
+- **Bandit clans**
 
 ### Rebel Clan Rescue — Off by Default Since v1.0.2.6
 
@@ -789,11 +791,11 @@ If you are loading an older save and leave both settings alone, Campaign++ tells
 With the setting **on**, rebel clans are rescued when they would otherwise be destroyed:
 
 - When a rebel clan **loses its last settlement** (e.g., another faction reconquers the town), Campaign++ intercepts the destruction and rescues the clan.
-- When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net promotes an heir (if one exists) and rescues the clan.
-- Rescued rebel clans are **normalized**: `IsRebelClan` is cleared, `IsMinorFaction` is set to `true`, and the clan is removed from vanilla's internal rebel tracking. The clan is also **renamed** from its settlement-based name (e.g., "Pen Cannoc rebels") to a leader-derived warband name (e.g., "Borun's Warband") for uniqueness.
+- When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net rescues the clan only if vanilla succession has already installed a valid living leader. Campaign++ never promotes an heir from inside the destruction callback.
+- Rescued rebel clans are **normalized**: `IsRebelClan` must be cleared and `IsMinorFaction` must be set to `true`, or the rescue is aborted. Removal from vanilla's internal rebel tracking and renaming from a settlement-based name (e.g., "Pen Cannoc rebels") to a leader-derived warband name (e.g., "Borun's Warband") are best-effort cleanup steps.
 - Because `IsMinorFaction` is now `true`, rescued rebel clans qualify for **Frontier Revenue** — the same unaligned stipend that other minor factions receive.
-- They then survive as an independent warband until vanilla's AI recruits them into a kingdom as a vassal or mercenary.
-- **Save/load coverage**: Rebel clans that lost their settlement in a *previous session* (before Campaign++ was installed or before the save was loaded) are automatically detected and rescued on session start. You don't need to worry about timing — the mod scans for homeless rebel clans every time you load a save.
+- They then survive as an independent warband until they join a kingdom through vanilla behavior or another mod, or later reach a legitimate final-leader destruction.
+- **Save/load coverage**: when both clan survival and rebel rescue are enabled, Campaign++ scans once at session launch for homeless rebel clans from an earlier session. Only clans with a valid living leader are normalized and rescued.
 
 > **Note:** Rebel clans destroyed during the *rebellion itself* (i.e., the revolt fails before the town is taken) are NOT rescued — that's a legitimate consequence of a failed uprising.
 
@@ -801,17 +803,17 @@ With the setting **on**, rebel clans are rescued when they would otherwise be de
 
 | Setting | Default | What It Does |
 |---------|---------|-------------|
-| Enable clan survival | On | Master toggle |
+| Enable clan survival | On | Enables new rescues. Turning it off does not abandon clans already rescued; their safe daily maintenance continues until they join a kingdom or reach legitimate vanilla destruction. |
 | Rescue crushed rebel clans | **Off** | Keeps crushed rebellions alive as mercenary companies (pre-v1.0.2.6 behaviour) |
 | Clean up leftover rebel mercenary companies | **Off** | One-off cleanup for an existing save. Destroys clans — back up first |
-| Grace period (days) | 30 | Reserved for planned auto-placement logic (no forced placement in v0.2.0.1) |
-| Culture match weight | 2.0 | Reserved for planned auto-placement scoring (no forced placement in v0.2.0.1) |
+| Grace period (days) | 30 | Currently unused and reserved for a possible future auto-placement flow. Changing it has no effect. |
+| Culture match weight | 2.0 | Currently unused and reserved for possible future placement scoring. Changing it has no effect. |
 
 ### Tips
 
 - If you want to audit rescue behavior, enable verbose logging in MCM and review the session or game logs.
 - Rescued clans are not hard-assigned by this system in v0.2.0.1; later kingdom entry depends on vanilla campaign behavior or other mods.
-- Keep clan survival enabled if you want more late-game noble continuity after kingdom collapse events.
+- Turning clan survival off stops future rescues only. It does not remove, destroy, or stop safe maintenance for clans already tracked.
 
 ---
 
@@ -877,19 +879,19 @@ Some mods (like RBM) apply their Harmony patches at campaign load rather than at
 
 ## 15b. Known Mod Interactions
 
-Some third-party mods have specific interactions with Campaign++ systems. These are not bugs in Campaign++ but are documented here so you know what to expect.
+Some third-party mods have specific interactions with Campaign++ systems. The limitations below are documented so you know what to expect.
 
-### Warsails (Naval DLC)
+### War Sails (Naval DLC)
 
-Fully compatible — no action needed. Warsails swaps in its own versions of several campaign systems Campaign++ also modifies (prosperity, security, garrison, militia, wages, clan finance and others), but each one still hands the calculation back to the base game, so Campaign++'s changes continue to apply on top. Warsails is never reported as a conflict in the compatibility report, and Campaign++ works whether or not you own the DLC.
+Campaign++ is designed to work with War Sails, and the current build is checked against the installed game assemblies. Version matching still matters, so this is not a blanket guarantee for older game/DLC combinations. A historical report on Bannerlord 1.4.8 / War Sails 1.2.8 ended in a native null-read shortly after a rescued rebel leader died; the available log does not prove that War Sails caused it, and that exact historical runtime has not been reproduced. The current clan-survival flow avoids starting succession, fief-transfer, or diplomacy actions from inside the destruction callback that surrounded that failure.
 
-One small exception: in port towns, the Boatswain perk's militia bonus from Warsails is not applied while Campaign++'s militia system is active. This affects militia growth only, nothing else.
+One known gameplay exception: in port towns, the Boatswain perk's militia bonus from War Sails is not applied while Campaign++'s militia system is active. This affects militia growth only.
 
 ### Realms of Thrones (ROT)
 
-ROT's `HeroSpawnCampaignBehaviorPatches` may crash with a null reference when **Clan Survival (Protect Eliminated Clans)** is enabled. ROT assumes certain data exists on all clans, but clans rescued by Campaign++'s clan survival system may not have that data.
+ROT's `HeroSpawnCampaignBehaviorPatches` may throw a null-reference exception when it encounters a rescued rebel-origin warband. ROT assumes data exists on every clan that a normalized former-rebel may not have. Campaign++ does not currently install an automatic ROT-specific guard.
 
-**Workaround:** Disable **Protect Eliminated Clans** in MCM → Clan Survival, or report the null-check issue to the ROT mod author.
+**Workaround:** leave **Rescue crushed rebel clans** off (the default) to prevent new rebel warbands. If an older save already contains them, the opt-in **Clean up leftover rebel mercenary companies** tool can remove eligible leftovers gradually; back up the save first. Turning off **Enable clan survival** also stops new rescues, but it does not retroactively remove clans already tracked.
 
 ### Retinues / Custom Troop Tree Mods
 

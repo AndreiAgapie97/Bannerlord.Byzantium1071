@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.1
+**Version:** 1.0.3.2
 **Target Game:** Mount & Blade II: Bannerlord (tested on v1.5.0; Warsails/NavalDLC v1.3.0 verified)  
 **Mod ID:** `Byzantium1071`
 
@@ -1177,7 +1177,7 @@ When enabled, the following is logged:
 | **Garrison** | Auto-recruit capping (when manpower < vanilla recruit count) |
 | **Devastation** | Village loot devastation changes |
 | **AI recruitment** | Manpower gate blocks (when verbose OR `LogAiManpowerConsumption` is ON) |
-| **Clan Survival** | Rescue events, rescue skips (with reasons), heir promotions, rebel clan rescues, rebel normalization, kingdom eliminations, war clearing, tracking start/stop — logged to both rgl_log and session file |
+| **Clan Survival** | Rescue attempts, commits and aborts; eligibility skips; rebel normalization; kingdom detach; war cleanup; tracking start/stop; destruction-pipeline diagnostics — logged to both rgl_log and session file |
 
 All logging is centralized through the `B1071_VerboseLog` static helper class with format `[Byzantium1071][Subsystem] message`. ClanSurvival events additionally write to the session file log via `B1071_SessionFileLog.WriteTagged` for post-session analysis.
 
@@ -1696,45 +1696,40 @@ All investment events are logged to rgl_log when verbose logging is enabled:
 
 ### Problem
 
-In vanilla Bannerlord, when a kingdom is destroyed, **every member clan is immediately annihilated** — all heroes are killed via `KillCharacterAction.ApplyByRemove`, all parties disbanded, fiefs transferred, and the clan is marked as eliminated. This is historically unrealistic (noble families survived the fall of empires) and reduces late-game variety as powerful clans vanish forever.
+Bannerlord reaches kingdom extinction through more than one lifecycle. The settlement-loss path removes member clans from the dying kingdom and can leave them independent with inherited wars. The leader-death path can call `DestroyClanAction`, killing heroes, disbanding parties, transferring fiefs, and eliminating clans. Without one policy spanning both paths, outcomes depend on which vanilla route happened to fire.
 
 ### Solution
 
-Two Harmony prefixes intercept the destruction chain **before** heroes are killed:
+The primary `OnClanChangedKingdom` listener tracks eligible clans detached by the settlement-loss path. Two Harmony prefixes cover the destructive path **before** heroes are killed:
 
 1. **`DestroyClanAction.Apply`** — the default path used when `DestroyKingdomAction.Apply(kingdom)` iterates member clans.
 2. **`DestroyClanAction.ApplyByClanLeaderDeath`** — the leader-death path used when `DestroyKingdomAction.ApplyByKingdomLeaderDeath(kingdom)` is called after the kingdom leader dies with no successor clans.
 
-Neither `ApplyByFailedRebellion` nor genuine single-clan leader-death (where no heirs exist) are intercepted — those are legitimate destructions.
+`ApplyByFailedRebellion` is deliberately not patched. `ApplyByClanLeaderDeath` is observed, but a tracked clan is protected only when vanilla has already produced a valid living successor; a dead, missing, or detached leader is released to the current vanilla destruction call.
 
 ### Rescue Flow
 
 ```
 DestroyClanAction.Apply/ApplyByClanLeaderDeath called
-  └── TryRescueClan prefix
-        ├── Gate checks: enabled? not player? not bandit? has kingdom? kingdom eliminated?
-        ├── Living adult lord check: any heroes alive, not children, not companions?
-        ├── Leader promotion: if leader dead, promote heir via ChangeClanLeaderAction
-        │     └── No valid heir? → let vanilla destroy (return true)
-        ├── Step 1: Fief transfer (while clan.Kingdom is still set)
-        │     └── ChooseHeirClanForFiefs → ChangeOwnerOfSettlementAction.ApplyByDestroyClan
-        ├── Step 2: Kingdom detach via public setter (clan.Kingdom = null)
-        │     └── SetKingdomInternal(null) → LeaveKingdomInternal():
-        │           zeroes influence, removes from kingdom clan list,
-        │           removes heroes/fiefs/warparties from tracking,
-        │           disbands armies, updates banner colors,
-        │           sets LastFactionChangeTime
-        ├── Step 3: Clear inherited wars (MakePeaceAction.Apply for each)
-        │     └── Skips constant-war factions (DiplomacyModel.IsAtConstantWar)
-        ├── Step 4: Register in ClanSurvivalBehavior tracking dictionary
-        └── Return false (skip vanilla destruction)
+  └── HandleDestroyClan prefix
+        ├── Already tracked?
+        │     ├── Independent with living leader → suppress destruction
+        │     └── Dead/missing/detached leader, eliminated, or joined kingdom
+        │           → clear tracking and let this vanilla call finish
+        ├── New rescue eligibility: enabled, non-player, non-bandit,
+        │     living adult hero, and living leader after vanilla succession
+        ├── Rebel rescue additionally requires RescueRebelClans
+        ├── Detach from dying kingdom via the public Clan.Kingdom setter
+        ├── Register and verify persistent tracking
+        │     └── Registration unavailable/fails → let vanilla destruction finish
+        ├── Mark the committed rescue in the session guard
+        └── Suppress vanilla destruction
 ```
 
 **Operation order is critical:**
-- Fiefs transfer FIRST because `ChooseHeirClanForFiefs` needs `clan.Kingdom != null` to search among surviving kingdom clans.
-- Kingdom detach SECOND via the public `Clan.Kingdom` setter (not reflection — the setter is public, not internal). The setter calls `SetKingdomInternal(null)` → `LeaveKingdomInternal()` which handles influence zeroing, army disbanding, banner color updates, faction tracking cleanup, and `LastFactionChangeTime`.
-- Wars clear THIRD because after detach, `FactionsAtWarWith` returns the clan's own inherited stances. The `IsAtConstantWar` check (matching vanilla's pattern from `ChangeKingdomAction.LeaveByKingdomDestruction`) prevents attempting to make peace with bandit/permanent-war factions.
-- After the prefix returns false, `DestroyKingdomAction` still calls `kingdom.RemoveClanInternal(clan)` — this is benign because `MBList.Remove()` is idempotent (the setter's `LeaveKingdomInternal` already removed the clan).
+- No succession, diplomacy, fief-transfer, or destruction action is started from inside the prefix. Vanilla owns succession; inherited wars are cleared on a later daily tick.
+- A new rescue suppresses vanilla only after the tracking dictionary contains the clan. If the behavior is unavailable, kingdom detach fails, or registration cannot be verified, the current vanilla destruction call proceeds.
+- Clans rescued through the kingdom-destruction path normally have no fiefs. If an unusual path still leaves fiefs, they remain with the independent clan rather than triggering a nested ownership action.
 
 ### Independent Tracking (v0.2.0.1)
 
@@ -1749,6 +1744,8 @@ Daily tick responsibilities in the current implementation:
 - Drop invalid/eliminated clans from tracking
 - If a tracked clan has already joined a kingdom (vanilla behavior, diplomacy, or another mod), stop tracking it
 - For still-independent tracked clans, keep inherited-war cleanup enforced so they remain neutral
+- Continue this maintenance for existing tracked clans even when the master toggle is disabled; the toggle prevents new rescues rather than abandoning committed ones
+- If a tracked clan has a dead, missing, or detached leader on a daily tick, issue no campaign actions and log `TRACKED_INVALID_LEADER`; this is a legacy/mod-conflict state, not a signal to launch delayed destruction
 
 No scripted kingdom scoring or forced mercenary placement is executed in the v0.2.0.1 rescue flow.
 
@@ -1758,15 +1755,14 @@ No scripted kingdom scoring or forced mercenary placement is executed in the v0.
 |----------|----------|
 | Player clan in destroyed kingdom | Skipped — vanilla handles player-death separately |
 | No living adult heroes | Let vanilla destroy — no one to carry on |
-| Leader dead, heirs exist | Promote best heir, then rescue |
-| Leader dead, no heirs | Let vanilla destroy |
-| Clan has fiefs | Transfer to heir clan before rescue |
+| Leader dead, missing, or no longer belongs to the clan at a rescue boundary | Do not start nested succession or destruction actions; vanilla succession should already have completed, so skip the rescue |
+| Clan has fiefs | Keep the fiefs with the rescued independent clan; do not start a nested ownership action |
 | No eligible kingdom after grace | Not applicable in v0.2.0.1 (no scripted placement pass) |
-| Rescued clan's leader dies while independent | Vanilla succession triggers; if final leader dies, `DestroyClanAction` fires and our prefix re-evaluates |
+| Rescued clan's leader dies while independent | Vanilla succession runs first. If destruction is still requested with a valid living leader, the rescue remains protected; with a dead, missing, or detached leader, Campaign++ clears tracking and lets that current vanilla destruction call finish. |
 | Clan already joined a kingdom | Stop tracking (another mod or player action placed them) |
 | Failed rebellion destruction | Not patched — legitimate destruction proceeds |
 | Rebel clan loses last settlement | **v1.0.2.6:** destroyed, as in vanilla. Only rescued and normalized (IsRebelClan→false, IsMinorFaction→true) if `RescueRebelClans` is enabled |
-| Rebel clan leader dies | **v1.0.2.6:** destroyed, as in vanilla. Only rescued (heir promoted, then normalized) if `RescueRebelClans` is enabled |
+| Rebel clan leader dies | Vanilla succession runs first. Campaign++ never promotes an heir from the destruction prefix; if the clan remains leaderless, vanilla destruction proceeds |
 | Homeless rebel clan on session load | Startup scan normalizes before vanilla's DailyTickClan can kill heroes |
 
 ### Rebel Clan Rescue (v0.2.7.0, opt-in since v1.0.2.6)
@@ -1797,7 +1793,7 @@ Neither path goes through the kingdom-destruction pipeline (rebel clans have `Ki
 **Two-layer rescue architecture:**
 
 - **Primary**: `OnSettlementOwnerChanged` event listener in `B1071_ClanSurvivalBehavior`. When a settlement changes hands and the previous owner's clan is a rebel-origin clan (`IsRebelClan == true` OR StringId contains `"rebel_clan"`) with zero remaining settlements, rescue fires proactively — before vanilla's daily tick can destroy the clan. No inline Campaign actions (TimeLord/BetterTime safe).
-- **Safety net**: `HandleDestroyClan` prefix in `B1071_ClanSurvivalPatch`. When `DestroyClanAction.Apply` or `ApplyByClanLeaderDeath` fires for a rebel-origin clan with `Kingdom == null`, the prefix intercepts and rescues the clan if it has living adults. **Gated on `RescueRebelClans` since v1.0.2.6.** This is the third and least obvious door into the rescue: `IsClanEligibleForRescue` tests only `EnableClanSurvival`, so gating the primary path and the startup scan alone left the toggle looking switched off while a rebel clan whose *leader died* still became a permanent company.
+- **Safety net**: `HandleDestroyClan` prefix in `B1071_ClanSurvivalPatch`. When `DestroyClanAction.Apply` or `ApplyByClanLeaderDeath` fires for a rebel-origin clan with `Kingdom == null`, the prefix rescues it only if it has living adults and a living leader after vanilla succession. **Gated on `RescueRebelClans` since v1.0.2.6.** A leaderless clan is released to the current vanilla destruction call; Campaign++ does not start nested succession.
 
 **Normalization** (`NormalizeRebelClan`):
 1. Sets `IsRebelClan = false` (public setter) — prevents vanilla from re-targeting the clan
@@ -1805,7 +1801,7 @@ Neither path goes through the kingdom-destruction pipeline (rebel clans have `Ki
 3. Removes from vanilla's `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation` dictionary (via reflection) — prevents vanilla's daily tick from managing the clan as a rebel
 4. Renames clan from settlement-based rebel name (e.g., "Pen Cannoc rebels") to leader-derived warband name (e.g., "Borun's Warband") via `clan.ChangeClanName()` — prevents duplicate names when the same settlement rebels twice. Skips gracefully if the leader is null. (v0.2.7.2)
 
-All three reflection operations fail gracefully with logged warnings if the game API changes.
+The critical normalization invariant is verified before a rescue commits: `IsRebelClan == false` and `IsMinorFaction == true`. If either flag cannot be established, the rescue is aborted (and the rebel flag is rolled back when possible). Removing the clan from vanilla's private rebellion dictionary and renaming it remain logged, best-effort cleanup steps.
 
 **Detection**: `IsRebelClanOrigin()` returns true for clans with `IsRebelClan == true` OR StringId containing `"rebel_clan"`. This catches both freshly spawned rebels and "normalized" former-rebels whose StringId retains the marker.
 
@@ -1813,11 +1809,11 @@ All three reflection operations fail gracefully with logged warnings if the game
 
 Rebel clans that lost their settlement in a **prior save session** (or before the mod was installed) are not caught by `OnSettlementOwnerChanged` — that event only fires during live gameplay. Vanilla's `RebellionsCampaignBehavior.DailyTickClan` Part B kills homeless rebel clan heroes on the very first daily tick after session load, before any rescue path can fire.
 
-**`ScanAndRescueHomelessRebelClans()`** runs once at `OnSessionLaunched`:
+When both `EnableClanSurvival` and `RescueRebelClans` are enabled, **`ScanAndRescueHomelessRebelClans()`** runs once at `OnSessionLaunched`:
 
 1. Iterates all clans. For each: checks `IsRebelClanOrigin`, no settlements, not already tracked, not eliminated, not player, not bandit.
 2. Filters to clans with living adult heroes (`IsAlive && !IsChild && (IsLord || IsMinorFactionHero)`).
-3. Promotes heir if leader is dead (via `ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader`). Skips if no valid heir.
+3. Requires a living leader after vanilla succession; a dead/missing leader is logged and skipped without starting campaign actions.
 4. Normalizes the clan (`IsRebelClan→false`, `IsMinorFaction→true`, removes from rebellion tracking).
 5. Registers in the tracking dictionary and marks `_alreadyRescued`.
 
@@ -1833,9 +1829,9 @@ By clearing `IsRebelClan` before the first `DailyTickClan`, vanilla's "kill all 
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable clan survival | On | Master toggle for the entire rescue system |
-| Grace period (days) | 30 | Reserved for planned auto-placement flow (not consumed by current rescue tick) |
-| Culture match weight | 2.0 | Reserved for planned culture scoring in auto-placement flow (not consumed by current rescue tick) |
+| Enable clan survival | On | Enables new rescues. Existing tracked clans continue safe maintenance until they join a kingdom or reach vanilla leader-death destruction |
+| Grace period (days) | 30 | Currently unused and reserved for a possible future auto-placement flow. Changing it has no effect. |
+| Culture match weight | 2.0 | Currently unused and reserved for possible future placement scoring. Changing it has no effect. |
 
 ---
 
