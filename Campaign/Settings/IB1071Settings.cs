@@ -205,6 +205,7 @@ namespace Byzantium1071.Campaign.Settings
         int DemobilizationVeteranScatterPercent { get; set; }
         int DemobilizationRecallGoldPerTier { get; set; }
         int DemobilizationVeteranRecallAccess { get; set; }
+        bool EnableDemobilizationVeteranCrossClanRecruitment { get; set; }
         bool EnableDemobilizationRemoteRecall { get; set; }
         bool EnableVeteranRecallHotkey { get; set; }
         int VeteranRecallHotkeyChoice { get; set; }

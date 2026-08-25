@@ -47,6 +47,18 @@ namespace Byzantium1071.GameTests
         }
 
         [Fact]
+        public void CrossClanVeteranRecruitmentDefaultsToOffWithoutMigration()
+        {
+            B1071_McmSettings newProfile = new();
+            B1071_McmSettings existingProfile = new() { SettingsProfileVersion = B1071_McmSettings.LATEST_PROFILE_VERSION };
+
+            existingProfile.MigrateToLatestProfile();
+
+            Assert.False(newProfile.EnableDemobilizationVeteranCrossClanRecruitment);
+            Assert.False(existingProfile.EnableDemobilizationVeteranCrossClanRecruitment);
+        }
+
+        [Fact]
         public void EveryHistoricalProfileVersionConvergesOnCurrentDefaults()
         {
             B1071_McmSettings baseline = new();

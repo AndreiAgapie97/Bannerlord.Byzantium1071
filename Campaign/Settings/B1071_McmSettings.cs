@@ -1,4 +1,4 @@
-﻿using MCM.Abstractions.Attributes;
+﻿﻿using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions;
 using MCM.Abstractions.Base.Global;
@@ -1315,31 +1315,35 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationRecallGoldPerTier { get; set; } = 40;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 6, HintText = "{=b1071_mcm_h_demob_vet_access}Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 2.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 6, HintText = "{=b1071_mcm_h_demob_vet_access}When cross-clan veteran recruitment is enabled, who may recall veterans employed by another clan from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. Any non-hostile clan may always recall veterans whose latest employer is its own clan. Default: 2.")]
         public int DemobilizationVeteranRecallAccess { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyBool("{=b1071_mcm_t_demob_remote}Allow recall from a distance", Order = 7, HintText = "{=b1071_mcm_h_demob_remote}Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_vet_cross_clan}Allow cross-clan veteran recruitment", Order = 7, HintText = "{=b1071_mcm_h_demob_vet_cross_clan}When off, every clan may recall only veterans whose latest employer is that clan; this protects both player and AI veterans. When on, the recall access restriction decides who may recruit veterans employed by another clan. War always closes a register. Default: false.")]
+        public bool EnableDemobilizationVeteranCrossClanRecruitment { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_remote}Allow recall from a distance", Order = 8, HintText = "{=b1071_mcm_h_demob_remote}Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true.")]
         public bool EnableDemobilizationRemoteRecall { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyBool("{=b1071_mcm_t_demob_recall_hotkey_enable}Enable register hotkey", Order = 8, HintText = "{=b1071_mcm_h_demob_recall_hotkey_enable}Allows opening the map-wide veteran register from the campaign map. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_recall_hotkey_enable}Enable register hotkey", Order = 9, HintText = "{=b1071_mcm_h_demob_recall_hotkey_enable}Allows opening the map-wide veteran register from the campaign map. Default: true.")]
         public bool EnableVeteranRecallHotkey { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_recall_hotkey}Register hotkey", 0, 3, "0", Order = 9, HintText = "{=b1071_mcm_h_demob_recall_hotkey}0=F8, 1=F10, 2=F11, 3=F12. Default: F8.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_recall_hotkey}Register hotkey", 0, 3, "0", Order = 10, HintText = "{=b1071_mcm_h_demob_recall_hotkey}0=F8, 1=F10, 2=F11, 3=F12. Default: F8.")]
         public int VeteranRecallHotkeyChoice { get; set; } = 0;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_courier}Courier speed", 20, 400, "0", Order = 10, HintText = "{=b1071_mcm_h_demob_courier}How far a recall order travels in a day, in map distance. A rider covers roughly the width of one region per day at 120. Higher means orders arrive sooner. Default: 120.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_courier}Courier speed", 20, 400, "0", Order = 11, HintText = "{=b1071_mcm_h_demob_courier}How far a recall order travels in a day, in map distance. A rider covers roughly the width of one region per day at 120. Higher means orders arrive sooner. Default: 120.")]
         public int DemobilizationCourierSpeed { get; set; } = 120;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_march}Veteran march speed", 10, 300, "0", Order = 11, HintText = "{=b1071_mcm_h_demob_march}How far recalled veterans march in a day on their way to join you, in map distance. They head for wherever you are, recalculated every day. Default: 60.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_march}Veteran march speed", 10, 300, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_march}How far recalled veterans march in a day on their way to join you, in map distance. They head for wherever you are, recalculated every day. Default: 60.")]
         public int DemobilizationMarchSpeed { get; set; } = 60;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
-        [SettingPropertyBool("{=b1071_mcm_t_demob_ai_recall}AI lords hire veterans", Order = 12, HintText = "{=b1071_mcm_h_demob_ai_recall}An AI lord who enters a settlement holding veterans he is entitled to hires them on the spot, paying the same gold and manpower you would. He never travels out of his way for them. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_ai_recall}AI lords hire veterans", Order = 13, HintText = "{=b1071_mcm_h_demob_ai_recall}An AI lord who enters a settlement holding veterans he is entitled to hires them on the spot, paying the same gold and manpower you would. He never travels out of his way for them. Default: true.")]
         public bool EnableDemobilizationAiRecall { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]

@@ -207,6 +207,7 @@ namespace Byzantium1071.Tests
         public int DemobilizationVeteranScatterPercent { get; set; }
         public int DemobilizationRecallGoldPerTier { get; set; }
         public int DemobilizationVeteranRecallAccess { get; set; }
+        public bool EnableDemobilizationVeteranCrossClanRecruitment { get; set; }
         public bool EnableDemobilizationRemoteRecall { get; set; }
         public bool EnableVeteranRecallHotkey { get; set; }
         public int VeteranRecallHotkeyChoice { get; set; }

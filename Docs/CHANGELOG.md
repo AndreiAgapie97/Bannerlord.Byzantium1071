@@ -1,5 +1,19 @@
 # Campaign++ — Changelog
 
+## [1.0.3.4] — 2026-08-25
+
+### Fix — Per-man troop-service accounting
+
+**Troop service now retains the clan that raised a soldier and the clan employing him for the current term, so reserve restoration, veteran recall, cancellation, and AI hiring cannot mix ownership between clans.**
+
+- Service cohorts, transfer-reserve rows, veteran batches, and recall batches persist immutable origin plus current employer through upgrades, splits, save/load, discharge, and re-enlistment.
+- The short transfer reserve is partitioned by employer clan before troop type. Its source party is saved only as provenance, so an unrelated clan can no longer restore a missing troop record.
+- Confirmed `DiedInBattle` casualties are removed when a map event ends. Routed, prisoner, transfer, and other non-death roster shrinkage still enter the reserve. An unresolvable reserve employer now leaves the cohort tracked instead of decrementing it, and each changed reserve bucket sorts once after the move.
+- Remote recalls keep ordered provenance batches. Arrival consumes them FIFO; raid/conquest scatter uses largest-remainder allocation with oldest batches winning ties; cancellation returns every remaining batch to its prior employer.
+- **New MCM rule — `Allow cross-clan veteran recruitment`, default off.** With it off, player and AI clans can recruit only batches whose current employer is their own clan. With it on, the existing 0/1/2 recall-access ladder grants full-register access identically to both. War denies every path either way.
+- Pending-recall save headers now record the batches that were actually flattened, and veteran merge comparison normalizes an empty origin first. Raw pending-header indices remain aligned even when a corrupt header is skipped.
+- Added behavior coverage for cancellation restoration, employer-partitioned reserve restore, non-death banking versus confirmed death deletion, FIFO, scatter ties, origin normalization, default-off profiles, and player/AI access on both setting values. 1.0.3.5 historical scatter mechanics remain design work and are not included in this release.
+
 ## [1.0.3.3] — 2026-08-25
 
 ### Change — Settlement Intelligence Tooltips

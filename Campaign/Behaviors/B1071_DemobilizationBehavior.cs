@@ -40,6 +40,10 @@ namespace Byzantium1071.Campaign.Behaviors
             public int ExtensionCount;
             /// <summary>Settlement this soldier was raised in; empty when it could not be determined.</summary>
             public string HomeId = string.Empty;
+            /// <summary>Clan that first raised this soldier. Kept when he changes employers.</summary>
+            public string OriginClanId = string.Empty;
+            /// <summary>Clan currently employing this soldier for this term of service.</summary>
+            public string EmployerClanId = string.Empty;
         }
 
         private sealed class TransferReserveEntry
@@ -49,6 +53,10 @@ namespace Byzantium1071.Campaign.Behaviors
             public int Count;
             public int ExtensionCount;
             public string HomeId = string.Empty;
+            public string OriginClanId = string.Empty;
+            public string EmployerClanId = string.Empty;
+            /// <summary>Provenance only; reserve lookup is keyed by <see cref="EmployerClanId"/>.</summary>
+            public string SourcePartyId = string.Empty;
         }
 
         /// <summary>
@@ -67,34 +75,22 @@ namespace Byzantium1071.Campaign.Behaviors
             /// access setting would otherwise close the register to you.
             /// </summary>
             public bool FromPlayer;
+            public string OriginClanId = string.Empty;
+            public string EmployerClanId = string.Empty;
         }
 
-        /// <summary>
-        /// Which discharge batches a hirer may draw from. The register records only whether
-        /// the player discharged a batch, so an AI lord cannot pick his own men out of a
-        /// stranger's register the way the player can — but the player's men are never his
-        /// to take either, which is the half that matters.
-        /// </summary>
-        private enum VeteranClaim
+        private sealed class RecallBatch
         {
-            /// <summary>Everyone waiting here, whoever sent them home.</summary>
-            Anyone,
-
-            /// <summary>Only men the player discharged himself.</summary>
-            PlayerOnly,
-
-            /// <summary>Everyone except the player's own men — what an AI lord may hire.</summary>
-            ExceptPlayer
+            public string OriginClanId = string.Empty;
+            public string EmployerClanId = string.Empty;
+            public int Count;
         }
 
-        private static bool Matches(VeteranEntry entry, VeteranClaim claim)
+        private enum VeteranAccess
         {
-            switch (claim)
-            {
-                case VeteranClaim.PlayerOnly: return entry.FromPlayer;
-                case VeteranClaim.ExceptPlayer: return !entry.FromPlayer;
-                default: return true;
-            }
+            Denied,
+            OwnEmployerOnly,
+            All
         }
 
         /// <summary>
@@ -119,8 +115,8 @@ namespace Byzantium1071.Campaign.Behaviors
             => Math.Max(0, VeteranSettlingDays() - (today - entry.DischargeDay));
 
         /// <summary>Men in this batch a given hirer may sign up today.</summary>
-        private static bool IsHireable(VeteranEntry entry, VeteranClaim claim, int today)
-            => entry.Count > 0 && Matches(entry, claim) && IsSettled(entry, today);
+        private static bool IsHireable(VeteranEntry entry, VeteranAccess access, string employerClanId, int today)
+            => entry.Count > 0 && Matches(entry, access, employerClanId) && IsSettled(entry, today);
 
         /// <summary>
         /// A recall the player ordered from somewhere he was not standing. Deliberately a
@@ -156,13 +152,11 @@ namespace Byzantium1071.Campaign.Behaviors
             /// </summary>
             public int ManpowerDrawn;
 
-            /// <summary>
-            /// How many of these men came out of the player's own discharge batches. A count
-            /// rather than a flag, because a recall with full access to a register draws the
-            /// longest-waiting men first whoever discharged them, so one order can carry both.
-            /// Cancelling has to put his men back as his and the rest back as the local lord's.
-            /// </summary>
-            public int PlayerOwnedCount;
+            /// <summary>Ordered provenance rows for the men still on the road.</summary>
+            public readonly List<RecallBatch> Batches = new List<RecallBatch>();
+
+            /// <summary>Read only from pre-1.0.3.4 headers until batches can be reconstructed.</summary>
+            public int LegacyPlayerOwnedCount = -1;
 
             /// <summary>Map distance the written order still has to cover before anyone hears it.</summary>
             public float CourierRemaining;
@@ -282,8 +276,9 @@ namespace Byzantium1071.Campaign.Behaviors
         private readonly Dictionary<string, List<string>> _upgradePathCache
             = new Dictionary<string, List<string>>();
 
-        private readonly Dictionary<string, List<TransferReserveEntry>> _transferReserve
-            = new Dictionary<string, List<TransferReserveEntry>>();
+        // employerClanId -> troopId -> transferred service entries
+        private readonly Dictionary<string, Dictionary<string, List<TransferReserveEntry>>> _transferReserve
+            = new Dictionary<string, Dictionary<string, List<TransferReserveEntry>>>();
 
         // settlementId -> troopId -> discharge batches
         private readonly Dictionary<string, Dictionary<string, List<VeteranEntry>>> _veteranRegister
@@ -302,6 +297,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<bool>? _savedExtendedFlags;
         private List<int>? _savedExtensionCounts;
         private List<string>? _savedHomeIds;
+        private List<string>? _savedOriginClanIds;
+        private List<string>? _savedEmployerClanIds;
 
         private List<string>? _savedReserveTroopIds;
         private List<int>? _savedReserveJoinDays;
@@ -310,12 +307,17 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<bool>? _savedReserveExtendedFlags;
         private List<int>? _savedReserveExtensionCounts;
         private List<string>? _savedReserveHomeIds;
+        private List<string>? _savedReserveOriginClanIds;
+        private List<string>? _savedReserveEmployerClanIds;
+        private List<string>? _savedReserveSourcePartyIds;
 
         private List<string>? _savedVeteranSettlementIds;
         private List<string>? _savedVeteranTroopIds;
         private List<int>? _savedVeteranDischargeDays;
         private List<int>? _savedVeteranCounts;
         private List<bool>? _savedVeteranFromPlayer;
+        private List<string>? _savedVeteranOriginClanIds;
+        private List<string>? _savedVeteranEmployerClanIds;
 
         private List<int>? _savedPendingOrderIds;
         private List<string>? _savedPendingSettlementIds;
@@ -328,6 +330,10 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<float>? _savedPendingCourier;
         private List<float>? _savedPendingPosX;
         private List<float>? _savedPendingPosY;
+        private List<int>? _savedPendingBatchesPerOrder;
+        private List<string>? _savedPendingBatchOriginClanIds;
+        private List<string>? _savedPendingBatchEmployerClanIds;
+        private List<int>? _savedPendingBatchCounts;
 
         private int _lastWarningDay = -1;
         private int _lastWarningEvalDay = -1;
@@ -342,6 +348,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, OnRaidCompleted);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -353,6 +360,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedExtendedFlags ??= new List<bool>();
             _savedExtensionCounts ??= new List<int>();
             _savedHomeIds ??= new List<string>();
+            _savedOriginClanIds ??= new List<string>();
+            _savedEmployerClanIds ??= new List<string>();
             _savedReserveTroopIds ??= new List<string>();
             _savedReserveJoinDays ??= new List<int>();
             _savedReserveStoredDays ??= new List<int>();
@@ -360,11 +369,16 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedReserveExtendedFlags ??= new List<bool>();
             _savedReserveExtensionCounts ??= new List<int>();
             _savedReserveHomeIds ??= new List<string>();
+            _savedReserveOriginClanIds ??= new List<string>();
+            _savedReserveEmployerClanIds ??= new List<string>();
+            _savedReserveSourcePartyIds ??= new List<string>();
             _savedVeteranSettlementIds ??= new List<string>();
             _savedVeteranTroopIds ??= new List<string>();
             _savedVeteranDischargeDays ??= new List<int>();
             _savedVeteranCounts ??= new List<int>();
             _savedVeteranFromPlayer ??= new List<bool>();
+            _savedVeteranOriginClanIds ??= new List<string>();
+            _savedVeteranEmployerClanIds ??= new List<string>();
             _savedPendingOrderIds ??= new List<int>();
             _savedPendingSettlementIds ??= new List<string>();
             _savedPendingTroopIds ??= new List<string>();
@@ -376,6 +390,10 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedPendingCourier ??= new List<float>();
             _savedPendingPosX ??= new List<float>();
             _savedPendingPosY ??= new List<float>();
+            _savedPendingBatchesPerOrder ??= new List<int>();
+            _savedPendingBatchOriginClanIds ??= new List<string>();
+            _savedPendingBatchEmployerClanIds ??= new List<string>();
+            _savedPendingBatchCounts ??= new List<int>();
 
             if (!dataStore.IsLoading)
             {
@@ -386,6 +404,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedExtendedFlags.Clear();
                 _savedExtensionCounts.Clear();
                 _savedHomeIds.Clear();
+                _savedOriginClanIds.Clear();
+                _savedEmployerClanIds.Clear();
                 _savedReserveTroopIds.Clear();
                 _savedReserveJoinDays.Clear();
                 _savedReserveStoredDays.Clear();
@@ -393,11 +413,16 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedReserveExtendedFlags.Clear();
                 _savedReserveExtensionCounts.Clear();
                 _savedReserveHomeIds.Clear();
+                _savedReserveOriginClanIds.Clear();
+                _savedReserveEmployerClanIds.Clear();
+                _savedReserveSourcePartyIds.Clear();
                 _savedVeteranSettlementIds.Clear();
                 _savedVeteranTroopIds.Clear();
                 _savedVeteranDischargeDays.Clear();
                 _savedVeteranCounts.Clear();
                 _savedVeteranFromPlayer.Clear();
+                _savedVeteranOriginClanIds.Clear();
+                _savedVeteranEmployerClanIds.Clear();
                 _savedPendingOrderIds.Clear();
                 _savedPendingSettlementIds.Clear();
                 _savedPendingTroopIds.Clear();
@@ -409,6 +434,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 _savedPendingCourier.Clear();
                 _savedPendingPosX.Clear();
                 _savedPendingPosY.Clear();
+                _savedPendingBatchesPerOrder.Clear();
+                _savedPendingBatchOriginClanIds.Clear();
+                _savedPendingBatchEmployerClanIds.Clear();
+                _savedPendingBatchCounts.Clear();
 
                 foreach (var partyKvp in _serviceCohorts)
                 {
@@ -424,34 +453,47 @@ namespace Byzantium1071.Campaign.Behaviors
                                 _savedExtendedFlags,
                                 _savedExtensionCounts,
                                 _savedHomeIds,
+                                _savedOriginClanIds,
+                                _savedEmployerClanIds,
                                 partyKvp.Key,
                                 troopKvp.Key,
                                 cohort.JoinDay,
                                 cohort.Count,
                                 cohort.ExtensionCount,
-                                cohort.HomeId ?? string.Empty);
+                                cohort.HomeId ?? string.Empty,
+                                cohort.OriginClanId ?? string.Empty,
+                                cohort.EmployerClanId ?? string.Empty);
                         }
                     }
                 }
 
-                foreach (var reserveKvp in _transferReserve)
+                foreach (var employerKvp in _transferReserve)
                 {
-                    foreach (TransferReserveEntry entry in reserveKvp.Value)
+                    foreach (var reserveKvp in employerKvp.Value)
                     {
-                        B1071_ServiceMath.AppendTransferReserveRows(
-                            _savedReserveTroopIds,
-                            _savedReserveJoinDays,
-                            _savedReserveStoredDays,
-                            _savedReserveCounts,
-                            _savedReserveExtendedFlags,
-                            _savedReserveExtensionCounts,
-                            _savedReserveHomeIds,
-                            reserveKvp.Key,
-                            entry.JoinDay,
-                            entry.StoredDay,
-                            entry.Count,
-                            entry.ExtensionCount,
-                            entry.HomeId ?? string.Empty);
+                        foreach (TransferReserveEntry entry in reserveKvp.Value)
+                        {
+                            B1071_ServiceMath.AppendTransferReserveRows(
+                                _savedReserveTroopIds,
+                                _savedReserveJoinDays,
+                                _savedReserveStoredDays,
+                                _savedReserveCounts,
+                                _savedReserveExtendedFlags,
+                                _savedReserveExtensionCounts,
+                                _savedReserveHomeIds,
+                                _savedReserveOriginClanIds,
+                                _savedReserveEmployerClanIds,
+                                _savedReserveSourcePartyIds,
+                                reserveKvp.Key,
+                                entry.JoinDay,
+                                entry.StoredDay,
+                                entry.Count,
+                                entry.ExtensionCount,
+                                entry.HomeId ?? string.Empty,
+                                entry.OriginClanId ?? string.Empty,
+                                entry.EmployerClanId ?? string.Empty,
+                                entry.SourcePartyId ?? string.Empty);
+                        }
                     }
                 }
 
@@ -467,11 +509,15 @@ namespace Byzantium1071.Campaign.Behaviors
                                 _savedVeteranDischargeDays,
                                 _savedVeteranCounts,
                                 _savedVeteranFromPlayer,
+                                _savedVeteranOriginClanIds,
+                                _savedVeteranEmployerClanIds,
                                 settlementKvp.Key,
                                 troopKvp.Key,
                                 entry.DischargeDay,
                                 entry.Count,
-                                entry.FromPlayer);
+                                entry.FromPlayer,
+                                entry.OriginClanId ?? string.Empty,
+                                entry.EmployerClanId ?? string.Empty);
                         }
                     }
                 }
@@ -483,6 +529,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     // writing a NaN into the save file.
                     if (pending.Count <= 0) continue;
                     EnsurePendingPosition(pending);
+                    EnsurePendingBatches(pending);
 
                     B1071_ServiceMath.AppendPendingRecallRow(
                         _savedPendingOrderIds,
@@ -503,10 +550,25 @@ namespace Byzantium1071.Campaign.Behaviors
                         pending.OrderDay,
                         pending.GoldPaid,
                         pending.ManpowerDrawn,
-                        pending.PlayerOwnedCount,
+                        GetPlayerOwnedBatchCount(pending),
                         pending.CourierRemaining,
                         pending.PosX,
                         pending.PosY);
+
+                    int appendedBatchCount = 0;
+                    foreach (RecallBatch batch in pending.Batches)
+                    {
+                        if (B1071_ServiceMath.AppendRecallBatchRow(
+                            _savedPendingBatchOriginClanIds,
+                            _savedPendingBatchEmployerClanIds,
+                            _savedPendingBatchCounts,
+                            batch.OriginClanId,
+                            batch.EmployerClanId,
+                            batch.Count))
+                            appendedBatchCount++;
+                    }
+
+                    _savedPendingBatchesPerOrder.Add(appendedBatchCount);
                 }
             }
 
@@ -517,6 +579,8 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("b1071_demob_extendedFlags", ref _savedExtendedFlags);
             dataStore.SyncData("b1071_demob_extensionCounts", ref _savedExtensionCounts);
             dataStore.SyncData("b1071_demob_homeIds", ref _savedHomeIds);
+            dataStore.SyncData("b1071_demob_originClanIds", ref _savedOriginClanIds);
+            dataStore.SyncData("b1071_demob_employerClanIds", ref _savedEmployerClanIds);
             dataStore.SyncData("b1071_demob_reserveTroopIds", ref _savedReserveTroopIds);
             dataStore.SyncData("b1071_demob_reserveJoinDays", ref _savedReserveJoinDays);
             dataStore.SyncData("b1071_demob_reserveStoredDays", ref _savedReserveStoredDays);
@@ -524,11 +588,16 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("b1071_demob_reserveExtendedFlags", ref _savedReserveExtendedFlags);
             dataStore.SyncData("b1071_demob_reserveExtensionCounts", ref _savedReserveExtensionCounts);
             dataStore.SyncData("b1071_demob_reserveHomeIds", ref _savedReserveHomeIds);
+            dataStore.SyncData("b1071_demob_reserveOriginClanIds", ref _savedReserveOriginClanIds);
+            dataStore.SyncData("b1071_demob_reserveEmployerClanIds", ref _savedReserveEmployerClanIds);
+            dataStore.SyncData("b1071_demob_reserveSourcePartyIds", ref _savedReserveSourcePartyIds);
             dataStore.SyncData("b1071_demob_vetSettlementIds", ref _savedVeteranSettlementIds);
             dataStore.SyncData("b1071_demob_vetTroopIds", ref _savedVeteranTroopIds);
             dataStore.SyncData("b1071_demob_vetDischargeDays", ref _savedVeteranDischargeDays);
             dataStore.SyncData("b1071_demob_vetCounts", ref _savedVeteranCounts);
             dataStore.SyncData("b1071_demob_vetFromPlayer", ref _savedVeteranFromPlayer);
+            dataStore.SyncData("b1071_demob_vetOriginClanIds", ref _savedVeteranOriginClanIds);
+            dataStore.SyncData("b1071_demob_vetEmployerClanIds", ref _savedVeteranEmployerClanIds);
             dataStore.SyncData("b1071_demob_pendOrderIds", ref _savedPendingOrderIds);
             dataStore.SyncData("b1071_demob_pendSettlementIds", ref _savedPendingSettlementIds);
             dataStore.SyncData("b1071_demob_pendTroopIds", ref _savedPendingTroopIds);
@@ -540,6 +609,10 @@ namespace Byzantium1071.Campaign.Behaviors
             dataStore.SyncData("b1071_demob_pendCourier", ref _savedPendingCourier);
             dataStore.SyncData("b1071_demob_pendPosX", ref _savedPendingPosX);
             dataStore.SyncData("b1071_demob_pendPosY", ref _savedPendingPosY);
+            dataStore.SyncData("b1071_demob_pendBatchesPerOrder", ref _savedPendingBatchesPerOrder);
+            dataStore.SyncData("b1071_demob_pendBatchOriginClanIds", ref _savedPendingBatchOriginClanIds);
+            dataStore.SyncData("b1071_demob_pendBatchEmployerClanIds", ref _savedPendingBatchEmployerClanIds);
+            dataStore.SyncData("b1071_demob_pendBatchCounts", ref _savedPendingBatchCounts);
 
             _savedPartyIds ??= new List<string>();
             _savedTroopIds ??= new List<string>();
@@ -548,6 +621,8 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedExtendedFlags ??= new List<bool>();
             _savedExtensionCounts ??= new List<int>();
             _savedHomeIds ??= new List<string>();
+            _savedOriginClanIds ??= new List<string>();
+            _savedEmployerClanIds ??= new List<string>();
             _savedReserveTroopIds ??= new List<string>();
             _savedReserveJoinDays ??= new List<int>();
             _savedReserveStoredDays ??= new List<int>();
@@ -555,11 +630,16 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedReserveExtendedFlags ??= new List<bool>();
             _savedReserveExtensionCounts ??= new List<int>();
             _savedReserveHomeIds ??= new List<string>();
+            _savedReserveOriginClanIds ??= new List<string>();
+            _savedReserveEmployerClanIds ??= new List<string>();
+            _savedReserveSourcePartyIds ??= new List<string>();
             _savedVeteranSettlementIds ??= new List<string>();
             _savedVeteranTroopIds ??= new List<string>();
             _savedVeteranDischargeDays ??= new List<int>();
             _savedVeteranCounts ??= new List<int>();
             _savedVeteranFromPlayer ??= new List<bool>();
+            _savedVeteranOriginClanIds ??= new List<string>();
+            _savedVeteranEmployerClanIds ??= new List<string>();
             _savedPendingOrderIds ??= new List<int>();
             _savedPendingSettlementIds ??= new List<string>();
             _savedPendingTroopIds ??= new List<string>();
@@ -571,6 +651,10 @@ namespace Byzantium1071.Campaign.Behaviors
             _savedPendingCourier ??= new List<float>();
             _savedPendingPosX ??= new List<float>();
             _savedPendingPosY ??= new List<float>();
+            _savedPendingBatchesPerOrder ??= new List<int>();
+            _savedPendingBatchOriginClanIds ??= new List<string>();
+            _savedPendingBatchEmployerClanIds ??= new List<string>();
+            _savedPendingBatchCounts ??= new List<int>();
 
             if (dataStore.IsLoading)
             {
@@ -585,7 +669,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     _savedCounts,
                     _savedExtendedFlags,
                     _savedExtensionCounts,
-                    _savedHomeIds))
+                    _savedHomeIds,
+                    _savedOriginClanIds,
+                    _savedEmployerClanIds))
                 {
                     string partyId = savedRow.PartyId;
                     string troopId = savedRow.TroopId;
@@ -609,7 +695,9 @@ namespace Byzantium1071.Campaign.Behaviors
                             JoinDay = savedRow.JoinDay,
                             Count = 1,
                             ExtensionCount = savedRow.ExtensionCount,
-                            HomeId = savedRow.HomeId
+                            HomeId = savedRow.HomeId,
+                            OriginClanId = savedRow.OriginClanId,
+                            EmployerClanId = savedRow.EmployerClanId
                         });
                     }
                 }
@@ -621,14 +709,24 @@ namespace Byzantium1071.Campaign.Behaviors
                     _savedReserveCounts,
                     _savedReserveExtendedFlags,
                     _savedReserveExtensionCounts,
-                    _savedReserveHomeIds))
+                    _savedReserveHomeIds,
+                    _savedReserveOriginClanIds,
+                    _savedReserveEmployerClanIds,
+                    _savedReserveSourcePartyIds))
                 {
                     string troopId = savedRow.TroopId;
+                    if (string.IsNullOrEmpty(savedRow.EmployerClanId)) continue;
 
-                    if (!_transferReserve.TryGetValue(troopId, out var entries))
+                    if (!_transferReserve.TryGetValue(savedRow.EmployerClanId, out var reserveTroops))
+                    {
+                        reserveTroops = new Dictionary<string, List<TransferReserveEntry>>();
+                        _transferReserve[savedRow.EmployerClanId] = reserveTroops;
+                    }
+
+                    if (!reserveTroops.TryGetValue(troopId, out var entries))
                     {
                         entries = new List<TransferReserveEntry>();
-                        _transferReserve[troopId] = entries;
+                        reserveTroops[troopId] = entries;
                     }
 
                     for (int soldier = 0; soldier < savedRow.Count; soldier++)
@@ -639,7 +737,10 @@ namespace Byzantium1071.Campaign.Behaviors
                             StoredDay = savedRow.StoredDay,
                             Count = 1,
                             ExtensionCount = savedRow.ExtensionCount,
-                            HomeId = savedRow.HomeId
+                            HomeId = savedRow.HomeId,
+                            OriginClanId = savedRow.OriginClanId,
+                            EmployerClanId = savedRow.EmployerClanId,
+                            SourcePartyId = savedRow.SourcePartyId
                         });
                     }
                 }
@@ -649,7 +750,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     _savedVeteranTroopIds,
                     _savedVeteranDischargeDays,
                     _savedVeteranCounts,
-                    _savedVeteranFromPlayer))
+                    _savedVeteranFromPlayer,
+                    _savedVeteranOriginClanIds,
+                    _savedVeteranEmployerClanIds))
                 {
                     string settlementId = savedRow.SettlementId;
                     string troopId = savedRow.TroopId;
@@ -674,13 +777,15 @@ namespace Byzantium1071.Campaign.Behaviors
                       {
                           DischargeDay = savedRow.DischargeDay,
                           Count = savedRow.Count,
-                          FromPlayer = savedRow.FromPlayer
+                          FromPlayer = savedRow.FromPlayer,
+                          OriginClanId = savedRow.OriginClanId,
+                          EmployerClanId = savedRow.EmployerClanId
                       });
                   }
 
                   // Recall orders in flight arrived in v1.0.2.8. Every earlier save simply has
                   // no lists here, which loads as no orders outstanding — the correct answer.
-                  foreach (PendingRecallSaveRow savedRow in B1071_ServiceMath.ReadPendingRecallRows(
+                  List<PendingRecallSaveRow> savedPending = B1071_ServiceMath.ReadPendingRecallRows(
                       _savedPendingOrderIds,
                       _savedPendingSettlementIds,
                       _savedPendingTroopIds,
@@ -692,13 +797,24 @@ namespace Byzantium1071.Campaign.Behaviors
                       _savedPendingCourier,
                       _savedPendingPosX,
                       _savedPendingPosY,
-                      GetToday()))
+                      GetToday());
+                  List<List<RecallBatchSaveRow>> savedBatchGroups = B1071_ServiceMath.ReadRecallBatchGroups(
+                      B1071_ServiceMath.GetPendingRecallHeaderCount(
+                          _savedPendingSettlementIds,
+                          _savedPendingTroopIds,
+                          _savedPendingCounts),
+                      _savedPendingBatchesPerOrder,
+                      _savedPendingBatchOriginClanIds,
+                      _savedPendingBatchEmployerClanIds,
+                      _savedPendingBatchCounts);
+                  for (int pendingIndex = 0; pendingIndex < savedPending.Count; pendingIndex++)
                   {
+                      PendingRecallSaveRow savedRow = savedPending[pendingIndex];
                       // A missing position is left as NaN rather than read as map origin, which
                       // is open sea off the western edge: the column would have marched the
                       // whole map. EnsurePendingPosition puts them back at their settlement,
                       // once the object manager is certain to answer.
-                      _pendingRecalls.Add(new PendingRecallEntry
+                      var pending = new PendingRecallEntry
                       {
                           OrderId = savedRow.OrderId,
                           SettlementId = savedRow.SettlementId,
@@ -708,14 +824,24 @@ namespace Byzantium1071.Campaign.Behaviors
                           GoldPaid = savedRow.GoldPaid,
                           ManpowerDrawn = savedRow.ManpowerDrawn,
 
-                          // Missing means none of them are his, which is the safe reading: it
-                          // hands the local lord men that were the player's rather than the
-                          // other way round, and only for orders already on the road.
-                          PlayerOwnedCount = savedRow.PlayerOwnedCount,
+                          LegacyPlayerOwnedCount = savedRow.PlayerOwnedCount,
                           CourierRemaining = savedRow.CourierRemaining,
                           PosX = savedRow.PosX,
                           PosY = savedRow.PosY
-                      });
+                      };
+                      foreach (RecallBatchSaveRow batch in savedBatchGroups[savedRow.SourceIndex])
+                      {
+                          pending.Batches.Add(new RecallBatch
+                          {
+                              OriginClanId = batch.OriginClanId,
+                              EmployerClanId = batch.EmployerClanId,
+                              Count = batch.Count
+                          });
+                      }
+
+                      if (pending.Batches.Count > 0)
+                          pending.LegacyPlayerOwnedCount = -1;
+                      _pendingRecalls.Add(pending);
                   }
 
                 // Handles are rebuilt rather than saved: all that matters is that no two
@@ -952,6 +1078,47 @@ namespace Byzantium1071.Campaign.Behaviors
             catch (Exception ex)
             {
                 B1071_VerboseLog.Log(LogTag, $"Daily tick failed: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Battle deaths are final roster losses, not transfers. Routed, captured, donated, and
+        /// every other shrinkage still waits in the short transfer reserve for a later restore.
+        /// </summary>
+        private void OnMapEventEnded(MapEvent mapEvent)
+        {
+            try
+            {
+                if (!Settings.EnableDemobilizationSystem || mapEvent == null) return;
+                RemoveBattleDeaths(mapEvent.AttackerSide);
+                RemoveBattleDeaths(mapEvent.DefenderSide);
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"MapEventEnded casualty reconciliation skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private void RemoveBattleDeaths(MapEventSide? side)
+        {
+            if (side?.Parties == null) return;
+
+            foreach (MapEventParty? mapParty in side.Parties)
+            {
+                if (mapParty == null) continue;
+
+                MobileParty? party = mapParty.Party?.MobileParty;
+                string partyId = party == null ? string.Empty : GetPartyId(party);
+                if (string.IsNullOrEmpty(partyId) || !_serviceCohorts.TryGetValue(partyId, out var troopDict)) continue;
+
+                foreach (TroopRosterElement casualty in mapParty.DiedInBattle.GetTroopRoster())
+                {
+                    CharacterObject? troop = casualty.Character;
+                    if (!IsTrackableTroop(troop) || casualty.Number <= 0) continue;
+                    RemoveOldestCohorts(troopDict, troop!.StringId, casualty.Number);
+                }
+
+                RemoveEmptyEntries(partyId);
             }
         }
 
@@ -1269,20 +1436,23 @@ namespace Byzantium1071.Campaign.Behaviors
                 int removed = RemoveTroopsFromRoster(mainParty, troop, wanted);
                 if (removed <= 0) return 0;
 
-                // Everyone on this row shares a home and an enlistment day, so they all march to
-                // the same place and the first record can stand in for the whole batch.
-                CohortEntry cohort = cohorts[group[0]];
-
                 // Deliberately exempt from the daily departure caps. Those exist to stop a party
                 // bleeding a squad a day behind the player's back; this is his own decision, and
                 // throttling it would only make him click the same button again tomorrow.
-                Settlement? home = SendVeteranHome(mainParty, troop, cohort, removed, today, out int arrived);
-
+                // Display groups do not include provenance: men with the same visible service
+                // facts can still have different origins. Discharge each consumed record so no
+                // batch inherits the first man's origin or employer.
+                Settlement? home = null;
+                int arrived = 0;
                 int toClear = removed;
                 foreach (int index in group)
                 {
                     if (toClear <= 0) break;
                     int take = Math.Min(cohorts[index].Count, toClear);
+                    Settlement? reachedHome = SendVeteranHome(mainParty, troop, cohorts[index], take, today, out int arrivedHere);
+                    if (home == null && reachedHome != null)
+                        home = reachedHome;
+                    arrived += arrivedHere;
                     cohorts[index].Count -= take;
                     toClear -= take;
                 }
@@ -1399,7 +1569,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 int excess = GetCount(trackedTotals, troopId) - GetCount(currentCounts, troopId);
                 if (excess > 0)
                 {
-                    int reserved = MoveOldestCohortsToTransferReserve(troopDict, troopId, excess, today);
+                    int reserved = MoveOldestCohortsToTransferReserve(party, troopDict, troopId, excess, today);
                     B1071_VerboseLog.Log(LogTag, $"Roster reconciliation reserved missing service entries: party={PartyLogName(party)}, troop={troopId}, soldiers={reserved}, reserve={CountReservedSoldiers()}.");
                 }
             }
@@ -1420,7 +1590,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 bool hadTrackedCohortsBeforeRestore = cohorts.Count > 0;
-                int restored = RestoreTransferReserveEntries(kvp.Key, cohorts, fresh, today);
+                int restored = RestoreTransferReserveEntries(party, kvp.Key, cohorts, fresh, today);
                 int newSoldiers = fresh - restored;
 
                 if (restored > 0)
@@ -1432,7 +1602,14 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (newSoldiers > 0)
                 {
-                    AddIndividualEntries(cohorts, today, newSoldiers, ResolveHomeIdForParty(party));
+                    string employerClanId = ResolveEmployerClanId(party);
+                    AddIndividualEntries(
+                        cohorts,
+                        today,
+                        newSoldiers,
+                        ResolveHomeIdForParty(party),
+                        employerClanId,
+                        employerClanId);
                     B1071_VerboseLog.Log(LogTag, $"Observed new service soldiers: party={PartyLogName(party)}, troop={kvp.Key}, soldiers={newSoldiers}, joinDay={today}.");
                 }
             }
@@ -1811,15 +1988,28 @@ namespace Byzantium1071.Campaign.Behaviors
             // price recruitment charged for them. Without this, every completed term is a
             // permanent hole in the map's recruitment economy.
             B1071_ManpowerBehavior.Instance?.ReturnManpowerForTroops(home, troop, arrived);
-            AddVeteransToRegister(home.StringId, troop.StringId, arrived, today, IsPlayerParty(party));
+            AddVeteransToRegister(
+                home.StringId,
+                troop.StringId,
+                arrived,
+                today,
+                cohort.OriginClanId,
+                string.IsNullOrEmpty(cohort.EmployerClanId) ? ResolveEmployerClanId(party) : cohort.EmployerClanId);
 
             B1071_VerboseLog.Log(LogTag, $"Veterans went home: party={PartyLogName(party)}, troop={troop.StringId}, soldiers={arrived}/{count}, home={home.StringId}, dischargeDay={today}.");
             return home;
         }
 
-        private void AddVeteransToRegister(string settlementId, string troopId, int count, int today, bool fromPlayer)
+        private void AddVeteransToRegister(
+            string settlementId,
+            string troopId,
+            int count,
+            int today,
+            string originClanId,
+            string employerClanId)
         {
             if (string.IsNullOrEmpty(settlementId) || string.IsNullOrEmpty(troopId) || count <= 0) return;
+            originClanId ??= string.Empty;
 
             if (!_veteranRegister.TryGetValue(settlementId, out var troopDict))
             {
@@ -1833,19 +2023,31 @@ namespace Byzantium1071.Campaign.Behaviors
                 troopDict[troopId] = entries;
             }
 
-            // Same-day discharges merge into one batch to keep the register compact. Whose
-            // men they are is part of the key: the player's veterans must never be folded
-            // into a batch he has no claim on, nor lend his claim to somebody else's.
+            // Employer identity is authoritative for new records. FromPlayer exists only to
+            // interpret old blank-employer rows loaded from pre-1.0.3.4 saves.
+            bool fromPlayer = false;
+            // Same-day discharges merge only when their provenance is identical. A recalled
+            // veteran keeps his origin but belongs to the clan that hired him for this term.
             for (int i = 0; i < entries.Count; i++)
             {
-                if (entries[i].DischargeDay == today && entries[i].FromPlayer == fromPlayer)
+                if (entries[i].DischargeDay == today
+                    && string.Equals(entries[i].OriginClanId, originClanId, StringComparison.Ordinal)
+                    && string.Equals(entries[i].EmployerClanId, employerClanId, StringComparison.Ordinal)
+                    && (string.IsNullOrEmpty(employerClanId) ? entries[i].FromPlayer == fromPlayer : true))
                 {
                     entries[i].Count += count;
                     return;
                 }
             }
 
-            entries.Add(new VeteranEntry { DischargeDay = today, Count = count, FromPlayer = fromPlayer });
+            entries.Add(new VeteranEntry
+            {
+                DischargeDay = today,
+                Count = count,
+                FromPlayer = fromPlayer,
+                OriginClanId = originClanId,
+                EmployerClanId = employerClanId ?? string.Empty
+            });
         }
 
         /// <summary>Drops veterans who have waited too long; they settle down for good.</summary>
@@ -1997,46 +2199,52 @@ namespace Byzantium1071.Campaign.Behaviors
 
         // ── Recall ────────────────────────────────────────────────────────────────
 
-        /// <summary>Whether the player may hire <em>anyone</em> from the register at this settlement.</summary>
+        /// <summary>Whether the player may hire every veteran from the register at this settlement.</summary>
         public static bool CanPlayerAccessVeteranRegister(Settlement? settlement)
         {
-            return CanFactionAccessVeteranRegister(Clan.PlayerClan?.MapFaction, Clan.PlayerClan, settlement);
+            return ResolveVeteranAccess(Clan.PlayerClan?.MapFaction, Clan.PlayerClan, settlement) == VeteranAccess.All;
         }
 
         /// <summary>
         /// Whether the player may open this settlement's register at all, and on what terms.
-        /// Men he enlisted and discharged himself are always his to collect — the whole point
-        /// of sending them home is being able to fetch them again, and a soldier raised at a
-        /// castle that later fell outside your realm would otherwise be lost for good. Other
-        /// lords' countrymen still obey the access setting, and war closes the gates entirely.
+        /// With cross-clan recruitment disabled, every clan may collect only veterans whose
+        /// current employer is that clan. Enabling it restores the recall access ladder for
+        /// other employers; war closes the gates entirely in either case.
         /// <paramref name="ownMenOnly"/> is true when he may take back only his own veterans.
         /// </summary>
         public static bool TryGetPlayerRegisterAccess(Settlement? settlement, out bool ownMenOnly)
         {
-            ownMenOnly = false;
-            if (settlement == null) return false;
-
-            Clan? owner = settlement.OwnerClan;
-            if (owner == null) return false;
-
-            IFaction? playerFaction = Clan.PlayerClan?.MapFaction;
-            IFaction? ownerFaction = owner.MapFaction;
-            if (playerFaction != null && ownerFaction != null
-                && FactionManager.IsAtWarAgainstFaction(playerFaction, ownerFaction)) return false;
-
-            if (CanFactionAccessVeteranRegister(playerFaction, Clan.PlayerClan, settlement)) return true;
-
-            ownMenOnly = true;
-            return true;
+            VeteranAccess access = ResolveVeteranAccess(Clan.PlayerClan?.MapFaction, Clan.PlayerClan, settlement);
+            ownMenOnly = access == VeteranAccess.OwnEmployerOnly;
+            return access != VeteranAccess.Denied;
         }
 
-        /// <summary>True when the men this party discharges count as the player's own.</summary>
-        private static bool IsPlayerParty(MobileParty? party)
+        private static VeteranAccess ResolveVeteranAccess(IFaction? recruiterFaction, Clan? recruiterClan, Settlement? settlement)
         {
-            if (party == null) return false;
-            if (party == MobileParty.MainParty) return true;
-            Clan? playerClan = Clan.PlayerClan;
-            return playerClan != null && party.ActualClan == playerClan;
+            if (settlement?.OwnerClan == null) return VeteranAccess.Denied;
+
+            IFaction? ownerFaction = settlement.OwnerClan.MapFaction;
+            bool atWar = recruiterFaction != null && ownerFaction != null
+                && FactionManager.IsAtWarAgainstFaction(recruiterFaction, ownerFaction);
+            bool hasLadderAccess = !atWar && CanFactionAccessVeteranRegister(recruiterFaction, recruiterClan, settlement);
+            return ApplyVeteranRecruitmentPolicy(
+                atWar,
+                recruiterClan != null,
+                hasLadderAccess,
+                Settings.EnableDemobilizationVeteranCrossClanRecruitment);
+        }
+
+        /// <summary>Applies the same veteran-recruitment rule to a player clan and every AI clan.</summary>
+        private static VeteranAccess ApplyVeteranRecruitmentPolicy(
+            bool atWar,
+            bool hasRecruiterClan,
+            bool hasLadderAccess,
+            bool allowCrossClanRecruitment)
+        {
+            if (atWar || !hasRecruiterClan) return VeteranAccess.Denied;
+            return allowCrossClanRecruitment && hasLadderAccess
+                ? VeteranAccess.All
+                : VeteranAccess.OwnEmployerOnly;
         }
 
         private static bool CanFactionAccessVeteranRegister(IFaction? recruiterFaction, Clan? recruiterClan, Settlement? settlement)
@@ -2061,6 +2269,25 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
+        private static bool Matches(VeteranEntry entry, VeteranAccess access, string employerClanId)
+        {
+            if (access == VeteranAccess.All) return true;
+            if (access != VeteranAccess.OwnEmployerOnly) return false;
+
+            if (!string.IsNullOrEmpty(entry.EmployerClanId))
+                return string.Equals(entry.EmployerClanId, employerClanId, StringComparison.Ordinal);
+
+            // Pre-provenance records only know the historical player bit. It remains a narrow
+            // player compatibility path; no AI clan can claim a blank legacy employer.
+            return IsPlayerEmployer(employerClanId) && entry.FromPlayer;
+        }
+
+        private static bool IsPlayerEmployer(string employerClanId)
+        {
+            return !string.IsNullOrEmpty(employerClanId)
+                && string.Equals(employerClanId, Clan.PlayerClan?.StringId, StringComparison.Ordinal);
+        }
+
         private static int GetRecallGoldCost(CharacterObject troop, int count)
         {
             return B1071_ServiceMath.RecallGoldCost(troop.Tier, count, Settings);
@@ -2082,7 +2309,7 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 foreach (VeteranEntry entry in troopKvp.Value)
                 {
-                    if (ownMenOnly && !entry.FromPlayer) continue;
+                    if (ownMenOnly && !Matches(entry, VeteranAccess.OwnEmployerOnly, Clan.PlayerClan?.StringId ?? string.Empty)) continue;
                     total += Math.Max(0, entry.Count);
                 }
             }
@@ -2193,7 +2420,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 foreach (VeteranEntry entry in troopKvp.Value)
                 {
                     if (entry.Count <= 0) continue;
-                    if (ownMenOnly && !entry.FromPlayer) continue;
+                    if (ownMenOnly && !Matches(entry, VeteranAccess.OwnEmployerOnly, Clan.PlayerClan?.StringId ?? string.Empty)) continue;
 
                     if (IsSettled(entry, today))
                     {
@@ -2343,14 +2570,15 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict)) return 0;
                 if (!troopDict.TryGetValue(troop.StringId, out var entries)) return 0;
 
-                VeteranClaim claim = ownMenOnly ? VeteranClaim.PlayerOnly : VeteranClaim.Anyone;
+                VeteranAccess access = ownMenOnly ? VeteranAccess.OwnEmployerOnly : VeteranAccess.All;
+                string employerClanId = Clan.PlayerClan?.StringId ?? string.Empty;
 
                 int registered = 0;
                 int resting = 0;
                 int daysUntilReady = int.MaxValue;
                 foreach (VeteranEntry entry in entries)
                 {
-                    if (entry.Count <= 0 || !Matches(entry, claim)) continue;
+                    if (entry.Count <= 0 || !Matches(entry, access, employerClanId)) continue;
 
                     if (IsSettled(entry, today))
                     {
@@ -2459,7 +2687,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 // can pass the gate and then hand over less than the price — and a cancelled
                 // order that refunded the price would put the difference on the map.
                 int manpowerDrawn = manpower != null ? manpower.ConsumeManpowerPublic(settlement, troop, wanted) : 0;
-                RemoveVeteransFromRegister(settlement.StringId, troop.StringId, wanted, claim, today, out int ownMenTaken);
+                List<RecallBatch> recalledBatches = RemoveVeteransFromRegister(
+                    settlement.StringId,
+                    troop.StringId,
+                    wanted,
+                    access,
+                    employerClanId,
+                    today);
 
                 string troopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
 
@@ -2468,7 +2702,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     party.MemberRoster.AddToCounts(troop, wanted);
 
                     // Their term starts over, and this settlement is now formally their home.
-                    AddFreshCohort(party, troop, wanted, today, "veteran_recall", settlement.StringId);
+                    AddRecalledCohorts(party, troop, recalledBatches, today, "veteran_recall", settlement.StringId);
 
                     B1071_VerboseLog.Log(LogTag, $"Veterans recalled: settlement={settlement.StringId}, troop={troop.StringId}, soldiers={wanted}, gold={goldCost}, remainingAtSettlement={GetVeteranCountAt(settlement)}.");
 
@@ -2495,11 +2729,11 @@ namespace Byzantium1071.Campaign.Behaviors
                     OrderDay = today,
                     GoldPaid = goldCost,
                     ManpowerDrawn = manpowerDrawn,
-                    PlayerOwnedCount = ownMenTaken,
                     CourierRemaining = origin.Distance(party.GetPosition2D),
                     PosX = origin.x,
                     PosY = origin.y
                 };
+                pending.Batches.AddRange(recalledBatches);
                 _pendingRecalls.Add(pending);
 
                 // An order placed today never reads "0 days" — the courier has not even left.
@@ -2525,22 +2759,19 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
-        /// <summary>Removes recalled men, longest-waiting first.</summary>
-        private void RemoveVeteransFromRegister(string settlementId, string troopId, int count, VeteranClaim claim, int today)
-            => RemoveVeteransFromRegister(settlementId, troopId, count, claim, today, out _);
-
-        /// <summary>
-        /// Removes recalled men, longest-waiting first. <paramref name="fromPlayerTaken"/> reports
-        /// how many of them came out of the player's own batches — which the request cannot say
-        /// on its own, since full access draws the longest-waiting men whoever discharged them.
-        /// An order that is later called off needs it to put his men back as his.
-        /// </summary>
-        private void RemoveVeteransFromRegister(string settlementId, string troopId, int count, VeteranClaim claim, int today, out int fromPlayerTaken)
+        /// <summary>Removes recalled men oldest first and keeps each consumed provenance batch.</summary>
+        private List<RecallBatch> RemoveVeteransFromRegister(
+            string settlementId,
+            string troopId,
+            int count,
+            VeteranAccess access,
+            string employerClanId,
+            int today)
         {
-            fromPlayerTaken = 0;
+            var taken = new List<RecallBatch>();
 
-            if (count <= 0 || !_veteranRegister.TryGetValue(settlementId, out var troopDict)) return;
-            if (!troopDict.TryGetValue(troopId, out var entries)) return;
+            if (count <= 0 || !_veteranRegister.TryGetValue(settlementId, out var troopDict)) return taken;
+            if (!troopDict.TryGetValue(troopId, out var entries)) return taken;
 
             entries.Sort((a, b) => a.DischargeDay.CompareTo(b.DischargeDay));
 
@@ -2550,11 +2781,18 @@ namespace Byzantium1071.Campaign.Behaviors
             int remaining = count;
             for (int i = 0; i < entries.Count && remaining > 0; i++)
             {
-                if (!IsHireable(entries[i], claim, today)) continue;
+                if (!IsHireable(entries[i], access, employerClanId, today)) continue;
                 int take = Math.Min(entries[i].Count, remaining);
                 entries[i].Count -= take;
                 remaining -= take;
-                if (entries[i].FromPlayer) fromPlayerTaken += take;
+                taken.Add(new RecallBatch
+                {
+                    OriginClanId = entries[i].OriginClanId,
+                    EmployerClanId = string.IsNullOrEmpty(entries[i].EmployerClanId) && entries[i].FromPlayer
+                        ? Clan.PlayerClan?.StringId ?? string.Empty
+                        : entries[i].EmployerClanId,
+                    Count = take
+                });
             }
 
             entries.RemoveAll(e => e.Count <= 0);
@@ -2562,10 +2800,11 @@ namespace Byzantium1071.Campaign.Behaviors
                 troopDict.Remove(troopId);
             if (troopDict.Count == 0)
                 _veteranRegister.Remove(settlementId);
+            return taken;
         }
 
         /// <summary>Men of this type a given hirer could sign up here today, resting men excluded.</summary>
-        private int CountVeterans(string settlementId, string troopId, VeteranClaim claim, int today)
+        private int CountVeterans(string settlementId, string troopId, VeteranAccess access, string employerClanId, int today)
         {
             if (!_veteranRegister.TryGetValue(settlementId, out var troopDict)) return 0;
             if (!troopDict.TryGetValue(troopId, out var entries)) return 0;
@@ -2573,7 +2812,7 @@ namespace Byzantium1071.Campaign.Behaviors
             int total = 0;
             foreach (VeteranEntry entry in entries)
             {
-                if (!IsHireable(entry, claim, today)) continue;
+                if (!IsHireable(entry, access, employerClanId, today)) continue;
                 total += entry.Count;
             }
 
@@ -2723,11 +2962,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
             int ordered = entry.Count;
             int joining = Math.Min(ordered, room);
+            List<RecallBatch> arrivingBatches = TakeRecallBatches(entry, joining);
+            joining = 0;
+            foreach (RecallBatch batch in arrivingBatches)
+                joining += batch.Count;
+            if (joining <= 0) return entry.Count <= 0;
             party.MemberRoster.AddToCounts(troop, joining);
 
             // Their term starts over, and the settlement they came from is home again.
-            AddFreshCohort(party, troop, joining, today, "veteran_recall_remote", entry.SettlementId);
-            entry.Count -= joining;
+            AddRecalledCohorts(party, troop, arrivingBatches, today, "veteran_recall_remote", entry.SettlementId);
 
             // The ledger keeps only what the men still outside were paid and drawn for. Left
             // whole it would quote the full original bounty back at the player if he called
@@ -2739,11 +2982,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     joining,
                     entry.Count,
                     entry.GoldPaid,
-                    entry.ManpowerDrawn,
-                    entry.PlayerOwnedCount);
+                    entry.ManpowerDrawn);
                 entry.GoldPaid = balance.GoldPaid;
                 entry.ManpowerDrawn = balance.ManpowerDrawn;
-                entry.PlayerOwnedCount = balance.PlayerOwnedCount;
             }
 
             string troopName = troop.Name?.ToString() ?? new TextObject("{=b1071_ui_unknown}Unknown").ToString();
@@ -2865,19 +3106,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     // pool never actually had to give.
                     B1071_ManpowerBehavior.Instance?.AddManpowerToSettlement(origin, entry.ManpowerDrawn);
 
-                    // Back on the register as men who have already done their resting. They
-                    // had finished it once, before the order went out; standing them down
-                    // again is not a reason to make them sit out a second term at home.
-                    // The player's own men go back as his: an order sent with full access to
-                    // the register can carry his veterans and the local lord's together, and
-                    // returning the lot as the lord's would quietly sign his own men away.
-                    int settledDay = today - VeteranSettlingDays();
-                    int ownMen = ClampInt(entry.PlayerOwnedCount, 0, entry.Count);
-
-                    if (ownMen > 0)
-                        AddVeteransToRegister(entry.SettlementId, entry.TroopId, ownMen, settledDay, true);
-                    if (entry.Count > ownMen)
-                        AddVeteransToRegister(entry.SettlementId, entry.TroopId, entry.Count - ownMen, settledDay, false);
+                    RestoreCancelledRecallBatches(entry, today - VeteranSettlingDays());
                 }
 
                 _pendingRecalls.RemoveAt(index);
@@ -2901,6 +3130,22 @@ namespace Byzantium1071.Campaign.Behaviors
             }
         }
 
+        /// <summary>Returns a cancelled order to the register with each batch's prior employer.</summary>
+        private void RestoreCancelledRecallBatches(PendingRecallEntry entry, int settledDay)
+        {
+            EnsurePendingBatches(entry);
+            foreach (RecallBatch batch in entry.Batches)
+            {
+                AddVeteransToRegister(
+                    entry.SettlementId,
+                    entry.TroopId,
+                    batch.Count,
+                    settledDay,
+                    batch.OriginClanId,
+                    batch.EmployerClanId);
+            }
+        }
+
         /// <summary>
         /// Men whose recall order has not reached them yet are still sitting in the settlement
         /// when it is sacked, so they scatter alongside the register. Columns already on the
@@ -2921,8 +3166,9 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (lost <= 0) continue;
 
                 int ordered = entry.Count;
-                entry.Count -= lost;
-                scattered += lost;
+                int scatteredFromOrder = ScatterRecallBatches(entry, lost);
+                if (scatteredFromOrder <= 0) continue;
+                scattered += scatteredFromOrder;
 
                 // Keep the ledger about the men who are left, so calling off what remains
                 // quotes their share of the bounty rather than the whole original order.
@@ -2930,14 +3176,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 {
                     PendingRecallBalance balance = B1071_ServiceMath.ProrateAfterDeparture(
                         ordered,
-                        lost,
+                        scatteredFromOrder,
                         entry.Count,
                         entry.GoldPaid,
-                        entry.ManpowerDrawn,
-                        entry.PlayerOwnedCount);
+                        entry.ManpowerDrawn);
                     entry.GoldPaid = balance.GoldPaid;
                     entry.ManpowerDrawn = balance.ManpowerDrawn;
-                    entry.PlayerOwnedCount = balance.PlayerOwnedCount;
                 }
 
                 if (entry.Count <= 0)
@@ -2988,9 +3232,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (string.IsNullOrEmpty(settlement.StringId)) return;
             if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict) || troopDict.Count == 0) return;
 
-            // Same access ladder the player climbs. He gets no own-men exception: the register
-            // records only whose men are the player's, and those are never on offer to anyone.
-            if (!CanFactionAccessVeteranRegister(clan.MapFaction, clan, settlement)) return;
+            VeteranAccess access = ResolveVeteranAccess(clan.MapFaction, clan, settlement);
+            if (access == VeteranAccess.Denied) return;
 
             Hero? leader = party.LeaderHero;
             if (leader == null) return;
@@ -3011,7 +3254,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 CharacterObject? troop = ResolveTroop(troopId);
                 if (troop == null) continue;
 
-                int wanted = Math.Min(CountVeterans(settlement.StringId, troopId, VeteranClaim.ExceptPlayer, today), room);
+                int wanted = Math.Min(CountVeterans(settlement.StringId, troopId, access, clan.StringId, today), room);
                 if (wanted <= 0) continue;
 
                 // He pays out of his own purse and keeps the same reserve he keeps for
@@ -3051,9 +3294,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     GiveGoldAction.ApplyBetweenCharacters(leader, null, goldCost, disableNotification: true);
 
                 manpower?.ConsumeManpowerPublic(settlement, troop, wanted);
-                RemoveVeteransFromRegister(settlement.StringId, troopId, wanted, VeteranClaim.ExceptPlayer, today);
+                List<RecallBatch> recalledBatches = RemoveVeteransFromRegister(
+                    settlement.StringId,
+                    troopId,
+                    wanted,
+                    access,
+                    clan.StringId,
+                    today);
                 party.MemberRoster.AddToCounts(troop, wanted);
-                AddFreshCohort(party, troop, wanted, today, "ai_veteran_recall", settlement.StringId);
+                AddRecalledCohorts(party, troop, recalledBatches, today, "ai_veteran_recall", settlement.StringId);
 
                 room -= wanted;
                 hiredTotal += wanted;
@@ -3095,7 +3344,14 @@ namespace Byzantium1071.Campaign.Behaviors
             return troop != null && !troop.IsHero;
         }
 
-        private void AddFreshCohort(MobileParty party, CharacterObject troop, int amount, int today, string source, string homeId)
+        private void AddFreshCohort(
+            MobileParty party,
+            CharacterObject troop,
+            int amount,
+            int today,
+            string source,
+            string homeId,
+            string? originClanId = null)
         {
             if (!IsTrackableTroop(troop) || amount <= 0) return;
             string partyId = GetPartyId(party);
@@ -3111,8 +3367,128 @@ namespace Byzantium1071.Campaign.Behaviors
                 troopDict[troop.StringId] = cohorts;
             }
 
-            AddIndividualEntries(cohorts, today, amount, homeId);
+            string employerClanId = ResolveEmployerClanId(party);
+            AddIndividualEntries(
+                cohorts,
+                today,
+                amount,
+                homeId,
+                originClanId ?? employerClanId,
+                employerClanId);
             B1071_VerboseLog.Log(LogTag, $"Fresh service soldiers registered: source={source}, party={PartyLogName(party)}, troop={troop.StringId}, soldiers={amount}, joinDay={today}, home={(string.IsNullOrEmpty(homeId) ? "<unknown>" : homeId)}.");
+        }
+
+        private void AddRecalledCohorts(
+            MobileParty party,
+            CharacterObject troop,
+            IEnumerable<RecallBatch> batches,
+            int today,
+            string source,
+            string homeId)
+        {
+            foreach (RecallBatch batch in batches)
+            {
+                if (batch.Count <= 0) continue;
+                AddFreshCohort(party, troop, batch.Count, today, source, homeId, batch.OriginClanId);
+            }
+        }
+
+        private static int GetRecallBatchCount(PendingRecallEntry entry)
+        {
+            int total = 0;
+            foreach (RecallBatch batch in entry.Batches)
+                total += Math.Max(0, batch.Count);
+            return total;
+        }
+
+        private void EnsurePendingBatches(PendingRecallEntry entry)
+        {
+            entry.Batches.RemoveAll(batch => batch.Count <= 0);
+            if (entry.Batches.Count > 0)
+            {
+                entry.Count = GetRecallBatchCount(entry);
+                return;
+            }
+
+            int count = Math.Max(0, entry.Count);
+            if (count <= 0) return;
+
+            int playerOwned = ClampInt(Math.Max(0, entry.LegacyPlayerOwnedCount), 0, count);
+            string playerClanId = Clan.PlayerClan?.StringId ?? string.Empty;
+            if (playerOwned > 0 && !string.IsNullOrEmpty(playerClanId))
+            {
+                entry.Batches.Add(new RecallBatch
+                {
+                    EmployerClanId = playerClanId,
+                    Count = playerOwned
+                });
+            }
+
+            if (count > playerOwned)
+                entry.Batches.Add(new RecallBatch { Count = count - playerOwned });
+
+            entry.LegacyPlayerOwnedCount = -1;
+        }
+
+        private static int GetPlayerOwnedBatchCount(PendingRecallEntry entry)
+        {
+            int total = 0;
+            string playerClanId = Clan.PlayerClan?.StringId ?? string.Empty;
+            foreach (RecallBatch batch in entry.Batches)
+            {
+                if (string.Equals(batch.EmployerClanId, playerClanId, StringComparison.Ordinal))
+                    total += Math.Max(0, batch.Count);
+            }
+
+            return total;
+        }
+
+        private List<RecallBatch> TakeRecallBatches(PendingRecallEntry entry, int count)
+        {
+            EnsurePendingBatches(entry);
+            var taken = new List<RecallBatch>();
+            int remaining = Math.Max(0, count);
+            for (int index = 0; index < entry.Batches.Count && remaining > 0; index++)
+            {
+                RecallBatch batch = entry.Batches[index];
+                int take = Math.Min(batch.Count, remaining);
+                if (take <= 0) continue;
+                batch.Count -= take;
+                remaining -= take;
+                taken.Add(new RecallBatch
+                {
+                    OriginClanId = batch.OriginClanId,
+                    EmployerClanId = batch.EmployerClanId,
+                    Count = take
+                });
+            }
+
+            entry.Batches.RemoveAll(batch => batch.Count <= 0);
+            entry.Count = GetRecallBatchCount(entry);
+            return taken;
+        }
+
+        private int ScatterRecallBatches(PendingRecallEntry entry, int count)
+        {
+            EnsurePendingBatches(entry);
+            int requested = Math.Min(Math.Max(0, count), entry.Count);
+            if (requested <= 0) return 0;
+
+            var weights = new List<int>(entry.Batches.Count);
+            foreach (RecallBatch batch in entry.Batches)
+                weights.Add(batch.Count);
+            List<int> losses = B1071_ServiceMath.AllocateLargestRemainder(requested, weights);
+            int scattered = 0;
+            for (int index = 0; index < entry.Batches.Count; index++)
+            {
+                int loss = Math.Min(entry.Batches[index].Count, losses[index]);
+                entry.Batches[index].Count -= loss;
+                scattered += loss;
+            }
+
+            entry.Batches.RemoveAll(batch => batch.Count <= 0);
+            entry.Count = GetRecallBatchCount(entry);
+            return scattered;
         }
 
         private int GetTrackedTroopCount(string partyId, string troopId)
@@ -3250,13 +3626,27 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 var split = new List<CohortEntry>();
                 foreach (CohortEntry entry in original)
-                    AddIndividualEntries(split, entry.JoinDay, entry.Count, entry.HomeId, entry.ExtensionCount);
+                    AddIndividualEntries(
+                        split,
+                        entry.JoinDay,
+                        entry.Count,
+                        entry.HomeId,
+                        entry.OriginClanId,
+                        entry.EmployerClanId,
+                        entry.ExtensionCount);
 
                 troopDict[troopId] = split;
             }
         }
 
-        private static void AddIndividualEntries(List<CohortEntry> entries, int joinDay, int count, string homeId, int extensionCount = 0)
+        private static void AddIndividualEntries(
+            List<CohortEntry> entries,
+            int joinDay,
+            int count,
+            string homeId,
+            string originClanId,
+            string employerClanId,
+            int extensionCount = 0)
         {
             for (int i = 0; i < count; i++)
                 entries.Add(new CohortEntry
@@ -3264,7 +3654,9 @@ namespace Byzantium1071.Campaign.Behaviors
                     JoinDay = joinDay,
                     Count = 1,
                     ExtensionCount = extensionCount,
-                    HomeId = homeId ?? string.Empty
+                    HomeId = homeId ?? string.Empty,
+                    OriginClanId = originClanId ?? string.Empty,
+                    EmployerClanId = employerClanId ?? string.Empty
                 });
         }
 
@@ -3299,35 +3691,73 @@ namespace Byzantium1071.Campaign.Behaviors
         private int CountReservedSoldiers()
         {
             int total = 0;
-            foreach (var kvp in _transferReserve)
+            foreach (var employerKvp in _transferReserve)
             {
-                foreach (TransferReserveEntry entry in kvp.Value)
-                    total += Math.Max(0, entry.Count);
+                foreach (var troopKvp in employerKvp.Value)
+                {
+                    foreach (TransferReserveEntry entry in troopKvp.Value)
+                        total += Math.Max(0, entry.Count);
+                }
             }
 
             return total;
         }
 
-        private int MoveOldestCohortsToTransferReserve(Dictionary<string, List<CohortEntry>> troopDict, string troopId, int count, int today)
+        private int MoveOldestCohortsToTransferReserve(
+            MobileParty party,
+            Dictionary<string, List<CohortEntry>> troopDict,
+            string troopId,
+            int count,
+            int today)
+        {
+            return BankMissingCohorts(
+                troopDict,
+                troopId,
+                count,
+                today,
+                ResolveEmployerClanId(party),
+                GetPartyId(party));
+        }
+
+        /// <summary>
+        /// Banks non-death roster shrinkage without allowing an unowned cohort to disappear.
+        /// The caller supplies the current party employer because that game lookup is not part of
+        /// the accounting operation itself.
+        /// </summary>
+        private int BankMissingCohorts(
+            Dictionary<string, List<CohortEntry>> troopDict,
+            string troopId,
+            int count,
+            int today,
+            string partyEmployerClanId,
+            string sourcePartyId)
         {
             if (count <= 0 || !troopDict.TryGetValue(troopId, out var cohorts)) return 0;
-            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries))
-            {
-                reserveEntries = new List<TransferReserveEntry>();
-                _transferReserve[troopId] = reserveEntries;
-            }
 
             int remaining = count;
             int moved = 0;
+            var changedEmployers = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < cohorts.Count && remaining > 0; i++)
             {
                 CohortEntry cohort = cohorts[i];
                 if (cohort.Count <= 0) continue;
 
+                // Resolve the reserve owner before touching the cohort. A row whose owner cannot
+                // be established stays tracked instead of disappearing into no clan's reserve.
+                string employerClanId = string.IsNullOrEmpty(cohort.EmployerClanId)
+                    ? partyEmployerClanId
+                    : cohort.EmployerClanId;
+                if (string.IsNullOrEmpty(employerClanId)) continue;
+
                 int take = Math.Min(cohort.Count, remaining);
                 cohort.Count -= take;
                 remaining -= take;
                 moved += take;
+
+                // Loaded pre-provenance cohorts have no employer. At the first transfer we can
+                // safely attach the party that actually lost them; otherwise a global reserve
+                // would let a different clan restore them.
+                List<TransferReserveEntry> reserveEntries = GetOrCreateReserveEntries(employerClanId, troopId);
 
                 reserveEntries.Add(new TransferReserveEntry
                 {
@@ -3335,21 +3765,36 @@ namespace Byzantium1071.Campaign.Behaviors
                     StoredDay = today,
                     Count = take,
                     ExtensionCount = cohort.ExtensionCount,
-                    HomeId = cohort.HomeId
+                    HomeId = cohort.HomeId,
+                    OriginClanId = cohort.OriginClanId,
+                    EmployerClanId = employerClanId,
+                    SourcePartyId = sourcePartyId
                 });
+                changedEmployers.Add(employerClanId);
             }
 
             cohorts.RemoveAll(c => c.Count <= 0);
-            SortTransferReserve(troopId);
+            foreach (string employerClanId in changedEmployers)
+                SortTransferReserve(employerClanId, troopId);
             return moved;
         }
 
-        private int RestoreTransferReserveEntries(string troopId, List<CohortEntry> cohorts, int count, int today)
+        private int RestoreTransferReserveEntries(MobileParty party, string troopId, List<CohortEntry> cohorts, int count, int today)
         {
-            if (count <= 0 || !_transferReserve.TryGetValue(troopId, out var reserveEntries)) return 0;
+            string employerClanId = ResolveEmployerClanId(party);
+            return RestoreTransferReserveEntriesForEmployer(employerClanId, troopId, cohorts, count, today);
+        }
 
-            CleanupTransferReserve(troopId, today);
-            if (!_transferReserve.TryGetValue(troopId, out reserveEntries)) return 0;
+        /// <summary>Restores only the reserve bucket owned by the party's current employer.</summary>
+        private int RestoreTransferReserveEntriesForEmployer(string employerClanId, string troopId, List<CohortEntry> cohorts, int count, int today)
+        {
+            if (count <= 0 || string.IsNullOrEmpty(employerClanId)) return 0;
+            if (!_transferReserve.TryGetValue(employerClanId, out var reserveTroops)
+                || !reserveTroops.TryGetValue(troopId, out var reserveEntries)) return 0;
+
+            CleanupTransferReserve(employerClanId, troopId, today);
+            if (!_transferReserve.TryGetValue(employerClanId, out reserveTroops)
+                || !reserveTroops.TryGetValue(troopId, out reserveEntries)) return 0;
 
             int remaining = count;
             int restored = 0;
@@ -3362,41 +3807,78 @@ namespace Byzantium1071.Campaign.Behaviors
                 entry.Count -= take;
                 remaining -= take;
                 restored += take;
-                AddIndividualEntries(cohorts, entry.JoinDay, take, entry.HomeId, entry.ExtensionCount);
+                AddIndividualEntries(
+                    cohorts,
+                    entry.JoinDay,
+                    take,
+                    entry.HomeId,
+                    entry.OriginClanId,
+                    entry.EmployerClanId,
+                    entry.ExtensionCount);
             }
 
             reserveEntries.RemoveAll(e => e.Count <= 0);
             if (reserveEntries.Count == 0)
-                _transferReserve.Remove(troopId);
+            {
+                reserveTroops.Remove(troopId);
+                if (reserveTroops.Count == 0)
+                    _transferReserve.Remove(employerClanId);
+            }
 
             return restored;
         }
 
         private void CleanupTransferReserve(int today)
         {
-            var troopIds = new List<string>(_transferReserve.Keys);
-            foreach (string troopId in troopIds)
-                CleanupTransferReserve(troopId, today);
+            var employerClanIds = new List<string>(_transferReserve.Keys);
+            foreach (string employerClanId in employerClanIds)
+            {
+                if (!_transferReserve.TryGetValue(employerClanId, out var troopDict)) continue;
+                var troopIds = new List<string>(troopDict.Keys);
+                foreach (string troopId in troopIds)
+                    CleanupTransferReserve(employerClanId, troopId, today);
+            }
         }
 
-        private void CleanupTransferReserve(string troopId, int today)
+        private void CleanupTransferReserve(string employerClanId, string troopId, int today)
         {
-            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries)) return;
+            if (!_transferReserve.TryGetValue(employerClanId, out var reserveTroops)
+                || !reserveTroops.TryGetValue(troopId, out var reserveEntries)) return;
 
             int retentionDays = GetTransferReserveRetentionDays();
             reserveEntries.RemoveAll(e => e.Count <= 0 || today - e.StoredDay > retentionDays);
             if (reserveEntries.Count == 0)
             {
-                _transferReserve.Remove(troopId);
+                reserveTroops.Remove(troopId);
+                if (reserveTroops.Count == 0)
+                    _transferReserve.Remove(employerClanId);
                 return;
             }
 
-            SortTransferReserve(troopId);
+            SortTransferReserve(employerClanId, troopId);
         }
 
-        private void SortTransferReserve(string troopId)
+        private List<TransferReserveEntry> GetOrCreateReserveEntries(string employerClanId, string troopId)
         {
-            if (!_transferReserve.TryGetValue(troopId, out var reserveEntries)) return;
+            if (!_transferReserve.TryGetValue(employerClanId, out var reserveTroops))
+            {
+                reserveTroops = new Dictionary<string, List<TransferReserveEntry>>();
+                _transferReserve[employerClanId] = reserveTroops;
+            }
+
+            if (!reserveTroops.TryGetValue(troopId, out var reserveEntries))
+            {
+                reserveEntries = new List<TransferReserveEntry>();
+                reserveTroops[troopId] = reserveEntries;
+            }
+
+            return reserveEntries;
+        }
+
+        private void SortTransferReserve(string employerClanId, string troopId)
+        {
+            if (!_transferReserve.TryGetValue(employerClanId, out var reserveTroops)
+                || !reserveTroops.TryGetValue(troopId, out var reserveEntries)) return;
 
             reserveEntries.Sort((a, b) =>
             {
@@ -3430,7 +3912,14 @@ namespace Byzantium1071.Campaign.Behaviors
                 int adjustedJoinDay = source.JoinDay;
                 if (serviceDayBonus > 0 && source.JoinDay < today)
                     adjustedJoinDay = Math.Min(today, source.JoinDay + serviceDayBonus);
-                AddIndividualEntries(toList, adjustedJoinDay, take, source.HomeId, source.ExtensionCount);
+                AddIndividualEntries(
+                    toList,
+                    adjustedJoinDay,
+                    take,
+                    source.HomeId,
+                    source.OriginClanId,
+                    source.EmployerClanId,
+                    source.ExtensionCount);
                 moved += take;
             }
 
@@ -3494,6 +3983,13 @@ namespace Byzantium1071.Campaign.Behaviors
         private static string GetPartyId(MobileParty party)
         {
             return party.StringId ?? string.Empty;
+        }
+
+        private static string ResolveEmployerClanId(MobileParty? party)
+        {
+            return party?.ActualClan?.StringId
+                ?? party?.LeaderHero?.Clan?.StringId
+                ?? string.Empty;
         }
 
         private static int GetToday()

@@ -113,12 +113,10 @@ namespace Byzantium1071.Tests
                 departedCount: 7,
                 remainingCount: 13,
                 goldPaid: 1_000,
-                manpowerDrawn: 20,
-                playerOwnedCount: 10);
+                manpowerDrawn: 20);
 
             Assert.Equal(650, balance.GoldPaid);
             Assert.Equal(13, balance.ManpowerDrawn);
-            Assert.Equal(7, balance.PlayerOwnedCount);
         }
 
         [Property(MaxTest = 1000)]
@@ -126,30 +124,24 @@ namespace Byzantium1071.Tests
             int rawOrdered,
             int rawDeparted,
             int rawGold,
-            int rawManpower,
-            int rawPlayerOwned)
+            int rawManpower)
         {
             int ordered = Positive(rawOrdered);
             int departed = NonNegative(rawDeparted) % ordered;
             int remaining = ordered - departed;
             int gold = NonNegative(rawGold) % 1_000_000;
             int manpower = NonNegative(rawManpower) % 1_000_000;
-            int playerOwned = NonNegative(rawPlayerOwned) % (ordered + 1);
-
             PendingRecallBalance balance = B1071_ServiceMath.ProrateAfterDeparture(
                 ordered,
                 departed,
                 remaining,
                 gold,
-                manpower,
-                playerOwned);
+                manpower);
 
             return balance.GoldPaid >= 0
                 && balance.GoldPaid <= gold
                 && balance.ManpowerDrawn >= 0
-                && balance.ManpowerDrawn <= manpower
-                && balance.PlayerOwnedCount >= 0
-                && balance.PlayerOwnedCount <= remaining;
+                && balance.ManpowerDrawn <= manpower;
         }
 
         [Fact]
@@ -162,6 +154,8 @@ namespace Byzantium1071.Tests
             var extendedFlags = new System.Collections.Generic.List<bool>();
             var extensionCounts = new System.Collections.Generic.List<int>();
             var homeIds = new System.Collections.Generic.List<string>();
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
 
             B1071_ServiceMath.AppendServiceCohortRows(
                 partyIds,
@@ -171,12 +165,16 @@ namespace Byzantium1071.Tests
                 extendedFlags,
                 extensionCounts,
                 homeIds,
+                originClanIds,
+                employerClanIds,
                 "party_a",
                 "troop_a",
                 42,
                 2,
                 3,
-                "home_a");
+                "home_a",
+                "origin_a",
+                "employer_a");
 
             var rows = B1071_ServiceMath.ReadServiceCohortRows(
                 partyIds,
@@ -185,7 +183,9 @@ namespace Byzantium1071.Tests
                 counts,
                 extendedFlags,
                 extensionCounts,
-                homeIds);
+                homeIds,
+                originClanIds,
+                employerClanIds);
 
             Assert.Equal(2, rows.Count);
             Assert.All(rows, row =>
@@ -196,6 +196,8 @@ namespace Byzantium1071.Tests
                 Assert.Equal(1, row.Count);
                 Assert.Equal(3, row.ExtensionCount);
                 Assert.Equal("home_a", row.HomeId);
+                Assert.Equal("origin_a", row.OriginClanId);
+                Assert.Equal("employer_a", row.EmployerClanId);
             });
         }
 
@@ -214,6 +216,8 @@ namespace Byzantium1071.Tests
             ServiceCohortSaveRow row = Assert.Single(rows);
             Assert.Equal(1, row.ExtensionCount);
             Assert.Equal(string.Empty, row.HomeId);
+            Assert.Equal(string.Empty, row.OriginClanId);
+            Assert.Equal(string.Empty, row.EmployerClanId);
         }
 
         [Fact]
@@ -226,12 +230,17 @@ namespace Byzantium1071.Tests
             var extendedFlags = new System.Collections.Generic.List<bool>();
             var extensionCounts = new System.Collections.Generic.List<int>();
             var homeIds = new System.Collections.Generic.List<string>();
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
+            var sourcePartyIds = new System.Collections.Generic.List<string>();
 
             B1071_ServiceMath.AppendTransferReserveRows(
                 troopIds, joinDays, storedDays, counts, extendedFlags, extensionCounts, homeIds,
-                "troop_a", 5, 9, 2, 3, "home_a");
+                originClanIds, employerClanIds, sourcePartyIds,
+                "troop_a", 5, 9, 2, 3, "home_a", "origin_a", "employer_a", "party_a");
             var rows = B1071_ServiceMath.ReadTransferReserveRows(
-                troopIds, joinDays, storedDays, counts, extendedFlags, extensionCounts, homeIds);
+                troopIds, joinDays, storedDays, counts, extendedFlags, extensionCounts, homeIds,
+                originClanIds, employerClanIds, sourcePartyIds);
 
             Assert.Equal(2, rows.Count);
             Assert.All(rows, row =>
@@ -242,6 +251,9 @@ namespace Byzantium1071.Tests
                 Assert.Equal(1, row.Count);
                 Assert.Equal(3, row.ExtensionCount);
                 Assert.Equal("home_a", row.HomeId);
+                Assert.Equal("origin_a", row.OriginClanId);
+                Assert.Equal("employer_a", row.EmployerClanId);
+                Assert.Equal("party_a", row.SourcePartyId);
             });
         }
 
@@ -260,6 +272,7 @@ namespace Byzantium1071.Tests
             TransferReserveSaveRow row = Assert.Single(rows);
             Assert.Equal(1, row.ExtensionCount);
             Assert.Equal(string.Empty, row.HomeId);
+            Assert.Equal(string.Empty, row.EmployerClanId);
         }
 
         [Fact]
@@ -270,12 +283,14 @@ namespace Byzantium1071.Tests
             var dischargeDays = new System.Collections.Generic.List<int>();
             var counts = new System.Collections.Generic.List<int>();
             var fromPlayer = new System.Collections.Generic.List<bool>();
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
 
             B1071_ServiceMath.AppendVeteranRow(
-                settlementIds, troopIds, dischargeDays, counts, fromPlayer,
-                "settlement_a", "troop_a", 12, 4, true);
+                settlementIds, troopIds, dischargeDays, counts, fromPlayer, originClanIds, employerClanIds,
+                "settlement_a", "troop_a", 12, 4, true, "origin_a", "employer_a");
             var rows = B1071_ServiceMath.ReadVeteranRows(
-                settlementIds, troopIds, dischargeDays, counts, fromPlayer);
+                settlementIds, troopIds, dischargeDays, counts, fromPlayer, originClanIds, employerClanIds);
 
             VeteranSaveRow row = Assert.Single(rows);
             Assert.Equal("settlement_a", row.SettlementId);
@@ -283,6 +298,8 @@ namespace Byzantium1071.Tests
             Assert.Equal(12, row.DischargeDay);
             Assert.Equal(4, row.Count);
             Assert.True(row.FromPlayer);
+            Assert.Equal("origin_a", row.OriginClanId);
+            Assert.Equal("employer_a", row.EmployerClanId);
             Assert.False(Assert.Single(B1071_ServiceMath.ReadVeteranRows(
                 settlementIds, troopIds, dischargeDays, counts, System.Array.Empty<bool>())).FromPlayer);
         }
@@ -311,6 +328,7 @@ namespace Byzantium1071.Tests
                 playerOwned, courier, posX, posY, fallbackOrderDay: 99));
 
             Assert.Equal(4, row.OrderId);
+            Assert.Equal(0, row.SourceIndex);
             Assert.Equal(3, row.PlayerOwnedCount);
             Assert.Equal(4.5f, row.PosX);
             Assert.Equal(7.5f, row.PosY);
@@ -330,10 +348,97 @@ namespace Byzantium1071.Tests
                 fallbackOrderDay: 77));
 
             Assert.Equal(0, legacy.OrderId);
+            Assert.Equal(0, legacy.SourceIndex);
             Assert.Equal(77, legacy.OrderDay);
             Assert.Equal(0, legacy.PlayerOwnedCount);
             Assert.True(float.IsNaN(legacy.PosX));
             Assert.True(float.IsNaN(legacy.PosY));
+        }
+
+        [Fact]
+        public void PendingRecallBatchGroupsKeepRawHeaderAlignmentWhenInvalidHeadersAreSkipped()
+        {
+            string[] settlementIds = { string.Empty, "settlement_b" };
+            string[] troopIds = { "troop_a", "troop_b" };
+            int[] counts = { 1, 2 };
+
+            PendingRecallSaveRow row = Assert.Single(B1071_ServiceMath.ReadPendingRecallRows(
+                orderIds: new[] { 1, 2 },
+                settlementIds: settlementIds,
+                troopIds: troopIds,
+                counts: counts,
+                orderDays: System.Array.Empty<int>(),
+                goldPaid: System.Array.Empty<int>(),
+                manpowerDrawn: System.Array.Empty<int>(),
+                playerOwnedCounts: System.Array.Empty<int>(),
+                courierRemaining: System.Array.Empty<float>(),
+                posX: System.Array.Empty<float>(),
+                posY: System.Array.Empty<float>(),
+                fallbackOrderDay: 0));
+            var groups = B1071_ServiceMath.ReadRecallBatchGroups(
+                B1071_ServiceMath.GetPendingRecallHeaderCount(settlementIds, troopIds, counts),
+                batchesPerOrder: new[] { 1, 1 },
+                originClanIds: new[] { "origin_a", "origin_b" },
+                employerClanIds: new[] { "employer_a", "employer_b" },
+                counts: new[] { 1, 2 });
+
+            Assert.Equal(1, row.SourceIndex);
+            Assert.Equal("employer_b", Assert.Single(groups[row.SourceIndex]).EmployerClanId);
+        }
+
+        [Fact]
+        public void RecallBatchRowsStayAlignedByHeaderOrderAndFailClosedWhenTruncated()
+        {
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
+            var counts = new System.Collections.Generic.List<int>();
+            B1071_ServiceMath.AppendRecallBatchRow(originClanIds, employerClanIds, counts, "origin_a", "employer_a", 2);
+            B1071_ServiceMath.AppendRecallBatchRow(originClanIds, employerClanIds, counts, "origin_b", "employer_b", 3);
+
+            var groups = B1071_ServiceMath.ReadRecallBatchGroups(
+                headerCount: 2,
+                batchesPerOrder: new[] { 1, 1 },
+                originClanIds: originClanIds,
+                employerClanIds: employerClanIds,
+                counts: counts);
+
+            Assert.Equal("employer_a", Assert.Single(groups[0]).EmployerClanId);
+            Assert.Equal("employer_b", Assert.Single(groups[1]).EmployerClanId);
+
+            var truncated = B1071_ServiceMath.ReadRecallBatchGroups(
+                headerCount: 2,
+                batchesPerOrder: new[] { 2, 1 },
+                originClanIds: new[] { "origin_a" },
+                employerClanIds: new[] { "employer_a" },
+                counts: new[] { 2 });
+            Assert.Single(truncated[0]);
+            Assert.Empty(truncated[1]);
+        }
+
+        [Fact]
+        public void RecallBatchRowsReportWhetherTheyWereActuallyAppended()
+        {
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
+            var counts = new System.Collections.Generic.List<int>();
+
+            Assert.False(B1071_ServiceMath.AppendRecallBatchRow(
+                originClanIds, employerClanIds, counts, "origin_a", "employer_a", 0));
+            Assert.True(B1071_ServiceMath.AppendRecallBatchRow(
+                originClanIds, employerClanIds, counts, "origin_b", "employer_b", 2));
+
+            Assert.Single(originClanIds);
+            Assert.Single(employerClanIds);
+            Assert.Single(counts);
+        }
+
+        [Fact]
+        public void LargestRemainderScatterKeepsTotalAndUsesOldestBatchForTies()
+        {
+            var allocation = B1071_ServiceMath.AllocateLargestRemainder(2, new[] { 1, 1, 1 });
+
+            Assert.Equal(new[] { 1, 1, 0 }, allocation);
+            Assert.Equal(2, allocation[0] + allocation[1] + allocation[2]);
         }
 
         [Fact]
@@ -346,16 +451,21 @@ namespace Byzantium1071.Tests
             var extendedFlags = new System.Collections.Generic.List<bool>();
             var extensionCounts = new System.Collections.Generic.List<int>();
             var homeIds = new System.Collections.Generic.List<string>();
+            var originClanIds = new System.Collections.Generic.List<string>();
+            var employerClanIds = new System.Collections.Generic.List<string>();
 
             for (int index = 0; index < 10_000; index++)
             {
                 B1071_ServiceMath.AppendServiceCohortRows(
                     partyIds, troopIds, joinDays, counts, extendedFlags, extensionCounts, homeIds,
-                    "party_" + index, "troop_" + index, index, 1, index % 4, "home_" + index);
+                    originClanIds, employerClanIds,
+                    "party_" + index, "troop_" + index, index, 1, index % 4, "home_" + index,
+                    "origin_" + index, "employer_" + index);
             }
 
             var rows = B1071_ServiceMath.ReadServiceCohortRows(
-                partyIds, troopIds, joinDays, counts, extendedFlags, extensionCounts, homeIds);
+                partyIds, troopIds, joinDays, counts, extendedFlags, extensionCounts, homeIds,
+                originClanIds, employerClanIds);
 
             Assert.Equal(10_000, rows.Count);
             for (int index = 0; index < rows.Count; index++)
@@ -366,6 +476,8 @@ namespace Byzantium1071.Tests
                 Assert.Equal(index, row.JoinDay);
                 Assert.Equal(index % 4, row.ExtensionCount);
                 Assert.Equal("home_" + index, row.HomeId);
+                Assert.Equal("origin_" + index, row.OriginClanId);
+                Assert.Equal("employer_" + index, row.EmployerClanId);
             }
         }
 

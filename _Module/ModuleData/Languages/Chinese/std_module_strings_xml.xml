@@ -1308,7 +1308,8 @@
     <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8，1=F10，2=F11，3=F12。默认值：F8。" />
     <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="允许在战役地图上打开全图老兵名册。默认值：开启。" />
     <string id="b1071_mcm_h_demob_remote" text="允许向地图上任意定居点发出召回令，无需亲自前往。命令需要时间送达，随后这些人会朝你所在之处行军。金钱与兵源在命令发出时扣除。关闭后必须亲临定居点。默认值：开启。" />
-    <string id="b1071_mcm_h_demob_vet_access" text="谁可以从定居点召回其他领主的老兵。0 = 开放（任何未与领主开战的贵族）。1 = 仅限王国（须与领主同属一个王国）。2 = 仅限家族（仅限拥有该定居点的家族）。玩家与 AI 适用相同规则。这从不限制你自己的部下：只要你未与该定居点的领主开战，你亲自遣散的士兵始终可以在其返乡之处召回。默认值：2。" />
+    <string id="b1071_mcm_h_demob_vet_access" text="启用跨家族老兵招募时，谁可以从定居点召回由其他家族雇用的老兵。0 = 开放（任何未与拥有者开战的领主）。1 = 仅限王国（须与拥有者同属一个王国）。2 = 仅限家族（仅限拥有该定居点的家族）。玩家与 AI 适用相同规则。任何未与拥有者交战的家族始终可召回最后雇主是自己家族的老兵。默认值：2。" />
+    <string id="b1071_mcm_h_demob_vet_cross_clan" text="关闭时，每个家族只能召回最后雇主为本家族的老兵；这会同等保护玩家和 AI 的老兵。开启时，召回权限限制决定谁可以招募由其他家族雇用的老兵。战争始终会关闭名册。默认值：关闭。" />
     <string id="b1071_mcm_h_demob_vet_enable" text="士兵服役期满后，会步行返回招募他的定居点，归还兵源并列入该定居点的老兵名册。关闭此项后，退役士兵会像以前一样直接消失。默认值：开启。" />
     <string id="b1071_mcm_h_demob_vet_gold" text="每召回一名老兵支付的重征赏金，并按其兵阶倍增。设为 40 时，5 阶老兵需 200 金币。召回同样会像普通招募那样消耗定居点的兵源。默认值：40。" />
     <string id="b1071_mcm_h_demob_vet_manpower" text="退役士兵所占兵源有多少比例返还其家乡定居点。100 表示每一名熬过服役期的士兵都可再次被征召。若希望战争长久地消耗乡野人口，可调低此值。默认值：100。" />
@@ -1324,6 +1325,7 @@
     <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="启用名册快捷键" />
     <string id="b1071_mcm_t_demob_remote" text="允许远程召回" />
     <string id="b1071_mcm_t_demob_vet_access" text="召回权限限制" />
+    <string id="b1071_mcm_t_demob_vet_cross_clan" text="允许跨家族招募老兵" />
     <string id="b1071_mcm_t_demob_vet_enable" text="退役士兵返乡" />
     <string id="b1071_mcm_t_demob_vet_gold" text="每兵阶召回金币" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="兵源返还百分比" />

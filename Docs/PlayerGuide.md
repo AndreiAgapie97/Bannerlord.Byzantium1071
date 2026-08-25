@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.3 — Everything you need to know, step by step.*
+*Version 1.0.3.4 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.1 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
@@ -234,7 +234,7 @@ You do not have to wait for a term to run out. When a war ends and you want to s
 
 ### Calling Veterans Back
 
-1. **Enter any town, castle or village** you are not at war with.
+1. **Enter any town, castle or village** you are not at war with. By default you may recall only batches last employed by your clan.
 2. In the settlement menu, look for **Veteran register (X at home)**. The number is how many discharged soldiers are waiting there. Away from your own realm it reads **(X of your men here)** instead — see below.
 3. **Click it** to open the register. Each line shows the troop, its tier, how many are at home, how many days before they disperse, and what each man costs.
 4. **Click Recall for one man, Shift+click for five, Ctrl+click for the whole line.** You pay the men a bounty in gold to take up arms again, and they cost the settlement's manpower exactly as fresh recruits would. The bounty is the same whether or not the settlement is yours — the money goes to the soldiers, not to its lord.
@@ -259,9 +259,10 @@ Things worth knowing:
 - **A man rests before he will serve again.** For his first week at home — 7 days by default — he is on the register but nobody may hire him, you or an AI lord. The line shows him and tells you how many days are left. Set **Days at home before recall** to 0 in MCM if you would rather call a man back the day you released him.
 - **Veterans do not wait forever.** They drift back to civilian life about a year after discharge — 84 days by default.
 - **Raids and conquest scatter them.** If a settlement is raided, or changes kingdom, roughly half its register is lost.
-- **Your own men are always yours.** Any soldier you sent home is yours to collect from wherever he went, even a town or castle in someone else's realm. That is the whole point of sending him home. The only thing that stops you is war: if you are at war with the settlement's owner, the register is shut.
-- **Other lords' veterans follow the setting.** By default only the owning clan may hire from a register, so another lord's discharged men stay with his own clan. You can widen this to any lord of the owning kingdom, or to any non-hostile lord, in MCM. A kingdom at war with the owner never may. On foreign ground the register shows only your own men, so a line you can see is a line you can take.
-- **AI lords collect their veterans too.** A lord who walks into a settlement holding men he is entitled to hires them on the spot, at the same price you would pay. He never goes out of his way for them, and he can never touch the men you sent home. Turn off **AI lords hire veterans** in MCM if you would rather they did not.
+- **Veterans belong to their latest employer.** You can always collect batches last employed by your clan from any non-hostile settlement. If another lord re-enlists a veteran, that veteran belongs to the hiring clan for the next term; his original home is still remembered.
+- **Cross-clan recruitment is off by default.** With **Allow cross-clan veteran recruitment** off, no clan — player or AI — can recruit batches last employed by another clan. This protects your veterans and gives AI clans exactly the same protection.
+- **You can make the register market open by choice.** Turn on **Allow cross-clan veteran recruitment** and **Recall access restriction** decides who may hire other employers' veterans: only the owning clan, the owner's kingdom, or any non-hostile lord. War with the owner closes the register to everyone. On foreign ground the register shows only the batches your clan may take.
+- **AI lords use the same rules.** A lord who walks into a settlement hires only the batches he is entitled to, at the same price you would pay, and never detours to hunt for them. Turn off **AI lords hire veterans** in MCM if you would rather they did not.
 - **Recruit troops abroad and you can still get them back.** Prisoners you converted at a foreign castle, or elites you hired there, go home to that castle when their term ends. Walk back in while you are at peace and they are waiting for you.
 - **The whole feature can be switched off.** Turn off **Veterans return home** in MCM and discharged soldiers simply disperse, as they did before.
 

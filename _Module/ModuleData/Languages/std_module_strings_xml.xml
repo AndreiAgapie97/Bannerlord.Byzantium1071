@@ -1310,7 +1310,8 @@
     <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8, 1=F10, 2=F11, 3=F12. Default: F8." />
     <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="Allows opening the map-wide veteran register from the campaign map. Default: true." />
     <string id="b1071_mcm_h_demob_remote" text="Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true." />
-    <string id="b1071_mcm_h_demob_vet_access" text="Who may recall other lords' veterans from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. This never blocks your own men: soldiers you discharged yourself can always be collected from wherever they went home, as long as you are not at war with the settlement's owner. Default: 2." />
+    <string id="b1071_mcm_h_demob_vet_access" text="When cross-clan veteran recruitment is enabled, who may recall veterans employed by another clan from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. Any non-hostile clan may always recall veterans whose latest employer is its own clan. Default: 2." />
+    <string id="b1071_mcm_h_demob_vet_cross_clan" text="When off, every clan may recall only veterans whose latest employer is that clan; this protects both player and AI veterans. When on, the recall access restriction decides who may recruit veterans employed by another clan. War always closes a register. Default: false." />
     <string id="b1071_mcm_h_demob_vet_enable" text="When a soldier finishes his service he walks back to the settlement he was recruited from, returning its manpower and joining that settlement's veteran register. With this off, discharged soldiers simply disappear as they used to. Default: true." />
     <string id="b1071_mcm_h_demob_vet_gold" text="Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40." />
     <string id="b1071_mcm_h_demob_vet_manpower" text="How much of a discharged soldier's manpower cost goes back to his home settlement. 100 means every man who survives his term is available to be raised again. Lower it if you want war to permanently thin the countryside. Default: 100." />
@@ -1326,6 +1327,7 @@
     <string id="b1071_mcm_t_demob_recall_hotkey_enable" text="Enable register hotkey" />
     <string id="b1071_mcm_t_demob_remote" text="Allow recall from a distance" />
     <string id="b1071_mcm_t_demob_vet_access" text="Recall access restriction" />
+    <string id="b1071_mcm_t_demob_vet_cross_clan" text="Allow cross-clan veteran recruitment" />
     <string id="b1071_mcm_t_demob_vet_enable" text="Discharged soldiers return home" />
     <string id="b1071_mcm_t_demob_vet_gold" text="Recall gold per tier" />
     <string id="b1071_mcm_t_demob_vet_manpower" text="Manpower returned %" />
