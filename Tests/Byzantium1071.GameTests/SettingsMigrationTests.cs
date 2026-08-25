@@ -41,6 +41,12 @@ namespace Byzantium1071.GameTests
         }
 
         [Fact]
+        public void SettlementNameplateTooltipsAreEnabledByDefault()
+        {
+            Assert.True(new B1071_McmSettings().EnableSettlementNameplateTooltips);
+        }
+
+        [Fact]
         public void EveryHistoricalProfileVersionConvergesOnCurrentDefaults()
         {
             B1071_McmSettings baseline = new();

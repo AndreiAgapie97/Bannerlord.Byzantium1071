@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.2
-**Target Game:** Mount & Blade II: Bannerlord (tested on v1.5.0; Warsails/NavalDLC v1.3.0 verified)  
+**Version:** 1.0.3.3
+**Target Game:** Mount & Blade II: Bannerlord v1.5.1 beta (installed target; Warsails/NavalDLC v1.3.0 verified)<br>
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -28,6 +28,7 @@
 17. [Combat Realism — Troop survivability and autoresolve armor](#17-combat-realism)
 18. [Army Economics — Tier-exponential recruiting and wage costs](#18-army-economics)
 19. [The Overlay — The in-game intelligence panel](#19-the-overlay)
+19A. [Settlement Intelligence Tooltips](#19a-settlement-intelligence-tooltips)
 20. [Configuration — MCM Settings Reference](#20-configuration)
 21. [Mod Architecture Summary — For technical readers](#21-architecture)
 22. [Verbose Debug Logging — rgl_log instrumentation](#22-verbose-debug-logging)
@@ -1055,6 +1056,57 @@ Letter hotkeys (M, N, K) are suppressed while the Search tab is active to preven
 
 ---
 
+## 19A. Settlement Intelligence Tooltips
+
+Campaign++ reports settlement manpower and devastation on two campaign-map surfaces: the Sandbox nameplate, and the full settlement tooltip the game already shows on map hover. `B1071_SettlementNameplateVMMixin` targets `SettlementNameplateVM.RefreshBindValues`, and the three `SettlementNameplateItemSmall/Medium/Large` prefabs receive `Command.HoverBegin` and `Command.HoverEnd` on their existing `SettlementNameplateCapsuleWidget`. The vanilla camera, alternate encyclopedia click, and nested tracker button therefore retain their original commands.
+
+Both surfaces take their rows from `B1071_SettlementTooltipContent.Build`. They are visible side by side on the map, so any disagreement between them reads as a bug; one shared builder is what makes that disagreement impossible rather than merely unlikely.
+
+### Tooltip data
+
+The mixin creates one `BasicTooltipViewModel` per nameplate. Its callback calls the shared builder only when the hover begins, so the map does not scan every settlement to keep tooltip text current.
+
+- Towns call `B1071_ManpowerBehavior.GetManpowerPool` for current/max values and use `GetDailyRegen` for the effective daily recovery. They also query `B1071_DevastationBehavior.GetAverageBoundVillageDevastation`.
+- Castles show current/max and average devastation. The recovery row is omitted rather than printing `GetDailyRegen`, because the daily tick converts that raw request into `localTrickle + supplyTransfer`, clamps the transfer to the supply town's available pool, and has a separate cut-off branch.
+- Villages call the existing pool resolver through `GetManpowerPool`, so `Village.Bound` supplies the displayed regional pool. The label includes the resolved pool's name to make the shared value explicit. A null pool is accepted for orphan villages, while `GetDevastation(Village)` still supplies the village row.
+- A pool at or above its maximum is labelled **Full** and does not receive a recovery-rate row.
+
+Every row is built with `textHeight` 0, and that value is load-bearing rather than incidental. `TooltipPropertyWidget` sets its `IsTwoColumn` flag only when the definition and value are both non-empty **and** `TextHeight == 0`; any other height sends the row down the `!IsTwoColumn` branch of `RefreshSize`, which gives both label containers the same width while `SetBattleScope` leaves the definition right-aligned and the value left-aligned. The two labels then meet in the middle and render with no gap at all — `Manpower1685/2499` rather than `Manpower    1685/2499`. Native passes 0 for ordinary rows too: `PropertyBasedTooltipVM.AddProperty` defaults `textHeight` to 0 and reserves non-zero heights for multi-line and description rows. Nothing in Campaign++ references `IsTwoColumn`, so a rename on the TaleWorlds side would still compile and silently revert the layout; `TooltipTwoColumnLayoutContractStillHolds` in the game-backed suite pins the two native members the assumption rests on.
+
+The `EnableSettlementNameplateTooltips` MCM property gates all three outputs: the nameplate tooltip, the vanilla-tooltip section, and the marker. It is a new setting key with a default of `true`; no migration block is needed because MCM cannot deserialize the retired setting's key into the new property. Its player-facing label reads **Enable settlement tooltips** rather than naming the nameplate, because the toggle no longer drives only that surface; the property name is deliberately left alone so existing MCM configs and submods built against `IB1071Settings` keep working. Devastation rows and markers also respect `EnableFrontierDevastation`.
+
+### Vanilla settlement tooltip
+
+`B1071_SettlementTooltipRefresher` adds the section by wrapping the `Settlement` tooltip registration rather than by patching a refresher method. `InformationManager` keeps one refresher delegate per registered type in a plain `Dictionary<Type, TooltipRegistry>`, and `RegisterTooltip` is a bare assignment into it, so the last module to call it owns that type outright. `SandBox.View` registers `TooltipRefresherCollection.RefreshSettlementTooltip` for `Settlement` at module load; the War Sails view module then overwrites that entry with `NavalTooltipRefresherCollection.RefreshSettlementTooltip`, a verbatim copy of vanilla's method that never calls vanilla's. A Harmony postfix on vanilla's method was the first attempt here, and it is the failure this design exists to avoid: the postfix attached, the launch check reported it attached, nothing threw, and no section ever appeared, because the game had stopped calling the method it was attached to. That is the hardest failure shape to read from a log, since every diagnostic agrees the patch is fine.
+
+`Install()` reads the current entry, keeps its `OnRefreshData` as the inner call, and re-registers itself with the same `MovieName` and tooltip type. What it wraps is whatever it finds: vanilla's refresher on an install without War Sails, War Sails' copy where that DLC is present, another mod's if one registered later still. No reference to any DLC or mod assembly is involved and there is nothing to detect — the wrapper does not care who wrote the entry it wraps, which is the property a detection-based approach could never have. It logs the wrapped refresher's declaring type, because which module owns the registration is the whole question and is invisible from outside.
+
+It is installed from `SubModule.OnGameStart`, which runs long after every module's `OnSubModuleLoad`, so the entry being wrapped is the one the game will actually use. The wrapper is a single static delegate instance for the life of the process, so a second call recognises its own registration by reference and returns instead of wrapping the wrapper and adding the section twice. `Uninstall()` in `OnSubModuleUnloaded` puts the inner refresher back, and only while the registration is still the wrapper's: if another mod has registered over it since, that entry is theirs and restoring the old inner would silently drop it. `InstallWrapsWhicheverRefresherIsRegisteredAndUninstallPutsItBack` in the game-backed suite pins the whole round trip.
+
+The settlement arrives as `args[0]` and is taken with a type-pattern test rather than an unchecked cast, because the vanilla body's own `args[0] as Settlement` shows the array is untyped by contract. The inner refresher is called outside the try/catch that guards the Campaign++ rows: swallowing an exception from the game's own tooltip there would turn a game-side failure into a half-built tooltip that reports nothing and says nothing.
+
+The rows are preceded by vanilla's own section break — an empty spacer row at height `-1`, a header row whose value is a single space, then a `RundownSeperator` — which is the same three-row idiom vanilla uses between Owner, Information, and Defenders. The header text is the literal `{=!}Campaign++`: `{=!}` is the marker vanilla uses for text no language pack translates, and the mod's name is identical in every pack, so this deliberately carries no `b1071_` text ID for translators to chase.
+
+The section is inserted above the trailing spacer rather than appended, so it reads as the last block of settlement data instead of sitting below **Hold 'Alt' for more info.** and the parley hint. The wrapper runs after the inner refresher has built the list, but nothing obliges it to add at the end: `TooltipPropertyList` is an `MBBindingList<TooltipProperty>`, whose `InsertItem` override raises `ItemAdded` with the index, so an insert notifies the bound widget exactly as an append does.
+
+`FindFooterIndex` finds the insertion point by row shape rather than by text. Vanilla closes `RefreshSettlementTooltip` with `AddProperty(string.Empty, string.Empty, -1)` and then adds the **Hold 'Alt'** hint and the parley hint, each with an empty definition but a non-empty value. A row with an empty definition, an empty value and a negative `TextHeight` is therefore the spacer and nothing else. The scan runs backwards because vanilla uses the same spacer between sections, and only the last one is the footer. Finding the hint by its localised text was the alternative and is what kept the section at the bottom before: it fails in every language the mod does not ship. If the footer is ever restructured away the scan finds nothing and returns the end of the list, which is where the section used to go — a worse position, not a broken one.
+
+The first settlement tooltip built after installing logs one line through `LogFirstOutcome` naming what the wrapper did: rows inserted and where, the toggle switched off, no settlement in the arguments, or nothing for the builder to report. A section that fails to appear looks identical from the outside in all of those cases, and the try/catch around the rows only speaks when something throws — which is precisely how the retired postfix stayed invisible.
+
+The retired patch also carried a hazard worth keeping on record, independent of the registration problem. Harmony JIT-compiles a target method the moment it patches it, and the JIT runs the `beforefieldinit` type initializers of every type that method references. `RefreshSettlementTooltip` reads `CampaignUIHelper.MobilePartyPrecedenceComparerInstance` and calls `CampaignUIHelper.IsSettlementInformationHidden`, and `CampaignUIHelper` initializes its `_partyMoraleStr` field with `GameTexts.FindText("str_party_morale")`. At module load no `Game` exists, `GameTexts`'s private `_gameTextManager` is still null, and that call throws a `NullReferenceException` inside `TaleWorlds.Core`. The CLR caches a failed type initializer for the life of the process, so every later use of `CampaignUIHelper` — the map's own settlement tooltips among them — threw `TypeInitializationException`, and the campaign crashed a few seconds after the save finished loading. A patch's own try/catch is no defence against this, because the failure happens at patch time rather than inside the patch. Wrapping a registration JIT-compiles nothing and cannot reach it. The general rule survives the patch that taught it: a target whose types reach game text, campaign state, or any other post-`Game.Initialize()` singleton from a static initializer must not be patched in `OnSubModuleLoad`.
+
+### Ambient marker and event safety
+
+Each size inserts a small `▲` marker into the existing `TopSideIcons` list at a fixed devastation threshold of 50. The parent already has `DoNotAcceptEvents="true"` and `DoNotPassEventsToChildren="true"`; the marker also declares `DoNotAcceptEvents="true"`.
+
+Each size registers exactly one movie name. UIExtenderEx resolves movies by bare file name — `WidgetPrefabPatch.ProcessMovie` calls `Path.GetFileNameWithoutExtension` before looking the movie up — so a directory-qualified name such as `Nameplate/SettlementNameplateItemSmall` can never match and registering both forms would be dead weight. Because only one key resolves and every processing pass starts from the pristine prefab XML, duplicate insertion is not reachable and no injection guard is needed.
+
+The marker markup is therefore a constant. `PrefabComponent.ProcessMovieIfNeeded` re-reads an insert patch's content on **every** prefab load, not once at registration, so a getter that returned different markup on a second read would inject an empty widget and silently drop the marker for the rest of the session after any prefab reload.
+
+No new save keys, persistent scene objects, map artwork, settlement-menu property tooltip changes, encyclopedia tooltip changes, or ledger changes are part of this feature. The vanilla settlement tooltip is added to, never rewritten — no row vanilla builds is edited, reordered, or removed.
+
+---
+
 ## 20. Configuration
 
 All settings are in the Mod Configuration Menu. Key groups:
@@ -1205,7 +1257,7 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
-**Game version:** verified against Bannerlord **v1.5.0** (and Warsails/NavalDLC **v1.3.0**). See the "Game Version Verification" subsection below for what is checked on each game update.
+**Game version:** targeted at the installed Bannerlord **v1.5.1 beta** (and Warsails/NavalDLC **v1.3.0**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
 
 **Required dependencies** (must load before this mod):
 - `Bannerlord.Harmony` ≥ v2.4.2

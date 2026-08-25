@@ -304,6 +304,7 @@ int manpowerMultiplier = settings.ManpowerPoolMultiplier;
 | `CostMultiplierPercent` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
 | `EnableTierSurvivability` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
 | `EnableTierArmorSimulation` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
+| `EnableSettlementManpowerTooltips` | 1.0.3.3 | `EnableSettlementNameplateTooltips` |
 
 `EliteSurvivabilityPreset` drives both autoresolve tier systems at once — damage reduction and the wound-vs-kill bonus. `0` disables both; `1` (default) through `3` scale them together. The curve itself lives in `B1071_CombatRealismTuning`, which is `internal` — read the preset, not the tables.
 

@@ -725,7 +725,8 @@
     <string id="b1071_mcm_h_fa9bb5beb0" text="未处于任何雇佣合约中的小势力，按家族等级计的每日收入。高于雇佣兵补贴，因为它们没有雇主贴补。默认：400。" />
     <string id="b1071_mcm_h_fdddba79d9" text="每名奴隶每天提供的繁荣度（在繁荣度提示中显示为“奴隶劳力”）。按默认效率（1.5×）：0.0067 × 1.5 ≈ 0.01/名。例如 100 名奴隶 → 每日约 +1 繁荣度。默认：0.0067。" />
     <string id="b1071_mcm_h_ff8b7b8002" text="在洗劫/攻城/征服事件后施加临时的恢复惩罚，并随时间消退。" />
-    <string id="b1071_mcm_h_ff96994b56" text="在战役界面的定居点属性提示中附加兵源信息。" />
+    <string id="b1071_mcm_h_ff96994b56" text="[旧版 — 未使用] 此设置已不再生效。改由“提示”组中的“启用定居点提示”控制战役地图上的定居点提示和破坏度图标。仅为存档兼容而保留。" />
+    <string id="b1071_mcm_h_nameplate_tooltips" text="在战役地图上悬停定居点时，在名称牌提示和完整的定居点提示中显示兵源和破坏度，并用红色图标标记破坏严重的定居点。" />
     <string id="b1071_mcm_h_ffe4431637" text="叠加各项压力惩罚后，每日恢复量占最大兵池的百分比下限。" />
     <string id="b1071_mcm_t_00b53638d4" text="每点议和支持加成" />
     <string id="b1071_mcm_t_0227ae84b9" text="雇佣兵每级补贴（第纳尔/天）" />
@@ -887,7 +888,8 @@
     <string id="b1071_mcm_t_a2b3c4d501" text="2级招募金币费用（多元化兵源池）" />
     <string id="b1071_mcm_t_a323f17518" text="启用奴隶经济" />
     <string id="b1071_mcm_t_a37290a213" text="每日恢复上限（占兵池 %）" />
-    <string id="b1071_mcm_t_a6a089949c" text="启用定居点兵源提示" />
+    <string id="b1071_mcm_t_a6a089949c" text="[旧版] 启用定居点兵源提示" />
+    <string id="b1071_mcm_t_nameplate_tooltips" text="启用定居点提示" />
     <string id="b1071_mcm_t_a6ec313b64" text="议和倾向（上升区间）" />
     <string id="b1071_mcm_t_a7e8775853" text="启用兵源外交压力" />
     <string id="b1071_mcm_t_a881ce40fb" text="繁荣度归一化系数" />
@@ -1403,5 +1405,10 @@
     <string id="b1071_mcm_t_town_invest_ai_chance" text="AI 投资概率（%）" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="AI 随机选择档次" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="AI 英雄冷却（天）" />
+    <string id="b1071_nameplate_manpower" text="兵源" />
+    <string id="b1071_nameplate_regional_manpower" text="区域兵源（{POOL}）" />
+    <string id="b1071_nameplate_daily_recovery" text="每日恢复" />
+    <string id="b1071_nameplate_devastation" text="破坏度" />
+    <string id="b1071_nameplate_full" text="已满" />
   </strings>
 </base>

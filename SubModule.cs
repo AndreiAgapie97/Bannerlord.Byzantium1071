@@ -237,6 +237,8 @@ namespace Byzantium1071
             _harmony?.UnpatchAll("com.andrei.byzantium1071");
             _harmony = null;
 
+            B1071_SettlementTooltipRefresher.Uninstall();
+
             B1071_CompatibilityFluentSettings.Unregister();
             B1071_QuickSettingsFluentSettings.Unregister();
             B1071_CompatibilityBehavior.Instance = null;
@@ -353,6 +355,12 @@ namespace Byzantium1071
 
             if (game.GameType is TaleWorlds.CampaignSystem.Campaign && gameStarterObject is CampaignGameStarter starter)
             {
+                // Wraps whichever module owns the Settlement tooltip registration. Every
+                // module's OnSubModuleLoad has run by now, so this is the entry the game will
+                // actually use: SandBox.View's refresher on a plain install, War Sails' copy
+                // of it where that DLC is present.
+                B1071_SettlementTooltipRefresher.Install();
+
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CompatibilityBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_DemobilizationBehavior());

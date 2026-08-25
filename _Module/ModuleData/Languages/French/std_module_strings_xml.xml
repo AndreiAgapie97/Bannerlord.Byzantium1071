@@ -725,7 +725,8 @@
     <string id="b1071_mcm_h_fa9bb5beb0" text="Revenu quotidien par niveau de clan pour les factions mineures NON sous aucun contrat de mercenaire. Plus élevée que la rémunération des mercenaires car aucun employeur ne les subventionne. Par défaut : 400." />
     <string id="b1071_mcm_h_fdddba79d9" text="Prospérité par esclave et par jour (indiquée comme « Travail des esclaves » dans l'info-bulle de la prospérité). À l'efficacité par défaut (1,5×) : 0,0067 × 1,5 ≈ 0,01/esclave. Par exemple, 100 esclaves → ~ 1 prospérité/jour. Par défaut : 0,0067." />
     <string id="b1071_mcm_h_ff8b7b8002" text="Applique des pénalités de récupération temporaires après des événements de raid/siège/conquête, décroissant avec le temps." />
-    <string id="b1071_mcm_h_ff96994b56" text="Ajoute des informations sur la main-d'œuvre aux info-bulles des propriétés du règlement dans l'interface utilisateur de la campagne." />
+    <string id="b1071_mcm_h_ff96994b56" text="[OBSOLÈTE — NON UTILISÉ] Ce paramètre n'est plus actif. Remplacé par Activer les info-bulles de colonie dans le groupe Info-bulles, qui pilote les info-bulles de colonie et l'icône de dévastation sur la carte de campagne. Conservé pour la compatibilité des sauvegardes." />
+    <string id="b1071_mcm_h_nameplate_tooltips" text="Affiche la main-d'œuvre et la dévastation au survol d'une colonie sur la carte de campagne — dans l'info-bulle de l'enseigne comme dans l'info-bulle complète — et signale les colonies très dévastées par une icône rouge." />
     <string id="b1071_mcm_h_ffe4431637" text="Pourcentage de régénération quotidien minimum du pool maximum après les pénalités de stress empilées." />
     <string id="b1071_mcm_t_00b53638d4" text="Bonus/point de soutien à la paix" />
     <string id="b1071_mcm_t_0227ae84b9" text="Récompense de mercenaire par niveau (denars/jour)" />
@@ -887,7 +888,8 @@
     <string id="b1071_mcm_t_a2b3c4d501" text="Coût en or de recrutement T2 (vivier diversifié)" />
     <string id="b1071_mcm_t_a323f17518" text="Permettre l’économie esclavagiste" />
     <string id="b1071_mcm_t_a37290a213" text="Plafond de régénération % de la réserve/jour" />
-    <string id="b1071_mcm_t_a6a089949c" text="Activer les info-bulles de la main-d'œuvre en matière d'établissement" />
+    <string id="b1071_mcm_t_a6a089949c" text="[Obsolète] Activer les info-bulles de main-d'œuvre des colonies" />
+    <string id="b1071_mcm_t_nameplate_tooltips" text="Activer les info-bulles de colonie" />
     <string id="b1071_mcm_t_a6ec313b64" text="Biais de paix (groupe montant)" />
     <string id="b1071_mcm_t_a7e8775853" text="Permettre la pression de la diplomatie de la main d’œuvre" />
     <string id="b1071_mcm_t_a881ce40fb" text="Normalisateur de prospérité" />
@@ -1403,5 +1405,10 @@
     <string id="b1071_mcm_t_town_invest_ai_chance" text="Chance d'investissement de l'IA (%)" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="Sélection de niveau aléatoire par l'IA" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="Temps de recharge du héros IA (jours)" />
+    <string id="b1071_nameplate_manpower" text="Main-d'œuvre" />
+    <string id="b1071_nameplate_regional_manpower" text="Main-d'œuvre régionale ({POOL})" />
+    <string id="b1071_nameplate_daily_recovery" text="Récupération quotidienne" />
+    <string id="b1071_nameplate_devastation" text="Dévastation" />
+    <string id="b1071_nameplate_full" text="Maximum" />
   </strings>
 </base>

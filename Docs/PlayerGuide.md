@@ -1,8 +1,8 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.2 — Everything you need to know, step by step.*
+*Version 1.0.3.3 — Everything you need to know, step by step.*
 
-**Game version:** Bannerlord **v1.5.0**. The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
+**Game version:** Bannerlord **v1.5.1 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.0** is supported but not required — Campaign++ works with or without it.
 
 **Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
 
@@ -18,6 +18,7 @@
 1. [First Launch — What Happens Automatically](#1-first-launch--what-happens-automatically)
 2. [The Overlay Ledger (Press M)](#2-the-overlay-ledger-press-m)
 3. [Manpower — The Core Resource](#3-manpower--the-core-resource)
+3A. [Settlement Intelligence Tooltips](#3a-settlement-intelligence-tooltips)
 4. [Recruiting Volunteers (Villages & Towns)](#4-recruiting-volunteers-villages--towns)
 4A. [Troop Service & Demobilization](#4a-troop-service--demobilization)
 5. [Castle Recruitment — Elite Troops & Prisoners](#5-castle-recruitment--elite-troops--prisoners)
@@ -137,6 +138,17 @@ Pools regenerate **daily**, scaled by:
 
 - **Press M** → go to the **Nearby**, **Castles**, or **Towns** tab to see MP values at a glance.
 - **Click any settlement on the map** → the **Current** tab shows a full breakdown of that settlement's manpower pool, regen rate, and all modifiers.
+
+## 3A. Settlement Intelligence Tooltips
+
+When **Enable settlement tooltips** is on in MCM → **Tooltips** (on by default), hover a visible town, castle, or village on the campaign map. The same lines appear in two places: the small nameplate tooltip, and a **Campaign++** section in the game's own full settlement panel, below the garrison and prisoner lines and above the **Hold 'Alt' for more info.** hint.
+
+- **Towns** show current/max manpower, daily recovery, and the average devastation of their bound villages.
+- **Castles** show current/max manpower and average bound-village devastation. A castle's recovery line is omitted because castles may draw their real recovery from a town whose pool can be depleted.
+- **Villages** show the shared regional pool with the name of the town or castle it belongs to, plus that village's exact devastation. Multiple villages bound to one settlement therefore show the same regional pool by design.
+- A small red marker appears above a nameplate when its relevant devastation reaches 50 or more. It is only a glance cue; hover the nameplate for the number.
+
+Both tooltips are live when opened, so recruitment, casualties, raids, recovery, and loading a save are reflected without waiting for a separate ledger refresh. Turning the setting off hides both tooltips and the marker.
 
 ### What Happens When Manpower Runs Out
 

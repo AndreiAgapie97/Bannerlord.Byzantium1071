@@ -68,6 +68,13 @@ namespace Byzantium1071.Campaign.Behaviors
         // Per-village devastation (0 to 100). Key = Village.Settlement.StringId.
         private Dictionary<string, float> _devastationByVillage = new Dictionary<string, float>();
 
+        /// <summary>
+        /// Bumped whenever a devastation value actually changes. Callers that run on the UI
+        /// frame loop use this to skip recomputing bound-village averages while nothing has
+        /// moved; devastation can only change through the two event handlers below.
+        /// </summary>
+        internal int ChangeVersion { get; private set; }
+
         // ── Public API (used by Harmony patches) ──────────────────────────
 
         /// <summary>Returns devastation for a specific village (0–100).</summary>
@@ -210,6 +217,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 string key = village.Settlement.StringId;
                 float current = _devastationByVillage.TryGetValue(key, out float val) ? val : 0f;
                 _devastationByVillage[key] = B1071_GovernanceMath.AddDevastation(current, Settings);
+                ChangeVersion++;
 
                 if (Settings.TelemetryDebugLogs || B1071_VerboseLog.Enabled)
                 {
@@ -245,6 +253,8 @@ namespace Byzantium1071.Campaign.Behaviors
                     _devastationByVillage.Remove(key);
                 else
                     _devastationByVillage[key] = dev;
+
+                ChangeVersion++;
             }
             catch (Exception ex)
             {

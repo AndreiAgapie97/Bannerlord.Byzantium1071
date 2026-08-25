@@ -159,6 +159,7 @@ namespace Byzantium1071.Campaign.Settings
         int ManpowerDiplomacyThresholdPercent { get; set; }
         float ManpowerDiplomacyPressureStrength { get; set; }
         bool DiplomacyDebugLogs { get; set; }
+        bool EnableSettlementNameplateTooltips { get; set; }
         bool EnableSettlementManpowerTooltips { get; set; }
         bool EnableSlaveEconomy { get; set; }
         int SlaveHearthDivisor { get; set; }

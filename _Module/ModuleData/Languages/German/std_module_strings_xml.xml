@@ -725,7 +725,8 @@
     <string id="b1071_mcm_h_fa9bb5beb0" text="Tägliches Einkommen pro Clanstufe für kleinere Fraktionen, die NICHT unter einem Söldnervertrag stehen. Höher als das Söldnerstipendium, weil sie keinen Arbeitgeber haben, der sie subventioniert. Standard: 400." />
     <string id="b1071_mcm_h_fdddba79d9" text="Wohlstand pro Sklave und Tag (im Wohlstands-Tooltip als „Sklavenarbeit“ angezeigt). Bei Standardeffektivität (1,5×): 0,0067 × 1,5 ≈ 0,01/Slave. Z. B. 100 Sklaven = 1 Wohlstand/Tag. Standard: 0,0067." />
     <string id="b1071_mcm_h_ff8b7b8002" text="Verhängt nach Überfällen/Belagerungen/Eroberungsereignissen vorübergehende Wiederherstellungsstrafen, die mit der Zeit abklingen." />
-    <string id="b1071_mcm_h_ff96994b56" text="Fügt Personalinformationen zu Siedlungseigenschaften-Tooltips in der Kampagnen-Benutzeroberfläche hinzu." />
+    <string id="b1071_mcm_h_ff96994b56" text="[VERALTET — NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Ersetzt durch Siedlungs-Tooltips aktivieren im Bereich Tooltips, das die Siedlungs-Tooltips und das Verwüstungssymbol auf der Kampagnenkarte steuert. Zur Speicherkompatibilität beibehalten." />
+    <string id="b1071_mcm_h_nameplate_tooltips" text="Zeigt Mannstärke und Verwüstung beim Überfahren einer Siedlung auf der Kampagnenkarte — im Tooltip des Siedlungsnamens wie im vollständigen Siedlungs-Tooltip — und markiert schwer verwüstete Siedlungen mit einem roten Symbol." />
     <string id="b1071_mcm_h_ffe4431637" text="Minimaler täglicher Regenerationsprozentsatz des maximalen Pools nach gestapelten Belastungsstrafen." />
     <string id="b1071_mcm_t_00b53638d4" text="Friedensunterstützungsbonus / Punkt" />
     <string id="b1071_mcm_t_0227ae84b9" text="Söldnerstipendium pro Stufe (Denars/Tag)" />
@@ -887,7 +888,8 @@
     <string id="b1071_mcm_t_a2b3c4d501" text="T2-Rekrutierungs-Goldkosten (diversifizierter Pool)" />
     <string id="b1071_mcm_t_a323f17518" text="Ermöglichen Sie die Sklavenwirtschaft" />
     <string id="b1071_mcm_t_a37290a213" text="Regenerationsobergrenze % des Pools/Tag" />
-    <string id="b1071_mcm_t_a6a089949c" text="Aktivieren Sie Tooltips für die Mannstärke bei der Abrechnung" />
+    <string id="b1071_mcm_t_a6a089949c" text="[Veraltet] Tooltips für Siedlungsmannstärke aktivieren" />
+    <string id="b1071_mcm_t_nameplate_tooltips" text="Siedlungs-Tooltips aktivieren" />
     <string id="b1071_mcm_t_a6ec313b64" text="Friedensvoreingenommenheit (aufsteigende Bande)" />
     <string id="b1071_mcm_t_a7e8775853" text="Ermöglichen Sie den Druck der Personaldiplomatie" />
     <string id="b1071_mcm_t_a881ce40fb" text="Wohlstandsnormalisierer" />
@@ -1403,5 +1405,10 @@
     <string id="b1071_mcm_t_town_invest_ai_chance" text="KI-Investitionschance (%)" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="Zufällige KI-Stufenauswahl" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="Abklingzeit des KI-Helden (Tage)" />
+    <string id="b1071_nameplate_manpower" text="Mannstärke" />
+    <string id="b1071_nameplate_regional_manpower" text="Regionale Mannstärke ({POOL})" />
+    <string id="b1071_nameplate_daily_recovery" text="Tägliche Erholung" />
+    <string id="b1071_nameplate_devastation" text="Verwüstung" />
+    <string id="b1071_nameplate_full" text="Voll" />
   </strings>
 </base>

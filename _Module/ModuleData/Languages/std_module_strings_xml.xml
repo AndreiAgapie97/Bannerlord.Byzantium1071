@@ -725,7 +725,8 @@
     <string id="b1071_mcm_h_fa9bb5beb0" text="Daily income per clan tier for minor factions NOT under any mercenary contract. Higher than mercenary stipend because they have no employer subsidising them. Default: 400." />
     <string id="b1071_mcm_h_fdddba79d9" text="Prosperity per slave per day (shown as 'Slave Labor' in Prosperity tooltip). At default effectiveness (1.5×): 0.0067 × 1.5 ≈ 0.01/slave. E.g., 100 slaves → ~1 prosperity/day. Default: 0.0067." />
     <string id="b1071_mcm_h_ff8b7b8002" text="Applies temporary recovery penalties after raid/siege/conquest events, decaying over time." />
-    <string id="b1071_mcm_h_ff96994b56" text="Appends manpower info to settlement property tooltips in campaign UI." />
+    <string id="b1071_mcm_h_ff96994b56" text="[LEGACY — NOT USED] This setting is no longer active. Replaced by Enable settlement tooltips in the Tooltips group, which drives the campaign-map settlement tooltips and the devastation marker. Kept for save compatibility." />
+    <string id="b1071_mcm_h_nameplate_tooltips" text="Shows manpower and devastation when you hover a settlement on the campaign map — both on the nameplate tooltip and in the full settlement tooltip — and marks heavily devastated settlements with a red icon." />
     <string id="b1071_mcm_h_ffe4431637" text="Minimum daily regen percent of max pool after stacked stress penalties." />
     <string id="b1071_mcm_t_00b53638d4" text="Peace support bonus / point" />
     <string id="b1071_mcm_t_0227ae84b9" text="Mercenary stipend per tier (denars/day)" />
@@ -887,7 +888,8 @@
     <string id="b1071_mcm_t_a2b3c4d501" text="T2 recruitment gold cost (diversified pool)" />
     <string id="b1071_mcm_t_a323f17518" text="Enable slave economy" />
     <string id="b1071_mcm_t_a37290a213" text="Regen cap % of pool/day" />
-    <string id="b1071_mcm_t_a6a089949c" text="Enable settlement manpower tooltips" />
+    <string id="b1071_mcm_t_a6a089949c" text="[Legacy] Enable settlement manpower tooltips" />
+    <string id="b1071_mcm_t_nameplate_tooltips" text="Enable settlement tooltips" />
     <string id="b1071_mcm_t_a6ec313b64" text="Peace bias (Rising band)" />
     <string id="b1071_mcm_t_a7e8775853" text="Enable manpower diplomacy pressure" />
     <string id="b1071_mcm_t_a881ce40fb" text="Prosperity normalizer" />
@@ -1405,5 +1407,10 @@
     <string id="b1071_mcm_t_town_invest_ai_chance" text="AI investment chance (%)" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="AI random tier selection" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="AI hero cooldown (days)" />
+    <string id="b1071_nameplate_manpower" text="Manpower" />
+    <string id="b1071_nameplate_regional_manpower" text="Regional manpower ({POOL})" />
+    <string id="b1071_nameplate_daily_recovery" text="Daily recovery" />
+    <string id="b1071_nameplate_devastation" text="Devastation" />
+    <string id="b1071_nameplate_full" text="Full" />
   </strings>
 </base>

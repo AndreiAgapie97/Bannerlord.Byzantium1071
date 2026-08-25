@@ -657,6 +657,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyBool("{=b1071_mcm_t_e668bee792}[Legacy] Enable tier armor simulation", Order = 13, HintText = "{=b1071_mcm_h_54fe9937da}[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility.")]
         public bool EnableTierArmorSimulation { get; set; } = true;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_a6a089949c}[Legacy] Enable settlement manpower tooltips", Order = 14, HintText = "{=b1071_mcm_h_ff96994b56}[LEGACY — NOT USED] This setting is no longer active. Replaced by Enable settlement tooltips in the Tooltips group, which drives the campaign-map settlement tooltips and the devastation marker. Kept for save compatibility.")]
+        public bool EnableSettlementManpowerTooltips { get; set; } = false;
+
         // ─── Combat Realism ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
@@ -1124,8 +1128,8 @@ namespace Byzantium1071.Campaign.Settings
         public bool DiplomacyDebugLogs { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_5d88ab11a0}Tooltips", GroupOrder = 97)]
-        [SettingPropertyBool("{=b1071_mcm_t_a6a089949c}Enable settlement manpower tooltips", Order = 0, HintText = "{=b1071_mcm_h_ff96994b56}Appends manpower info to settlement property tooltips in campaign UI.")]
-        public bool EnableSettlementManpowerTooltips { get; set; } = false;
+        [SettingPropertyBool("{=b1071_mcm_t_nameplate_tooltips}Enable settlement tooltips", Order = 0, HintText = "{=b1071_mcm_h_nameplate_tooltips}Shows manpower and devastation when you hover a settlement on the campaign map — both on the nameplate tooltip and in the full settlement tooltip — and marks heavily devastated settlements with a red icon.")]
+        public bool EnableSettlementNameplateTooltips { get; set; } = true;
 
         // ─── Slave Economy ───
 

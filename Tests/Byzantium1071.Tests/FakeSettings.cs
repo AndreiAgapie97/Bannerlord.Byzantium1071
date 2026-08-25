@@ -161,6 +161,7 @@ namespace Byzantium1071.Tests
         public int ManpowerDiplomacyThresholdPercent { get; set; }
         public float ManpowerDiplomacyPressureStrength { get; set; }
         public bool DiplomacyDebugLogs { get; set; }
+        public bool EnableSettlementNameplateTooltips { get; set; } = true;
         public bool EnableSettlementManpowerTooltips { get; set; }
         public bool EnableSlaveEconomy { get; set; }
         public int SlaveHearthDivisor { get; set; }

@@ -365,6 +365,7 @@ FodyWeavers.xsd
 # Other files to ignore
 Docs/AUDIT_v0.1.7.5.md
 .claude/
+CLAUDE.md
 .vscode/
 .github/copilot-instructions.md
 .github/
