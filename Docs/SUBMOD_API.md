@@ -294,6 +294,13 @@ int manpowerMultiplier = settings.ManpowerPoolMultiplier;
 - Direct property assignment (use MCM UI for persistence)
 - Assumption that property values match save state (they may lag after MCM open)
 
+**Added in v1.0.3.5:** `EnableAiRecoveryRouting` (`bool`) — whether under-strength AI lords may
+favor friendly settlements holding Campaign++ veterans, castle elites, or converted prisoners.
+This is an addition to the public `IB1071Settings` interface; a submod implementing that
+interface directly must add the member. Reading it from `B1071_McmSettings` is unaffected.
+The behavior itself, `B1071_AiRecoveryBehavior`, is **internal by design** and exposes no
+public members — it re-weights native AI scores and is not a supported extension point.
+
 **Note on migration:** Settings are versioned via `LATEST_PROFILE_VERSION`. Existing player profiles auto-migrate on first load; your submod code should assume current settings are **at least** the latest version.
 
 **Retired properties.** Property names are never removed (see the stability guarantees below), but a property can stop being read. Retired properties stay declared so existing MCM configs still deserialize, and they appear in the **Legacy** settings group with a `[LEGACY — NOT USED]` hint. Do not branch on them.

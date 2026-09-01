@@ -1412,5 +1412,11 @@
     <string id="b1071_nameplate_daily_recovery" text="Tägliche Erholung" />
     <string id="b1071_nameplate_devastation" text="Verwüstung" />
     <string id="b1071_nameplate_full" text="Voll" />
+    <string id="b1071_garrison_manpower_limit" text="Campaign++-Menschenreserven" />
+    <string id="b1071_mcm_g_ai_recovery" text="KI-Erholung" />
+    <string id="b1071_mcm_t_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
+    <string id="b1071_mcm_h_ai_recovery" text="Untätige KI-Lords mit weniger als 60 % Truppenkapazität bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Sie füllen ihre Truppe bis 80 % auf, ohne Armeen, Schlachten, Belagerungen, Überfälle, Verteidigung, Patrouillen, Rückzüge oder dringende Nahrungsbeschaffung zu unterbrechen. Standard: wahr." />
+    <string id="b1071_qs_name_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
+    <string id="b1071_qs_hint_ai_recovery" text="Unterbesetzte KI-Lords ohne dringende Aufgabe bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen, während sie sich erholen." />
   </strings>
 </base>

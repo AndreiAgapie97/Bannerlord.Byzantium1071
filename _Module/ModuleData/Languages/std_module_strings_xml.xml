@@ -1414,5 +1414,11 @@
     <string id="b1071_nameplate_daily_recovery" text="Daily recovery" />
     <string id="b1071_nameplate_devastation" text="Devastation" />
     <string id="b1071_nameplate_full" text="Full" />
+    <string id="b1071_garrison_manpower_limit" text="Campaign++ manpower" />
+    <string id="b1071_mcm_g_ai_recovery" text="AI Recovery" />
+    <string id="b1071_mcm_t_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
+    <string id="b1071_mcm_h_ai_recovery" text="Idle AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80% without interrupting armies, battles, sieges, raids, defence, patrols, retreats, or urgent food runs. Default: true." />
+    <string id="b1071_qs_name_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
+    <string id="b1071_qs_hint_ai_recovery" text="Under-strength AI lords with nothing urgent to do may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild." />
   </strings>
 </base>

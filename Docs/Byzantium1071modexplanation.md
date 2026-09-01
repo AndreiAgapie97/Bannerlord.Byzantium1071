@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.4
+**Version:** 1.0.3.5
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -1140,15 +1140,15 @@ All settings are in the Mod Configuration Menu. Key groups:
 
 ### Quick Settings Tab (v0.2.6.0)
 
-A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 22 system master toggles in 5 groups:
+A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 28 system master toggles in 5 groups:
 
 | Group | Toggles |
 |-------|---------|
-| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
+| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace at Crisis, Truce Enforcement, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
-| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), Clan Survival |
+| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), AI Lords Seek Campaign++ Recruits, Clan Survival, Troop Service |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
-| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
+| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay (M key), Manpower Alerts |
 
 All entries use `ProxyRef<T>` wrappers around `B1071_McmSettings.Instance` — changing a Quick Settings toggle changes the corresponding full-tab setting and vice versa. Built by `B1071_QuickSettingsFluentSettings` using the same FluentGlobalSettings pattern as the Compatibility tab.
 
@@ -1974,4 +1974,131 @@ Currently filtered identifiers: `taleworlds`, `butterlib`, `butlib`, `.mcm`, `mo
 | `B1071_CompatibilityChecker.cs` | Core scanner, risk scoring, text helpers, popup builder |
 | `B1071_CompatibilityFluentSettings.cs` | MCM tab builder, clipboard helper |
 | `B1071_CompatibilityBehavior.cs` | CampaignBehaviorBase bridge for model scan |
-| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 22 ProxyRef-backed system toggles in 5 groups |
+| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 28 ProxyRef-backed system toggles in 5 groups |
+
+---
+
+## 33. AI Recovery Routing
+
+### Problem
+
+Bannerlord already sends an under-strength lord toward a settlement to rebuild. Its
+`AiVisitSettlementBehavior` scoring weighs volunteer availability, party size, wounded troops,
+food, wages, distance, route availability, and settlement crowding — but it can only see
+**vanilla volunteers**. Campaign++ veterans sitting in a settlement's register, castle elite
+pools, and converted castle prisoners are invisible to it. A beaten lord would therefore walk
+past a castle holding forty of his own veterans to reach a village with three volunteers.
+
+### Solution
+
+`B1071_AiRecoveryBehavior` **extends** the native scores rather than replacing the decision. It
+never creates a route, never issues a movement order, and never invents a candidate: it only
+re-weights `GoToSettlement` entries Bannerlord has already produced and scored.
+
+### Registration order — why insertion, not `AddBehavior`
+
+Bannerlord registers campaign behaviors forward, but `MbEvent` **prepends** listeners, so they
+are invoked in reverse registration order. A behavior appended in the normal way would run
+*before* the native AI scorers and observe an empty score set.
+
+`SubModule.TryInsertAiRecoveryBehavior` therefore inserts the behavior into
+`CampaignGameStarter.CampaignBehaviors` immediately **before**
+`AiArmyMemberBehavior`, the first native scorer. Reverse invocation then places Campaign++
+last, with every native settlement score already complete.
+
+If the list is not an ordered `IList<CampaignBehaviorBase>`, or the expected native behavior is
+absent, the feature **does not register at all** and logs one diagnostic. Vanilla behavior is
+preserved; there is no partial mode.
+
+### Recovery band
+
+| Boundary | Rule |
+|---|---|
+| Start | `NumberOfAllMembers / PartySizeLimit < 0.60` (exclusive) |
+| Stop | ratio reaches `0.80` (inclusive) |
+
+Wounded soldiers count toward both, because Bannerlord's own `PartySizeRatio` includes them.
+Using the same headcount avoids a party oscillating in and out of recovery as men are wounded
+and healed. `B1071_AiRecoveryMath.MissingToStop` rounds the 80% target **up**, so a small party
+is never left one man short of its own stop line.
+
+### Protected states
+
+A party is eligible only when it is an AI-led lord party and **every** block reason in
+`B1071_AiRecoveryBlockReason` is clear: army membership, map event, siege event, transition,
+disbanding, retreat, starvation, urgent food shortage, a besieged current settlement, an
+excluded party type, and any objective other than `Hold`, `None`, or an ordinary
+`GoToSettlement`. Patrol, engage/chase, escort, raid, besiege, assault, defend, and flee are
+all excluded. Player-clan companion parties remain eligible, but existing recruitment ownership
+rules still apply — they cannot take veterans reserved away from player-clan AI use.
+
+### Honest resource accounting
+
+The scoring is only worth anything if the troops it counts can actually be bought on arrival.
+Each candidate is quoted through read-only methods that share the **real** recruitment paths'
+rules, spending one `B1071_AiRecoveryBudget` (party room, gold, manpower) in true arrival
+order — **veterans, then castle elites, then converted prisoners** — so no coin, no slot, and
+no point of manpower is counted twice:
+
+- **Veterans** respect settling time, employer/access rules, the treasury reserve, party room, and manpower.
+- **Castle elites** respect castle access, the same-clan 50% discount, the treasury reserve, party room, and manpower.
+- **Converted prisoners** respect access, FIFO depositor costs, the treasury reserve, and party room. They continue to **cost zero manpower**, matching the real deposit path.
+
+`B1071_AiRecoveryMath.AffordableUnits` applies the gold-buffer multiplier and leaves the lord at
+least one coin, so a quote can never bankrupt a party that acts on it. Ordinary volunteer
+evaluation is left **entirely** to Bannerlord; Campaign++ supplies only the awareness of its own
+troop sources.
+
+### Ranking and the winning score
+
+```
+adjusted = nativeScore × (1 + min(recruitable, missing) / missing)
+```
+
+A settlement that closes the whole gap doubles its native score; one that closes half adds 50%;
+surplus beyond the gap adds nothing. The current recovery target is kept while it stays within
+10% of the best candidate (`IsWithinStickiness`), so a lord does not thrash between two nearly
+equal castles as pools fluctuate.
+
+Only the selected tuple is raised, to
+`highestCompletedNativeScore + max(0.1, 5% of that score)`. The flat floor matters at small
+scores where 5% would not clear the gap. This is enough to beat *starting a new task*, and
+deliberately not enough to override the protected active tasks above, which are excluded before
+scoring ever runs.
+
+### Reservations
+
+A selection reserves its quoted veterans, elites, prisoners, and manpower against that
+settlement for **12 campaign hours**, so two recovering lords cannot both be promised the same
+forty men. Reservations are dropped when they expire, when the party or settlement becomes
+invalid, when recruitment is fulfilled, when the party becomes ineligible, or when the setting
+is turned off. Turning the setting off clears reservations **without** issuing a replacement
+order — the lord simply reverts to native scoring.
+
+Recovery intent and reservations are **session-scoped instance state**, never `SyncData`. After
+a load, an intent is reconstructed only when `CanReconstruct` holds: a 60–79% party already
+travelling to a friendly settlement that still has eligible Campaign++ recruits. No save schema
+is added, and removing the mod cannot corrupt a save.
+
+The reconstruction runs on `OnAfterSessionLaunchedEvent`, not on `OnGameLoaded` where the load
+is first known. Bannerlord fires `OnGameLoaded` before `OnSessionStart`, and every singleton the
+walk quotes against — `B1071_DemobilizationBehavior.Instance`, `B1071_CastleRecruitmentBehavior.Instance`
+— is assigned in its own `OnSessionLaunched`. Quoting any earlier reads nulls, every party
+reports no offer, and nothing is ever reconstructed. `OnGameLoaded` therefore only raises a flag.
+For the same reason `OnSessionLaunched` does not clear runtime state: the behavior is constructed
+once per campaign and starts empty regardless, so clearing there would only discard what the load
+path exists to rebuild.
+
+Intents are swept for destroyed parties on the same pass that expires reservations. A party that
+dies mid-recovery never thinks again, so the per-party cleanup on its own tick would never fire
+and the entry would pin a dead `MobileParty` for the rest of the session.
+
+Actual recruitment stays in the existing systems and pays every gold and manpower cost.
+Veteran-recruiting parties are re-anchored after roster changes, matching the existing castle
+anti-flicker safeguard.
+
+### Setting
+
+`EnableAiRecoveryRouting` — *AI Lords Seek Campaign++ Recruits*, MCM group **AI Recovery**,
+default **on**, mirrored in Quick Settings. Migration profile **v25** enables it for existing
+profiles.

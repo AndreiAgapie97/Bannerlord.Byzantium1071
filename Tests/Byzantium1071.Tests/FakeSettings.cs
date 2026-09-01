@@ -63,6 +63,7 @@ namespace Byzantium1071.Tests
         public bool ShowPlayerDebugMessages { get; set; }
         public bool UseOnUnitRecruitedFallbackForPlayer { get; set; }
         public bool LogAiManpowerConsumption { get; set; }
+        public bool EnableAiRecoveryRouting { get; set; }
         public bool TelemetryDebugLogs { get; set; }
         public bool ShowTelemetryInOverlay { get; set; }
         public bool EnableOverlay { get; set; }

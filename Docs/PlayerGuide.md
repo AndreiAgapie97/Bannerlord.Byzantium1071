@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.4 — Everything you need to know, step by step.*
+*Version 1.0.3.5 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -721,15 +721,15 @@ Before v1.0.2.5 this was two separate toggles that quietly stacked, which is why
 
 ### Quick Settings Tab
 
-The **Campaign++ - Quick Settings** tab gathers all 22 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
+The **Campaign++ - Quick Settings** tab gathers all 28 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
 
 | Group | Toggles |
 |-------|---------|
-| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
+| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace at Crisis, Truce Enforcement, Delayed Recovery, Militia Link |
 | Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
-| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), Clan Survival |
+| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), AI Lords Seek Campaign++ Recruits, Clan Survival, Troop Service |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
-| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
+| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay (M key), Manpower Alerts |
 
 All toggles are mirrors of the corresponding settings in the full tab — changing one changes the other.
 
@@ -755,6 +755,7 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Garrison wage % of field | Army Economics | 80 | Garrisons pay 80% of field wages (20% discount) |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
 | Slave cap per prosperity | Slave Economy | 0.03 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
+| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords with nothing urgent to do may head for a friendly settlement that actually has veterans, castle troops, or converted prisoners waiting |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
 
 ---

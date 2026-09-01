@@ -3195,6 +3195,82 @@ namespace Byzantium1071.Campaign.Behaviors
         // ── AI hiring ─────────────────────────────────────────────────────────────
 
         /// <summary>
+        /// Read-only quote used by recovery routing. It follows the same access, settling,
+        /// treasury-buffer, party-room, and manpower rules as <see cref="TryAiHireVeterans"/>,
+        /// and spends from the shared quote budget so later castle sources cannot reuse it.
+        /// </summary>
+        internal B1071_AiRecoverySourceQuote QuoteAiRecoveryVeterans(
+            MobileParty party,
+            Settlement settlement,
+            B1071_AiRecoveryBudget budget,
+            int reservedVeterans)
+        {
+            if (!Settings.EnableDemobilizationSystem || !Settings.EnableDemobilizationVeteranReturn) return default;
+            if (!Settings.EnableDemobilizationAiRecall) return default;
+            if (party == null || settlement == null || budget == null || budget.Room <= 0) return default;
+            if (party.MemberRoster == null || party.MapEvent != null || party.SiegeEvent != null) return default;
+            if (string.IsNullOrEmpty(settlement.StringId)) return default;
+            if (!_veteranRegister.TryGetValue(settlement.StringId, out var troopDict) || troopDict.Count == 0) return default;
+
+            Clan? clan = party.ActualClan ?? party.LeaderHero?.Clan;
+            Hero? leader = party.LeaderHero;
+            if (clan == null || leader == null || clan == Clan.PlayerClan) return default;
+
+            VeteranAccess access = ResolveVeteranAccess(clan.MapFaction, clan, settlement);
+            if (access == VeteranAccess.Denied) return default;
+
+            int today = GetToday();
+            int reserved = Math.Max(0, reservedVeterans);
+            int quoted = 0;
+            int manpowerBefore = budget.Manpower;
+            B1071_ManpowerBehavior? manpower = B1071_ManpowerBehavior.Instance;
+
+            foreach (string troopId in new List<string>(troopDict.Keys))
+            {
+                if (budget.Room <= 0) break;
+
+                CharacterObject? troop = ResolveTroop(troopId);
+                if (troop == null) continue;
+
+                int available = CountVeterans(settlement.StringId, troopId, access, clan.StringId, today);
+                int reservedHere = Math.Min(available, reserved);
+                available -= reservedHere;
+                reserved -= reservedHere;
+                if (available <= 0) continue;
+
+                int goldPerMan = GetRecallGoldCost(troop, 1);
+                int manpowerGateCost = 0;
+                int manpowerChargeCost = 0;
+                if (manpower != null && budget.HasFiniteManpower)
+                {
+                    manpowerGateCost = manpower.GetRecruitCostForParty(settlement, party, troop);
+                    manpowerChargeCost = manpower.GetManpowerChargePerTroop(troop);
+                }
+
+                int take = B1071_AiRecoveryMath.AffordableUnits(
+                    available,
+                    budget.Room,
+                    budget.Gold,
+                    goldPerMan,
+                    Settings.DemobilizationAiExtensionGoldBufferMultiplier,
+                    budget.Manpower,
+                    manpowerGateCost);
+                if (take <= 0) continue;
+
+                budget.Room -= take;
+                budget.Gold = Math.Max(0, budget.Gold - goldPerMan * take);
+                if (budget.HasFiniteManpower)
+                    budget.Manpower = Math.Max(0, budget.Manpower - manpowerChargeCost * take);
+                quoted += take;
+            }
+
+            int manpowerUsed = budget.HasFiniteManpower
+                ? Math.Max(0, manpowerBefore - budget.Manpower)
+                : 0;
+            return new B1071_AiRecoverySourceQuote(quoted, 0, 0, manpowerUsed);
+        }
+
+        /// <summary>
         /// An AI lord who happens to enter a settlement hires the veterans waiting there,
         /// paying the same bounty and drawing the same manpower the player would. Deliberately
         /// passive: nothing sends him looking for a register, so this never redirects the AI's
@@ -3311,6 +3387,16 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (hiredTotal > 0)
             {
+                if (party.CurrentSettlement == settlement)
+                {
+                    party.SetMoveGoToSettlement(
+                        settlement,
+                        party.DesiredAiNavigationType,
+                        party.IsTargetingPort);
+                    party.RecalculateShortTermBehavior();
+                }
+
+                B1071_AiRecoveryBehavior.Instance?.NotifyRecruitment(party, settlement);
                 B1071_VerboseLog.Log(LogTag, $"AI hired veterans in passing: party={PartyLogName(party)}, settlement={settlement.StringId}, soldiers={hiredTotal}, gold={spentTotal}, remainingAtSettlement={GetVeteranCountAt(settlement)}.");
             }
         }

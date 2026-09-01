@@ -55,6 +55,9 @@ namespace Byzantium1071.GameTests
             yield return Target(
                 "TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior",
                 "DailyTickSettlement");
+            yield return Target(
+                "TaleWorlds.CampaignSystem.CampaignBehaviors.GarrisonRecruitmentCampaignBehavior",
+                "TickAutoRecruitmentGarrisonChange");
         }
 
         /// <summary>
@@ -213,6 +216,50 @@ namespace Byzantium1071.GameTests
 
             Assert.NotNull(method);
             Assert.Equal("TaleWorlds.CampaignSystem.ExplainedNumber", method!.ReturnType.FullName);
+        }
+
+        /// <summary>
+        /// The manpower cap postfix writes through <c>ref ExplainedNumber</c>. If Bannerlord
+        /// ever returns a plain int again the patch would silently fail to attach, so the
+        /// return type is pinned here rather than discovered at runtime.
+        /// </summary>
+        [Fact]
+        public void GarrisonAutoRecruitmentModelStillReturnsExplainedNumber()
+        {
+            Type type = ResolveType("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementGarrisonModel");
+            Type[] parameterTypes =
+            {
+                ResolveType("TaleWorlds.CampaignSystem.Settlements.Town"),
+                typeof(bool)
+            };
+            MethodInfo? method = type.GetMethod(
+                "GetMaximumDailyAutoRecruitmentCount",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                types: parameterTypes,
+                modifiers: null);
+
+            Assert.NotNull(method);
+            Assert.Equal("TaleWorlds.CampaignSystem.ExplainedNumber", method!.ReturnType.FullName);
+        }
+
+        /// <summary>
+        /// Native garrison volunteers are added straight to the roster without raising the
+        /// troop-recruited event, so manpower is charged from a prefix/postfix pair around
+        /// this private method. It is a fragile target: nothing but this test guards its name.
+        /// </summary>
+        [Fact]
+        public void GarrisonRecruitmentTickStillTakesASingleTownParameter()
+        {
+            Type type = ResolveType("TaleWorlds.CampaignSystem.CampaignBehaviors.GarrisonRecruitmentCampaignBehavior");
+            MethodInfo? method = type.GetMethod(
+                "TickAutoRecruitmentGarrisonChange",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { ResolveType("TaleWorlds.CampaignSystem.Settlements.Town") },
+                modifiers: null);
+
+            Assert.NotNull(method);
         }
 
         /// <summary>

@@ -165,6 +165,10 @@ namespace Byzantium1071
                 ("TaleWorlds.CampaignSystem.CampaignBehaviors.PartiesSellPrisonerCampaignBehavior",
                  "DailyTickSettlement", null,
                  "Castle Prisoner Retention"),
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.GarrisonRecruitmentCampaignBehavior",
+                 "TickAutoRecruitmentGarrisonChange",
+                 new[] { typeof(TaleWorlds.CampaignSystem.Settlements.Town) },
+                 "Garrison Auto-Recruit Manpower Consumption"),
             };
 
             int verified = 0;
@@ -252,6 +256,7 @@ namespace Byzantium1071
             B1071_VillageInvestmentBehavior.Instance = null;
             B1071_TownInvestmentBehavior.Instance = null;
             B1071_ClanSurvivalBehavior.Instance = null;
+            B1071_AiRecoveryBehavior.Instance = null;
             Byzantium1071.Campaign.Patches.B1071_ClanSurvivalPatch._alreadyRescued.Clear();
             B1071_DevastationBehavior.ResetDynamicPatchFlag();
             B1071_OverlayController.Reset();
@@ -285,6 +290,7 @@ namespace Byzantium1071
             B1071_VillageInvestmentBehavior.Instance = null;
             B1071_TownInvestmentBehavior.Instance = null;
             B1071_ClanSurvivalBehavior.Instance = null;
+            B1071_AiRecoveryBehavior.Instance = null;
             Byzantium1071.Campaign.Patches.B1071_ClanSurvivalPatch._alreadyRescued.Clear();
             B1071_OverlayController.Reset();
             B1071_DemobilizationScreen.Reset();
@@ -363,6 +369,8 @@ namespace Byzantium1071
                 // of it where that DLC is present.
                 B1071_SettlementTooltipRefresher.Install();
 
+                TryInsertAiRecoveryBehavior(starter);
+
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_CompatibilityBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ManpowerBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_DemobilizationBehavior());
@@ -377,6 +385,56 @@ namespace Byzantium1071
                 // Volunteer model is now a Harmony Postfix (B1071_ManpowerVolunteerPatch)
                 // instead of AddModel, for compatibility with mods that replace VolunteerModel.
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerMilitiaModel());
+            }
+        }
+
+        internal const string NativeAiArmyMemberBehaviorTypeName =
+            "TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors.AiArmyMemberBehavior";
+
+        /// <summary>
+        /// Bannerlord v1.5.2 registers campaign behaviors forward but prepends event
+        /// listeners. Inserting immediately before the first native scorer therefore makes
+        /// the recovery listener run after native settlement scores have been completed.
+        /// </summary>
+        internal static bool TryInsertAiRecoveryBehavior(CampaignGameStarter starter)
+        {
+            try
+            {
+                if (!(starter?.CampaignBehaviors is IList<CampaignBehaviorBase> behaviors))
+                {
+                    TaleWorlds.Library.Debug.Print(
+                        "[Byzantium1071][AiRecovery] Disabled: CampaignBehaviors is not an ordered list.");
+                    return false;
+                }
+
+                int nativeIndex = -1;
+                for (int index = 0; index < behaviors.Count; index++)
+                {
+                    if (string.Equals(
+                            behaviors[index]?.GetType().FullName,
+                            NativeAiArmyMemberBehaviorTypeName,
+                            StringComparison.Ordinal))
+                    {
+                        nativeIndex = index;
+                        break;
+                    }
+                }
+
+                if (nativeIndex < 0)
+                {
+                    TaleWorlds.Library.Debug.Print(
+                        $"[Byzantium1071][AiRecovery] Disabled: expected native behavior {NativeAiArmyMemberBehaviorTypeName} was not found.");
+                    return false;
+                }
+
+                behaviors.Insert(nativeIndex, new B1071_AiRecoveryBehavior());
+                return true;
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071][AiRecovery] Disabled: registration failed ({ex.GetType().Name}: {ex.Message}).");
+                return false;
             }
         }
 

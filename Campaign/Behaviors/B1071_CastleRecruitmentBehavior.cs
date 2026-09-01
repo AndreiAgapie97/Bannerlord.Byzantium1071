@@ -733,6 +733,139 @@ namespace Byzantium1071.Campaign.Behaviors
         // ── 4. AI auto-recruitment ────────────────────────────────────────────────
 
         /// <summary>
+        /// Read-only quote used by recovery routing. The shared budget is spent in the
+        /// real castle order — elite pool first, then converted prisoners — using the same
+        /// access, treasury-buffer, room, manpower, and depositor-cost rules as recruitment.
+        /// </summary>
+        internal B1071_AiRecoverySourceQuote QuoteAiRecoveryCastleRecruits(
+            MobileParty party,
+            Settlement settlement,
+            B1071_AiRecoveryBudget budget,
+            int reservedElites,
+            int reservedPrisoners)
+        {
+            if (!Settings.EnableCastleRecruitment || !Settings.CastleEliteAiRecruits) return default;
+            if (party == null || settlement == null || budget == null || budget.Room <= 0) return default;
+            if (!settlement.IsCastle || settlement.OwnerClan == null) return default;
+            if (party.LeaderHero == null || !party.IsLordParty || party.MapFaction == null) return default;
+            if (!CanFactionAccessCastleRecruitment(party.MapFaction, party.LeaderHero.Clan, settlement)) return default;
+
+            string castleId = settlement.StringId;
+            bool isSameClan = party.LeaderHero.Clan == settlement.OwnerClan;
+            int eliteCount = 0;
+            int prisonerCount = 0;
+            int manpowerBefore = budget.Manpower;
+            int elitesReserved = Math.Max(0, reservedElites);
+            int prisonersReserved = Math.Max(0, reservedPrisoners);
+            B1071_ManpowerBehavior? manpower = B1071_ManpowerBehavior.Instance;
+
+            if (_elitePool.TryGetValue(castleId, out var poolDict) && poolDict.Count > 0)
+            {
+                foreach (var entry in poolDict)
+                {
+                    if (budget.Room <= 0) break;
+
+                    int available = Math.Max(0, entry.Value);
+                    int reservedHere = Math.Min(available, elitesReserved);
+                    available -= reservedHere;
+                    elitesReserved -= reservedHere;
+                    if (available <= 0) continue;
+
+                    CharacterObject? troop = MBObjectManager.Instance.GetObject<CharacterObject>(entry.Key);
+                    if (troop == null) continue;
+
+                    int fullCostPer = GetGoldCostForTier(troop.Tier);
+                    int goldCostPer = isSameClan ? fullCostPer / 2 : fullCostPer;
+                    int manpowerGateCost = 0;
+                    int manpowerChargeCost = 0;
+                    if (Settings.CastleRecruitDrainsManpower && manpower != null && budget.HasFiniteManpower)
+                    {
+                        manpowerGateCost = manpower.GetRecruitCostForParty(settlement, party, troop);
+                        manpowerChargeCost = manpower.GetManpowerChargePerTroop(troop);
+                    }
+
+                    int take = B1071_AiRecoveryMath.AffordableUnits(
+                        available,
+                        budget.Room,
+                        budget.Gold,
+                        goldCostPer,
+                        Settings.CastleAiGoldBufferMultiplier,
+                        budget.Manpower,
+                        manpowerGateCost);
+                    if (take <= 0) continue;
+
+                    budget.Room -= take;
+                    budget.Gold = Math.Max(0, budget.Gold - goldCostPer * take);
+                    if (budget.HasFiniteManpower)
+                        budget.Manpower = Math.Max(0, budget.Manpower - manpowerChargeCost * take);
+                    eliteCount += take;
+                }
+            }
+
+            foreach (var (troop, count, _, prisonerGoldCost) in GetRecruitablePrisoners(settlement))
+            {
+                if (budget.Room <= 0) break;
+
+                List<(string HeroId, int Count)>? depositorEntries = null;
+                if (_depositorTracking.TryGetValue(castleId, out var depositorTroops))
+                    depositorTroops.TryGetValue(troop.StringId, out depositorEntries);
+
+                int depositorIndex = 0;
+                int depositorRemaining = depositorEntries != null && depositorEntries.Count > 0
+                    ? Math.Max(0, depositorEntries[0].Count)
+                    : 0;
+
+                for (int unit = 0; unit < count && budget.Room > 0; unit++)
+                {
+                    while (depositorEntries != null
+                        && depositorIndex < depositorEntries.Count
+                        && depositorRemaining <= 0)
+                    {
+                        depositorIndex++;
+                        depositorRemaining = depositorIndex < depositorEntries.Count
+                            ? Math.Max(0, depositorEntries[depositorIndex].Count)
+                            : 0;
+                    }
+
+                    string? depositorId = depositorEntries != null && depositorIndex < depositorEntries.Count
+                        ? depositorEntries[depositorIndex].HeroId
+                        : null;
+                    if (depositorRemaining > 0) depositorRemaining--;
+
+                    if (prisonersReserved > 0)
+                    {
+                        prisonersReserved--;
+                        continue;
+                    }
+
+                    int effectiveCost = GetEffectiveGoldCost(
+                        settlement,
+                        party.LeaderHero,
+                        depositorId,
+                        prisonerGoldCost);
+                    int take = B1071_AiRecoveryMath.AffordableUnits(
+                        1,
+                        budget.Room,
+                        budget.Gold,
+                        effectiveCost,
+                        Settings.CastleAiGoldBufferMultiplier,
+                        budget.Manpower,
+                        0);
+                    if (take <= 0) break;
+
+                    budget.Room--;
+                    budget.Gold = Math.Max(0, budget.Gold - effectiveCost);
+                    prisonerCount++;
+                }
+            }
+
+            int manpowerUsed = budget.HasFiniteManpower
+                ? Math.Max(0, manpowerBefore - budget.Manpower)
+                : 0;
+            return new B1071_AiRecoverySourceQuote(0, eliteCount, prisonerCount, manpowerUsed);
+        }
+
+        /// <summary>
         /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
         /// currently at this castle. Pricing is the player's: same-clan lords pay 50% of the
         /// tier price (family discount), cross-clan lords pay full price. Either way the gold
@@ -916,6 +1049,9 @@ namespace Byzantium1071.Campaign.Behaviors
                         party.IsTargetingPort);
                     party.RecalculateShortTermBehavior();
                 }
+
+                if (totalRecruited > 0)
+                    B1071_AiRecoveryBehavior.Instance?.NotifyRecruitment(party, settlement);
             }
 
             if (playerRecruitConsignmentGold > 0)

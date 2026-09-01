@@ -130,6 +130,10 @@ namespace Byzantium1071.Campaign.Settings
                         L("b1071_qs_hint_elite_survivability", "How much tougher high-tier troops are in battles resolved for you. 0 = Vanilla, 1 = Light, 2 = Moderate, 3 = Strong."),
                         2, 0, 3, () => s.EliteSurvivabilityPreset, v => s.EliteSurvivabilityPreset = v);
 
+                    AddToggle(g, "qs_ai_recovery", L("b1071_qs_name_ai_recovery", "AI Lords Seek Campaign++ Recruits"),
+                        L("b1071_qs_hint_ai_recovery", "Under-strength AI lords with nothing urgent to do may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild."),
+                        3, () => s.EnableAiRecoveryRouting, v => s.EnableAiRecoveryRouting = v);
+
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),
                         L("b1071_qs_hint_clan_survival", "Rescues eligible clans when their kingdom is destroyed. They remain independent until they later join a kingdom through vanilla behavior or another mod, or are legitimately destroyed after losing their final valid leader."),
                         4, () => s.EnableClanSurvival, v => s.EnableClanSurvival = v);

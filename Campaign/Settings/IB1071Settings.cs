@@ -61,6 +61,7 @@ namespace Byzantium1071.Campaign.Settings
         bool ShowPlayerDebugMessages { get; set; }
         bool UseOnUnitRecruitedFallbackForPlayer { get; set; }
         bool LogAiManpowerConsumption { get; set; }
+        bool EnableAiRecoveryRouting { get; set; }
         bool TelemetryDebugLogs { get; set; }
         bool ShowTelemetryInOverlay { get; set; }
         bool EnableOverlay { get; set; }

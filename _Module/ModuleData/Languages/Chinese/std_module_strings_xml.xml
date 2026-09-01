@@ -1412,5 +1412,11 @@
     <string id="b1071_nameplate_daily_recovery" text="每日恢复" />
     <string id="b1071_nameplate_devastation" text="破坏度" />
     <string id="b1071_nameplate_full" text="已满" />
+    <string id="b1071_garrison_manpower_limit" text="Campaign++ 兵源" />
+    <string id="b1071_mcm_g_ai_recovery" text="AI 恢复" />
+    <string id="b1071_mcm_t_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
+    <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的空闲 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。他们会重建至 80%，且不会打断军队、战斗、攻城、劫掠、防御、巡逻、撤退或紧急补给。默认：开启。" />
+    <string id="b1071_qs_name_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
+    <string id="b1071_qs_hint_ai_recovery" text="兵力不足且无紧急任务的 AI 领主，在重建期间可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。" />
   </strings>
 </base>

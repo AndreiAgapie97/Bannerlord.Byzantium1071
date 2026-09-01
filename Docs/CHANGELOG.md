@@ -1,5 +1,34 @@
 # Campaign++ — Changelog
 
+## [1.0.3.5] — 2026-09-01
+
+### Change — AI Lords Seek Campaign++ Recruits
+
+**Under-strength AI lords now see Campaign++ veterans, castle elite pools, and converted castle prisoners when Bannerlord picks a settlement to rebuild at, instead of routing only on vanilla volunteers.**
+
+- Root cause: Bannerlord's native settlement scoring weighs volunteers, party size, wounded troops, food, wages, distance, route availability, and crowding — but has no knowledge of Campaign++ troop sources. A beaten lord would pass a castle holding his own veterans for a village with three volunteers.
+- Fix: `B1071_AiRecoveryBehavior` re-weights only the `GoToSettlement` entries Bannerlord has already scored. It never creates a route and never issues a movement order. Recovery starts below 60% of party capacity and ends at 80%; wounded troops count toward both, matching Bannerlord's own `PartySizeRatio`.
+- Because `MbEvent` invokes listeners in reverse registration order, `SubModule.TryInsertAiRecoveryBehavior` inserts the behavior immediately *before* the native `AiArmyMemberBehavior` so it observes completed native scores. If that behavior or an ordered behavior list is absent, the feature does not register and logs one diagnostic; vanilla behavior is preserved.
+- Armies, map events, sieges, transitions, disbanding, retreats, starvation, urgent food runs, besieged settlements, patrols, engage/chase, escort, raid, besiege, assault, defend, and flee are all excluded before scoring runs.
+- Candidates are quoted through read-only methods sharing the real recruitment rules, spending one budget in arrival order — veterans, then castle elites, then converted prisoners — so party room, gold, and manpower are never counted twice. Converted prisoners remain manpower-free. Ranking is `nativeScore × (1 + min(recruitable, missing) / missing)`; the current target is kept while within 10% of the best. Only the selected tuple is raised, by `max(0.1, 5%)` above the highest native score.
+- Selections hold a 12-campaign-hour reservation per settlement so two recovering lords cannot be promised the same men. Intent and reservations are session-scoped instance state — no save schema is added, and disabling the setting clears reservations without issuing a replacement order.
+- **New MCM setting — `AI Lords Seek Campaign++ Recruits` (AI Recovery), default on.** Added to the public `IB1071Settings` interface, mirrored in Quick Settings, localized in English, French, German, and Chinese. Settings migration profile **v25** enables it for existing profiles.
+
+### Fix — Garrison auto-recruitment now costs manpower
+
+**Native garrison volunteer recruitment charges Campaign++ manpower, and its cap is applied against Bannerlord v1.5.2's actual return type instead of silently failing to attach.**
+
+- Root cause: `B1071_GarrisonAutoRecruitManpowerPatch` took `ref int __result`, but `DefaultSettlementGarrisonModel.GetMaximumDailyAutoRecruitmentCount(Town, bool)` returns `ExplainedNumber` in v1.5.2. The postfix could not bind, so the cap did nothing. Separately, native garrison recruitment added volunteers straight to the roster without raising the troop-recruited event, so it consumed no manpower at all.
+- Fix: the postfix now receives `ref ExplainedNumber` and applies `LimitMax` at `floor(current manpower / base manpower cost per troop)`, with an explained-number line attributing the cap to Campaign++.
+- A new v1.5.2-pinned prefix/postfix pair around the private `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange(Town)` snapshots garrison headcount and charges flat manpower for the positive roster increase only. Campaign++ converted-prisoner absorption uses a separate path and is not charged here. Garrison shrinkage is never refunded.
+- Both targets are registered in `VerifyCriticalPatches()` and guarded by game-backed signature tests, so a future game update surfaces the break at launch rather than as silent no-op gameplay.
+
+### Fix — Documentation counts corrected
+
+**The Quick Settings tab documents 28 toggles, matching the code.**
+
+- The Player Guide and mod explanation both claimed 22 toggles and omitted Truce Enforcement and Troop Service from the group tables. Counts and group listings are now verified against `B1071_QuickSettingsFluentSettings.cs`.
+
 ## [1.0.3.4] — 2026-08-25
 
 ### Fix — Enslave-Prisoners Popup Lifecycle
