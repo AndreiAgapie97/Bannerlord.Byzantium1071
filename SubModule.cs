@@ -257,6 +257,7 @@ namespace Byzantium1071
             B1071_OverlayController.Reset();
             B1071_DemobilizationScreen.Reset();
             B1071_VeteranRecallScreen.Reset();
+            B1071_SlaveConversionScreen.Reset();
 
             _uiExtender?.Disable();
             _uiExtender?.Deregister();
@@ -288,6 +289,7 @@ namespace Byzantium1071
             B1071_OverlayController.Reset();
             B1071_DemobilizationScreen.Reset();
             B1071_VeteranRecallScreen.Reset();
+            B1071_SlaveConversionScreen.Reset();
             _exceptionCounts.Clear();
         }
 

@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
 **Version:** 1.0.3.4
-**Target Game:** Mount & Blade II: Bannerlord v1.5.1 beta (installed target; Warsails/NavalDLC v1.3.0 verified)<br>
+**Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -1258,7 +1258,7 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
-**Game version:** targeted at the installed Bannerlord **v1.5.1 beta** (and Warsails/NavalDLC **v1.3.0**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
+**Game version:** targeted at the installed Bannerlord **v1.5.2 beta** (and Warsails/NavalDLC **v1.3.2**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
 
 **Required dependencies** (must load before this mod):
 - `Bannerlord.Harmony` ≥ v2.4.2
@@ -1291,7 +1291,7 @@ Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five c
 
 **No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
-### Warsails (NavalDLC) Interaction Map (v1.3.0)
+### Warsails (NavalDLC) Interaction Map (v1.3.2)
 
 Warsails registers roughly sixty campaign models of its own, ten of which sit on systems Campaign++ patches:
 
@@ -1344,6 +1344,8 @@ The checklist per update:
 **v1.4.8 / Warsails v1.2.8 result:** 44 Harmony patch methods and 16 reflection paths resolved with no breaking changes; UI anchors, menu IDs, and layout direction unchanged. No code changes were required.
 
 **v1.5.0 / Warsails v1.3.0 result:** exactly one breaking change. `DefaultCombatSimulationModel.SimulateHit` gained a `TaleWorlds.Core.BattleEnvironment` parameter in position 7 (8 → 9 params), which stopped `B1071_TierArmorSimulationPatch`'s explicit `argumentTypes` array from resolving. `PatchAssemblySafely` caught and logged it per-class, so there was no crash and no save damage — the feature simply stopped working. Fixed in v1.0.2.5. Every other patch target and reflection path resolved with unchanged signatures.
+
+**v1.5.2 / Warsails v1.3.2 result:** no breaking changes. All 34 `[HarmonyPatch]` targets, 10 reflection paths and 8 prefab XPath anchors resolved with unchanged signatures and unchanged parameter names — including the nine-type `SimulateHit` array pinned in v1.0.2.5. The ten Warsails decorators were re-read from decompiled source, and every one still forwards through `((MBGameModel<T>)this).BaseModel`, so no patched `Default*` implementation is bypassed; the four undecorated models remain undecorated. `SettlementNameplateVM`, `TooltipRefresherCollection`, `PropertyBasedTooltipVM`, `CampaignUIHelper` and `SettlementNameplateItemWidget` decompile byte-identical to their v1.5.0/v1.5.1 form, so the v1.0.3.3 settlement tooltips are unaffected. No game enum is persisted or compared by ordinal, so a reordered enum cannot reach save state. Build is clean with no `BHA0001`; the fast suite and the game-backed suite both pass. **Steps 5 and 6 were not re-run** — both need a running campaign. No code changes were required. Note that v1.5.2 is a Steam `beta`-branch build, so the "beta" in the target-game string is still accurate.
 
 **Lesson for future updates:** a patch pinned by an explicit `argumentTypes` array fails *silently* when the game inserts a parameter, and `VerifyCriticalPatches` will not catch it because that list only covers private methods resolved by string name. Build with the BUTR Harmony Analyzer enabled and treat any `BHA0001` warning as a release blocker — it caught this one at compile time.
 
@@ -1398,7 +1400,7 @@ Default divisor is 300: a 300-hearth village yields 1 slave per event; 600 heart
 
 **Roguery XP parity** — Successful enslavement now grants Roguery XP equivalent to Bannerlord's vanilla prisoner-sale formula. The feature is controlled by `EnableEnslavementRogueryXp` and `EnslavementRogueryXpMultiplier` in MCM → Slave Economy.
 
-**Slave Conversion Selection UI (optional)** — When `EnableSlaveConversionSelection` is ON (MCM → Slave Economy), clicking enslave opens a selection screen instead of bulk-converting. Players see a list of eligible prisoners with +/− controls and Select All / Deselect All buttons, then confirm which prisoners to convert. This is particularly useful with mods like Lowborn that add valuable low-tier troops. When the toggle is OFF, the legacy bulk behavior is used.
+**Slave Conversion Selection UI (optional)** — When `EnableSlaveConversionSelection` is ON (MCM → Slave Economy), clicking enslave opens a selection screen instead of bulk-converting. Players see a list of eligible prisoners with +/− controls and Select All / Deselect All buttons, then confirm which prisoners to convert. This is particularly useful with mods like Lowborn that add valuable low-tier troops. The popup resets any stale instance before opening and is also reset at campaign end and module unload, preventing an abandoned screen from silently blocking later clicks. When the toggle is OFF, the legacy bulk behavior is used.
 
 **Prisoner enslavement (AI)** — When an AI lord party enters a town, **Tier 1–3** non-hero prisoners in their prison roster are automatically enslaved via the Harmony Prefix in `B1071_CastlePrisonerDepositPatch`. The town **buys** each slave at the current market price — gold is deducted from `Town.Gold` and paid to the lord via `GiveGoldAction.ApplyForSettlementToCharacter` (properly clamped, fires campaign events). If the town runs out of gold mid-batch, remaining T1–T3 prisoners stay with the lord and fall through to vanilla sell behavior (ransom gold). **Tier 4+ prisoners are not enslaved** — they are left for the vanilla ransom/release pipeline or deposited at castles for recruitment conversion. Both player and AI use the same `CastlePrisonerAutoEnslaveTierMax` setting, and both now receive the same Roguery XP treatment as the player path. AI lords also deposit any slave items already in their inventory (from raids) into the town market on arrival.
 

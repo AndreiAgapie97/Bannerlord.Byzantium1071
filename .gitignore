@@ -372,6 +372,9 @@ CLAUDE.md
 NextFeatures.md 
 Scenario_audit.md
 .serena/
+# Local-only helper scripts (see Tools/README.md)
+Tools/
+
 
 # Accidental PowerShell placeholder artifact
 $null

@@ -53,29 +53,44 @@ namespace Byzantium1071.Campaign.UI
 
         private void OnCloseRequested()
         {
+            Cleanup();
+        }
+
+        private void Cleanup()
+        {
+            try
+            {
+                if (_gauntletLayer != null)
+                    _gauntletLayer.InputRestrictions.ResetInputRestrictions();
+            }
+            catch (Exception)
+            {
+                // The layer may already have been torn down with its parent screen.
+            }
+
             try
             {
                 if (_gauntletLayer != null && _parentScreen != null)
-                {
-                    _gauntletLayer.InputRestrictions.ResetInputRestrictions();
                     _parentScreen.RemoveLayer(_gauntletLayer);
-                }
             }
             catch (Exception)
             {
                 // Parent screen may have been popped in the meantime; ignore.
             }
 
-            Cleanup();
-        }
-
-        private void Cleanup()
-        {
             _gauntletLayer = null;
-            _viewModel?.OnFinalize();
+            try
+            {
+                _viewModel?.OnFinalize();
+            }
+            catch (Exception)
+            {
+                // Cleanup must still clear the static instance after a failed finalizer.
+            }
             _viewModel = null;
             _parentScreen = null;
-            _current = null;
+            if (ReferenceEquals(_current, this))
+                _current = null;
         }
 
         /// <summary>
@@ -85,11 +100,10 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         public static void OpenScreen(Action<Dictionary<CharacterObject, int>>? onConfirm)
         {
-            // If a previous instance died (layer destroyed externally), clear it.
-            if (_current != null && !_current.IsAlive)
-                _current = null;
-
-            if (_current != null) return; // Already open.
+            // A working popup owns input, so its menu option cannot legitimately be
+            // clicked again. Any instance present here is stale and must not turn the
+            // click into a silent no-op.
+            Reset();
 
             var screen = ScreenManager.TopScreen;
             if (screen == null)
@@ -105,6 +119,13 @@ namespace Byzantium1071.Campaign.UI
             // If construction failed (caught exception → Cleanup ran), reset singleton.
             if (!_current.IsAlive)
                 _current = null;
+        }
+
+        internal static void Reset()
+        {
+            B1071_SlaveConversionScreen? current = _current;
+            _current = null;
+            current?.Cleanup();
         }
     }
 }

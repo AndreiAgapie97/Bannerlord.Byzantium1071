@@ -9,8 +9,8 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 ## At a glance
 
 - **Current version:** 1.0.3.4
-- **Target game:** Bannerlord v1.5.1 beta (installed target)
-- **Warsails (NavalDLC):** v1.3.0 verified compatible (optional — not required)  
+- **Target game:** Bannerlord v1.5.2 beta (installed target)
+- **Warsails (NavalDLC):** v1.3.2 verified compatible (optional — not required)
 - **Module ID:** `Byzantium1071`
 
 ---

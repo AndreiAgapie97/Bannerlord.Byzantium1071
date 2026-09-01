@@ -52,7 +52,7 @@ namespace Byzantium1071.Campaign.Patches
     /// ──────────────────────────────────────────────────────────────────────
     ///
     /// CORRECT HOOK: DefaultCombatSimulationModel.SimulateHit
-    ///   (public override, 8-parameter troop-vs-troop overload)
+    ///   (public override, 9-parameter troop-vs-troop overload)
     ///
     ///   Called from MapEvent.SimulateSingleTroopHit immediately before
     ///   ApplySimulationDamageToSelectedTroop. The ExplainedNumber result's

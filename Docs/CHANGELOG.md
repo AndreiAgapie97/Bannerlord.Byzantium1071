@@ -2,6 +2,14 @@
 
 ## [1.0.3.4] — 2026-08-25
 
+### Fix — Enslave-Prisoners Popup Lifecycle
+
+**The prisoner-selection popup no longer becomes permanently unresponsive after its parent screen or campaign closes unexpectedly.**
+
+- Opening the popup now clears any stale instance before creating a fresh one instead of silently ignoring the click.
+- Campaign end and module unload both release the popup's input restrictions and layer, finalize its view model, and clear its static state.
+- Disabling the selection UI still uses the existing immediate bulk-conversion path; gameplay and save data are unchanged.
+
 ### Fix — Per-man troop-service accounting
 
 **Troop service now retains the clan that raised a soldier and the clan employing him for the current term, so reserve restoration, veteran recall, cancellation, and AI hiring cannot mix ownership between clans.**
