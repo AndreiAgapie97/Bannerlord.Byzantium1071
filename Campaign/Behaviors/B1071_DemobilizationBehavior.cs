@@ -3280,26 +3280,50 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             try
             {
-                if (!Settings.EnableDemobilizationSystem || !Settings.EnableDemobilizationVeteranReturn) return;
-                if (!Settings.EnableDemobilizationAiRecall) return;
-                if (party == null || settlement == null) return;
-                if (party == MobileParty.MainParty) return;
-                if (!IsEligibleFieldParty(party)) return;
-
-                Clan? clan = party.ActualClan ?? party.LeaderHero?.Clan;
-                if (clan == null) return;
-
-                // The player's own lords keep their hands off. Their discharges count as his
-                // men, and having a companion quietly drain a register he is saving for
-                // himself would be the opposite of helpful.
-                if (clan == Clan.PlayerClan) return;
-
-                TryAiHireVeterans(party, clan, settlement);
+                TryAiHireVeteransOnVisit(party, settlement);
             }
             catch (Exception ex)
             {
                 B1071_VerboseLog.Log(LogTag, $"OnSettlementEntered skipped: {ex.GetType().Name}: {ex.Message}");
             }
+            finally
+            {
+                // Castle recruitment follows veteran recruitment and has its own eligibility
+                // checks, so it must still run when the veteran system is disabled or declines
+                // this party.
+                B1071_CastleRecruitmentBehavior.Instance?.TryAiAutoRecruitOnArrival(party, settlement);
+            }
+        }
+
+        internal void TryAiHireVeteransAtCurrentSettlement(MobileParty party, Settlement settlement)
+        {
+            try
+            {
+                TryAiHireVeteransOnVisit(party, settlement);
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log(LogTag, $"Current-settlement veteran recruitment skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private void TryAiHireVeteransOnVisit(MobileParty party, Settlement settlement)
+        {
+            if (!Settings.EnableDemobilizationSystem || !Settings.EnableDemobilizationVeteranReturn) return;
+            if (!Settings.EnableDemobilizationAiRecall) return;
+            if (party == null || settlement == null) return;
+            if (party == MobileParty.MainParty) return;
+            if (!IsEligibleFieldParty(party)) return;
+
+            Clan? clan = party.ActualClan ?? party.LeaderHero?.Clan;
+            if (clan == null) return;
+
+            // The player's own lords keep their hands off. Their discharges count as his
+            // men, and having a companion quietly drain a register he is saving for
+            // himself would be the opposite of helpful.
+            if (clan == Clan.PlayerClan) return;
+
+            TryAiHireVeterans(party, clan, settlement);
         }
 
         private void TryAiHireVeterans(MobileParty party, Clan clan, Settlement settlement)

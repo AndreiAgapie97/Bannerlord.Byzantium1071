@@ -1794,6 +1794,13 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Read-only pool identity for systems that reserve manpower before recruitment.
+        /// Villages resolve to their bound town or castle, matching every real drain path.
+        /// </summary>
+        internal Settlement? GetManpowerPoolSettlement(Settlement? settlement)
+            => GetPoolSettlement(settlement);
+
+        /// <summary>
         /// Finds the nearest town belonging to the same faction as <paramref name="castle"/>.
         /// Used by the castle supply chain: castles draw manpower from their nearest
         /// same-faction town rather than generating it from nothing.

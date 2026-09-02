@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Campaign\Settings\IB1071Settings.cs" Link="Campaign\Settings\IB1071Settings.cs" />
+    <Compile Include="..\..\Campaign\Behaviors\B1071_AiRecoveryRecruitmentQuote.cs" Link="Campaign\Behaviors\B1071_AiRecoveryRecruitmentQuote.cs" />
     <Compile Include="..\..\Campaign\Math\**\*.cs" Link="Campaign\Math\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

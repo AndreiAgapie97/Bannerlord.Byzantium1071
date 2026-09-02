@@ -298,6 +298,17 @@ int manpowerMultiplier = settings.ManpowerPoolMultiplier;
 favor friendly settlements holding Campaign++ veterans, castle elites, or converted prisoners.
 This is an addition to the public `IB1071Settings` interface; a submod implementing that
 interface directly must add the member. Reading it from `B1071_McmSettings` is unaffected.
+
+**Added in v1.0.3.6:** `AiRecoveryTakesPriorityOverNewTasks` (`bool`) — when true, an eligible
+recovery stop is raised above all newly proposed native tasks; when false, its Campaign++-adjusted
+settlement score competes normally. Active protected orders are excluded in both modes. This is
+also an addition to `IB1071Settings`, so direct third-party implementations must add the member.
+
+**Added in v1.0.3.6:** `AiRecoveryIntentDurationDays` (`int`) — how many campaign days a
+confirmed recovery journey remains active while the lord stays below 80% party capacity. MCM
+constrains it to 1–30 and defaults it to 1. This is also an addition to `IB1071Settings`, so direct
+third-party implementations must add the member.
+
 The behavior itself, `B1071_AiRecoveryBehavior`, is **internal by design** and exposes no
 public members — it re-weights native AI scores and is not a supported extension point.
 

@@ -59,6 +59,38 @@ namespace Byzantium1071.GameTests
         }
 
         [Fact]
+        public void RecoveryPriorityDefaultsOnAndMigratesExistingProfilesOn()
+        {
+            B1071_McmSettings newProfile = new();
+            B1071_McmSettings v25Profile = new()
+            {
+                SettingsProfileVersion = 25,
+                AiRecoveryTakesPriorityOverNewTasks = false
+            };
+
+            v25Profile.MigrateToLatestProfile();
+
+            Assert.True(newProfile.AiRecoveryTakesPriorityOverNewTasks);
+            Assert.True(v25Profile.AiRecoveryTakesPriorityOverNewTasks);
+        }
+
+        [Fact]
+        public void RecoveryIntentDurationDefaultsToOneDayAndMigratesExistingProfiles()
+        {
+            B1071_McmSettings newProfile = new();
+            B1071_McmSettings v26Profile = new()
+            {
+                SettingsProfileVersion = 26,
+                AiRecoveryIntentDurationDays = 12
+            };
+
+            v26Profile.MigrateToLatestProfile();
+
+            Assert.Equal(1, newProfile.AiRecoveryIntentDurationDays);
+            Assert.Equal(1, v26Profile.AiRecoveryIntentDurationDays);
+        }
+
+        [Fact]
         public void EveryHistoricalProfileVersionConvergesOnCurrentDefaults()
         {
             B1071_McmSettings baseline = new();

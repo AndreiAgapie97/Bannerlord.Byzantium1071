@@ -130,6 +130,17 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<int>? _savedDepositorCounts;
 
         /// <summary>
+        /// Session-only: the player's consignment share earned by arrival and AI-recovery
+        /// recruitment passes, held per castle until that castle's daily pass prints it.
+        /// Those passes run one lord at a time and several times an hour, and a message
+        /// each would undo the one-notice-per-castle-per-day batching the enslavement and
+        /// garrison paths already have. The gold is paid when it is earned, so nothing here
+        /// is owed money; only the notice waits, and it is deliberately not saved.
+        /// </summary>
+        private readonly Dictionary<string, (int Gold, int Count)> _pendingConsignmentNotice
+            = new Dictionary<string, (int Gold, int Count)>();
+
+        /// <summary>
         /// Tracks original depositor hero + party for delayed castle auto-enslavement Roguery XP.
         /// Separate from economic depositor tracking because same-clan deposits still earn XP.
         /// Structure: castleId → troopId → list of (heroStringId, partyStringId, count) FIFO entries.
@@ -285,6 +296,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _cultureTroopCache.Clear();
             _cultureDiversifiedCache.Clear();
             _cultureVolunteerRootCache.Clear();
+            _pendingConsignmentNotice.Clear();
 
             RegisterMenus(starter);
         }
@@ -866,6 +878,25 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Gives an arriving AI lord the same immediate castle recruitment pass used by the
+        /// daily tick. The settlement-entered caller invokes this after veteran recruitment.
+        /// </summary>
+        internal void TryAiAutoRecruitOnArrival(MobileParty party, Settlement settlement)
+        {
+            try
+            {
+                if (!Settings.EnableCastleRecruitment) return;
+                if (party == null || settlement == null || !settlement.IsCastle) return;
+                AiAutoRecruit(settlement, party);
+            }
+            catch (Exception ex)
+            {
+                B1071_VerboseLog.Log("CastleRecruitment",
+                    $"Arrival recruitment skipped: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Recruits from BOTH the elite pool and converted prisoners into AI lord parties
         /// currently at this castle. Pricing is the player's: same-clan lords pay 50% of the
         /// tier price (family discount), cross-clan lords pay full price. Either way the gold
@@ -877,14 +908,22 @@ namespace Byzantium1071.Campaign.Behaviors
         /// Prisoner recruitment costs zero manpower; elite recruitment costs manpower
         /// only when <see cref="B1071_McmSettings.CastleRecruitDrainsManpower"/> is on.
         ///
+        /// <paramref name="arrivingParty"/> is the one lord to serve on the arrival and AI
+        /// recovery paths, which run before <see cref="Settlement.Parties"/> reflects the
+        /// arrival; the daily pass passes null and serves everyone standing there.
+        ///
         /// FLICKERING FIX: MemberRoster.AddToCounts fires OnPartySizeChanged and bumps
         /// MobileParty.VersionNo, invalidating cached AI decisions. On the next tick,
         /// CheckExitingSettlementParallel checks ShortTermTargetSettlement ==
         /// CurrentSettlement — if the version bump causes re-evaluation, the party
         /// would exit and immediately return ("flickering"). After modifying the roster,
         /// we re-anchor the party via SetMoveGoToSettlement + RecalculateShortTermBehavior.
+        /// The recovery path calls this from inside the hourly think event, where the party's
+        /// next behavior is chosen moments later from the same scores: the anchor then either
+        /// stands, because nothing was applied, or is replaced by that fresh decision. Neither
+        /// is the stale-cache exit this guard exists to prevent.
         /// </summary>
-        private void AiAutoRecruit(Settlement settlement)
+        private void AiAutoRecruit(Settlement settlement, MobileParty? arrivingParty = null)
         {
             if (!Settings.CastleEliteAiRecruits) return;
             if (settlement.OwnerClan == null) return;
@@ -894,8 +933,12 @@ namespace Byzantium1071.Campaign.Behaviors
 
             string castleId = settlement.StringId;
 
-            // Snapshot the party list to avoid collection-modification issues.
-            var partiesSnapshot = settlement.Parties.ToList();
+            // Snapshot the daily party list to avoid collection-modification issues. The
+            // entered party is passed directly because the event can fire before that list
+            // reflects the arrival.
+            var partiesSnapshot = arrivingParty == null
+                ? settlement.Parties.ToList()
+                : new List<MobileParty> { arrivingParty };
 
             int playerRecruitConsignmentGold = 0;
             int playerRecruitConsignmentCount = 0;
@@ -1052,6 +1095,29 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (totalRecruited > 0)
                     B1071_AiRecoveryBehavior.Instance?.NotifyRecruitment(party, settlement);
+            }
+
+            // One lord at a time, several times an hour: the arrival and recovery passes bank
+            // the player's share and only the castle's own daily pass prints it, so he still
+            // reads one consignment line per castle per day as on the enslavement and garrison
+            // paths. His gold arrived with the recruitment either way.
+            if (arrivingParty != null)
+            {
+                if (playerRecruitConsignmentGold > 0)
+                {
+                    _pendingConsignmentNotice.TryGetValue(castleId, out var pending);
+                    _pendingConsignmentNotice[castleId] = (
+                        pending.Gold + playerRecruitConsignmentGold,
+                        pending.Count + playerRecruitConsignmentCount);
+                }
+                return;
+            }
+
+            if (_pendingConsignmentNotice.TryGetValue(castleId, out var carried))
+            {
+                playerRecruitConsignmentGold += carried.Gold;
+                playerRecruitConsignmentCount += carried.Count;
+                _pendingConsignmentNotice.Remove(castleId);
             }
 
             if (playerRecruitConsignmentGold > 0)

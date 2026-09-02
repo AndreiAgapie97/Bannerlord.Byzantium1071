@@ -1415,8 +1415,12 @@
     <string id="b1071_garrison_manpower_limit" text="Main d'œuvre Campaign++" />
     <string id="b1071_mcm_g_ai_recovery" text="Récupération de l'IA" />
     <string id="b1071_mcm_t_ai_recovery" text="Les seigneurs IA cherchent des recrues Campaign++" />
-    <string id="b1071_mcm_h_ai_recovery" text="Les seigneurs IA inactifs dont la troupe est sous 60 % de sa capacité peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Ils se reconstituent jusqu'à 80 % sans interrompre les armées, les batailles, les sièges, les raids, la défense, les patrouilles, les retraites ni les ravitaillements urgents. Défaut : vrai." />
+    <string id="b1071_mcm_h_ai_recovery" text="Les seigneurs IA dont la troupe est sous 60 % de sa capacité peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Ils se reconstituent jusqu'à 80 %. Les armées, batailles, sièges, raids, défenses, patrouilles, retraites et ravitaillements urgents en cours restent protégés. Défaut : vrai." />
+    <string id="b1071_mcm_t_ai_recovery_priority" text="Priorité à la récupération" />
+    <string id="b1071_mcm_h_ai_recovery_priority" text="Si activé, un seigneur admissible en sous-effectif choisit une étape de recrutement Campaign++ avant de commencer une nouvelle tâche. Les ordres en cours restent protégés. Désactivez cette option pour laisser le score amélioré du fief rivaliser normalement avec les autres nouveaux ordres de Bannerlord. Défaut : vrai." />
+    <string id="b1071_mcm_t_ai_recovery_days" text="Durée de récupération (jours)" />
+    <string id="b1071_mcm_h_ai_recovery_days" text="Nombre de jours de campagne pendant lesquels un trajet de recrutement confirmé peut continuer tant que la troupe du seigneur reste sous 80 % de sa capacité. Ensuite, elle doit repasser sous 60 % pour commencer un nouveau trajet de récupération. Défaut : 1." />
     <string id="b1071_qs_name_ai_recovery" text="Les seigneurs IA cherchent des recrues Campaign++" />
-    <string id="b1071_qs_hint_ai_recovery" text="Les seigneurs IA en sous-effectif n'ayant rien d'urgent à faire peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis pendant qu'ils se reconstituent." />
+    <string id="b1071_qs_hint_ai_recovery" text="Les seigneurs IA en sous-effectif peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Les ordres en cours restent protégés." />
   </strings>
 </base>

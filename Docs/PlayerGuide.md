@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.5 — Everything you need to know, step by step.*
+*Version 1.0.3.6 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -335,6 +335,7 @@ This applies identically to **player and AI**. AI lords that fail the restrictio
 
 AI lords recruit from castles on the same terms you do.
 
+- **They recruit as soon as they arrive.** Veterans are hired first, followed by castle elites and then converted prisoners. The daily castle check remains as a backup.
 - **A lord of your own clan now pays for elite troops instead of taking them free.** He pays the same half price you pay at a family castle, and the gold goes to whoever holds the fief — so if that is you, a clan-mate filling out his party pays into your purse.
 - **Lords keep money back for wages.** A lord will not empty his treasury on castle troops any more, so expect visiting lords to leave the expensive elites behind unless they are genuinely wealthy. `AI recruitment treasury buffer` in MCM controls how much they hold in reserve; set it to 1 for the old behaviour.
 
@@ -755,7 +756,9 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Garrison wage % of field | Army Economics | 80 | Garrisons pay 80% of field wages (20% discount) |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
 | Slave cap per prosperity | Slave Economy | 0.03 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
-| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords with nothing urgent to do may head for a friendly settlement that actually has veterans, castle troops, or converted prisoners waiting |
+| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords may head for a friendly settlement that actually has veterans, castle troops, or converted prisoners waiting; active orders remain protected |
+| Recovery Takes Priority | AI Recovery | ON | Makes an eligible recovery stop beat newly proposed tasks; turn it off to let the improved settlement score compete normally |
+| Recovery intent days | AI Recovery | 1 | Ends a confirmed recovery journey after this many campaign days if the lord has not rebuilt to 80%; range 1–30 |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
 
 ---

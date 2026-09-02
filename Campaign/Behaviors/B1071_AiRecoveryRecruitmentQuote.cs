@@ -60,6 +60,15 @@ namespace Byzantium1071.Campaign.Behaviors
             Manpower = Math.Max(0, manpower);
         }
 
+        internal B1071_AiRecoveryReservedSupply ForCandidate(
+            bool sameSettlement,
+            bool sameManpowerPool)
+            => new B1071_AiRecoveryReservedSupply(
+                sameSettlement ? Veterans : 0,
+                sameSettlement ? Elites : 0,
+                sameSettlement ? Prisoners : 0,
+                sameManpowerPool ? Manpower : 0);
+
         public static B1071_AiRecoveryReservedSupply operator +(
             B1071_AiRecoveryReservedSupply left,
             B1071_AiRecoveryReservedSupply right)

@@ -131,7 +131,7 @@ namespace Byzantium1071.Campaign.Settings
                         2, 0, 3, () => s.EliteSurvivabilityPreset, v => s.EliteSurvivabilityPreset = v);
 
                     AddToggle(g, "qs_ai_recovery", L("b1071_qs_name_ai_recovery", "AI Lords Seek Campaign++ Recruits"),
-                        L("b1071_qs_hint_ai_recovery", "Under-strength AI lords with nothing urgent to do may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild."),
+                        L("b1071_qs_hint_ai_recovery", "Under-strength AI lords may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild. Active orders remain protected."),
                         3, () => s.EnableAiRecoveryRouting, v => s.EnableAiRecoveryRouting = v);
 
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),

@@ -1,5 +1,29 @@
 # Campaign++ — Changelog
 
+## [1.0.3.6] — 2026-09-02
+
+### Change — AI recovery: saved intent, soft destination claims, and immediate recruitment
+
+**A recovering lord now keeps his recruitment journey across a save, recruits from the settlement he is already standing in, and no longer waits on the daily castle pass after arriving.**
+
+- Selection is now a two-stage commitment. A winning score creates a session-only proposal carrying a 12-campaign-hour **soft destination claim**; it becomes confirmed intent only after Bannerlord is actually travelling to, or has reached, that exact settlement. Rejected proposals release their claim on the next AI tick. This replaces v1.0.3.5's single reservation, which treated the score itself as the decision.
+- Claims steer routing and hold no stock. `GetReservedSupply` subtracts another lord's claim from a quote on two independent grounds — the settlement's own veterans, elites, and prisoners when the claim names that settlement, and pooled manpower whenever the two settlements share a pool, since a village drains its bound town. Neither an orphan village nor two lords eyeing one castle can be quoted the same men.
+- Confirmed intent is now persisted: `SyncData` writes parallel lists of party IDs, target settlement IDs, and expiry days, and a save without those keys loads as empty lists. On load, `OnAfterSessionLaunchedEvent` restores an intent only if both objects still exist, the party is eligible and below the 80% stop line, the deadline is current, and the lord is still travelling to or already at the friendly usable target. This replaces v1.0.3.5's `CanReconstruct` heuristic, which could misread an ordinary 60–79% settlement journey as recovery. Quotes and claims are always rebuilt from current stock.
+- An eligible recovering lord already inside a settlement recruits from it immediately instead of scoring a visit to his own location, and is served **before** any lord still travelling there: a claim reduces his quote but never turns him away from the castle he is standing in. Veterans first, then castle elites, then converted prisoners.
+- Every otherwise eligible AI lord now also receives an immediate castle recruitment pass on entry through `B1071_CastleRecruitmentBehavior.TryAiAutoRecruitOnArrival`. The daily castle pass remains as a safety net.
+- The player's consignment notice stays batched at one line per castle per day. The arrival and recovery passes serve one lord at a time and can run several times an hour, so each banks the depositor share in a session-only per-castle tally that the castle's own daily pass prints; the gold itself is still paid the moment the recruitment happens.
+- Quest-controlled parties are excluded: `B1071_AiRecoveryBlockReason.Quest` is raised for any party reporting `IsCurrentlyUsedByAQuest`.
+- **New MCM setting — `Recovery Takes Priority`, default on.** With it on, the chosen recruitment stop is raised above every newly proposed native task; with it off, the Campaign++-adjusted settlement score competes normally. Active protected orders are excluded either way. Added to the public `IB1071Settings` interface, localized in English, French, German, and Chinese, and enabled for existing profiles by migration **v26**.
+- **New MCM setting — `Recovery intent days`, default 1, range 1–30.** A confirmed journey expires after this many campaign days if the lord has not reached 80%. Added to `IB1071Settings`, localized in all four languages, and set for existing profiles by migration **v27**.
+
+### Fix — The hourly recovery pass fails safe
+
+**A fault in the AI recovery handler can no longer repeat every campaign hour or flood the log, and a fault in its recruitment callback can no longer escape into the daily castle tick.**
+
+- Root cause: `OnAiHourlyTick` runs once per AI lord party per campaign hour. Its `try`/`catch` logged and retried forever, so anything systemic — a game update moving a member the pass reads — would throw and log hundreds of times a day. `NotifyRecruitment`, which the recruitment behaviors call back into, had no guard at all, and one of its callers reaches it from `AiAutoRecruit` on the daily settlement tick, which carries none either. The save half of `SyncData` walks live parties to decide what to persist, so a fault there would have propagated out of the player's save itself.
+- Fix: caught faults are counted, and at `MaxHandlerFailures` (5) the pass sets `_disabledThisSession`, drops its intents and reservations, and stops scoring — leaving every lord on Bannerlord's native settlement choice, which is the behavior with the setting switched off. `_inRecoveryPass` skips a nested entry, so recruitment or `RecalculateShortTermBehavior` feeding back into the think event cannot recurse inside a native callback. `NotifyRecruitment` is now wrapped, and so is the list-building walk in `SyncData`: it appends to all three parallel lists together, so aborting it can only shorten them, never desynchronize them.
+- Impact: a systemic fault costs five log lines instead of one per party per campaign hour and degrades to vanilla AI instead of repeating. None of the guard state is persisted, so reloading retries.
+
 ## [1.0.3.5] — 2026-09-01
 
 ### Change — AI Lords Seek Campaign++ Recruits

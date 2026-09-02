@@ -1417,8 +1417,12 @@
     <string id="b1071_garrison_manpower_limit" text="Campaign++ manpower" />
     <string id="b1071_mcm_g_ai_recovery" text="AI Recovery" />
     <string id="b1071_mcm_t_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
-    <string id="b1071_mcm_h_ai_recovery" text="Idle AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80% without interrupting armies, battles, sieges, raids, defence, patrols, retreats, or urgent food runs. Default: true." />
+    <string id="b1071_mcm_h_ai_recovery" text="AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80%. Active armies, battles, sieges, raids, defence, patrols, retreats, and urgent food runs remain protected. Default: true." />
+    <string id="b1071_mcm_t_ai_recovery_priority" text="Recovery Takes Priority" />
+    <string id="b1071_mcm_h_ai_recovery_priority" text="When enabled, an eligible under-strength lord chooses a Campaign++ recruitment stop before starting a new task. Active orders remain protected. Turn this off to let the improved settlement score compete normally with Bannerlord's other new orders. Default: true." />
+    <string id="b1071_mcm_t_ai_recovery_days" text="Recovery intent days" />
+    <string id="b1071_mcm_h_ai_recovery_days" text="How many campaign days a confirmed recruitment journey may continue while the lord remains below 80% party capacity. After this, the lord must fall below 60% to begin another recovery journey. Default: 1." />
     <string id="b1071_qs_name_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
-    <string id="b1071_qs_hint_ai_recovery" text="Under-strength AI lords with nothing urgent to do may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild." />
+    <string id="b1071_qs_hint_ai_recovery" text="Under-strength AI lords may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild. Active orders remain protected." />
   </strings>
 </base>

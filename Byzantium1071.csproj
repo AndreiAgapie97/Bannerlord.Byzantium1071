@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.3.5</Version>
-    <AssemblyVersion>1.0.3.5</AssemblyVersion>
-    <FileVersion>1.0.3.5</FileVersion>
-    <InformationalVersion>1.0.3.5</InformationalVersion>
+    <Version>1.0.3.6</Version>
+    <AssemblyVersion>1.0.3.6</AssemblyVersion>
+    <FileVersion>1.0.3.6</FileVersion>
+    <InformationalVersion>1.0.3.6</InformationalVersion>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

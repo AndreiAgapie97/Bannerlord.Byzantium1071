@@ -1415,8 +1415,12 @@
     <string id="b1071_garrison_manpower_limit" text="Campaign++-Menschenreserven" />
     <string id="b1071_mcm_g_ai_recovery" text="KI-Erholung" />
     <string id="b1071_mcm_t_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
-    <string id="b1071_mcm_h_ai_recovery" text="Untätige KI-Lords mit weniger als 60 % Truppenkapazität bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Sie füllen ihre Truppe bis 80 % auf, ohne Armeen, Schlachten, Belagerungen, Überfälle, Verteidigung, Patrouillen, Rückzüge oder dringende Nahrungsbeschaffung zu unterbrechen. Standard: wahr." />
+    <string id="b1071_mcm_h_ai_recovery" text="KI-Lords mit weniger als 60 % Truppenkapazität bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Sie füllen ihre Truppe bis 80 % auf. Aktive Armeen, Schlachten, Belagerungen, Überfälle, Verteidigungen, Patrouillen, Rückzüge und dringende Nahrungsbeschaffung bleiben geschützt. Standard: wahr." />
+    <string id="b1071_mcm_t_ai_recovery_priority" text="Erholung hat Vorrang" />
+    <string id="b1071_mcm_h_ai_recovery_priority" text="Wenn aktiviert, wählt ein geeigneter unterbesetzter Lord einen Campaign++-Rekrutierungsstopp, bevor er eine neue Aufgabe beginnt. Aktive Befehle bleiben geschützt. Deaktiviert konkurriert die verbesserte Siedlungswertung normal mit Bannerlords anderen neuen Befehlen. Standard: wahr." />
+    <string id="b1071_mcm_t_ai_recovery_days" text="Erholungsdauer (Tage)" />
+    <string id="b1071_mcm_h_ai_recovery_days" text="So viele Kampagnentage darf eine bestätigte Rekrutierungsreise fortgesetzt werden, solange die Truppe des Lords unter 80 % ihrer Kapazität bleibt. Danach muss sie wieder unter 60 % fallen, um eine neue Erholungsreise zu beginnen. Standard: 1." />
     <string id="b1071_qs_name_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
-    <string id="b1071_qs_hint_ai_recovery" text="Unterbesetzte KI-Lords ohne dringende Aufgabe bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen, während sie sich erholen." />
+    <string id="b1071_qs_hint_ai_recovery" text="Unterbesetzte KI-Lords bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Aktive Befehle bleiben geschützt." />
   </strings>
 </base>

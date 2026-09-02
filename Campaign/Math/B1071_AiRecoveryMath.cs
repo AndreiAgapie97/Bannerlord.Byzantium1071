@@ -18,7 +18,8 @@ namespace Byzantium1071.Campaign
         UrgentFood = 1 << 9,
         BesiegedSettlement = 1 << 10,
         ProtectedObjective = 1 << 11,
-        ExcludedPartyType = 1 << 12
+        ExcludedPartyType = 1 << 12,
+        Quest = 1 << 13
     }
 
     internal static class B1071_AiRecoveryMath
@@ -53,20 +54,28 @@ namespace Byzantium1071.Campaign
             => highestCompletedNativeScore
              + Math.Max(0.1f, Math.Abs(highestCompletedNativeScore) * 0.05f);
 
+        internal static float FinalScore(
+            float adjustedSettlementScore,
+            float highestCompletedNativeScore,
+            bool takesPriorityOverNewTasks)
+            => takesPriorityOverNewTasks
+                ? WinningScore(highestCompletedNativeScore)
+                : adjustedSettlementScore;
+
+        internal static bool RecoveryWins(
+            float adjustedSettlementScore,
+            float highestCompletedNativeScore,
+            bool takesPriorityOverNewTasks)
+            => takesPriorityOverNewTasks || adjustedSettlementScore > highestCompletedNativeScore;
+
         internal static bool IsReservationExpired(float nowDay, float expiryDay)
             => nowDay >= expiryDay;
 
-        internal static bool CanReconstruct(
-            int members,
-            int partyLimit,
-            bool isOrdinarySettlementJourney,
-            bool hasFriendlyTarget,
-            bool hasRecruitOffer)
-            => !ShouldStart(members, partyLimit)
-            && !HasReachedStop(members, partyLimit)
-            && isOrdinarySettlementJourney
-            && hasFriendlyTarget
-            && hasRecruitOffer;
+        internal static float IntentExpiryDay(float nowDay, int durationDays)
+            => nowDay + Math.Max(1, durationDays);
+
+        internal static bool IsIntentExpired(float nowDay, float expiryDay)
+            => nowDay >= expiryDay;
 
         internal static int AffordableUnits(
             int available,

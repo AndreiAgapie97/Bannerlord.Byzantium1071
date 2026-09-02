@@ -1415,8 +1415,12 @@
     <string id="b1071_garrison_manpower_limit" text="Campaign++ 兵源" />
     <string id="b1071_mcm_g_ai_recovery" text="AI 恢复" />
     <string id="b1071_mcm_t_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
-    <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的空闲 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。他们会重建至 80%，且不会打断军队、战斗、攻城、劫掠、防御、巡逻、撤退或紧急补给。默认：开启。" />
+    <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点，并重建至 80%。正在执行的军队、战斗、攻城、劫掠、防御、巡逻、撤退和紧急补给任务不受影响。默认：开启。" />
+    <string id="b1071_mcm_t_ai_recovery_priority" text="恢复优先" />
+    <string id="b1071_mcm_h_ai_recovery_priority" text="开启后，符合条件且兵力不足的领主会先前往 Campaign++ 招募点，再开始新任务。正在执行的命令不受影响。关闭后，增强的定居点评分将与 Bannerlord 的其他新命令正常竞争。默认：开启。" />
+    <string id="b1071_mcm_t_ai_recovery_days" text="恢复意图天数" />
+    <string id="b1071_mcm_h_ai_recovery_days" text="当领主部队仍低于容量的 80% 时，已确认的招募行程最多可持续的战役天数。到期后，部队必须再次低于 60% 才能开始新的恢复行程。默认：1。" />
     <string id="b1071_qs_name_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
-    <string id="b1071_qs_hint_ai_recovery" text="兵力不足且无紧急任务的 AI 领主，在重建期间可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。" />
+    <string id="b1071_qs_hint_ai_recovery" text="兵力不足的 AI 领主可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。正在执行的命令不受影响。" />
   </strings>
 </base>

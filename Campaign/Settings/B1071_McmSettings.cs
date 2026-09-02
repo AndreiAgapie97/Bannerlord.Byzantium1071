@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 25;
+        internal const int LATEST_PROFILE_VERSION = 27;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -460,6 +460,20 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "AI lords now consider available Campaign++ veterans, castle troops, and converted prisoners while rebuilding under-strength parties. ";
             }
 
+            // ── Profile v26: recovery routing priority is player-tunable ──
+            if (SettingsProfileVersion < 26)
+            {
+                AiRecoveryTakesPriorityOverNewTasks = true;
+                migrated += "AI recovery may take priority over a new assignment while active orders remain protected; this can now be changed in MCM. ";
+            }
+
+            // ── Profile v27: recovery intent lifetime ──
+            if (SettingsProfileVersion < 27)
+            {
+                AiRecoveryIntentDurationDays = 1;
+                migrated += "Confirmed AI recovery journeys now expire after a configurable number of campaign days. ";
+            }
+
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
             try
@@ -717,8 +731,16 @@ namespace Byzantium1071.Campaign.Settings
         public bool LogAiManpowerConsumption { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
-        [SettingPropertyBool("{=b1071_mcm_t_ai_recovery}AI Lords Seek Campaign++ Recruits", Order = 0, HintText = "{=b1071_mcm_h_ai_recovery}Idle AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80% without interrupting armies, battles, sieges, raids, defence, patrols, retreats, or urgent food runs. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_ai_recovery}AI Lords Seek Campaign++ Recruits", Order = 0, HintText = "{=b1071_mcm_h_ai_recovery}AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80%. Active armies, battles, sieges, raids, defence, patrols, retreats, and urgent food runs remain protected. Default: true.")]
         public bool EnableAiRecoveryRouting { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
+        [SettingPropertyBool("{=b1071_mcm_t_ai_recovery_priority}Recovery Takes Priority", Order = 1, HintText = "{=b1071_mcm_h_ai_recovery_priority}When enabled, an eligible under-strength lord chooses a Campaign++ recruitment stop before starting a new task. Active orders remain protected. Turn this off to let the improved settlement score compete normally with Bannerlord's other new orders. Default: true.")]
+        public bool AiRecoveryTakesPriorityOverNewTasks { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
+        [SettingPropertyInteger("{=b1071_mcm_t_ai_recovery_days}Recovery intent days", 1, 30, "0", Order = 2, HintText = "{=b1071_mcm_h_ai_recovery_days}How many campaign days a confirmed recruitment journey may continue while the lord remains below 80% party capacity. After this, the lord must fall below 60% to begin another recovery journey. Default: 1.")]
+        public int AiRecoveryIntentDurationDays { get; set; } = 1;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_36c35ecdc1}Enable telemetry debug logs", Order = 3, HintText = "{=b1071_mcm_h_0df00598bc}Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates).")]

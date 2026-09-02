@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.5
+**Version:** 1.0.3.6
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -1992,8 +1992,10 @@ past a castle holding forty of his own veterans to reach a village with three vo
 ### Solution
 
 `B1071_AiRecoveryBehavior` **extends** the native scores rather than replacing the decision. It
-never creates a route, never issues a movement order, and never invents a candidate: it only
-re-weights `GoToSettlement` entries Bannerlord has already produced and scored.
+never creates a travel route, issues a direct movement order, or invents a destination: it only
+re-weights `GoToSettlement` entries Bannerlord has already produced and scored. An eligible lord
+already inside a settlement uses the existing recruitment systems immediately instead of scoring
+a meaningless visit to his current location.
 
 ### Registration order — why insertion, not `AddBehavior`
 
@@ -2026,7 +2028,7 @@ is never left one man short of its own stop line.
 
 A party is eligible only when it is an AI-led lord party and **every** block reason in
 `B1071_AiRecoveryBlockReason` is clear: army membership, map event, siege event, transition,
-disbanding, retreat, starvation, urgent food shortage, a besieged current settlement, an
+disbanding, retreat, starvation, urgent food shortage, a besieged current settlement, quest use, an
 excluded party type, and any objective other than `Hold`, `None`, or an ordinary
 `GoToSettlement`. Patrol, engage/chase, escort, raid, besiege, assault, defend, and flee are
 all excluded. Player-clan companion parties remain eligible, but existing recruitment ownership
@@ -2060,45 +2062,105 @@ surplus beyond the gap adds nothing. The current recovery target is kept while i
 10% of the best candidate (`IsWithinStickiness`), so a lord does not thrash between two nearly
 equal castles as pools fluctuate.
 
-Only the selected tuple is raised, to
+With **Recovery Takes Priority** enabled, only the selected tuple is raised to
 `highestCompletedNativeScore + max(0.1, 5% of that score)`. The flat floor matters at small
-scores where 5% would not clear the gap. This is enough to beat *starting a new task*, and
-deliberately not enough to override the protected active tasks above, which are excluded before
-scoring ever runs.
+scores where 5% would not clear the gap. This beats *starting a new task*. Protected active tasks
+are excluded before scoring ever runs. With the setting disabled, the selected tuple keeps its
+adjusted score and competes normally against Bannerlord's other newly proposed tasks.
 
 ### Reservations
 
-A selection reserves its quoted veterans, elites, prisoners, and manpower against that
-settlement for **12 campaign hours**, so two recovering lords cannot both be promised the same
-forty men. Reservations are dropped when they expire, when the party or settlement becomes
-invalid, when recruitment is fulfilled, when the party becomes ineligible, or when the setting
-is turned off. Turning the setting off clears reservations **without** issuing a replacement
-order — the lord simply reverts to native scoring.
+A winning score first creates a session-only proposal with a **12-campaign-hour soft destination
+claim**. Another recovering lord will not *route* to the same settlement while that claim is
+current, but no troops are removed or locked: the player, a lord already standing there, and every
+otherwise eligible AI lord remain free to recruit from it.
 
-Recovery intent and reservations are **session-scoped instance state**, never `SyncData`. After
-a load, an intent is reconstructed only when `CanReconstruct` holds: a 60–79% party already
-travelling to a friendly settlement that still has eligible Campaign++ recruits. No save schema
-is added, and removing the mod cannot corrupt a save.
+What a claim does carry is a quoted figure, and `GetReservedSupply` subtracts it from every other
+lord's quote on two independent grounds. Veterans, castle elites, and converted prisoners are the
+stock of one settlement, so only a claim naming **this** settlement spends them — that is what
+keeps the current-settlement pass honest now that it ignores the destination claim entirely.
+Manpower is pooled, so a claim on a bound village spends the same points as its town, and any claim
+on the **same pool** is deducted whether or not it names the same settlement. A claim can therefore
+apply on both grounds, on one, or on neither. Subtracting only the pooled half was enough to promise
+the same forty veterans to two lords, because an orphan village or a same-settlement claim would
+have gone uncounted.
 
-The reconstruction runs on `OnAfterSessionLaunchedEvent`, not on `OnGameLoaded` where the load
-is first known. Bannerlord fires `OnGameLoaded` before `OnSessionStart`, and every singleton the
-walk quotes against — `B1071_DemobilizationBehavior.Instance`, `B1071_CastleRecruitmentBehavior.Instance`
-— is assigned in its own `OnSessionLaunched`. Quoting any earlier reads nulls, every party
-reports no offer, and nothing is ever reconstructed. `OnGameLoaded` therefore only raises a flag.
-For the same reason `OnSessionLaunched` does not clear runtime state: the behavior is constructed
-once per campaign and starts empty regardless, so clearing there would only discard what the load
-path exists to rebuild.
+On the next AI tick, the proposal becomes confirmed
+intent only if Bannerlord is actually travelling to, or has reached, the exact target. Rejected
+proposals release their claim. Claims are also dropped when they expire, become invalid, are
+fulfilled, the party becomes ineligible, or the feature is turned off.
+
+Only confirmed recovery intent is saved through `SyncData`: parallel lists of party IDs, target
+settlement IDs, and expiry days. Reservations, proposals, quotes, and resource counts are not saved. On load,
+`OnAfterSessionLaunchedEvent` restores a recorded intent only if the party and settlement still
+exist, the party remains eligible and below the 80% stop line, the deadline remains current, the
+target remains friendly and usable, and the party is still travelling to or already at it. The next
+AI tick recalculates the best destination and a fresh claim from current stock.
+An ordinary 60–79% settlement journey that was never selected by Campaign++ is therefore never
+misclassified as recovery after loading.
 
 Intents are swept for destroyed parties on the same pass that expires reservations. A party that
 dies mid-recovery never thinks again, so the per-party cleanup on its own tick would never fire
 and the entry would pin a dead `MobileParty` for the rest of the session.
 
-Actual recruitment stays in the existing systems and pays every gold and manpower cost.
-Veteran-recruiting parties are re-anchored after roster changes, matching the existing castle
-anti-flicker safeguard.
+Actual recruitment stays in the existing systems and pays every gold and manpower cost. An eligible
+recovering lord already inside a settlement recruits immediately, and does so *before* any lord
+still travelling there: a claim steers routing and holds no stock, so it must not turn a lord away
+from the castle he is standing in. What that other lord has claimed here is still subtracted from
+his quote, which is the part that stops the same men being promised twice. Every otherwise eligible
+AI lord also receives an immediate castle recruitment pass on entry. Both paths use the real order:
+veterans first, then castle elites, then converted prisoners. The daily castle pass remains as a
+safety net.
+
+Parties are re-anchored after roster changes to prevent settlement-exit flicker. The recovery path
+calls that recruitment from inside the hourly think event, where the party's next behavior is chosen
+moments later from the same scores, so its anchor either stands, because nothing was applied, or is
+replaced by that fresh decision — neither is the stale-cache exit the anchor guards against.
+
+The arrival and recovery passes do defer one thing the daily pass owns: the player's consignment
+notice. They serve one lord at a time and can run several times an hour, so each banks the player's
+depositor share in a session-only per-castle tally and only that castle's own daily pass prints the
+total. The player still reads one consignment line per castle per day, matching the enslavement and
+garrison paths; his gold is paid the moment the recruitment happens either way, so the tally never
+holds money and is deliberately not saved.
+
+### Failing safe
+
+The handler runs once per AI lord party per campaign hour, which makes it the worst place in the
+mod for an unguarded fault: anything systemic — a game update moving a member the pass reads —
+throws hundreds of times a day. The whole handler is wrapped and every caught fault is counted.
+After five, `_disabledThisSession` stops the pass for the rest of the session and drops its intents
+and reservations, so every lord reverts to Bannerlord's own settlement scoring, which is exactly the
+behavior with the setting switched off. The same count bounds the log at five lines instead of one
+per party per hour. Nothing about the fuse is saved, so reloading retries.
+
+`_inRecoveryPass` skips a nested entry into the handler. Recruitment writes to the party roster, and
+the recruitment behaviors re-anchor the party with `RecalculateShortTermBehavior`, which drives the
+party AI this handler is running inside; if that ever fed back into the think event, the alternative
+to skipping is recursion inside a native callback. The cost of a skip is one hour of scoring for
+that party.
+
+`NotifyRecruitment` is wrapped for the mirror-image reason. The recruitment behaviors call it from
+their own passes, and one of those — the daily castle tick — carries no try/catch, so an
+escaping fault would land in a code path that predates this feature and was previously safe.
+
+The save half of `SyncData` is wrapped for a third reason: it runs inside the player's save, and
+deciding which intents to persist means reading live parties. A fault escaping there would abort the
+save. Aborting the walk instead is cheap because the three parallel lists are appended together and
+nothing between the three `Add` calls can throw — stopping early shortens them equally, and the
+worst case is a save that carries no journeys, which loads exactly like a save written before this
+version.
 
 ### Setting
 
 `EnableAiRecoveryRouting` — *AI Lords Seek Campaign++ Recruits*, MCM group **AI Recovery**,
 default **on**, mirrored in Quick Settings. Migration profile **v25** enables it for existing
 profiles.
+
+`AiRecoveryTakesPriorityOverNewTasks` — *Recovery Takes Priority*, default **on**. Migration
+profile **v26** enables it for existing profiles. Turn it off when Campaign++ recruitment stops
+should influence, but not automatically beat, Bannerlord's other new tasks.
+
+`AiRecoveryIntentDurationDays` — *Recovery intent days*, default **1**, range **1–30**. A
+confirmed recovery journey expires after this many campaign days if the party has not reached 80%.
+Migration profile **v27** sets it to one day for existing profiles.

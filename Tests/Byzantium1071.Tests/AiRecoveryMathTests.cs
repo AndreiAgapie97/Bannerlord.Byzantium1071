@@ -86,6 +86,7 @@ namespace Byzantium1071.Tests
         [InlineData((int)B1071_AiRecoveryBlockReason.BesiegedSettlement)]
         [InlineData((int)B1071_AiRecoveryBlockReason.ProtectedObjective)]
         [InlineData((int)B1071_AiRecoveryBlockReason.ExcludedPartyType)]
+        [InlineData((int)B1071_AiRecoveryBlockReason.Quest)]
         public void EveryProtectedStateBlocksRecovery(int reason)
         {
             Assert.False(B1071_AiRecoveryMath.IsEligible((B1071_AiRecoveryBlockReason)reason));
@@ -183,45 +184,138 @@ namespace Byzantium1071.Tests
             Assert.Equal(expected, B1071_AiRecoveryMath.IsReservationExpired(now, expiry));
         }
 
-        // ── Load reconstruction ───────────────────────────────────────────────────
+        [Theory]
+        [InlineData(10f, 11f, false)]
+        [InlineData(11f, 11f, true)]
+        [InlineData(12f, 11f, true)]
+        public void RecoveryIntentsExpireOnOrAfterTheirDeadline(float now, float expiry, bool expected)
+        {
+            Assert.Equal(expected, B1071_AiRecoveryMath.IsIntentExpired(now, expiry));
+        }
+
+        [Theory]
+        [InlineData(10f, 1, 11f)]
+        [InlineData(10f, 5, 15f)]
+        [InlineData(10f, 0, 11f)]
+        public void RecoveryIntentDurationIsTunableWithAOneDayMinimum(
+            float now, int durationDays, float expected)
+        {
+            Assert.Equal(expected, B1071_AiRecoveryMath.IntentExpiryDay(now, durationDays));
+        }
 
         [Fact]
-        public void AnInFlightRecoveryIsReconstructedAfterLoading()
+        public void AClaimOnTheSameSettlementReservesItsTroopsAndItsManpower()
         {
-            Assert.True(B1071_AiRecoveryMath.CanReconstruct(
-                members: 70,
-                partyLimit: 100,
-                isOrdinarySettlementJourney: true,
-                hasFriendlyTarget: true,
-                hasRecruitOffer: true));
+            var reservation = new Campaign.Behaviors.B1071_AiRecoveryReservedSupply(
+                veterans: 4,
+                elites: 3,
+                prisoners: 2,
+                manpower: 25);
+
+            Campaign.Behaviors.B1071_AiRecoveryReservedSupply applicable = reservation.ForCandidate(
+                sameSettlement: true,
+                sameManpowerPool: true);
+
+            Assert.Equal(4, applicable.Veterans);
+            Assert.Equal(3, applicable.Elites);
+            Assert.Equal(2, applicable.Prisoners);
+            Assert.Equal(25, applicable.Manpower);
+        }
+
+        [Fact]
+        public void ASettlementOutsideThePoolStillReservesItsOwnTroops()
+        {
+            var reservation = new Campaign.Behaviors.B1071_AiRecoveryReservedSupply(
+                veterans: 4,
+                elites: 3,
+                prisoners: 2,
+                manpower: 25);
+
+            // An orphan village has no bound pool, so a claim on it reserves the men standing
+            // there and no manpower. Reading only the pool would hand the same men out twice.
+            Campaign.Behaviors.B1071_AiRecoveryReservedSupply applicable = reservation.ForCandidate(
+                sameSettlement: true,
+                sameManpowerPool: false);
+
+            Assert.Equal(4, applicable.Veterans);
+            Assert.Equal(3, applicable.Elites);
+            Assert.Equal(2, applicable.Prisoners);
+            Assert.Equal(0, applicable.Manpower);
+        }
+
+        [Fact]
+        public void DifferentSettlementsSharingAPoolReserveOnlyTheirCommonManpower()
+        {
+            var reservation = new Campaign.Behaviors.B1071_AiRecoveryReservedSupply(
+                veterans: 4,
+                elites: 3,
+                prisoners: 2,
+                manpower: 25);
+
+            Campaign.Behaviors.B1071_AiRecoveryReservedSupply applicable = reservation.ForCandidate(
+                sameSettlement: false,
+                sameManpowerPool: true);
+
+            Assert.Equal(0, applicable.Veterans);
+            Assert.Equal(0, applicable.Elites);
+            Assert.Equal(0, applicable.Prisoners);
+            Assert.Equal(25, applicable.Manpower);
+        }
+
+        [Fact]
+        public void UnrelatedSettlementsAndPoolsShareNoReservation()
+        {
+            var reservation = new Campaign.Behaviors.B1071_AiRecoveryReservedSupply(
+                veterans: 4,
+                elites: 3,
+                prisoners: 2,
+                manpower: 25);
+
+            Campaign.Behaviors.B1071_AiRecoveryReservedSupply applicable = reservation.ForCandidate(
+                sameSettlement: false,
+                sameManpowerPool: false);
+
+            Assert.Equal(0, applicable.Veterans);
+            Assert.Equal(0, applicable.Elites);
+            Assert.Equal(0, applicable.Prisoners);
+            Assert.Equal(0, applicable.Manpower);
+        }
+
+        // ── Player-tunable priority ────────────────────────────────────────────────
+
+        [Fact]
+        public void PriorityModeClearsTheHighestCompletedNativeScore()
+        {
+            Assert.Equal(105f, B1071_AiRecoveryMath.FinalScore(
+                adjustedSettlementScore: 40f,
+                highestCompletedNativeScore: 100f,
+                takesPriorityOverNewTasks: true), 3);
+        }
+
+        [Fact]
+        public void CompetitiveModeKeepsTheAdjustedSettlementScore()
+        {
+            Assert.Equal(40f, B1071_AiRecoveryMath.FinalScore(
+                adjustedSettlementScore: 40f,
+                highestCompletedNativeScore: 100f,
+                takesPriorityOverNewTasks: false), 3);
         }
 
         [Theory]
-        [InlineData(50, 100)]  // below the start line: a fresh decision, not a reconstruction
-        [InlineData(80, 100)]  // already recovered
-        public void OnlyAPartyInsideTheRecoveryBandIsReconstructed(int members, int limit)
+        [InlineData(40f, 100f, true, true)]
+        [InlineData(101f, 100f, false, true)]
+        [InlineData(100f, 100f, false, false)]
+        [InlineData(40f, 100f, false, false)]
+        public void IntentIsKeptOnlyWhenRecoveryActuallyWins(
+            float adjustedScore,
+            float highestNativeScore,
+            bool takesPriority,
+            bool expected)
         {
-            Assert.False(B1071_AiRecoveryMath.CanReconstruct(
-                members,
-                limit,
-                isOrdinarySettlementJourney: true,
-                hasFriendlyTarget: true,
-                hasRecruitOffer: true));
-        }
-
-        [Theory]
-        [InlineData(false, true, true)]
-        [InlineData(true, false, true)]
-        [InlineData(true, true, false)]
-        public void ReconstructionRequiresEveryJourneyPrecondition(
-            bool ordinaryJourney, bool friendlyTarget, bool recruitOffer)
-        {
-            Assert.False(B1071_AiRecoveryMath.CanReconstruct(
-                members: 70,
-                partyLimit: 100,
-                isOrdinarySettlementJourney: ordinaryJourney,
-                hasFriendlyTarget: friendlyTarget,
-                hasRecruitOffer: recruitOffer));
+            Assert.Equal(expected, B1071_AiRecoveryMath.RecoveryWins(
+                adjustedScore,
+                highestNativeScore,
+                takesPriority));
         }
 
         // ── Shared budget quoting ─────────────────────────────────────────────────
