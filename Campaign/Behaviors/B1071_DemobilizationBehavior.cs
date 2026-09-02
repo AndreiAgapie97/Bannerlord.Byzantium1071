@@ -1695,6 +1695,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (extended > 0)
             {
+                B1071_TelemetryCounters.RecordAiExtensions(extended, spent);
                 B1071_VerboseLog.Log(LogTag, $"AI extended service: party={PartyLogName(party)}, hero={leader.Name?.ToString() ?? leader.StringId}, soldiers={extended}, spent={spent}, days={extensionDays}, buffer={Math.Max(1, Settings.DemobilizationAiExtensionGoldBufferMultiplier)}x, firstTroop={firstTroopName}.");
             }
         }
@@ -1810,6 +1811,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (retiredTotal > 0)
             {
+                // AI parties only: the player is told about his own losses by the message below.
+                if (party != MobileParty.MainParty)
+                    B1071_TelemetryCounters.RecordAiRetired(retiredTotal);
+
                 if (party == MobileParty.MainParty)
                 {
                     string troopLabel = string.IsNullOrEmpty(firstTroopName)

@@ -120,7 +120,12 @@ namespace Byzantium1071.Campaign
             }
         }
 
-        private static string? ResolveModuleLogsRoot()
+        /// <summary>
+        /// The module's own Logs folder, or null when the assembly is not running from
+        /// inside a Modules folder. Shared with B1071_TelemetryCsvLog so the CSV lands
+        /// beside the session log instead of resolving the path a second way.
+        /// </summary>
+        internal static string? ResolveModuleLogsRoot()
         {
             string dllPath = Assembly.GetExecutingAssembly().Location;
             var directory = new DirectoryInfo(Path.GetDirectoryName(dllPath) ?? string.Empty);

@@ -279,6 +279,8 @@ namespace Byzantium1071
             base.OnGameEnd(game);
             B1071_SessionAudit.EmitEndOfSessionSummary();
             B1071_SessionFileLog.EndSession();
+            B1071_TelemetryCsvLog.EndSession();
+            B1071_TelemetryCounters.ResetForNewSession();
             B1071_CompatibilityBehavior.Instance = null;
             B1071_ManpowerBehavior.Instance = null;
             B1071_SlaveEconomyBehavior.Instance = null;
@@ -382,6 +384,7 @@ namespace Byzantium1071
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_VillageInvestmentBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_TownInvestmentBehavior());
                 starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_ClanSurvivalBehavior());
+                starter.AddBehavior(new Byzantium1071.Campaign.Behaviors.B1071_TelemetryBehavior());
                 // Volunteer model is now a Harmony Postfix (B1071_ManpowerVolunteerPatch)
                 // instead of AddModel, for compatibility with mods that replace VolunteerModel.
                 starter.AddModel(new Byzantium1071.Campaign.Models.B1071_ManpowerMilitiaModel());

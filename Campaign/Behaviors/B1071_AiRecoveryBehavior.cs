@@ -269,8 +269,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 string partyId = party.StringId;
                 if (string.IsNullOrEmpty(partyId)) return;
 
-                if (!IsPartyEligible(party))
+                // Resolved once and reused: IsPartyEligible is exactly
+                // IsEligible(GetBlockReasons(party)), and the reasons are needed either way
+                // for the telemetry histogram below.
+                B1071_AiRecoveryBlockReason blockReasons = GetBlockReasons(party);
+                if (!B1071_AiRecoveryMath.IsEligible(blockReasons))
                 {
+                    RecordBlockedWeakParty(party, blockReasons);
                     ClearPartyState(partyId);
                     return;
                 }
@@ -300,6 +305,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (!hasIntent && !B1071_AiRecoveryMath.ShouldStart(members, limit))
                     return;
+
+                // Party-hours in recovery, not distinct parties: this runs hourly for as long
+                // as a lord stays below the stop threshold.
+                B1071_TelemetryCounters.RecordRecoveryEligible();
 
                 int missing = B1071_AiRecoveryMath.MissingToStop(members, limit);
                 if (missing <= 0)
@@ -384,6 +393,10 @@ namespace Byzantium1071.Campaign.Behaviors
                         settlement,
                         missing,
                         reserved);
+                    // Recorded before the drop so a settlement that can supply nothing is
+                    // counted rather than vanishing -- that is the population an A3 penalty
+                    // would act on.
+                    B1071_TelemetryCounters.RecordRecoveryQuote(quote.Total);
                     if (quote.Total <= 0) continue;
 
                     candidates.Add(new RecoveryCandidate(
@@ -437,6 +450,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     Settings.AiRecoveryTakesPriorityOverNewTasks);
                 AIBehaviorData winningBehavior = selected.Behavior;
                 thinkParams.SetBehaviorScore(in winningBehavior, winningScore);
+                B1071_TelemetryCounters.RecordRecoveryProposed();
 
                 if (IsConfirmedDestination(party, selected.Settlement))
                 {
@@ -565,6 +579,10 @@ namespace Byzantium1071.Campaign.Behaviors
                 && !B1071_AiRecoveryMath.IsIntentExpired(nowDay, existing.ExpiryDay))
                 return;
 
+            // Past the guard above this is a genuine new or changed commitment, not the same
+            // intent being re-affirmed hour after hour.
+            B1071_TelemetryCounters.RecordRecoveryConfirmed();
+
             _intents[partyId] = new RecoveryIntent
             {
                 Party = party,
@@ -637,6 +655,23 @@ namespace Byzantium1071.Campaign.Behaviors
             if (settlement.IsVillage
                 && settlement.Village.VillageState != Village.VillageStates.Normal) return false;
             return settlement.IsVillage || settlement.IsTown || settlement.IsCastle;
+        }
+
+        /// <summary>
+        /// Records why a lord who NEEDED recovery never got a pass. Restricted to parties
+        /// below the start threshold on purpose: a healthy lord being turned away is not a
+        /// missed recovery, and counting those would bury the signal under every garrison
+        /// commander and caravan escort on the map.
+        /// </summary>
+        private static void RecordBlockedWeakParty(MobileParty party, B1071_AiRecoveryBlockReason reasons)
+        {
+            // Checked before touching the party so a normal session does none of this work.
+            if (!B1071_TelemetryCounters.Enabled) return;
+            if (!B1071_AiRecoveryMath.ShouldStart(
+                    party.Party.NumberOfAllMembers,
+                    party.Party.PartySizeLimit)) return;
+
+            B1071_TelemetryCounters.RecordRecoveryBlocked(reasons);
         }
 
         private static bool IsPartyEligible(MobileParty party)

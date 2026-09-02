@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.7
+**Version:** 1.0.3.8
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -1256,8 +1256,27 @@ When enabled, the following is logged:
 | **Devastation** | Village loot devastation changes |
 | **AI recruitment** | Manpower gate blocks (when verbose OR `LogAiManpowerConsumption` is ON) |
 | **Clan Survival** | Rescue attempts, commits and aborts; eligibility skips; rebel normalization; kingdom detach; war cleanup; tracking start/stop; destruction-pipeline diagnostics — logged to both rgl_log and session file |
+| **AI telemetry** | One digest per campaign day per subsystem — troop power, AI recovery routing, settlement visits, demobilization extensions — plus a CSV row; also emitted when `TelemetryDebugLogs` alone is on (see below) |
 
 All logging is centralized through the `B1071_VerboseLog` static helper class with format `[Byzantium1071][Subsystem] message`. ClanSurvival events additionally write to the session file log via `B1071_SessionFileLog.WriteTagged` for post-session analysis.
+
+### Daily AI telemetry (v1.0.3.8)
+
+**MCM setting: `Telemetry debug logs`** (Developer Tools group), or `Enable verbose mod log`, which is a superset. With both off, none of the work below is done.
+
+Releases 1.0.3.4-1.0.3.7 changed AI decisions that only become visible over dozens of campaign days and across hundreds of parties. `B1071_TroopPowerValuationPatch` logged nothing; `B1071_AiRecoveryBehavior` logged one line per session. This subsystem exists to make those changes checkable in one play session instead of several.
+
+**Why aggregate and not trace.** `B1071_AiRecoveryBehavior.OnAiHourlyTick` fires once per lord party per campaign hour — roughly 200 x 24 on a mature map — and `GetDefaultTroopPower` runs once per troop per party per strength query. Per-event lines would cost more than the systems they measure and would bury the signal. So the measured sites only increment an int in `B1071_TelemetryCounters` (the same shape as `B1071_SessionAudit`), and `B1071_TelemetryBehavior` emits once on `DailyTickEvent`.
+
+**What the daily snapshot walks.** Every AI lord party once, summing non-hero roster power twice: at vanilla tier pricing (`B1071_TelemetryMath.VanillaTroopPower`, a deliberate second copy of `(2 + tier) * (10 + tier) * 0.02f`) and with `B1071_CombatRealismTuning.GetPowerFactor` applied. The pair is the point — the game exposes no "what would this have been" value to read back, and either number alone says nothing. Beside them go the count of armies in the field and the number of wars declared that day. Those two are not decoration: `DefaultArmyManagementCalculationModel.CanLordCreateArmy` gates on a summed strength of **1000** and `DefaultDiplomacyModel` refuses war below a `CurrentTotalStrength` of **500**, both absolute constants on the scale §17's multiplier moves. `TroopPowerMathTests` bounds the arithmetic; only a running campaign shows the consequence, and these are the two columns where it would appear.
+
+**The wasted-trip classification.** `SettlementEntered` records a party's member count and size limit; `OnSettlementLeftEvent` classifies the visit. A party that arrived at or above its limit is `NotSeeking` and excluded — counting garrison rotations and patrol stops as failed recruitment would bury the signal. A party that had room and left no fuller is `NoGain`, a wasted recruitment trip, and is bucketed by **the same 60% threshold that gates recovery routing** (`B1071_AiRecoveryMath.ShouldStart`, called through `B1071_TelemetryMath.IsWeakEnoughForRecovery`). That is the whole design of the bucket: recovery routing only ever sees parties below that line, so wasted trips landing mostly in **weak** mean the existing system can be taught to avoid them, while wasted trips landing mostly in **healthy** mean it structurally cannot and the fix belongs elsewhere. The split is judged on arrival strength, because that is what the party was when it chose to come — the decision under examination, not the state it left in. Visit state is a session-only instance dictionary and is never written to `SyncData`.
+
+**The rejection histogram, and why the eligible count needs it.** `RecoveryDigest` reports how many party-hours *entered* a recovery pass. That figure is unreadable alone: a low number means either that few lords need help or that the eligibility filter is rejecting the ones who do, and those call for opposite fixes. So `OnAiHourlyTick` resolves `GetBlockReasons` once and reuses it — `IsPartyEligible` is exactly `IsEligible(GetBlockReasons(party))`, so nothing extra is computed — and a rejected party is passed to `RecordBlockedWeakParty`. That helper counts the rejection only if the lord was **below `B1071_AiRecoveryMath.ShouldStart`'s 60% line**: a healthy lord being turned away is not a missed recovery, and counting those would bury the signal under every full-strength party on the map. Each of the fourteen `B1071_AiRecoveryBlockReason` flags gets its own bucket, indexed by bit position; `B1071_TelemetryMath.BlockReasonNames` is the only thing tying a bucket to its flag, so its order is load-bearing and `BlockReasonNamesMatchTheFlagOrder` fails if the enum ever gains a member out of order. One rejection sets every flag that applied, so the buckets **sum to more than the party-hour total** — a lord can be in an army *and* on a protected objective, and both gates are worth seeing. `BlockDigest` prints the dominant reason first and omits buckets that never fired.
+
+**Two outputs, and why both.** Digest lines go to `rgl_log` and the session file, tagged `[Byzantium1071][Telemetry][Power|AiRecovery|AiRecoveryBlocks|Visits|Demob]`; they answer "what happened just now" and are read top to bottom. `B1071_TelemetryCsvLog` writes `b1071_telemetry_{timestamp}_{pid}.csv` into the same `<ModuleRoot>/Logs` folder, one row of thirty-five numeric columns per campaign day; it answers "what has been happening" and is read in a spreadsheet. Interleaving them would mean hand-extracting rows from a log full of unrelated subsystem chatter before any trend could be plotted. The CSV shares `B1071_SessionFileLog.ResolveModuleLogsRoot`, its lock-and-never-throw discipline, and its 30-file prune; every field is invariant-formatted so no quoting is needed and the file opens identically in every locale, and `TelemetryMathTests` fails if the header and row column counts ever diverge.
+
+**Failure posture.** Every handler is wrapped; five faults disable the behavior for the session rather than logging once per tick forever. Nothing here is read by any gameplay path, and `SyncData` is deliberately empty.
 
 ---
 

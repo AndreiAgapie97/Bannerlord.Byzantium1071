@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.7 — Everything you need to know, step by step.*
+*Version 1.0.3.8 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -762,6 +762,15 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Recovery Takes Priority | AI Recovery | ON | Makes an eligible recovery stop beat newly proposed tasks; turn it off to let the improved settlement score compete normally |
 | Recovery intent days | AI Recovery | 1 | Ends a confirmed recovery journey after this many campaign days if the lord has not rebuilt to 80%; range 1–30 |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
+| Telemetry debug logs | Developer Tools | OFF | Writes a daily record of what the AI is doing to the mod's Logs folder — see below |
+
+### Watching What the AI Does (v1.0.3.8)
+
+Several recent changes affect how lords judge army strength and where they go to rebuild. Those play out slowly, across the whole map, so they are hard to spot by watching a single lord.
+
+Turn on **Telemetry debug logs** in Developer Tools and Campaign++ writes a short summary once per in-game day into the mod's `Logs` folder — how many lords are in the field, how many armies and new wars there are, how the lords rate their own troops, how often they head somewhere to recruit and come away empty-handed, and what they are paying to keep veterans in service. Two files are written: a readable log and a spreadsheet-friendly `.csv` you can chart.
+
+This is for troubleshooting and for anyone curious about what the AI is up to. It changes nothing in your campaign, and it costs a little performance, so leave it off for normal play.
 
 ---
 
