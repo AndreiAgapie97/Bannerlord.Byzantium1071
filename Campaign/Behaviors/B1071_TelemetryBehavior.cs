@@ -48,6 +48,37 @@ namespace Byzantium1071.Campaign.Behaviors
             internal MobileParty Party = null!;
             internal int MembersOnEntry;
             internal int SizeLimit;
+
+            /// <summary>
+            /// Whether B1071_AiRecoveryBehavior had sent this party here. Sampled on entry,
+            /// not on exit: the intent is cleared the moment the lord is topped up, so
+            /// reading it on the way out would report every successful trip as unrouted and
+            /// invert the whole measurement.
+            /// </summary>
+            internal bool RecoveryRouted;
+        }
+
+        /// <summary>
+        /// A party's member count while it was still in the field, and when it was taken.
+        ///
+        /// THIS EXISTS BECAUSE SettlementEntered IS TOO LATE TO SAMPLE AN ARRIVAL. Vanilla
+        /// hires the notable board from RecruitmentCampaignBehavior.OnBeforeSettlementEntered
+        /// -> CheckRecruiting -> RecruitVolunteersFromNotable, and
+        /// BeforeSettlementEnteredEvent fires ahead of SettlementEntered. So by the time this
+        /// behavior sees an arrival, the recruits are already on the roster: the party leaves
+        /// with the count it was first observed holding, and a successful recruiting trip is
+        /// classified NoGain. That inverts the one number the visit metric exists to report.
+        ///
+        /// Moving to the earlier event would not help. MBCampaignEvent.RunHandlers walks its
+        /// handler list in registration order, and vanilla's campaign behaviors register
+        /// before any mod's, so a listener added here fires after the hire either way. The
+        /// only ordering-independent answer is to sample before the party arrives at all.
+        /// </summary>
+        private sealed class FieldSample
+        {
+            internal MobileParty Party = null!;
+            internal int Members;
+            internal CampaignTime Stamp;
         }
 
         /// <summary>
@@ -57,6 +88,22 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private readonly Dictionary<string, VisitState> _openVisits =
             new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Latest in-the-field sample per party, consumed by the next arrival. Bounded by the
+        /// lord-party count and swept daily alongside the open visits.
+        /// </summary>
+        private readonly Dictionary<string, FieldSample> _fieldSamples =
+            new(StringComparer.Ordinal);
+
+        /// <summary>
+        /// How stale a field sample may be and still describe the arrival it is used for.
+        /// Samples are taken on the hourly party tick and an arrival lands between two of
+        /// them, so anything inside two hours is the strength the lord set out with; beyond
+        /// that the party has been somewhere this behavior did not watch, and falling back to
+        /// the entry count is wrong but bounded, where a stale sample could invent a gain.
+        /// </summary>
+        private const float MaxFieldSampleAgeInHours = 2f;
 
         /// <summary>Fuse: after this many handler faults the behavior stops touching anything.</summary>
         private const int MaxHandlerFailures = 5;
@@ -68,6 +115,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
+            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
             CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);
         }
@@ -84,6 +132,7 @@ namespace Byzantium1071.Campaign.Behaviors
             _handlerFailures = 0;
             _disabledThisSession = false;
             _openVisits.Clear();
+            _fieldSamples.Clear();
 
             B1071_TelemetryCounters.ResetForNewSession();
             if (!B1071_TelemetryCounters.Enabled) return;
@@ -101,6 +150,37 @@ namespace Byzantium1071.Campaign.Behaviors
             catch (Exception ex) { NoteFailure("WarDeclared", ex); }
         }
 
+        /// <summary>
+        /// Records a party's strength while it is still travelling, so the arrival that
+        /// follows can be judged on the strength the lord actually set out with. Only parties
+        /// outside a settlement are sampled: one already inside is mid-visit, and overwriting
+        /// its sample would erase the very figure the visit is being measured against.
+        ///
+        /// This runs for every party every campaign hour, so it does no work beyond a type
+        /// check and a dictionary write, and none at all with telemetry off.
+        /// </summary>
+        private void OnHourlyTickParty(MobileParty party)
+        {
+            if (_disabledThisSession || !B1071_TelemetryCounters.Enabled) return;
+
+            try
+            {
+                if (party == null || party == MobileParty.MainParty) return;
+                if (party.LeaderHero == null || party.CurrentSettlement != null) return;
+
+                string partyId = party.StringId;
+                if (string.IsNullOrEmpty(partyId)) return;
+
+                _fieldSamples[partyId] = new FieldSample
+                {
+                    Party = party,
+                    Members = party.Party.NumberOfAllMembers,
+                    Stamp = CampaignTime.Now
+                };
+            }
+            catch (Exception ex) { NoteFailure("HourlyTickParty", ex); }
+        }
+
         private void OnSettlementEntered(MobileParty party, Settlement settlement, Hero hero)
         {
             if (_disabledThisSession || !B1071_TelemetryCounters.Enabled) return;
@@ -109,11 +189,32 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 if (!IsTrackedVisit(party, settlement)) return;
 
+                // The roster here already carries anything vanilla hired on the way in --
+                // see FieldSample. A fresh in-the-field sample is what the lord set out
+                // with, and is preferred whenever one exists. The size limit is read live
+                // either way: it comes from clan tier and perks, not from the roster count,
+                // so the hire cannot move it and a sampled copy could only go stale.
+                int membersOnEntry = party.Party.NumberOfAllMembers;
+
+                if (_fieldSamples.TryGetValue(party.StringId, out FieldSample? sample))
+                {
+                    _fieldSamples.Remove(party.StringId);
+
+                    if (sample != null
+                        && sample.Party == party
+                        && sample.Stamp.ElapsedHoursUntilNow <= MaxFieldSampleAgeInHours)
+                    {
+                        membersOnEntry = sample.Members;
+                    }
+                }
+
                 _openVisits[party.StringId] = new VisitState
                 {
                     Party = party,
-                    MembersOnEntry = party.Party.NumberOfAllMembers,
-                    SizeLimit = party.Party.PartySizeLimit
+                    MembersOnEntry = membersOnEntry,
+                    SizeLimit = party.Party.PartySizeLimit,
+                    RecoveryRouted = B1071_AiRecoveryBehavior.Instance?
+                        .IsRecoveryDestination(party, settlement) ?? false
                 };
             }
             catch (Exception ex) { NoteFailure("SettlementEntered", ex); }
@@ -142,7 +243,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     state.MembersOnEntry,
                     state.SizeLimit);
 
-                B1071_TelemetryCounters.RecordVisit(outcome, weak);
+                B1071_TelemetryCounters.RecordVisit(outcome, weak, state.RecoveryRouted);
             }
             catch (Exception ex) { NoteFailure("SettlementLeft", ex); }
         }
@@ -158,10 +259,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (!B1071_TelemetryCounters.Enabled)
                 {
                     if (_openVisits.Count > 0) _openVisits.Clear();
+                    if (_fieldSamples.Count > 0) _fieldSamples.Clear();
                     return;
                 }
 
                 DropAbandonedVisits();
+                DropStaleFieldSamples();
 
                 B1071_TelemetryDay day = B1071_TelemetryCounters.Current;
                 FillPartySnapshot(day);
@@ -209,6 +312,29 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (stale == null) return;
             foreach (string key in stale) _openVisits.Remove(key);
+        }
+
+        /// <summary>
+        /// A party destroyed in the field leaves its sample behind, and a party that never
+        /// visits anywhere never consumes one. Both are swept on the same daily pass that
+        /// clears abandoned visits, so neither grows across a long campaign.
+        /// </summary>
+        private void DropStaleFieldSamples()
+        {
+            if (_fieldSamples.Count == 0) return;
+
+            List<string>? stale = null;
+            foreach (KeyValuePair<string, FieldSample> entry in _fieldSamples)
+            {
+                MobileParty party = entry.Value.Party;
+                if (party != null && party.IsActive) continue;
+
+                stale ??= new List<string>();
+                stale.Add(entry.Key);
+            }
+
+            if (stale == null) return;
+            foreach (string key in stale) _fieldSamples.Remove(key);
         }
 
         /// <summary>
@@ -308,6 +434,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
             _disabledThisSession = true;
             _openVisits.Clear();
+            _fieldSamples.Clear();
             Debug.Print($"[Byzantium1071][Telemetry] Disabled for this session after {MaxHandlerFailures} failures.");
         }
     }

@@ -1643,18 +1643,27 @@ namespace Byzantium1071.Campaign.Behaviors
                     int remaining = threshold - age;
                     if (remaining > warningLead) continue;
 
-                    for (int unit = 0; unit < cohort.Count; unit++)
+                    // One candidate per cohort, priced by cohort size. Extending is a
+                    // cohort-level action: it moves the whole cohort's JoinDay and spends
+                    // one of its ExtensionCounts, so the candidate has to be the cohort.
+                    //
+                    // That costs nothing today, because a cohort holds exactly one man --
+                    // every CohortEntry is built with Count = 1 and only ever decremented,
+                    // as the grouping pass earlier in this file states outright. So this is
+                    // the shape the data already has, not a de-duplication of it, and
+                    // GetExtensionCost is handed a count of 1. It is written per cohort
+                    // rather than per man so that it stays correct if cohorts are ever
+                    // merged, and to match the player's own ExtendService path, which
+                    // prices with GetExtensionCost(troop, cohort.Count, ...).
+                    candidates.Add(new AiExtensionCandidate
                     {
-                        candidates.Add(new AiExtensionCandidate
-                        {
-                            TroopId = troopKvp.Key,
-                            Troop = troop,
-                            Cohort = cohort,
-                            JoinDay = cohort.JoinDay,
-                            RemainingDays = remaining,
-                            Cost = GetExtensionCost(troop, 1, cohort.ExtensionCount)
-                        });
-                    }
+                        TroopId = troopKvp.Key,
+                        Troop = troop,
+                        Cohort = cohort,
+                        JoinDay = cohort.JoinDay,
+                        RemainingDays = remaining,
+                        Cost = GetExtensionCost(troop, cohort.Count, cohort.ExtensionCount)
+                    });
                 }
             }
 
@@ -1686,7 +1695,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 candidate.Cohort.JoinDay += extensionDays;
                 candidate.Cohort.ExtensionCount++;
-                extended++;
+                // Men, not cohorts -- the cap is DemobilizationMaxDailyDepartures, which
+                // RetireOverdueCohorts also counts in men, and the telemetry column is read
+                // against the retirement column.
+                extended += candidate.Cohort.Count;
                 spent += candidate.Cost;
 
                 if (string.IsNullOrEmpty(firstTroopName))

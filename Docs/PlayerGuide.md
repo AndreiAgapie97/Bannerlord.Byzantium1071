@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.8 — Everything you need to know, step by step.*
+*Version 1.0.3.9 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -758,7 +758,7 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Garrison wage % of field | Army Economics | 80 | Garrisons pay 80% of field wages (20% discount) |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
 | Slave cap per prosperity | Slave Economy | 0.03 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
-| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords may head for a friendly settlement that actually has veterans, castle troops, or converted prisoners waiting; active orders remain protected |
+| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords head for a friendly settlement that actually has men waiting — local volunteers, veterans, castle troops, or converted prisoners — and are steered away from ones with nobody left to give; active orders remain protected. A lord who is merely running low on supplies is no longer skipped, but he is nudged rather than sent, so a food market can still win out. A lord too poor to hire anyone is left where he is rather than sent on a trip he cannot pay for |
 | Recovery Takes Priority | AI Recovery | ON | Makes an eligible recovery stop beat newly proposed tasks; turn it off to let the improved settlement score compete normally |
 | Recovery intent days | AI Recovery | 1 | Ends a confirmed recovery journey after this many campaign days if the lord has not rebuilt to 80%; range 1–30 |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |

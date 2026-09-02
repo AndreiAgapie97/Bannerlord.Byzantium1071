@@ -25,14 +25,36 @@ namespace Byzantium1071.Campaign.Behaviors
         internal int Prisoners { get; }
         internal int Manpower { get; }
 
-        internal int Total => Veterans + Elites + Prisoners;
+        /// <summary>
+        /// Men on the vanilla notable volunteer board this party could take. Unlike the
+        /// other three this is a count only -- Campaign++ never recruits it, because
+        /// vanilla's own RecruitVolunteersFromNotable already does when the party arrives.
+        /// It is here so routing can see the supply that decides where a lord should go.
+        /// </summary>
+        internal int Volunteers { get; }
 
-        internal B1071_AiRecoverySourceQuote(int veterans, int elites, int prisoners, int manpower)
+        internal int Total => Veterans + Elites + Prisoners + Volunteers;
+
+        /// <summary>
+        /// The men Campaign++ can hand over itself, which is Total minus the vanilla
+        /// volunteer board. Routing wants Total -- where a lord should go is decided by all
+        /// the supply he will find. Recruiting wants this: acting on a board this mod never
+        /// takes is a guaranteed no-op.
+        /// </summary>
+        internal int Actionable => Veterans + Elites + Prisoners;
+
+        internal B1071_AiRecoverySourceQuote(
+            int veterans,
+            int elites,
+            int prisoners,
+            int manpower,
+            int volunteers = 0)
         {
             Veterans = Math.Max(0, veterans);
             Elites = Math.Max(0, elites);
             Prisoners = Math.Max(0, prisoners);
             Manpower = Math.Max(0, manpower);
+            Volunteers = Math.Max(0, volunteers);
         }
 
         public static B1071_AiRecoverySourceQuote operator +(
@@ -42,7 +64,8 @@ namespace Byzantium1071.Campaign.Behaviors
                 left.Veterans + right.Veterans,
                 left.Elites + right.Elites,
                 left.Prisoners + right.Prisoners,
-                left.Manpower + right.Manpower);
+                left.Manpower + right.Manpower,
+                left.Volunteers + right.Volunteers);
     }
 
     internal readonly struct B1071_AiRecoveryReservedSupply

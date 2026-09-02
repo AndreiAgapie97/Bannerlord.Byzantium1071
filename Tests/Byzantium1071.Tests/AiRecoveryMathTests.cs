@@ -1,4 +1,5 @@
 using Byzantium1071.Campaign;
+using Byzantium1071.Campaign.Behaviors;
 using Xunit;
 
 namespace Byzantium1071.Tests
@@ -82,7 +83,6 @@ namespace Byzantium1071.Tests
         [InlineData((int)B1071_AiRecoveryBlockReason.Disbanding)]
         [InlineData((int)B1071_AiRecoveryBlockReason.Retreating)]
         [InlineData((int)B1071_AiRecoveryBlockReason.Starving)]
-        [InlineData((int)B1071_AiRecoveryBlockReason.UrgentFood)]
         [InlineData((int)B1071_AiRecoveryBlockReason.BesiegedSettlement)]
         [InlineData((int)B1071_AiRecoveryBlockReason.ProtectedObjective)]
         [InlineData((int)B1071_AiRecoveryBlockReason.ExcludedPartyType)]
@@ -99,6 +99,41 @@ namespace Byzantium1071.Tests
                 B1071_AiRecoveryBlockReason.Army | B1071_AiRecoveryBlockReason.UrgentFood;
 
             Assert.False(B1071_AiRecoveryMath.IsEligible(reasons));
+        }
+
+        /// <summary>
+        /// UrgentFood fires below MobilePartyAIModel.NeededFoodsInDaysThresholdForSiege --
+        /// twelve days in v1.5.2, a siege-provisioning line rather than an emergency. It is
+        /// recorded and it changes how the pass behaves, but it does not disqualify anyone.
+        /// </summary>
+        [Fact]
+        public void AFoodShortPartyIsStillEligible()
+        {
+            Assert.True(B1071_AiRecoveryMath.IsEligible(B1071_AiRecoveryBlockReason.UrgentFood));
+        }
+
+        /// <summary>
+        /// Real starvation is a separate flag and is not advisory. Asserted beside the one
+        /// above because the two look alike and confusing them would let a party that is
+        /// actively losing men be routed on a recruiting errand.
+        /// </summary>
+        [Fact]
+        public void ActualStarvationIsNotAdvisory()
+        {
+            Assert.False(B1071_AiRecoveryMath.IsEligible(B1071_AiRecoveryBlockReason.Starving));
+        }
+
+        /// <summary>
+        /// Pins the mask itself. Every other flag is asserted blocking one by one above, so
+        /// widening this set silently would turn one of those assertions into a contradiction
+        /// -- but only if someone remembers to look. This says it in one line instead.
+        /// </summary>
+        [Fact]
+        public void UrgentFoodIsTheOnlyAdvisoryReason()
+        {
+            Assert.Equal(
+                B1071_AiRecoveryBlockReason.UrgentFood,
+                B1071_AiRecoveryMath.AdvisoryReasons);
         }
 
         // ── Candidate ranking ─────────────────────────────────────────────────────
@@ -437,6 +472,129 @@ namespace Byzantium1071.Tests
             Assert.Equal(
                 expected,
                 B1071_GarrisonRecruitmentMath.ManpowerCostForRosterGrowth(before, after, costPerTroop));
+        }
+
+        // -- Drained settlements --------------------------------------------------
+
+        [Fact]
+        public void ASettlementThatCanSupplyNobodyIsPushedBelowItsNativeScore()
+        {
+            Assert.Equal(50f, B1071_AiRecoveryMath.DrainedCandidateScore(100f));
+        }
+
+        [Fact]
+        public void TheDrainPenaltyDiscouragesButNeverForbids()
+        {
+            // A score of zero would remove the settlement from consideration outright,
+            // which is not this factor's job -- a lord still visits for food and safety.
+            Assert.True(B1071_AiRecoveryMath.DrainedCandidateScore(100f) > 0f);
+            Assert.True(B1071_AiRecoveryMath.DrainedCandidateFactor < 1f);
+        }
+
+        [Fact]
+        public void ANegativeNativeScoreIsLeftAloneRatherThanHalvedUpwards()
+        {
+            // Halving -100 gives -50, which RANKS HIGHER. Penalising an already
+            // unattractive settlement must never make it look better.
+            Assert.Equal(-100f, B1071_AiRecoveryMath.DrainedCandidateScore(-100f));
+            Assert.Equal(0f, B1071_AiRecoveryMath.DrainedCandidateScore(0f));
+        }
+
+        [Fact]
+        public void TheDrainPenaltyRanksAnEmptySettlementBelowASupplyingOne()
+        {
+            // The failure this closes: the boost is a multiplier of at least 1, so a
+            // drained settlement with a higher native score used to win outright.
+            float drained = B1071_AiRecoveryMath.DrainedCandidateScore(100f);
+            float supplying = B1071_AiRecoveryMath.CandidateScore(80f, recruitable: 10, missing: 20);
+
+            Assert.True(supplying > drained);
+        }
+
+        // -- Volunteers in the quote ----------------------------------------------
+
+        [Fact]
+        public void VolunteersCountTowardTheQuoteTotal()
+        {
+            var quote = new B1071_AiRecoverySourceQuote(0, 0, 0, 0, volunteers: 7);
+
+            Assert.Equal(7, quote.Total);
+            Assert.Equal(7, quote.Volunteers);
+        }
+
+        [Fact]
+        public void QuotesFromDifferentSourcesAddUpIncludingVolunteers()
+        {
+            var veterans = new B1071_AiRecoverySourceQuote(3, 0, 0, 12);
+            var board = new B1071_AiRecoverySourceQuote(0, 0, 0, 8, volunteers: 5);
+
+            B1071_AiRecoverySourceQuote sum = veterans + board;
+
+            Assert.Equal(3, sum.Veterans);
+            Assert.Equal(5, sum.Volunteers);
+            Assert.Equal(8, sum.Total);
+            Assert.Equal(20, sum.Manpower);
+        }
+
+        [Fact]
+        public void AQuoteBuiltWithoutVolunteersStillReadsAsZeroRatherThanBreaking()
+        {
+            // The four-argument constructor is what the veteran and castle quoters call.
+            var quote = new B1071_AiRecoverySourceQuote(2, 1, 1, 30);
+
+            Assert.Equal(0, quote.Volunteers);
+            Assert.Equal(4, quote.Total);
+        }
+
+        [Fact]
+        public void AVolunteerQuoteCarriesTheManpowerThoseHiresWillCost()
+        {
+            // The men themselves are not reserved -- vanilla hands them to whichever lord
+            // arrives -- but the manpower pool they drain is shared, so it has to reach the
+            // reservation. A quote reporting volunteers with zero manpower promised the same
+            // village to two recovering lords.
+            var board = new B1071_AiRecoverySourceQuote(0, 0, 0, manpower: 24, volunteers: 4);
+
+            Assert.Equal(4, board.Total);
+            Assert.Equal(24, board.Manpower);
+        }
+
+        // -- Actionable vs Total ---------------------------------------------------
+
+        [Fact]
+        public void ActionableExcludesTheVanillaVolunteerBoard()
+        {
+            // The split that matters: routing asks Total, because all of the supply is a
+            // reason to go there. Recruiting asks Actionable, because Campaign++ never
+            // hands over the volunteer board itself -- vanilla hires it on arrival -- so
+            // acting on a volunteer-only quote is a guaranteed no-op.
+            var boardOnly = new B1071_AiRecoverySourceQuote(0, 0, 0, 12, volunteers: 5);
+
+            Assert.Equal(5, boardOnly.Total);
+            Assert.Equal(0, boardOnly.Actionable);
+        }
+
+        [Fact]
+        public void ActionableCountsEverySourceCampaignPlusPlusCanHandOver()
+        {
+            var mixed = new B1071_AiRecoverySourceQuote(2, 1, 1, 30, volunteers: 6);
+
+            Assert.Equal(10, mixed.Total);
+            Assert.Equal(4, mixed.Actionable);
+        }
+
+        // -- Vanilla's recruiting passes -------------------------------------------
+
+        [Fact]
+        public void TheVanillaPassCountOutrunsASixSlotVolunteerBoard()
+        {
+            // Hero.VolunteerTypes is a six-slot array, and
+            // RecruitmentCampaignBehavior.OnBeforeSettlementEntered runs CheckRecruiting
+            // seven times for an ordinary AI lord party. The quote's per-notable cap is
+            // therefore the pass count, and it must stay above the board size or the quote
+            // starts under-reporting a full board again -- the sevenfold undercount that
+            // collapsed CandidateScore's usefulShare before v1.0.3.8.
+            Assert.True(B1071_AiRecoveryMath.VanillaRecruitPassesPerArrival > 6);
         }
     }
 }

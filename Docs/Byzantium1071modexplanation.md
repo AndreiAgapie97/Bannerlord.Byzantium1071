@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.8
+**Version:** 1.0.3.9
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -1272,9 +1272,33 @@ Releases 1.0.3.4-1.0.3.7 changed AI decisions that only become visible over doze
 
 **The wasted-trip classification.** `SettlementEntered` records a party's member count and size limit; `OnSettlementLeftEvent` classifies the visit. A party that arrived at or above its limit is `NotSeeking` and excluded — counting garrison rotations and patrol stops as failed recruitment would bury the signal. A party that had room and left no fuller is `NoGain`, a wasted recruitment trip, and is bucketed by **the same 60% threshold that gates recovery routing** (`B1071_AiRecoveryMath.ShouldStart`, called through `B1071_TelemetryMath.IsWeakEnoughForRecovery`). That is the whole design of the bucket: recovery routing only ever sees parties below that line, so wasted trips landing mostly in **weak** mean the existing system can be taught to avoid them, while wasted trips landing mostly in **healthy** mean it structurally cannot and the fix belongs elsewhere. The split is judged on arrival strength, because that is what the party was when it chose to come — the decision under examination, not the state it left in. Visit state is a session-only instance dictionary and is never written to `SyncData`.
 
-**The rejection histogram, and why the eligible count needs it.** `RecoveryDigest` reports how many party-hours *entered* a recovery pass. That figure is unreadable alone: a low number means either that few lords need help or that the eligibility filter is rejecting the ones who do, and those call for opposite fixes. So `OnAiHourlyTick` resolves `GetBlockReasons` once and reuses it — `IsPartyEligible` is exactly `IsEligible(GetBlockReasons(party))`, so nothing extra is computed — and a rejected party is passed to `RecordBlockedWeakParty`. That helper counts the rejection only if the lord was **below `B1071_AiRecoveryMath.ShouldStart`'s 60% line**: a healthy lord being turned away is not a missed recovery, and counting those would bury the signal under every full-strength party on the map. Each of the fourteen `B1071_AiRecoveryBlockReason` flags gets its own bucket, indexed by bit position; `B1071_TelemetryMath.BlockReasonNames` is the only thing tying a bucket to its flag, so its order is load-bearing and `BlockReasonNamesMatchTheFlagOrder` fails if the enum ever gains a member out of order. One rejection sets every flag that applied, so the buckets **sum to more than the party-hour total** — a lord can be in an army *and* on a protected objective, and both gates are worth seeing. `BlockDigest` prints the dominant reason first and omits buckets that never fired.
+**Arrival strength cannot be read on arrival, which is why `FieldSample` exists.** Vanilla hires the notable board on the way in — `RecruitmentCampaignBehavior.OnBeforeSettlementEntered` → `CheckRecruiting` → `RecruitVolunteersFromNotable` — and `BeforeSettlementEnteredEvent` fires ahead of `SettlementEntered`. So a count taken in `OnSettlementEntered` already includes the recruits, the lord departs with the same total he was first observed holding, and every successful recruiting trip is classified `NoGain`. That is not a small bias; it is close to an inversion of the one number the metric was built for, and it accounts for the 76% figure recorded before v1.0.3.9. Listening to the earlier event does not help: `MBCampaignEvent.AddHandler` appends to a list that `RunHandlers` walks by index, so dispatch is strict registration order and vanilla's behaviors are always registered first. The only ordering-independent answer is to sample before the party arrives anywhere. `OnHourlyTickParty` therefore records the member count and a `CampaignTime` stamp for every AI lord party with a null `CurrentSettlement`, and `OnSettlementEntered` prefers that sample when it is for the same party and under two campaign hours old — one hourly tick either side of the arrival — consuming it as it is used. Absent or stale, it falls back to the live count, which is the old behaviour rather than a guess: a stale sample could invent a gain that never happened, while the fallback merely under-reports. Only the count is sampled: `PartySizeLimit` is derived from clan tier and perks rather than from the roster, so the hire cannot move it and sampling it would add a staleness path for no gain -- it is still read live at entry. Samples are swept for inactive parties on the same daily pass that clears abandoned visits, so neither dictionary grows across a campaign.
 
-**Two outputs, and why both.** Digest lines go to `rgl_log` and the session file, tagged `[Byzantium1071][Telemetry][Power|AiRecovery|AiRecoveryBlocks|Visits|Demob]`; they answer "what happened just now" and are read top to bottom. `B1071_TelemetryCsvLog` writes `b1071_telemetry_{timestamp}_{pid}.csv` into the same `<ModuleRoot>/Logs` folder, one row of thirty-five numeric columns per campaign day; it answers "what has been happening" and is read in a spreadsheet. Interleaving them would mean hand-extracting rows from a log full of unrelated subsystem chatter before any trend could be plotted. The CSV shares `B1071_SessionFileLog.ResolveModuleLogsRoot`, its lock-and-never-throw discipline, and its 30-file prune; every field is invariant-formatted so no quoting is needed and the file opens identically in every locale, and `TelemetryMathTests` fails if the header and row column counts ever diverge.
+**Routed trips are counted separately, because the figure above cannot answer the question on
+its own.** `IsTrackedVisit` admits every AI lord party entering any village, town or castle —
+garrison rotations, loot sales, waiting out a pursuer — so a high no-gain share is a property
+of the campaign, not evidence about `B1071_AiRecoveryBehavior`. In the first run carrying this
+classification, 76% of visits ended with no gain and 74% of those were by weak lords, and
+neither number could be attributed to routing. So `VisitState` now also records whether the
+settlement was this system's destination for that party, through the read-only
+`B1071_AiRecoveryBehavior.IsRecoveryDestination`, and `visitsRouted` / `visitsRoutedNoGain`
+carry it into the digest and the CSV. Two details make it honest. It reports **confirmed
+intent, not a proposal** — a proposal is a score written into `PartyThinkParams` that the
+native AI is free to ignore, and counting those would credit the system with trips it did not
+cause. And it samples on **entry, not exit** — intent is cleared the moment the lord reaches
+his stop line, so reading it on the way out would report every successful trip as unrouted and
+invert the measurement. The pair runs beside the existing counters rather than splitting them,
+so days logged before v1.0.3.9 stay comparable.
+
+**The rejection histogram, and why the eligible count needs it.** `RecoveryDigest` reports how many party-hours *entered* a recovery pass. That figure is unreadable alone: a low number means either that few lords need help or that the eligibility filter is rejecting the ones who do, and those call for opposite fixes. So `OnAiHourlyTick` resolves `GetBlockReasons` once and reuses it — `IsPartyEligible` is exactly `IsEligible(GetBlockReasons(party))`, so nothing extra is computed — and a rejected party is passed to `RecordBlockedWeakParty`. That helper counts the rejection only if the lord was **below `B1071_AiRecoveryMath.ShouldStart`'s 60% line**: a healthy lord being turned away is not a missed recovery, and counting those would bury the signal under every full-strength party on the map. It also drops
+any party that was never a candidate at all: caravans, villagers, militia and bandits come
+through the same hook and fail on `InvalidLeader` and `ExcludedPartyType` every hour of every
+day, and in the first run carrying this histogram they were 86% of every rejection recorded,
+holding the top two buckets between them. Each of the fourteen `B1071_AiRecoveryBlockReason` flags gets its own bucket, indexed by bit position; the advisory `UrgentFood` flag keeps its column but no longer fills it, since it stopped rejecting anyone in v1.0.3.9 — the `recoveryFoodShort` counter recorded beside `recoveryEligible` is where that share is now read; `B1071_TelemetryMath.BlockReasonNames` is the only thing tying a bucket to its flag, so its order is load-bearing and `BlockReasonNamesMatchTheFlagOrder` fails if the enum ever gains a member out of order. One rejection sets every flag that applied, so the buckets **sum to more than the party-hour total** — a lord can be in an army *and* on a protected objective, and both gates are worth seeing. `BlockDigest` prints the dominant reason first and omits buckets that never fired.
+
+**Why the volunteer board is counted three ways.** `recoveryZeroQuote` says a settlement supplied nothing; it never says why. A board can come back empty because it is empty, because the lord is over his wage limit, or because he is under vanilla's recruiting money floor — and the last of those is a rule Campaign++ *mirrors* rather than owns, which makes it the one most able to drift from the game without any other figure moving. The v1.0.3.9 floor shifted `recoveryZeroQuote` by under a point in its first campaign, equally consistent with "almost never fires" and with "fires constantly on settlements whose quote stays positive on veterans and castle stock". So `QuoteNotableVolunteers` now counts `volQuotes` at the line where structural gates end and affordability begins, and `volWageBlock` and `volGoldBlock` at the two returns below it. The wage limit is bucketed separately because vanilla tests it first: folded together, the gold share would be measured against a denominator containing lords who never reached the gold test. Both money clauses — the personal floor and the clan-purse-with-generosity clause — share `volGoldBlock`, because they are one vanilla decision written as two tests and splitting them would imply a distinction `CheckRecruiting` does not make.
+
+**Two outputs, and why both.** Digest lines go to `rgl_log` and the session file, tagged `[Byzantium1071][Telemetry][Power|AiRecovery|AiRecoveryBlocks|Visits|Demob]`; they answer "what happened just now" and are read top to bottom. `B1071_TelemetryCsvLog` writes `b1071_telemetry_{timestamp}_{pid}.csv` into the same `<ModuleRoot>/Logs` folder, one row of forty-one numeric columns per campaign day; it answers "what has been happening" and is read in a spreadsheet. Interleaving them would mean hand-extracting rows from a log full of unrelated subsystem chatter before any trend could be plotted. The CSV shares `B1071_SessionFileLog.ResolveModuleLogsRoot`, its lock-and-never-throw discipline, and its 30-file prune; every field is invariant-formatted so no quoting is needed and the file opens identically in every locale, and `TelemetryMathTests` fails if the header and row column counts ever diverge.
 
 **Failure posture.** Every handler is wrapped; five faults disable the behavior for the session rather than logging once per tick forever. Nothing here is read by any gameplay path, and `SyncData` is deliberately empty.
 
@@ -2070,12 +2094,53 @@ is never left one man short of its own stop line.
 
 ### Protected states
 
-A party is eligible only when it is an AI-led lord party and **every** block reason in
-`B1071_AiRecoveryBlockReason` is clear: army membership, map event, siege event, transition,
-disbanding, retreat, starvation, urgent food shortage, a besieged current settlement, quest use, an
-excluded party type, and any objective other than `Hold`, `None`, or an ordinary
-`GoToSettlement`. Patrol, engage/chase, escort, raid, besiege, assault, defend, and flee are
-all excluded. Player-clan companion parties remain eligible, but existing recruitment ownership
+A party is eligible only when it is an AI-led lord party and **every disqualifying** block
+reason in `B1071_AiRecoveryBlockReason` is clear: army membership, map event, siege event,
+transition, disbanding, retreat, starvation, a besieged current settlement, quest use, an
+excluded party type, and any objective other than `Hold`, `None`, `PatrolAroundPoint`, or an
+ordinary `GoToSettlement`. Engage/chase, escort, raid, besiege, assault, defend, and flee are
+all excluded.
+
+**`UrgentFood` is the one exception, and has been since v1.0.3.9.** `IsEligible` is
+`(reasons & ~AdvisoryReasons) == None`, and `AdvisoryReasons` holds that flag alone: it is
+computed, recorded and acted on, but it disqualifies nobody. The reason is that the threshold
+behind it is not a hunger warning. `GetBlockReasons` raises it below
+`MobilePartyAIModel.NeededFoodsInDaysThresholdForSiege`, which is `12f` — the stock vanilla
+wants in hand *before committing to a siege*. A lord with eleven days of food is in no
+difficulty at all, and vanilla never blocks anything on that number. It does the reverse:
+`AiVisitSettlementBehavior` reads the same constant to **raise** the score of towns and
+villages that sell food, so treating it as a disqualification had Campaign++ working against
+the game with the game's own figure. In a 27-day run it was 24.3% of every rejection recorded
+— the second-largest gate — while `PartyBase.IsStarving`, which is the game's only genuine
+emergency signal and a separate flag, fired zero times. Starvation still blocks; running low
+on rations does not.
+
+Being food-short still changes the pass, in two places, and both are restraints rather than
+permissions. The `DrainedCandidateScore` penalty is **skipped** for such a lord: that penalty
+halves the score of a settlement that can supply no recruits, and for a hungry lord that may
+be exactly the town vanilla has just scored up to sell him grain — recruiting is worth less
+than eating. Because no penalty is written on that path, the scoring bar read before it is
+still current and is not re-read. And **Recovery Takes Priority is forced off** for him, so
+the chosen stop competes on merit instead of replacing the winning score outright. Vanilla's
+food bonus is already inside the native score `CandidateScore` multiplies, so a settlement
+offering both food and men still comes out ahead — but a castle full of elites can no longer
+outrank the town that would have fed him. The system may suggest a destination to a hungry
+lord; it may not overrule one.
+
+**A lord below vanilla's recruiting money floor skips that same penalty**, and for a related
+reason. The penalty means *this settlement is empty*; for a lord who cannot afford to hire
+anywhere it would instead mean *this lord is poor*, which is a party condition written onto
+the map. Nor would it fall evenly — the veteran and castle quoters apply no money floor, so
+his castles would keep their full scores while every town and village was halved, and the
+towns are precisely where vanilla is steering him to sell loot and raise the gold the floor
+demands. The test is the same `IsBelowVanillaRecruitingMoneyFloor` the volunteer quoter uses,
+so the rule has one definition rather than two that can drift; and as with the food case no
+penalty is written, so the scoring bar read before it is still current.
+
+`PatrolAroundPoint` is deliberately **not**, and was until v1.0.3.9. It is the AI's idle
+state — a lord with nothing to do circles a point until something needs him — so treating it
+as a commitment turned away precisely the lords this system exists for: weak, unoccupied, and
+free to go and recruit. Player-clan companion parties remain eligible, but existing recruitment ownership
 rules still apply — they cannot take veterans reserved away from player-clan AI use.
 
 ### Honest resource accounting
@@ -2083,17 +2148,39 @@ rules still apply — they cannot take veterans reserved away from player-clan A
 The scoring is only worth anything if the troops it counts can actually be bought on arrival.
 Each candidate is quoted through read-only methods that share the **real** recruitment paths'
 rules, spending one `B1071_AiRecoveryBudget` (party room, gold, manpower) in true arrival
-order — **veterans, then castle elites, then converted prisoners** — so no coin, no slot, and
-no point of manpower is counted twice:
+order — **veterans, then castle elites, then converted prisoners, then the vanilla notable
+board** — so no coin, no slot, and no point of manpower is counted twice:
 
 - **Veterans** respect settling time, employer/access rules, the treasury reserve, party room, and manpower.
 - **Castle elites** respect castle access, the same-clan 50% discount, the treasury reserve, party room, and manpower.
 - **Converted prisoners** respect access, FIFO depositor costs, the treasury reserve, and party room. They continue to **cost zero manpower**, matching the real deposit path.
+- **Vanilla notable volunteers** are quoted last, and are the only source Campaign++ **counts but never takes**. `QuoteNotableVolunteers` reads each notable's board through `VolunteerModel.MaximumIndexHeroCanRecruitFromHero` — relation decides how far down a board a given lord may reach, and slots past that index are visible on it but not his — then applies the settlement volunteer tier cap, `IsBlockedByWar`, the manpower pool, and `PartyWageModel.GetTroopRecruitmentCost` against the lord's purse. Its gold buffer is **1**, not the configured multiplier, because vanilla itself hires on a bare `PartyTradeGold > cost` and for a lord party `PartyTradeGold` *is* `LeaderHero.Gold`. It counts **one man per notable per vanilla pass, and vanilla makes seven of them**. `RecruitVolunteersFromNotable` does break out of its slot loop on the first successful hire, so one call yields at most one man from a notable — but `OnBeforeSettlementEntered` does not call it once. It computes a pass count (`num`) and loops `CheckRecruiting` that many times: 1 for a caravan, 1–3 for a party inside the player's army, and **7** for every ordinary AI lord party, which is the only population quoted here since `B1071_AiRecoveryBlockReason.Army` disqualifies the rest. v1.0.3.9's first cut read the inner `break` as the whole rule and quoted a single man per notable, undercounting a full board sevenfold and collapsing `CandidateScore`'s `usefulShare` so that recovery lost races it should have won. The cap is now `B1071_AiRecoveryMath.VanillaRecruitPassesPerArrival`. Because `Hero.VolunteerTypes` is a six-slot array, seven passes always outrun the board and the cap never fires in practice — what the quoter reports is every reachable slot, which is the true ceiling. It is written as the pass count rather than as the board size because that is the rule making it correct, and it is what would bind first if either number moved. Wages gate it the same way they gate vanilla: a party already over its payment limit is quoted zero, and each prospective recruit must fit inside the wage budget left after the ones quoted before him. Gold gates it twice over, and the second gate is the one that matters: `CheckRecruiting` refuses to hire at all below `HeroHelper.StartRecruitingMoneyLimit`, which is `50 + min(150, manCount) × 20` — a sixty-man lord needs 1,250 denars before vanilla will buy him a single recruit, and the floor **rises as he fills up**. Omitting it quoted a full board to a lord who could not take one man from it, and routing then sent him across the map to come back with nothing, which the wasted-trip telemetry recorded as a routed no-gain. The clan-purse clause is mirrored with it: a lord who does not lead his clan may draw on `StartRecruitingMoneyLimitForClanLeader` instead, and a generous one (`GenerosityMercenaryRecruitmentEffect`) is past the whole test — dropping that clause would have under-quoted every non-leader with thin coffers and a rich clan, which is most of them. Both clauses live in one helper, `IsBelowVanillaRecruitingMoneyFloor`, because the routing penalty above asks the same question and a rule mirrored from the game must not be mirrored twice.
+
+**Which gold that floor is tested against is a real decision, and the first cut got it wrong.** It is the leader's live gold, not `B1071_AiRecoveryBudget.Gold`. The budget is spent down in Campaign++ arrival order — veterans, then castle elites, then volunteers — which is the right accounting for *how many men the purse stretches to*, and the wrong accounting for *whether vanilla will begin at all*. Vanilla hires the board from `OnBeforeSettlementEntered`, at the instant the party crosses the gate, whereas every Campaign++ transfer happens on a later hourly tick once the lord is already inside; the gold the game weighs against this floor is therefore the gold he rode in with. Testing the drained budget instead under-quoted every settlement holding both a veteran register entry and a board, and inflated `volGoldBlock` with lords who were never refused anything. Per-recruit affordability below still spends the shared budget, which is the constraint that budget exists to enforce.
+
+**Quoting six slots per notable costs six times the model calls**, and this quoter runs per candidate settlement, per recovering lord, every campaign hour. `GetCharacterWage`, `GetTroopRecruitmentCost` — which builds an `ExplainedNumber` on every call — `GetRecruitCostForParty` and `GetManpowerChargePerTroop` are resolved once per troop into a `VolunteerCost` held in a small dictionary allocated per `QuoteNotableVolunteers` call, then reused across notables and slots; boards repeat heavily, because every notable of a culture offers largely the same basic tree. The cache is keyed by troop alone, which is only sound because it does not outlive the call: leader, settlement and party are fixed within one, and the four figures depend on nothing else. A static cache reused across calls would be keyed by too little and would be wrong the first time a second lord quoted the same town.
 
 `B1071_AiRecoveryMath.AffordableUnits` applies the gold-buffer multiplier and leaves the lord at
-least one coin, so a quote can never bankrupt a party that acts on it. Ordinary volunteer
-evaluation is left **entirely** to Bannerlord; Campaign++ supplies only the awareness of its own
-troop sources.
+least one coin, so a quote can never bankrupt a party that acts on it.
+
+**Where a lord should go and what he can be handed are two different totals.** A quote reports
+both. `Total` counts every source including the volunteer board, and that is what routing
+scores on — all of the supply he will find is a reason to send him there, whoever hands it
+over. `Actionable` is `Total` minus the board: the men Campaign++ can transfer itself.
+`OnAiHourlyTick` recruits a lord standing in a settlement only when `Actionable` is positive,
+because the board is hired by vanilla on arrival and acting on it here is a guaranteed no-op —
+previously a lord parked in a town whose only supply was that board re-entered two no-op paths
+every campaign hour for as long as he stayed.
+
+Volunteer *recruitment* is still left entirely to Bannerlord: `RecruitVolunteersFromNotable`
+takes the men when the lord arrives, and taking them here as well would take them twice. What
+changed in v1.0.3.9 is that Campaign++ now **counts** them when deciding where to send him.
+Until then it supplied only the awareness of its own troop sources — and since vanilla keeps
+volunteer boards only in towns and villages while the castle quoter returns nothing for
+anything that is not a castle, and the veteran register is sparse, every town and village in
+the world quoted zero. Routing then had nothing to say about the settlements lords actually
+recruit from, which is why the zero-quote share sat above 90% in the runs that motivated this
+telemetry.
 
 ### Ranking and the winning score
 
@@ -2102,7 +2189,29 @@ adjusted = nativeScore × (1 + min(recruitable, missing) / missing)
 ```
 
 A settlement that closes the whole gap doubles its native score; one that closes half adds 50%;
-surplus beyond the gap adds nothing. The current recovery target is kept while it stays within
+surplus beyond the gap adds nothing.
+
+**And a settlement that can supply nobody is pushed down.** The formula above is a multiplier
+of at least 1, so on its own it can only ever recommend — the emptiest village on the map keeps
+its full native score and can still win. `B1071_AiRecoveryMath.DrainedCandidateScore` halves the
+native score of every candidate that quoted zero, but **only when some other candidate quoted
+men**. That condition is the whole design: pushing a lord away from every settlement at once
+would leave him wandering the map, and a settlement is worth visiting for food, healing and
+safety even when it has nobody to recruit. A negative native score is returned untouched —
+halving −100 gives −50, which ranks *higher*, so penalising an already unattractive settlement
+would make it look better. The penalty is applied before the **Recovery Takes Priority** gate,
+deliberately: whether our own pick beats the native best is a separate question from whether an
+empty village should be preferred to a full one, and a lord who ignores the suggestion should
+still not be drawn to the emptiest settlement in reach.
+
+The bar that gate measures against is then **re-read**. It was first taken before the penalties
+were written, so if the settlement holding the top native score is one just pushed down, the gate
+would have weighed our pick against a score that no longer exists and refused it — and an empty
+settlement outscoring everything is exactly the case the penalty was written for, so the fix
+would have cancelled itself. Re-reading is cheap and cannot misbehave:
+`PartyThinkParams.SetBehaviorScore` updates an existing entry in place and never appends, and
+the penalty only ever lowers, so the second pass walks the same list and can only move the bar
+down. The current recovery target is kept while it stays within
 10% of the best candidate (`IsWithinStickiness`), so a lord does not thrash between two nearly
 equal castles as pools fluctuate.
 
@@ -2123,6 +2232,11 @@ What a claim does carry is a quoted figure, and `GetReservedSupply` subtracts it
 lord's quote on two independent grounds. Veterans, castle elites, and converted prisoners are the
 stock of one settlement, so only a claim naming **this** settlement spends them — that is what
 keeps the current-settlement pass honest now that it ignores the destination claim entirely.
+Quoted volunteers are the exception and are **not** reserved as a headcount: they are vanilla's
+stock and vanilla hands them to whichever lord arrives, so holding them for one lord would
+promise something this system cannot deliver. The manpower those hires will cost the settlement
+is another matter, and `QuoteSettlement` folds it into the quote's `Manpower` so the claim
+carries it — without that, two recovering lords were quoted the same village pool twice over.
 Manpower is pooled, so a claim on a bound village spends the same points as its town, and any claim
 on the **same pool** is deducted whether or not it names the same settlement. A claim can therefore
 apply on both grounds, on one, or on neither. Subtracting only the pooled half was enough to promise

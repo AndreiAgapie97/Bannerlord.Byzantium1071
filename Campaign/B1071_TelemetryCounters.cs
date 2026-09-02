@@ -86,6 +86,48 @@ namespace Byzantium1071.Campaign
             if (total <= 0) _day.RecoveryZeroQuote++;
         }
 
+        /// <summary>
+        /// A volunteer board reached the affordability gates: the settlement holds one, the
+        /// lord may recruit there, and only money now decides whether it supplies him. The
+        /// denominator for the two counters below.
+        /// </summary>
+        internal static void RecordVolunteerQuoteAttempt()
+        {
+            if (!Enabled) return;
+            _day.VolunteerQuotes++;
+        }
+
+        /// <summary>
+        /// The board was zeroed because the party is already over its wage limit. Counted
+        /// separately from the gold floor because it is tested first: without it the gold
+        /// figure would be read against a denominator that includes lords who never reached
+        /// the gold test at all.
+        /// </summary>
+        internal static void RecordVolunteerWageBlocked()
+        {
+            if (!Enabled) return;
+            _day.VolunteerWageBlocked++;
+        }
+
+        /// <summary>
+        /// The board was zeroed by vanilla's recruiting money floor, or by the clan-purse and
+        /// generosity clause beside it (HeroHelper.StartRecruitingMoneyLimit and
+        /// StartRecruitingMoneyLimitForClanLeader).
+        ///
+        /// WHY THIS EXISTS: the v1.0.3.8 gold floor was added on the strength of a decompile,
+        /// and the first campaign after it moved recoveryZeroQuote by less than a point --
+        /// which could mean the floor almost never fires, or that it fires often on
+        /// settlements whose quote stays positive on veterans and castle stock. Those are
+        /// very different facts and no existing counter separates them. Both clauses share
+        /// one bucket: they are one vanilla decision expressed as two tests, and splitting
+        /// them would suggest a distinction the recruiting code does not make.
+        /// </summary>
+        internal static void RecordVolunteerGoldBlocked()
+        {
+            if (!Enabled) return;
+            _day.VolunteerGoldBlocked++;
+        }
+
         /// <summary>A candidate's score was rewritten in PartyThinkParams.</summary>
         internal static void RecordRecoveryProposed()
         {
@@ -98,6 +140,18 @@ namespace Byzantium1071.Campaign
         {
             if (!Enabled) return;
             _day.RecoveryConfirmed++;
+        }
+
+        /// <summary>
+        /// An eligible party was below vanilla's siege-provision food line. Counted at the
+        /// same site as <see cref="RecordRecoveryEligible"/> so the two are directly
+        /// comparable: this is a strict subset of that figure, and the ratio is the share of
+        /// recovery party-hours running under the food-short rules.
+        /// </summary>
+        internal static void RecordRecoveryFoodShort()
+        {
+            if (!Enabled) return;
+            _day.RecoveryFoodShort++;
         }
 
         /// <summary>
@@ -126,16 +180,23 @@ namespace Byzantium1071.Campaign
         /// A completed AI visit. <paramref name="weak"/> comes from
         /// B1071_TelemetryMath.IsWeakEnoughForRecovery and is only meaningful for a wasted
         /// trip, which is why the weak/healthy split is recorded on that branch alone.
+        ///
+        /// <paramref name="routed"/> is whether the party was standing in a settlement this
+        /// mod sent it to, sampled on ARRIVAL. It counts into a parallel pair rather than
+        /// splitting the existing one, because the two populations answer different questions
+        /// and the totals must stay comparable to the days already logged.
         /// </summary>
-        internal static void RecordVisit(B1071_VisitOutcome outcome, bool weak)
+        internal static void RecordVisit(B1071_VisitOutcome outcome, bool weak, bool routed)
         {
             if (!Enabled) return;
             if (outcome == B1071_VisitOutcome.NotSeeking) return;
 
             _day.Visits++;
+            if (routed) _day.VisitsRouted++;
             if (outcome != B1071_VisitOutcome.NoGain) return;
 
             _day.VisitsNoGain++;
+            if (routed) _day.VisitsRoutedNoGain++;
             if (weak) _day.VisitsNoGainWeak++;
             else _day.VisitsNoGainHealthy++;
         }

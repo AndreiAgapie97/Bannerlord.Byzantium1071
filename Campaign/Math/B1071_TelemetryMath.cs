@@ -55,11 +55,47 @@ namespace Byzantium1071.Campaign
         internal int RecoveryProposed { get; set; }
         internal int RecoveryConfirmed { get; set; }
 
+        /// <summary>
+        /// Of the <see cref="RecoveryEligible"/> party-hours, how many belonged to a lord
+        /// below vanilla's twelve-day siege-provision line. Advisory rather than blocking
+        /// since v1.0.3.8 (B1071_AiRecoveryMath.AdvisoryReasons), which is exactly why it is
+        /// counted here: the block histogram no longer sees it, and a change that quietly
+        /// stops being measurable is a change that cannot be reviewed later.
+        /// </summary>
+        internal int RecoveryFoodShort { get; set; }
+
+        /// <summary>
+        /// Volunteer boards that reached the affordability gates, and the two ways money
+        /// turned one into a zero. These are per settlement quoted, not per party-hour, so
+        /// they sit on the scale of <see cref="RecoveryQuoted"/> rather than
+        /// <see cref="RecoveryEligible"/>.
+        ///
+        /// They measure a rule Campaign++ mirrors rather than one it invents, which is
+        /// precisely why they are worth logging: a mirror that has drifted from the game is
+        /// invisible in every other figure here.
+        /// </summary>
+        internal int VolunteerQuotes { get; set; }
+        internal int VolunteerWageBlocked { get; set; }
+        internal int VolunteerGoldBlocked { get; set; }
+
         // --- Settlement visits (the A3 discriminator) ------------------------------------
         internal int Visits { get; set; }
         internal int VisitsNoGain { get; set; }
         internal int VisitsNoGainWeak { get; set; }
         internal int VisitsNoGainHealthy { get; set; }
+
+        /// <summary>
+        /// The subset of <see cref="Visits"/> made by a party standing in the settlement THIS
+        /// system routed it to, and how many of those left no fuller.
+        ///
+        /// Without this pair the wasted-trip rate cannot be read: <see cref="Visits"/> counts
+        /// every AI lord entering any village, town or castle, for any reason at all --
+        /// garrison rotation, selling loot, waiting out an enemy -- so a high no-gain share
+        /// says nothing about whether recovery routing sends lords anywhere useful. These two
+        /// isolate the trips the mod is actually responsible for.
+        /// </summary>
+        internal int VisitsRouted { get; set; }
+        internal int VisitsRoutedNoGain { get; set; }
 
         // --- Why weak lords never reached a recovery pass --------------------------------
 
@@ -162,7 +198,9 @@ namespace Byzantium1071.Campaign
         internal static string CsvHeader()
             => "day,lordParties,armies,warsDeclared,preset,vanillaPower,patchedPower,powerRatio,"
              + "recoveryEligible,recoveryQuoted,recoveryZeroQuote,recoveryProposed,recoveryConfirmed,"
+             + "recoveryFoodShort,volQuotes,volWageBlock,volGoldBlock,"
              + "visits,visitsNoGain,visitsNoGainWeak,visitsNoGainHealthy,"
+             + "visitsRouted,visitsRoutedNoGain,"
              + "aiExtensions,aiExtensionGold,aiRetired,"
              + "blockedWeak," + string.Join(",", BlockPrefixedNames());
 
@@ -197,10 +235,16 @@ namespace Byzantium1071.Campaign
                 Int(day.RecoveryZeroQuote),
                 Int(day.RecoveryProposed),
                 Int(day.RecoveryConfirmed),
+                Int(day.RecoveryFoodShort),
+                Int(day.VolunteerQuotes),
+                Int(day.VolunteerWageBlocked),
+                Int(day.VolunteerGoldBlocked),
                 Int(day.Visits),
                 Int(day.VisitsNoGain),
                 Int(day.VisitsNoGainWeak),
                 Int(day.VisitsNoGainHealthy),
+                Int(day.VisitsRouted),
+                Int(day.VisitsRoutedNoGain),
                 Int(day.AiExtensions),
                 Int(day.AiExtensionGold),
                 Int(day.AiRetired)
@@ -232,16 +276,25 @@ namespace Byzantium1071.Campaign
         internal static string RecoveryDigest(B1071_TelemetryDay day)
             => $"d{day.Day} eligible={day.RecoveryEligible} quoted={day.RecoveryQuoted} "
              + $"zeroQuote={day.RecoveryZeroQuote} proposed={day.RecoveryProposed} "
-             + $"confirmed={day.RecoveryConfirmed}";
+             + $"confirmed={day.RecoveryConfirmed} foodShort={day.RecoveryFoodShort} "
+             + $"volBoards={day.VolunteerQuotes} volWageBlock={day.VolunteerWageBlocked} "
+             + $"volGoldBlock={day.VolunteerGoldBlocked}";
 
         /// <summary>
         /// The visit digest. "noGain" is wasted recruitment trips; the weak/healthy split says
         /// whether B1071_AiRecoveryBehavior could have prevented them — see
         /// <see cref="IsWeakEnoughForRecovery"/>.
+        ///
+        /// "routed" is the pair that makes the rest of the line answerable. Everything before
+        /// it counts every AI lord entering any settlement for any reason; only these two are
+        /// trips this mod chose. Compare the two no-gain shares: routed worse than overall is
+        /// the routing failing, routed better is it working, and the overall figure on its own
+        /// is a property of the campaign rather than of the mod.
         /// </summary>
         internal static string VisitDigest(B1071_TelemetryDay day)
             => $"d{day.Day} visits={day.Visits} noGain={day.VisitsNoGain} "
-             + $"(weak={day.VisitsNoGainWeak} healthy={day.VisitsNoGainHealthy})";
+             + $"(weak={day.VisitsNoGainWeak} healthy={day.VisitsNoGainHealthy}) "
+             + $"routed={day.VisitsRouted} routedNoGain={day.VisitsRoutedNoGain}";
 
         /// <summary>
         /// The blocked-party digest: how many weak-lord party-hours never reached a settlement

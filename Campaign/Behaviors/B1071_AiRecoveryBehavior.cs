@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Byzantium1071.Campaign.Patches;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 
 namespace Byzantium1071.Campaign.Behaviors
@@ -273,6 +276,13 @@ namespace Byzantium1071.Campaign.Behaviors
                 // IsEligible(GetBlockReasons(party)), and the reasons are needed either way
                 // for the telemetry histogram below.
                 B1071_AiRecoveryBlockReason blockReasons = GetBlockReasons(party);
+
+                // Advisory, not disqualifying -- see B1071_AiRecoveryMath.AdvisoryReasons.
+                // It still changes how this pass behaves twice below: no drained penalty,
+                // and no priority override.
+                bool foodShort =
+                    (blockReasons & B1071_AiRecoveryBlockReason.UrgentFood) != 0;
+
                 if (!B1071_AiRecoveryMath.IsEligible(blockReasons))
                 {
                     RecordBlockedWeakParty(party, blockReasons);
@@ -309,6 +319,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 // Party-hours in recovery, not distinct parties: this runs hourly for as long
                 // as a lord stays below the stop threshold.
                 B1071_TelemetryCounters.RecordRecoveryEligible();
+                if (foodShort) B1071_TelemetryCounters.RecordRecoveryFoodShort();
 
                 int missing = B1071_AiRecoveryMath.MissingToStop(members, limit);
                 if (missing <= 0)
@@ -337,7 +348,12 @@ namespace Byzantium1071.Campaign.Behaviors
                         currentSettlement,
                         missing,
                         currentReserved);
-                    if (currentQuote.Total > 0)
+                    // Total counts the vanilla volunteer board, which this system never
+                    // takes -- vanilla hires it on arrival. Recruiting here must therefore
+                    // test only the sources Campaign++ can actually move, or a lord parked
+                    // in a town whose sole supply is that board re-enters both no-op paths
+                    // every campaign hour for as long as he stays.
+                    if (currentQuote.Actionable > 0)
                     {
                         int before = party.Party.NumberOfAllMembers;
                         RecruitAtCurrentSettlement(party, currentSettlement);
@@ -370,6 +386,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (highestNativeScore == float.MinValue) return;
 
                 var candidates = new List<RecoveryCandidate>();
+
+                // Settlements that quoted nobody. Held rather than forgotten so they can be
+                // pushed down -- but only if something else can actually supply. See
+                // B1071_AiRecoveryMath.DrainedCandidateScore.
+                List<(AIBehaviorData Behavior, float NativeScore)>? drained = null;
+
                 foreach (var scoreEntry in thinkParams.AIBehaviorScores)
                 {
                     AIBehaviorData behavior = scoreEntry.Item1;
@@ -397,7 +419,12 @@ namespace Byzantium1071.Campaign.Behaviors
                     // counted rather than vanishing -- that is the population an A3 penalty
                     // would act on.
                     B1071_TelemetryCounters.RecordRecoveryQuote(quote.Total);
-                    if (quote.Total <= 0) continue;
+                    if (quote.Total <= 0)
+                    {
+                        drained ??= new List<(AIBehaviorData, float)>();
+                        drained.Add((behavior, nativeScore));
+                        continue;
+                    }
 
                     candidates.Add(new RecoveryCandidate(
                         behavior,
@@ -415,6 +442,61 @@ namespace Byzantium1071.Campaign.Behaviors
                     _proposals.Remove(partyId);
                     _reservations.Remove(partyId);
                     return;
+                }
+
+                // Something here can supply, so the settlements that cannot are now a worse
+                // use of the same journey and are scored as such. Deliberately before the
+                // RecoveryWins gate below: whether our own pick beats the native best is a
+                // separate question from whether an empty village should be preferred to a
+                // full one, and a lord who ignores our suggestion should still not be drawn
+                // to the emptiest settlement on the map.
+                // A lord short of food is the one case where pushing a settlement DOWN can
+                // do real harm: the settlement that cannot supply him a single recruit may
+                // be exactly the town vanilla scored up to sell him grain. Recruiting is
+                // worth less than eating, so for him the penalty is not applied at all --
+                // and because no penalty is written, the scoring bar read above is still
+                // current and needs no re-read.
+                //
+                // A lord below vanilla's recruiting money floor is the second such case, and
+                // it arrived with the floor itself. The penalty is meant to say "this
+                // SETTLEMENT is empty"; for a lord who cannot afford to hire anywhere, every
+                // board on the map quotes zero, so it would instead say "this LORD is poor"
+                // -- a party condition written onto the map. It would not even fall evenly:
+                // the castle and veteran quoters carry no such floor, so his castles keep
+                // full scores while every town and village is halved, and the towns are
+                // where vanilla was steering him to sell loot and raise the very gold the
+                // floor demands. Skipped for the same reason and by the same shape as the
+                // food case, and likewise writing no penalty, so the bar above still stands.
+                if (drained != null && !foodShort
+                    && !(party.LeaderHero != null
+                         && IsBelowVanillaRecruitingMoneyFloor(
+                                party.LeaderHero, party.LeaderHero.Gold)))
+                {
+                    foreach ((AIBehaviorData behavior, float nativeScore) in drained)
+                    {
+                        AIBehaviorData drainedBehavior = behavior;
+                        thinkParams.SetBehaviorScore(
+                            in drainedBehavior,
+                            B1071_AiRecoveryMath.DrainedCandidateScore(nativeScore));
+                    }
+
+                    // The bar below was read BEFORE those penalties. If the settlement
+                    // holding the top native score is one we just pushed down, RecoveryWins
+                    // would measure our pick against a score that no longer exists and
+                    // refuse it -- and an empty settlement outscoring everything is exactly
+                    // the case the penalty exists for, so the fix would cancel itself.
+                    // Re-read it: SetBehaviorScore updates in place (it never appends), and
+                    // the penalty only ever lowers, so this is one more pass over the same
+                    // list and can only move the bar down.
+                    highestNativeScore = float.MinValue;
+                    foreach (var scoreEntry in thinkParams.AIBehaviorScores)
+                    {
+                        float score = scoreEntry.Item2;
+                        if (!float.IsNaN(score) && !float.IsInfinity(score))
+                            highestNativeScore = Math.Max(highestNativeScore, score);
+                    }
+
+                    if (highestNativeScore == float.MinValue) return;
                 }
 
                 RecoveryCandidate best = candidates
@@ -435,10 +517,20 @@ namespace Byzantium1071.Campaign.Behaviors
                     }
                 }
 
+                // Recovery may SUGGEST a destination to a hungry lord, but it must never
+                // OVERRIDE one. Taking priority replaces the winning score outright, which
+                // would let a castle full of elites outrank the town that would have fed
+                // him. Dropped to a plain comparison instead: our pick still wins if it
+                // genuinely outscores the native best, and vanilla's own food bonus is part
+                // of that native best, so a settlement offering both food and men still
+                // comes out ahead on merit.
+                bool takesPriority =
+                    Settings.AiRecoveryTakesPriorityOverNewTasks && !foodShort;
+
                 if (!B1071_AiRecoveryMath.RecoveryWins(
                         selected.AdjustedScore,
                         highestNativeScore,
-                        Settings.AiRecoveryTakesPriorityOverNewTasks))
+                        takesPriority))
                 {
                     ClearPartyState(partyId);
                     return;
@@ -447,7 +539,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 float winningScore = B1071_AiRecoveryMath.FinalScore(
                     selected.AdjustedScore,
                     highestNativeScore,
-                    Settings.AiRecoveryTakesPriorityOverNewTasks);
+                    takesPriority);
                 AIBehaviorData winningBehavior = selected.Behavior;
                 thinkParams.SetBehaviorScore(in winningBehavior, winningScore);
                 B1071_TelemetryCounters.RecordRecoveryProposed();
@@ -472,6 +564,12 @@ namespace Byzantium1071.Campaign.Behaviors
                     Party = party,
                     Settlement = selected.Settlement,
                     ManpowerPool = selected.ManpowerPool,
+                    // The volunteer HEADCOUNT is not reserved: those men are vanilla's
+                    // stock, and vanilla hands them to whichever lord arrives, so holding
+                    // them for one would promise something this system cannot deliver. The
+                    // manpower those hires will cost the settlement IS reserved -- it is
+                    // folded into Quote.Manpower by QuoteSettlement, and it is the one
+                    // constraint the two lords genuinely share.
                     Supply = new B1071_AiRecoveryReservedSupply(
                         selected.Quote.Veterans,
                         selected.Quote.Elites,
@@ -645,7 +743,291 @@ namespace Byzantium1071.Campaign.Behaviors
                     reserved.Elites,
                     reserved.Prisoners);
 
+            if (budget.Room > 0)
+            {
+                int volunteers = QuoteNotableVolunteers(
+                    party, settlement, budget, out int volunteerManpower);
+
+                // The manpower is carried even though the men are not: vanilla's own
+                // recruitment on arrival goes through B1071_AiRecruitmentManpowerGatePatch
+                // and charges the settlement pool for every volunteer it hires. Reporting
+                // zero here would leave that spend out of the reservation below, and two
+                // recovering lords would be quoted the same village twice over.
+                quote += new B1071_AiRecoverySourceQuote(
+                    0, 0, 0, volunteerManpower, volunteers);
+            }
+
             return quote;
+        }
+
+        /// <summary>
+        /// Quotes the vanilla notable volunteer board -- the recruits an AI lord actually
+        /// finds in a town or village.
+        ///
+        /// This is the third quoter, and it exists because the first two cannot see most of
+        /// the map. QuoteAiRecoveryVeterans needs the settlement to hold an entry in the
+        /// demobilization veteran register, which is sparse. QuoteAiRecoveryCastleRecruits
+        /// returns immediately for anything that is not a castle. Vanilla, meanwhile, keeps
+        /// volunteer boards only in towns and villages -- RecruitmentCampaignBehavior's
+        /// UpdateVolunteersOfNotablesInSettlement returns unless IsTown or IsVillage -- so
+        /// between them the two quoters covered castles and almost nothing else, and every
+        /// town and village in the world quoted zero. Routing then had nothing to say about
+        /// the settlements lords actually recruit from.
+        ///
+        /// It counts men but never takes them. Vanilla's RecruitVolunteersFromNotable
+        /// already recruits from the board when an AI party is inside the settlement, and
+        /// recruiting here as well would take the same men twice. The number exists to steer
+        /// the journey; the arrival stays vanilla's to handle.
+        /// </summary>
+        private static int QuoteNotableVolunteers(
+            MobileParty party,
+            Settlement settlement,
+            B1071_AiRecoveryBudget budget,
+            out int manpowerSpent)
+        {
+            manpowerSpent = 0;
+            if (budget.Room <= 0) return 0;
+
+            // Vanilla fills volunteer slots in towns and villages only, and refuses
+            // recruitment at a raided settlement in OnBeforeSettlementEntered.
+            if (!settlement.IsTown && !settlement.IsVillage) return 0;
+            if (settlement.IsRaided || settlement.IsUnderRaid) return 0;
+
+            Hero? leader = party.LeaderHero;
+            if (leader == null) return 0;
+
+            VolunteerModel? volunteerModel =
+                TaleWorlds.CampaignSystem.Campaign.Current?.Models?.VolunteerModel;
+            if (volunteerModel == null) return 0;
+
+            // Campaign++ blocks recruitment at a settlement hosting an enemy war party, for
+            // AI lords as well as the player (B1071_AiRecruitmentManpowerGatePatch). Quoting
+            // past that would route a lord to a board he is turned away from on arrival.
+            if (B1071_RecruitmentTierGateHelper.IsBlockedByWar(settlement, leader, out _))
+                return 0;
+
+            // Resolved once for the whole settlement. The per-troop form builds two
+            // TextObjects it would then discard, and this loop runs over every slot of
+            // every notable, for every candidate, every hour.
+            bool hasTierCap = B1071_RecruitmentTierGateHelper.TryGetVolunteerTierCap(
+                settlement, out int tierCap);
+
+            PartyWageModel? wageModel =
+                TaleWorlds.CampaignSystem.Campaign.Current?.Models?.PartyWageModel;
+            B1071_ManpowerBehavior? manpower = B1071_ManpowerBehavior.Instance;
+
+            // Everything above is structural -- wrong settlement type, raided, at war, no
+            // model. What follows is affordability, and it is the only part of this quoter
+            // whose effect cannot be read off any other counter: a lord refused here still
+            // produces a quote, still gets scored, and looks identical to one the board
+            // simply had nothing for. Counted from this line so the two rejections below
+            // have an honest denominator.
+            B1071_TelemetryCounters.RecordVolunteerQuoteAttempt();
+
+            // Wages gate the vanilla pass twice: RecruitmentCampaignBehavior skips
+            // RecruitVolunteersFromNotable entirely when the party is over its payment
+            // limit, and refuses each individual recruit whose wage the remaining budget
+            // cannot carry. A lord who cannot pay is not supplied by the fullest board.
+            if (party.IsWageLimitExceeded())
+            {
+                B1071_TelemetryCounters.RecordVolunteerWageBlocked();
+                return 0;
+            }
+            int wageBudget = party.GetAvailableWageBudget();
+
+            // Wages are not the only floor -- see IsBelowVanillaRecruitingMoneyFloor.
+            //
+            // Tested against the leader's LIVE gold, not budget.Gold, and the difference is
+            // not a detail. The budget is spent down in Campaign++ arrival order -- veterans,
+            // then castle elites, then prisoners -- but vanilla does not hire in that order.
+            // It hires the board from OnBeforeSettlementEntered, at the instant the party
+            // crosses the gate, while every Campaign++ transfer happens on a later hourly
+            // tick once the lord is already inside. So the gold vanilla actually weighs
+            // against this floor is the gold he rode in with, which is what leader.Gold
+            // holds. Charging the veteran register against the floor first under-quoted
+            // every settlement that carries both a register entry and a board, and inflated
+            // volGoldBlock with lords who were never refused.
+            //
+            // Per-recruit affordability below still spends budget.Gold. That is the opposite
+            // question -- how many men the coin stretches to, once -- and double-spending
+            // there is exactly what the shared budget exists to prevent.
+            if (IsBelowVanillaRecruitingMoneyFloor(leader, leader.Gold))
+            {
+                B1071_TelemetryCounters.RecordVolunteerGoldBlocked();
+                return 0;
+            }
+
+            int quoted = 0;
+
+            // One small dictionary per settlement quoted, rather than one static one reused:
+            // the allocation is a rounding error beside the model calls it saves, and a
+            // per-call cache cannot outlive the leader and settlement its entries were
+            // computed for. See the lookup below.
+            var costs = new Dictionary<CharacterObject, VolunteerCost>();
+
+            foreach (Hero notable in settlement.Notables)
+            {
+                if (budget.Room <= 0) break;
+                if (notable == null || !notable.IsAlive || notable.VolunteerTypes == null)
+                    continue;
+
+                // Relation decides how far down a notable's board a given lord may reach.
+                // Slots at or past this index are visible on the board but not his to take,
+                // so counting them would quote men he cannot have.
+                int reachable = Math.Min(
+                    volunteerModel.MaximumIndexHeroCanRecruitFromHero(leader, notable),
+                    notable.VolunteerTypes.Length);
+
+                int takenFromNotable = 0;
+
+                for (int slot = 0; slot < reachable && budget.Room > 0; slot++)
+                {
+                    CharacterObject troop = notable.VolunteerTypes[slot];
+                    if (troop == null || troop.IsHero) continue;
+
+                    // The settlement tier cap refuses this troop at recruit time, so a full
+                    // slot holding one is not supply however full it looks.
+                    if (hasTierCap && troop.Tier > tierCap)
+                        continue;
+
+                    // Resolved once per troop, then reused. Boards repeat heavily -- every
+                    // notable of a culture offers largely the same basic tree -- and this
+                    // loop now runs up to six slots per notable rather than one, so the
+                    // model calls behind these four numbers multiplied by the same factor
+                    // the quote did. GetTroopRecruitmentCost builds an ExplainedNumber per
+                    // call, and this whole quoter runs per candidate settlement, per
+                    // recovering lord, every campaign hour; the tier-cap TextObject was
+                    // hoisted out of here for exactly this reason and these are dearer.
+                    //
+                    // Keyed by troop alone, which is only safe because the cache lives for
+                    // one call: leader, settlement and party are fixed inside it, and all
+                    // four figures depend on nothing else. It must not outlive the call.
+                    if (!costs.TryGetValue(troop, out VolunteerCost cost))
+                    {
+                        int wage = wageModel?.GetCharacterWage(troop) ?? 0;
+                        int gold =
+                            wageModel?.GetTroopRecruitmentCost(troop, leader).RoundedResultNumber ?? 0;
+                        int gate = 0;
+                        int charge = 0;
+                        if (manpower != null && budget.HasFiniteManpower)
+                        {
+                            gate = manpower.GetRecruitCostForParty(settlement, party, troop);
+                            charge = manpower.GetManpowerChargePerTroop(troop);
+                        }
+
+                        cost = new VolunteerCost(wage, gold, gate, charge);
+                        costs[troop] = cost;
+                    }
+
+                    int troopWage = cost.Wage;
+                    if (wageBudget < troopWage) continue;
+
+                    int goldPerMan = cost.Gold;
+                    int manpowerGateCost = cost.ManpowerGate;
+                    int manpowerChargeCost = cost.ManpowerCharge;
+
+                    // One man per slot -- a volunteer slot holds exactly one recruit. The
+                    // buffer multiplier is 1 because vanilla itself hires on a bare
+                    // "PartyTradeGold > cost", and for a lord party PartyTradeGold IS
+                    // LeaderHero.Gold, which is what the budget was built from.
+                    int take = B1071_AiRecoveryMath.AffordableUnits(
+                        1,
+                        budget.Room,
+                        budget.Gold,
+                        goldPerMan,
+                        goldBufferMultiplier: 1,
+                        budget.Manpower,
+                        manpowerGateCost);
+                    if (take <= 0) continue;
+
+                    budget.Room -= take;
+                    budget.Gold = Math.Max(0, budget.Gold - goldPerMan * take);
+                    if (budget.HasFiniteManpower)
+                    {
+                        int spent = Math.Min(budget.Manpower, manpowerChargeCost * take);
+                        budget.Manpower -= spent;
+                        manpowerSpent += spent;
+                    }
+                    wageBudget -= troopWage * take;
+                    quoted += take;
+
+                    // One man per notable PER PASS -- and vanilla makes several passes.
+                    // RecruitVolunteersFromNotable does break out of its own slot loop the
+                    // moment it hires one, so a notable yields at most one man per call.
+                    // But OnBeforeSettlementEntered does not call it once: it loops
+                    // CheckRecruiting `num` times, and for an ordinary AI lord party (not a
+                    // caravan, not inside the player's army) num is 7. Treating the notable
+                    // as good for a single man therefore undercounted a full board sevenfold
+                    // and collapsed CandidateScore's usefulShare, so recovery routing lost
+                    // races it should have won.
+                    //
+                    // Hero.VolunteerTypes is a six-slot array, so seven passes always outrun
+                    // the board and this cap never actually fires: what the loop quotes today
+                    // is every reachable slot, which is the true ceiling. The cap is written
+                    // as the pass count anyway because that -- not the array length -- is the
+                    // rule that makes it correct, and it is what would bind first if either
+                    // number ever moved.
+                    //
+                    // Parties inside an army get num 1-3 instead, and are not quoted here:
+                    // B1071_AiRecoveryBlockReason.Army disqualifies them before this runs.
+                    if (++takenFromNotable >= B1071_AiRecoveryMath.VanillaRecruitPassesPerArrival)
+                        break;
+                }
+            }
+
+            return quoted;
+        }
+
+        /// <summary>
+        /// What one volunteer of a given troop type costs this lord at this settlement: his
+        /// wage, his recruitment price, the manpower the gate charges for him and the
+        /// manpower actually deducted. Cached for the life of a single QuoteNotableVolunteers
+        /// call, over which leader, settlement and party do not change.
+        /// </summary>
+        private readonly struct VolunteerCost
+        {
+            internal VolunteerCost(int wage, int gold, int manpowerGate, int manpowerCharge)
+            {
+                Wage = wage;
+                Gold = gold;
+                ManpowerGate = manpowerGate;
+                ManpowerCharge = manpowerCharge;
+            }
+
+            internal int Wage { get; }
+            internal int Gold { get; }
+            internal int ManpowerGate { get; }
+            internal int ManpowerCharge { get; }
+        }
+
+        /// <summary>
+        /// Vanilla's refusal to begin recruiting at all, mirrored from
+        /// RecruitmentCampaignBehavior.CheckRecruiting. <c>true</c> means the game would not
+        /// sell this lord a single volunteer however full the board is.
+        ///
+        /// Two clauses, both vanilla's. The first is
+        /// <c>HeroHelper.StartRecruitingMoneyLimit</c> -- <c>50 + min(150, manCount) * 20</c>,
+        /// so a sixty-man lord needs 1,250 denars, and the floor RISES as he fills up, which
+        /// makes it bite hardest on exactly the parties recovery is rebuilding. The second is
+        /// the clan purse: a lord who does not lead his clan also qualifies on the clan's
+        /// gold, and a generous one is exempt outright. Dropping that clause would refuse
+        /// every non-leader with thin coffers and a rich clan, which is most of them.
+        ///
+        /// The gold to pass in is the lord's own, unspent: this is a precondition vanilla
+        /// tests once on arrival, not a running balance. Callers holding a
+        /// B1071_AiRecoveryBudget must not hand it budget.Gold.
+        /// </summary>
+        private static bool IsBelowVanillaRecruitingMoneyFloor(Hero leader, int gold)
+        {
+            if (leader == null) return false;
+
+            if (gold <= Helpers.HeroHelper.StartRecruitingMoneyLimit(leader)) return true;
+
+            return leader != leader.Clan?.Leader
+                && !(leader.Clan?.Gold > Helpers.HeroHelper.StartRecruitingMoneyLimitForClanLeader(leader))
+                && Helpers.TraitEffectHelper.GetTraitEffectBonus(
+                       leader, TaleWorlds.CampaignSystem.CharacterDevelopment.DefaultPersonalityTraitEffects
+                           .GenerosityMercenaryRecruitmentEffect) == 0f;
         }
 
         private static bool IsCandidateSettlement(MobileParty party, Settlement settlement)
@@ -667,6 +1049,17 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             // Checked before touching the party so a normal session does none of this work.
             if (!B1071_TelemetryCounters.Enabled) return;
+
+            // Caravans, villagers, militia and bandits pour through this hook and are
+            // rejected for InvalidLeader and ExcludedPartyType every hour of every day.
+            // They were never recovery candidates, and counting them buries the gates that
+            // matter: in the first run carrying this histogram they were 86% of every
+            // rejection recorded, and the two flags they set were the top two buckets.
+            const B1071_AiRecoveryBlockReason notACandidate =
+                B1071_AiRecoveryBlockReason.Inactive
+                | B1071_AiRecoveryBlockReason.InvalidLeader
+                | B1071_AiRecoveryBlockReason.ExcludedPartyType;
+            if ((reasons & notACandidate) != 0) return;
             if (!B1071_AiRecoveryMath.ShouldStart(
                     party.Party.NumberOfAllMembers,
                     party.Party.PartySizeLimit)) return;
@@ -676,6 +1069,29 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private static bool IsPartyEligible(MobileParty party)
             => B1071_AiRecoveryMath.IsEligible(GetBlockReasons(party));
+
+        /// <summary>
+        /// Whether <paramref name="settlement"/> is the destination this system steered
+        /// <paramref name="party"/> towards. Read-only, and read by B1071_TelemetryBehavior
+        /// alone, so a visit can be attributed to recovery routing instead of to the dozen
+        /// other reasons a lord walks into a village.
+        ///
+        /// It reports the INTENT, not the proposal: a proposal is a score written into
+        /// PartyThinkParams that the native AI is free to ignore, while an intent is only
+        /// recorded once the party actually took the destination. Counting proposals would
+        /// credit this system with trips it did not cause.
+        /// </summary>
+        internal bool IsRecoveryDestination(MobileParty? party, Settlement? settlement)
+        {
+            if (party == null || settlement == null) return false;
+
+            string partyId = party.StringId;
+            if (string.IsNullOrEmpty(partyId)) return false;
+
+            return _intents.TryGetValue(partyId, out RecoveryIntent? intent)
+                && intent != null
+                && intent.Target == settlement;
+        }
 
         private static B1071_AiRecoveryBlockReason GetBlockReasons(MobileParty? party)
         {
@@ -705,9 +1121,16 @@ namespace Byzantium1071.Campaign.Behaviors
             if (party.CurrentSettlement?.IsUnderSiege == true)
                 reasons |= B1071_AiRecoveryBlockReason.BesiegedSettlement;
 
+            // PatrolAroundPoint is the AI's idle state, not an objective: a lord with
+            // nothing to do circles a point until something needs him. Treating it as
+            // protected turned away exactly the lords recovery routing exists for -- weak,
+            // unoccupied, and free to go recruit. Everything else the enum can hold is a
+            // real commitment (assault, raid, besiege, engage, join, escort, defend, flee)
+            // and stays blocked.
             if (party.DefaultBehavior != AiBehavior.Hold
                 && party.DefaultBehavior != AiBehavior.None
-                && party.DefaultBehavior != AiBehavior.GoToSettlement)
+                && party.DefaultBehavior != AiBehavior.GoToSettlement
+                && party.DefaultBehavior != AiBehavior.PatrolAroundPoint)
                 reasons |= B1071_AiRecoveryBlockReason.ProtectedObjective;
 
             if (!party.IsLordParty

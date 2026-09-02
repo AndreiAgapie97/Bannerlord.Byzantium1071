@@ -185,29 +185,53 @@ namespace Byzantium1071.Campaign.Patches
                 $"({settlementType} cap T{tierCap}, troop T{troop.Tier}).");
         }
 
-        private static bool TryGetTierCap(
-            Settlement recruitmentSettlement,
-            out TextObject settlementType,
-            out int tierCap)
+        /// <summary>
+        /// The settlement's volunteer tier cap on its own, without the localized
+        /// settlement-type name that every message builder needs and no bulk check does.
+        ///
+        /// This exists for callers that test many troops against one settlement.
+        /// TryGetTierCap allocates a TextObject on entry and a second on success, so the AI
+        /// recovery quoter -- which tests every volunteer slot of every notable of every
+        /// candidate settlement, once an hour, for every recovering lord -- would allocate
+        /// two objects per slot and immediately discard both. Resolving the cap once per
+        /// settlement and comparing tiers inline costs nothing.
+        /// </summary>
+        internal static bool TryGetVolunteerTierCap(Settlement? recruitmentSettlement, out int tierCap)
         {
-            settlementType = new TextObject(string.Empty);
             tierCap = 0;
+
+            if (recruitmentSettlement == null)
+                return false;
 
             if (recruitmentSettlement.IsVillage)
             {
-                settlementType = new TextObject("{=b1071_recruit_type_village}village");
                 tierCap = Math.Max(1, Settings.VillageVolunteerTierMax);
                 return true;
             }
 
             if (recruitmentSettlement.IsTown && !recruitmentSettlement.IsCastle)
             {
-                settlementType = new TextObject("{=b1071_recruit_type_town}town");
                 tierCap = Math.Max(1, Settings.TownVolunteerTierMax);
                 return true;
             }
 
             return false;
+        }
+
+        private static bool TryGetTierCap(
+            Settlement recruitmentSettlement,
+            out TextObject settlementType,
+            out int tierCap)
+        {
+            settlementType = new TextObject(string.Empty);
+
+            if (!TryGetVolunteerTierCap(recruitmentSettlement, out tierCap))
+                return false;
+
+            settlementType = recruitmentSettlement.IsVillage
+                ? new TextObject("{=b1071_recruit_type_village}village")
+                : new TextObject("{=b1071_recruit_type_town}town");
+            return true;
         }
 
         private static CharacterObject? FindHighestAllowedAncestor(CharacterObject troop, int tierCap)

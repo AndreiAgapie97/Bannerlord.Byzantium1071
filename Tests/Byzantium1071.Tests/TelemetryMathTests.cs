@@ -176,6 +176,68 @@ namespace Byzantium1071.Tests
             Assert.Contains("healthy=15", digest);
         }
 
+        /// <summary>
+        /// The routed pair is what makes the rest of the line answerable: everything else
+        /// counts every AI lord entering any settlement for any reason, so only these two
+        /// describe trips this mod chose.
+        /// </summary>
+        [Fact]
+        public void TheVisitDigestSeparatesRoutedTripsFromAllVisits()
+        {
+            string digest = B1071_TelemetryMath.VisitDigest(FullDay());
+            Assert.Contains("visits=88", digest);
+            Assert.Contains("routed=21", digest);
+            Assert.Contains("routedNoGain=6", digest);
+        }
+
+        /// <summary>
+        /// Advisory since v1.0.3.8, so the block histogram no longer carries it. This is the
+        /// only place the food-short share is still visible.
+        /// </summary>
+        [Fact]
+        public void TheRecoveryDigestReportsTheFoodShortShare()
+        {
+            string digest = B1071_TelemetryMath.RecoveryDigest(FullDay());
+            Assert.Contains("eligible=96", digest);
+            Assert.Contains("foodShort=30", digest);
+        }
+
+        /// <summary>
+        /// The three columns added in v1.0.3.8, checked by name rather than by position so
+        /// the assertion survives any future reordering of the row.
+        /// </summary>
+        [Theory]
+        [InlineData("recoveryFoodShort", "30")]
+        [InlineData("visitsRouted", "21")]
+        [InlineData("visitsRoutedNoGain", "6")]
+        [InlineData("volQuotes", "260")]
+        [InlineData("volWageBlock", "41")]
+        [InlineData("volGoldBlock", "74")]
+        public void TheNewCountersReachTheCsvUnderTheirOwnColumns(string column, string expected)
+        {
+            string[] header = B1071_TelemetryMath.CsvHeader().Split(',');
+            string[] row = B1071_TelemetryMath.CsvRow(FullDay()).Split(',');
+
+            int index = Array.IndexOf(header, column);
+            Assert.True(index >= 0, column + " column missing from the header");
+            Assert.Equal(expected, row[index]);
+        }
+
+        [Fact]
+        public void TheRecoveryDigestSeparatesTheTwoMoneyRejections()
+        {
+            // A board zeroed by the wage limit and one zeroed by the recruiting money floor
+            // are indistinguishable in recoveryZeroQuote, and both are indistinguishable
+            // there from a board that was simply empty. The digest has to name all three or
+            // the gold floor mirrored from vanilla in v1.0.3.8 cannot be checked against the
+            // game it mirrors.
+            string digest = B1071_TelemetryMath.RecoveryDigest(FullDay());
+
+            Assert.Contains("volBoards=260", digest);
+            Assert.Contains("volWageBlock=41", digest);
+            Assert.Contains("volGoldBlock=74", digest);
+        }
+
         [Fact]
         public void EveryDigestNamesTheDayItDescribes()
         {
@@ -305,10 +367,16 @@ namespace Byzantium1071.Tests
             RecoveryZeroQuote = 122,
             RecoveryProposed = 71,
             RecoveryConfirmed = 12,
+            RecoveryFoodShort = 30,
+            VolunteerQuotes = 260,
+            VolunteerWageBlocked = 41,
+            VolunteerGoldBlocked = 74,
             Visits = 88,
             VisitsNoGain = 19,
             VisitsNoGainWeak = 4,
             VisitsNoGainHealthy = 15,
+            VisitsRouted = 21,
+            VisitsRoutedNoGain = 6,
             AiExtensions = 33,
             AiExtensionGold = 4210,
             AiRetired = 27
