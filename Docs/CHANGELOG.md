@@ -1,5 +1,17 @@
 # Campaign++ — Changelog
 
+## [1.0.3.7] — 2026-09-02
+
+### Fix — The AI now values elite troops the way Campaign++ actually makes them fight
+
+**Campaign++ makes high-tier troops markedly harder to kill in autoresolve, but the native AI kept pricing them at vanilla worth — so lords declined engagements they would have won and attacked elite garrisons they should have avoided.**
+
+- **Root cause.** `B1071_TierArmorSimulationPatch` lowers the damage a high-tier troop takes and `B1071_FatalityPatch` turns more of its remaining fatal hits into wounds, but vanilla values a troop purely by tier: `DefaultMilitaryPowerModel.GetDefaultTroopPower` returns `(2 + tier) * (10 + tier) * 0.02f`, a fixed T6 = 3.9× T1. Campaign++ never changes a troop's tier, only what that tier absorbs, so every AI strength comparison stayed at vanilla numbers. `B1071_CombatRealismTuning` applies "to AI and player equally" — but that is parity of effect, not parity of knowledge.
+- **Fix.** New `B1071_TroopPowerValuationPatch`, a Postfix on `DefaultMilitaryPowerModel.GetDefaultTroopPower`. That single method is what `PartyBase.EstimatedStrength`, `PartyBase.GetCustomStrength`, `MobileParty.GetTotalLandStrengthWithFollowers`, `Army.EstimatedStrength` and `Kingdom.CurrentTotalStrength` all reach through `MilitaryPowerModel.GetPowerOfParty` → `GetTroopPower`, so correcting it fixes engage-vs-avoid, siege target scoring, army formation and the diplomacy war calculus in one place with no double counting. `PartyBase` caches against `MemberRoster.VersionNo`, so the postfix runs only when a roster changes.
+- **The multiplier is derived, not tabled.** New `B1071_EconomyMath.PowerFactor` computes from the same preset curves that make the troop durable — death rate `(1 + ArmorFactor) × (1 - SurvivalBonus)`, reciprocal damped by half because tougher troops live longer but do not hit harder — so the AI's valuation cannot drift away from the behaviour it describes. Exposed through `B1071_CombatRealismTuning.GetPowerFactor`, keeping that class the single source of truth for the tier curve.
+- **The curve is centred, not inflationary.** Several vanilla gates compare power against hard-coded absolute constants tuned to the vanilla scale — `CanLordCreateArmy` needs a summed `GetCustomStrength` of 1000, `DefaultDiplomacyModel` refuses war below a `CurrentTotalStrength` of 500. The AI's combat logic needs only the *ratio* between tiers, but those gates read the *absolute* value, so tier 3 is held at exactly vanilla and the other tiers move around it. A representative 100-man roster shifts by at most +2.5% in total power, and `TroopPowerMathTests.TotalPartyPowerStaysNearVanillaForARepresentativeRoster` fails if that ever exceeds ±5%.
+- **Impact.** No new setting: the existing `Combat Realism → Elite survivability preset` drives it. **Preset 0 (Vanilla) returns exactly `1f` for every tier, so AI behaviour is bit-identical for anyone not using the survivability curves.** Heroes are skipped — vanilla prices them off `Hero.Level` rather than `Tier`, and neither combat curve moves a hero's survivability. Save-compatible in both directions; the patch holds no state.
+
 ## [1.0.3.6] — 2026-09-02
 
 ### Change — AI recovery: saved intent, soft destination claims, and immediate recruitment

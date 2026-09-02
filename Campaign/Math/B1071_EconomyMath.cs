@@ -65,6 +65,63 @@ namespace Byzantium1071.Campaign
 
         internal static float SurvivalBonus(int preset, int tier) => LookupClampedPreset(SurvivalBonuses, preset, tier);
 
+        /// <summary>
+        /// Tier whose power is held at exactly vanilla. Every other tier moves relative to it,
+        /// which keeps a typical party's TOTAL power near its vanilla value instead of inflating
+        /// it. That matters because several vanilla AI gates compare power against hard-coded
+        /// absolute constants calibrated to the vanilla scale -- CanLordCreateArmy needs a summed
+        /// GetCustomStrength of 1000, and DefaultDiplomacyModel refuses war below a
+        /// CurrentTotalStrength of 500. Inflating every tier would silently shift how often AI
+        /// kingdoms raise armies and declare war. Tier 3 is the usual mid-point of a lord's roster.
+        /// </summary>
+        private const int PowerReferenceTier = 3;
+
+        /// <summary>
+        /// Share of the survivability gain that becomes visible power. Tougher troops live longer
+        /// but do not hit harder, so durability is worth roughly half of a troop's combat value.
+        /// It only sets how wide the tier spread is; what protects the absolute gates described
+        /// above is the normalisation in PowerFactor, not this constant.
+        /// </summary>
+        private const float PowerDamping = 0.5f;
+
+        /// <summary>
+        /// AI-visible power multiplier for a troop of this tier, derived from the SAME preset
+        /// curves that make the troop harder to kill (see ArmorFactors and SurvivalBonuses), so
+        /// the two can never drift apart. Preset 0 returns exactly 1f for every tier.
+        ///
+        /// Vanilla prices a troop purely by tier -- DefaultMilitaryPowerModel.GetDefaultTroopPower
+        /// is (2 + tier) * (10 + tier) * 0.02f -- and Campaign++ never changes a troop's tier, only
+        /// how much punishment that tier absorbs. Without this the AI keeps valuing elite stacks at
+        /// vanilla worth while they fight far above it.
+        /// </summary>
+        internal static float PowerFactor(int preset, int tier)
+        {
+            float reference = RawPowerMultiplier(preset, PowerReferenceTier);
+            if (reference <= 0f)
+            {
+                return 1f;
+            }
+
+            return RawPowerMultiplier(preset, tier) / reference;
+        }
+
+        /// <summary>
+        /// Undamped, un-normalised survivability multiplier for a tier. A troop enters the fatal
+        /// gate less often when its damage taken drops (ArmorFactor, negative) and walks away from
+        /// more of the gates it does enter (SurvivalBonus), so the two compound into a death rate
+        /// of (1 + armor) * (1 - survival). The reciprocal is how much longer the troop lasts.
+        /// </summary>
+        private static float RawPowerMultiplier(int preset, int tier)
+        {
+            float deathRate = (1f + ArmorFactor(preset, tier)) * (1f - SurvivalBonus(preset, tier));
+            if (deathRate <= 0f)
+            {
+                return 1f;
+            }
+
+            return 1f + PowerDamping * (1f / deathRate - 1f);
+        }
+
         internal static float SlavePriceFactor(
             float inStoreValue,
             bool isSelling,

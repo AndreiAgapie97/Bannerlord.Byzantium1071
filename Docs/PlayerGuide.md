@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.6 — Everything you need to know, step by step.*
+*Version 1.0.3.7 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -709,6 +709,8 @@ One setting controls how strong this is: **Combat Realism → Elite survivabilit
 | T6+ | −12% damage, +8% survival | −20%, +12% | −24%, +20% |
 
 Before v1.0.2.5 this was two separate toggles that quietly stacked, which is why elite troops felt unkillable. If you preferred it that way, set the preset to **3**. Enemy lords get exactly the same treatment as you do.
+
+**Lords now know it.** Until v1.0.3.7 the toughness was real but invisible to the AI — lords still sized up an army as if veterans died as easily as recruits, so they backed away from fights they would have won and stormed fortresses held by elite defenders. They now judge a force by how much punishment it can actually take. Expect a lord with a hardened retinue to stand and fight more often, and expect enemies to think twice about your own veteran garrisons. Armies still form and wars are still declared about as often as before, and at preset **0** lords behave exactly as they always did.
 
 ---
 

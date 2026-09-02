@@ -40,5 +40,18 @@ namespace Byzantium1071.Campaign.Patches
                 ?? B1071_McmSettings.Defaults;
             return B1071_EconomyMath.SurvivalBonus(settings.EliteSurvivabilityPreset, tier);
         }
+
+        /// <summary>
+        /// Multiplier on the AI-visible power of a troop of this tier, so the native AI values a
+        /// stack the way the two curves above actually make it fight. 1f means "leave vanilla
+        /// alone". Derived from the same preset, so it cannot disagree with them.
+        /// </summary>
+        internal static float GetPowerFactor(int tier)
+        {
+            IB1071Settings settings = B1071_TestHooks.Settings
+                ?? B1071_McmSettings.Instance
+                ?? B1071_McmSettings.Defaults;
+            return B1071_EconomyMath.PowerFactor(settings.EliteSurvivabilityPreset, tier);
+        }
     }
 }

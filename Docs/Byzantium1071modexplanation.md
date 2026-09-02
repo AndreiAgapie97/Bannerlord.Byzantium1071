@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.6
+**Version:** 1.0.3.7
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -927,6 +927,31 @@ Tuned separately they double-dip: a T6 troop took a quarter fewer casualty check
 Preset 3 reproduces the pre-v1.0.2.5 values. T1–T2 receive nothing at any preset — both lookups return `0f` and the patch returns early. The survival bonus is additive on top of vanilla's Medicine-based base rate and capped at 100%.
 
 Heroes are unaffected by both systems: their damage path uses `AddHeroDamage` rather than the single-hit gate, and `AddFactor(50f)` already puts their base survival near 100%. Both patches activate only in autoresolve simulation (not live battles), and both apply symmetrically to player and AI.
+
+### Teaching the AI what the curves are worth (v1.0.3.7)
+
+Applying both curves to player and AI alike is parity of **effect**. Until v1.0.3.7 there was no parity of **knowledge**: the AI still priced troops at vanilla worth.
+
+Vanilla values a troop purely by tier. `DefaultMilitaryPowerModel.GetDefaultTroopPower` returns `(2 + tier) * (10 + tier) * 0.02f` — a fixed curve where a T6 is worth 3.9× a T1 — and Campaign++ never changes a troop's tier, only how much punishment that tier absorbs. So a lord fielding elite veterans that the two curves above make markedly harder to kill was still being scored as though they were vanilla troops: declining engagements he would now win, and attacking elite garrisons he should have avoided.
+
+`B1071_TroopPowerValuationPatch` (Postfix on `DefaultMilitaryPowerModel.GetDefaultTroopPower`) closes that gap.
+
+**Why this method and not `GetPowerOfParty`.** Every strength comparison in the campaign funnels through `GetDefaultTroopPower`: `PartyBase.EstimatedStrength`, `PartyBase.GetCustomStrength`, `MobileParty.GetTotalLandStrengthWithFollowers`, `Army.EstimatedStrength` and `Kingdom.CurrentTotalStrength` all reach `MilitaryPowerModel.GetPowerOfParty`, which calls `GetTroopPower`, which calls `GetDefaultTroopPower`. Correcting the single innermost method fixes engage-vs-avoid, siege target scoring, army formation and the diplomacy war calculus at once, with no risk of double counting. Patching `GetPowerOfParty` instead would miss `GetTroopPower`'s other callers and would have to re-derive the per-troop tier the roster loop already holds. `PartyBase` caches the result against `MemberRoster.VersionNo`, so the postfix runs only when a roster actually changes.
+
+**Why the multiplier is derived, not tabled.** `B1071_EconomyMath.PowerFactor` computes from the same two preset curves that make the troop durable, so the valuation cannot drift away from the behaviour it describes. A troop enters the fatal-hit gate less often as its damage taken falls (`ArmorFactor`) and survives more of the gates it does enter (`SurvivalBonus`), so the two compound into a death rate of `(1 + armor) × (1 - survival)`; the reciprocal is how much longer the troop lasts. Only half of that gain becomes visible power — tougher troops live longer but do not hit harder — which is the `PowerDamping` constant.
+
+**Why the curve is centred rather than inflationary.** This is the subtle part. A handful of vanilla decisions compare power against *hard-coded absolute constants* calibrated to the vanilla scale: `DefaultArmyManagementCalculationModel.CanLordCreateArmy` requires a summed `GetCustomStrength` of **1000**, and `DefaultDiplomacyModel` refuses to declare war below a `CurrentTotalStrength` of **500**. The AI's combat logic only needs the *ratio* between tiers to be right, but those gates read the *absolute* value — so scaling every tier upward would quietly change how often kingdoms raise armies and declare war, a far larger behavioural change than the one intended. `PowerFactor` therefore holds tier 3, the usual mid-point of a lord's roster, at exactly vanilla and moves the other tiers around it.
+
+| Preset | T1 | T2 | T3 | T4 | T5 | T6+ | Total power of a representative roster |
+|--------|----|----|----|----|----|-----|-----------------------------------------|
+| 0 — Vanilla | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | unchanged |
+| 1 — Light *(default)* | 0.975 | 0.975 | 1.000 | 1.027 | 1.057 | 1.089 | +0.9% |
+| 2 — Moderate | 0.959 | 0.959 | 1.000 | 1.046 | 1.100 | 1.161 | +1.6% |
+| 3 — Strong | 0.943 | 0.943 | 1.000 | 1.067 | 1.149 | 1.248 | +2.5% |
+
+The final column is measured against a 100-man roster of 20/30/25/15/8/2 across T1–T6 — a lord's usual low-heavy shape. `TroopPowerMathTests.TotalPartyPowerStaysNearVanillaForARepresentativeRoster` asserts that drift stays inside ±5% at every preset; widening that band would silently move the army and war thresholds, and nothing else in either suite would catch it.
+
+Preset 0 returns exactly `1f` for every tier, so a player on Vanilla survivability gets bit-identical AI behaviour. Heroes are skipped: `GetDefaultTroopPower` prices them off `Hero.Level` rather than `Tier`, and neither combat curve moves a hero's survivability.
 
 The retired `EnableTierSurvivability` / `EnableTierArmorSimulation` booleans still exist on `B1071_McmSettings` under the **Legacy** group so older configs deserialize, but nothing reads them.
 
