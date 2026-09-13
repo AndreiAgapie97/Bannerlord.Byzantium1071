@@ -5,8 +5,25 @@
         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
         <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="@WindowWidth" SuggestedHeight="@WindowHeight" HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
-            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <!-- Dark backing stays inside the canvas bounds; no full-size brown popup beneath the frame. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="BlankWhiteSquare_9" Color="#181611FF" DoNotAcceptEvents="true" />
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+            <!-- End the decorative header after the summary (y=74..100), before body rows at y=108.
+                 Crop away the canvas artwork's header and edge trim; draw the outer frame above the body texture. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="5" MarginRight="5" MarginTop="104" MarginBottom="5"
+                    ClipContents="true" DoNotAcceptEvents="true">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                        MarginLeft="-20" MarginRight="-20" MarginTop="-200" MarginBottom="-20" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+              </Children>
+            </Widget>
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                    SuggestedHeight="1" MarginLeft="20" MarginRight="20" MarginTop="104"
+                    Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" DoNotAcceptEvents="true" />
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                         Brush="B1071.PanelFrame" DoNotAcceptEvents="true" />
+
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="35" MarginRight="20" MarginTop="16" MarginBottom="16" StackLayout.LayoutMethod="VerticalTopToBottom">
               <Children>
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="42" MarginRight="15">
@@ -71,7 +88,7 @@
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="85" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#9FC7A0FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@EtaText" IsVisible="@ShowSettlement" />
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="85" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#FFD700FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@GoldCost" />
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="110" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@ManpowerCost" />
-                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginLeft="5" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanRecall" Command.Click="ExecuteRecall">
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginLeft="5" VerticalAlignment="Center" Brush="B1071.QuietButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanRecall" Command.Click="ExecuteRecall">
                                           <Children>
                                             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="13" Brush.FontColor="#99BBFFFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@RecallText" />
                                             <HintWidget DataSource="{RecallHint}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint" Command.HoverEnd="ExecuteEndHint" IsDisabled="true" />
@@ -125,7 +142,7 @@
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="70" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@Count" />
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="260" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="14" Brush.FontColor="#9FC7A0FF" Brush.TextHorizontalAlignment="Left" Brush.TextVerticalAlignment="Center" Text="@Status" />
                                         <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent" SuggestedWidth="85" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#FFD700FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@GoldPaid" />
-                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginLeft="5" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" Command.Click="ExecuteCancel">
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginLeft="5" VerticalAlignment="Center" Brush="B1071.QuietButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" Command.Click="ExecuteCancel">
                                           <Children>
                                             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="13" Brush.FontColor="#E0A0A0FF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@CancelText" />
                                             <HintWidget DataSource="{CancelHint}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint" Command.HoverEnd="ExecuteEndHint" IsDisabled="true" />

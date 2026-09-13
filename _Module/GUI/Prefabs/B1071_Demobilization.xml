@@ -5,8 +5,25 @@
         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
         <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="1200" SuggestedHeight="560" HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
-            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <!-- Dark backing stays inside the canvas bounds; no full-size brown popup beneath the frame. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="BlankWhiteSquare_9" Color="#181611FF" DoNotAcceptEvents="true" />
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+            <!-- End the decorative header at y=96 to cover its residual bevel; body rows remain at y=108.
+                 Crop away the canvas artwork's header and edge trim; draw the outer frame above the body texture. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="5" MarginRight="5" MarginTop="96" MarginBottom="5"
+                    ClipContents="true" DoNotAcceptEvents="true">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                        MarginLeft="-20" MarginRight="-20" MarginTop="-200" MarginBottom="-20" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+              </Children>
+            </Widget>
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                    SuggestedHeight="1" MarginLeft="20" MarginRight="20" MarginTop="96"
+                    Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" DoNotAcceptEvents="true" />
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                         Brush="B1071.PanelFrame" DoNotAcceptEvents="true" />
+
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="35" MarginRight="20" MarginTop="16" MarginBottom="16" StackLayout.LayoutMethod="VerticalTopToBottom">
               <Children>
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="42" MarginRight="15">
@@ -77,13 +94,13 @@
                                             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.History.Text" Brush.FontSize="15" Brush.FontColor="#8FA88BFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" IsVisible="@IsServing" Text="@StatusText" />
                                           </Children>
                                         </Widget>
-                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginRight="4" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanExtend" Command.Click="ExecuteExtend">
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" MarginRight="4" VerticalAlignment="Center" Brush="B1071.QuietButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanExtend" Command.Click="ExecuteExtend">
                                           <Children>
                                             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="13" Brush.FontColor="#99BBFFFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@ExtendText" />
                                             <HintWidget DataSource="{ExtendHint}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint" Command.HoverEnd="ExecuteEndHint" IsDisabled="true" />
                                           </Children>
                                         </ButtonWidget>
-                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" VerticalAlignment="Center" Brush="Encyclopedia.FilterListButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanRelease" Command.Click="ExecuteRelease">
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="90" SuggestedHeight="24" VerticalAlignment="Center" Brush="B1071.QuietButton" DoNotPassEventsToChildren="true" UpdateChildrenStates="true" IsEnabled="@CanRelease" Command.Click="ExecuteRelease">
                                           <Children>
                                             <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Brush="Encyclopedia.SubPage.Element.Name.Text" Brush.FontSize="13" Brush.FontColor="#E0A85CFF" Brush.TextHorizontalAlignment="Center" Brush.TextVerticalAlignment="Center" Text="@ReleaseText" />
                                             <HintWidget DataSource="{ReleaseHint}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint" Command.HoverEnd="ExecuteEndHint" IsDisabled="true" />

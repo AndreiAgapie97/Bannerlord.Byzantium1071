@@ -496,6 +496,7 @@ There are **three ways** to acquire slaves:
 4. **Click it** to enter the slave trade submenu.
 5. Click **"Enslave prisoners"** — by default this converts all your non-hero prisoners at **Tier 3 or below** into Slave trade goods (1:1). Heroes and T4+ prisoners are never enslaved.
    - **Selection UI (new):** If `Enable slave conversion selection` is ON in MCM → Slave Economy, clicking enslave opens a **selection screen** where you pick exactly which prisoners to convert (useful with mods like Lowborn that add valuable low-tier troops). Use +/− buttons or Select All / Deselect All.
+   - The prisoner window stays compact for short lists and scrolls for longer ones. Framed buttons control quantities and confirmation. Smaller action buttons have slightly wider faces and subdued borders that brighten on hover; the confirmation keeps its stronger frame. The prisoner selector and management menus share dark headers and metal frames. Management headers separate resource summaries from section labels and notices. Management menus retain their existing layout; the ledger uses gold text for the active tab and sorted column.
 6. A gold notification confirms: *"⛓ Enslaved X T1–3 prisoners. Slave goods in inventory: Y. Open the Trade screen to sell them to the market."* By default, the action also grants **Roguery XP matching vanilla prisoner sales**.
 
 > **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they become elite recruits after a waiting period) or ransom them at the town tavern.

@@ -15,12 +15,28 @@
                 HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
 
-            <!-- Panel frame (encyclopedia-style) -->
-            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                         Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <!-- Panel background (encyclopedia-style); outer frame is drawn after the canvas. -->
+            <!-- Dark backing stays inside the canvas bounds; no full-size brown popup beneath the frame. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5" Sprite="BlankWhiteSquare_9" Color="#181611FF" DoNotAcceptEvents="true" />
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                     MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5"
                     Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+            <!-- End the decorative header after the summary (y=74..100), before body rows at y=108.
+                 Crop away the canvas artwork's header and edge trim; draw the outer frame above the body texture. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="5" MarginRight="5" MarginTop="104" MarginBottom="5"
+                    ClipContents="true" DoNotAcceptEvents="true">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                        MarginLeft="-20" MarginRight="-20" MarginTop="-200" MarginBottom="-20" Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+              </Children>
+            </Widget>
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                    SuggestedHeight="1" MarginLeft="20" MarginRight="20" MarginTop="104"
+                    Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" DoNotAcceptEvents="true" />
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                         Brush="B1071.PanelFrame" DoNotAcceptEvents="true" />
+
 
             <!-- Inner content -->
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
@@ -120,7 +136,7 @@
                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                   SuggestedWidth="90" SuggestedHeight="24"
                                   HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Brush="Encyclopedia.FilterListButton"
+                                  Brush="B1071.QuietButton"
                                   DoNotPassEventsToChildren="true"
                                   UpdateChildrenStates="true"
                                   Command.Click="ExecuteRecruitAllElites">
@@ -239,7 +255,7 @@
                                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                                   SuggestedWidth="80" SuggestedHeight="24"
                                                   VerticalAlignment="Center"
-                                                  Brush="Encyclopedia.FilterListButton"
+                                                  Brush="B1071.QuietButton"
                                                   DoNotPassEventsToChildren="true"
                                                   UpdateChildrenStates="true"
                                                   IsEnabled="@CanRecruit"
@@ -291,7 +307,7 @@
                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                   SuggestedWidth="90" SuggestedHeight="24"
                                   HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Brush="Encyclopedia.FilterListButton"
+                                  Brush="B1071.QuietButton"
                                   DoNotPassEventsToChildren="true"
                                   UpdateChildrenStates="true"
                                   Command.Click="ExecuteRecruitAllReady">
@@ -409,7 +425,7 @@
                                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                                   SuggestedWidth="80" SuggestedHeight="24"
                                                   VerticalAlignment="Center"
-                                                  Brush="Encyclopedia.FilterListButton"
+                                                  Brush="B1071.QuietButton"
                                                   DoNotPassEventsToChildren="true"
                                                   UpdateChildrenStates="true"
                                                   IsEnabled="@CanRecruit"

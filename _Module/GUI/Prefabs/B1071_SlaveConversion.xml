@@ -9,18 +9,21 @@
         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                 Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
 
-        <!-- Main panel — centered, 720 x 500 -->
+        <!-- Main panel — centered, 720 wide with bounded content height -->
         <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                SuggestedWidth="720" SuggestedHeight="500"
+                SuggestedWidth="720" SuggestedHeight="@WindowHeight"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
 
-            <!-- Panel frame (encyclopedia-style) -->
-            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                         Brush="Encyclopedia.Frame" DoNotAcceptEvents="true" />
+            <!-- Dark header backing, matching the management menus; frame drawn above the canvas. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5"
+                    Sprite="BlankWhiteSquare_9" Color="#181611FF" DoNotAcceptEvents="true" />
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                     MarginLeft="5" MarginRight="5" MarginTop="5" MarginBottom="5"
                     Sprite="Encyclopedia\canvas" DoNotAcceptEvents="true" />
+            <BrushWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                         Brush="B1071.PanelFrame" DoNotAcceptEvents="true" />
 
             <!-- Inner content -->
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
@@ -79,7 +82,7 @@
                       <Children>
                         <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                       SuggestedWidth="100" SuggestedHeight="26"
-                                      Brush="Encyclopedia.FilterListButton"
+                                      Brush="B1071.QuietButton"
                                       DoNotPassEventsToChildren="true"
                                       UpdateChildrenStates="true"
                                       Command.Click="ExecuteSelectAll">
@@ -95,7 +98,7 @@
                         <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
                                       SuggestedWidth="100" SuggestedHeight="26"
                                       MarginLeft="8"
-                                      Brush="Encyclopedia.FilterListButton"
+                                      Brush="B1071.QuietButton"
                                       DoNotPassEventsToChildren="true"
                                       UpdateChildrenStates="true"
                                       Command.Click="ExecuteDeselectAll">
@@ -153,7 +156,7 @@
 
                 <!-- ===== TROOP ROWS (scrollable) ===== -->
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                        SuggestedHeight="260" IsVisible="@HasTroops">
+                        SuggestedHeight="@ListHeight" IsVisible="@HasTroops">
                   <Children>
                     <ScrollbarWidget Id="SCScrollbar" HeightSizePolicy="StretchToParent" WidthSizePolicy="Fixed"
                                      SuggestedWidth="8" AlignmentAxis="Vertical"
@@ -213,16 +216,16 @@
                                                 Text="@TotalText" />
                                     <!-- Decrement button -->
                                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                                                  SuggestedWidth="28" SuggestedHeight="24"
+                                                  SuggestedWidth="35" SuggestedHeight="28"
                                                   VerticalAlignment="Center"
-                                                  Brush="Encyclopedia.FilterListButton"
+                                                  Brush="B1071.QuietButton"
                                                   DoNotPassEventsToChildren="true"
                                                   UpdateChildrenStates="true"
                                                   Command.Click="ExecuteDecrement">
                                       <Children>
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                                     Brush="Encyclopedia.SubPage.Element.Name.Text"
-                                                    Brush.FontSize="15" Brush.FontColor="#DD8888FF"
+                                                    Brush.FontSize="18" Brush.FontColor="#DD8888FF"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
                                                     Text="-" />
@@ -238,16 +241,16 @@
                                                 Text="@SelectedText" />
                                     <!-- Increment button -->
                                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                                                  SuggestedWidth="28" SuggestedHeight="24"
+                                                  SuggestedWidth="35" SuggestedHeight="28"
                                                   VerticalAlignment="Center"
-                                                  Brush="Encyclopedia.FilterListButton"
+                                                  Brush="B1071.QuietButton"
                                                   DoNotPassEventsToChildren="true"
                                                   UpdateChildrenStates="true"
                                                   Command.Click="ExecuteIncrement">
                                       <Children>
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                                     Brush="Encyclopedia.SubPage.Element.Name.Text"
-                                                    Brush.FontSize="15" Brush.FontColor="#88DD88FF"
+                                                    Brush.FontSize="18" Brush.FontColor="#88DD88FF"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
                                                     Text="+" />
@@ -273,9 +276,9 @@
                         MarginTop="4">
                   <Children>
                     <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                                  SuggestedWidth="160" SuggestedHeight="32"
+                                  SuggestedWidth="200" SuggestedHeight="36"
                                   HorizontalAlignment="Center"
-                                  Brush="Encyclopedia.FilterListButton"
+                                  Brush="ButtonBrush"
                                   DoNotPassEventsToChildren="true"
                                   UpdateChildrenStates="true"
                                   IsEnabled="@CanConfirm"

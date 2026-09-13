@@ -1,5 +1,16 @@
 # Campaign++ — Changelog
 
+## Unreleased
+
+### Change — Menu button styling and ledger selection cues
+
+**Management actions use native framed buttons; the ledger marks the active tab and sorted heading in gold.**
+
+- **Change.** Recruitment, veteran recall, troop service, and prisoner-selection secondary action buttons use the module-local B1071.QuietButton brush with subdued resting frames, brighter hover feedback, and button faces extended 5 units on each side for label clearance. The prisoner confirmation retains native ButtonBrush. Close buttons retain their borderless style. Ledger tabs, page controls, and Search use framed buttons.
+- **Header framing.** Recruitment, Troop Service, and Veteran Register use a fixed decorative boundary below their resource summary, keeping section labels and notices off the scaled canvas bevel. Player screenshots confirmed the text separation; a follow-up covers the remaining Troop Service bevel, crops the canvas edge trim, and draws the outer frame above the background to remove inner seams. The full-size brown popup backing is replaced with an inset dark backing to prevent overhang outside the frame. Player screenshots confirmed the dark headers and contained borders. The prisoner selector now uses the same dark backing and outer frame; its appearance awaits in-game review. Content positions are unchanged.
+- **Sizing.** Only the prisoner selector changes height: 302–500 units, retaining its 720-unit width and 260-unit maximum scroll area. All other menu dimensions and spacing are preserved.
+- **Validation.** The previous framed controls and gold selection cues were reviewed in player screenshots. The quieter secondary-button brush awaits in-game appearance and interaction review.
+
 ## [1.0.3.9] — 2026-09-02
 
 ### Fix — Recovery routing quoted lords a full recruit board they could not afford
