@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Change — Ledger layout and search controls
+
+**The ledger uses a top-aligned layout, columns sized for each tab, full-value tooltips, and submitted search with category filters.**
+
+- **Layout:** Preserves the existing outer width, configured offsets, height formula, and row density. Headers, rows, and totals share column widths; numeric columns align right. Current puts the selected settlement before diagnostics and removes duplicate totals. Rebellion and prisoner headings are clearer; Wars spells out exhaustion bands.
+- **Controls:** Page endpoints disable correctly and ordinary ledgers display entry ranges. Arrow-key tab cycling includes Casualties. Search submits on Enter or Search, provides Clear and six category filters, retains results while editing, and distinguishes empty categories from no matches. Matches refresh on submission or daily invalidation.
+- **Screenshot polish:** Increased column gutters to 24 units inside the unchanged frame. Current details use label/value rows. Mixed summaries explicitly label combined deaths, war/truce counts, and average army exhaustion. Rebellion outlook distinguishes unrest state, low loyalty, and approximate threshold timing without changing its calculation. Native tooltip appearance remains unchanged.
+- **Binding safety:** Literal XML alignment selected through boolean visibility replaces unsupported enum bindings that can fail during map-screen creation. Added game-backed contracts for binding types, layout widths, search state, pagination, and full-value hints. Live-game visual validation remains required.
+
 ### Change — Menu button styling and ledger selection cues
 
 **Management actions use native framed buttons; the ledger marks the active tab and sorted heading in gold.**

@@ -105,8 +105,8 @@
     <string id="b1071_cr_no_ready" text="No prisoners ready for recruitment." />
     <string id="b1071_cr_no_screen" text="Castle recruitment: no active screen." />
     <string id="b1071_cr_open_fail" text="Castle recruit screen failed to open: {ERR}" />
-    <string id="b1071_cr_pending_header" text="Pending (Training)" />
-    <string id="b1071_cr_ready_header" text="Ready to Recruit (Prisoners)" />
+    <string id="b1071_cr_pending_header" text="Prisoners Awaiting Recruitment" />
+    <string id="b1071_cr_ready_header" text="Prisoners Ready to Recruit" />
     <string id="b1071_cr_recruit_available" text="🏰 Recruit troops ({READY} available)" />
     <string id="b1071_cr_recruit_all" text="Recruit All" />
     <string id="b1071_cr_recruit_available_pending" text="🏰 Recruit troops ({READY} available, {PENDING} pending)" />
@@ -1226,7 +1226,7 @@
     <string id="b1071_sc_open_fail" text="Slave conversion screen failed to open: {ERR}" />
     <string id="b1071_sc_no_screen" text="Slave conversion: no active screen." />
     <!-- v0.2.8: Diversified castle pool header -->
-    <string id="b1071_cr_elite_header_div" text="Castle Levy (Diversified Pool)" />
+    <string id="b1071_cr_elite_header_div" text="Castle Levy" />
     <!-- v0.2.8: MCM new settings -->
     <string id="b1071_mcm_t_sc_enable" text="Enable slave conversion selection" />
     <string id="b1071_mcm_h_sc_enable" text="When enabled, shows a selection screen to pick which prisoners to enslave instead of bulk-converting all eligible. Useful when using mods like Lowborn that add value to low-tier troops. Default: true." />
@@ -1424,5 +1424,67 @@
     <string id="b1071_mcm_h_ai_recovery_days" text="How many campaign days a confirmed recruitment journey may continue while the lord remains below 80% party capacity. After this, the lord must fall below 60% to begin another recovery journey. Default: 1." />
     <string id="b1071_qs_name_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
     <string id="b1071_qs_hint_ai_recovery" text="Under-strength AI lords may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild. Active orders remain protected." />
+    <string id="b1071_ledger_range" text="{FIRST}–{LAST} of {COUNT}" />
+    <string id="b1071_ledger_clear" text="Clear" />
+    <string id="b1071_ledger_filter_all" text="All" />
+    <string id="b1071_ledger_filter_hero" text="Heroes" />
+    <string id="b1071_ledger_filter_place" text="Places" />
+    <string id="b1071_ledger_filter_army" text="Armies" />
+    <string id="b1071_ledger_filter_market" text="Markets" />
+    <string id="b1071_ledger_filter_other" text="Other" />
+    <string id="b1071_ledger_regen_details" text="Regeneration details" />
+    <string id="b1071_ledger_diagnostics" text="Diagnostics" />
+    <string id="b1071_ledger_conditions" text="Loyalty / Security / Food" />
+    <string id="b1071_ledger_rebel_eta" text="Rebellion outlook" />
+    <string id="b1071_ledger_held_by" text="Held by" />
+    <string id="b1071_ledger_location" text="Location" />
+    <string id="b1071_ledger_risk" text="Risk / 100" />
+    <string id="b1071_ledger_search_prompt" text="Type a name or item, then press Enter." />
+    <string id="b1071_ledger_hint_power" text="Military power: sum of troop tier squared times troop count." />
+    <string id="b1071_ledger_hint_conditions" text="Loyalty / Security / daily Food change, in that order." />
+    <string id="b1071_ledger_hint_estimate" text="Rebellious is the game's unrest state, not an active revolt. Days estimate when loyalty reaches 25 at its current trend; no decline means no threshold crossing is projected." />
+    <string id="b1071_ledger_hint_clan" text="Political status / wealth band / number of fiefs." />
+    <string id="b1071_ledger_hint_fill" text="Pool fullness. An upward arrow indicates replenishment." />
+    <string id="b1071_ledger_hint_sides" text="Values follow the faction order in the first column." />
+    <string id="b1071_ledger_hint_distance" text="Distance from your party. A dash means the location is unknown." />
+    <string id="b1071_ledger_hint_type" text="Result type and current status. Filter by type above." />
+    <string id="b1071_ledger_hint_sort" text="Click to sort; click again to reverse. Hover a row for its full values." />
+    <string id="b1071_ledger_no_filter_matches" text="No matches in this category" />
+    <string id="b1071_ledger_try_all" text="Choose All to see other results" />
+    <string id="b1071_ledger_type_status" text="Type / Status" />
+    <string id="b1071_ledger_rebellious" text="Rebellious" />
+    <string id="b1071_ledger_low_loyalty" text="Low loyalty" />
+    <string id="b1071_ledger_no_decline" text="No decline" />
+    <string id="b1071_ledger_outlook_days" text="~{DAYS}d" />
+    <string id="b1071_ledger_outlook_cap" text="~999+d" />
+    <string id="b1071_ledger_urgent_threshold" text="Low loyalty / &lt;=30d: {COUNT}" />
+    <string id="b1071_ledger_avg_peace" text="Average peace bias" />
+    <string id="b1071_ledger_avg_exhaustion" text="Average exhaustion: {VALUE}/100" />
+    <string id="b1071_ledger_wars_truces" text="Wars: {WARS}  |  Truces: {TRUCES}" />
+    <string id="b1071_ledger_total_deaths" text="Total deaths" />
+    <string id="b1071_cr_depositors" text="Deposited by:" />
+    <string id="b1071_cr_depositor_count" text="{NAME}: {COUNT}" />
+    <string id="b1071_cr_next_depositor" text="Next depositor: {NAME}" />
+    <string id="b1071_cr_next_fee" text="Next recruit: {COST}" />
+    <string id="b1071_cr_fee_split" text="Gold to castle owner: {OWNER}; to depositor: {DEPOSITOR}." />
+    <string id="b1071_cr_fee_rules" text="Shares owed to your clan are waived. Without an eligible separate depositor, the fee belongs to the castle owner." />
+    <string id="b1071_cr_fifo_note" text="Recruitment follows deposit order. Later recruits may cost a different amount." />
+    <string id="b1071_cr_pending_quote" text="This is the current fee; recruitment is unavailable until the waiting period ends." />
+    <string id="b1071_cr_unaffordable_next" text="Not enough gold for the next recruit." />
+    <string id="b1071_cr_depositor_unrecorded" text="Unrecorded depositor" />
+    <string id="b1071_cr_depositor_unknown" text="Unknown depositor" />
+    <string id="b1071_cr_depositor_you" text="You" />
+    <string id="b1071_cr_depositor_deceased" text="{NAME} (deceased)" />
+    <string id="b1071_cr_depositor_clan" text="{NAME} (your clan)" />
+    <string id="b1071_cr_depositor_affiliation" text="{NAME} ({CLAN})" />
+    <string id="b1071_cr_recruit_one" text="Recruit 1" />
+    <string id="b1071_cr_free" text="Free" />
+    <string id="b1071_cr_available" text="Available" />
+    <string id="b1071_cr_gold_each" text="Gold Each" />
+    <string id="b1071_cr_gold_next" text="Gold (Next)" />
+    <string id="b1071_cr_days_eligible" text="Days Until Eligible" />
+    <string id="b1071_cr_action" text="Action" />
+    <string id="b1071_cr_pool_empty" text="No troops available. The pool replenishes daily from castle manpower." />
+    <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
   </strings>
 </base>

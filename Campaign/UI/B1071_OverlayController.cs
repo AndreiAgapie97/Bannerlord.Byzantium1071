@@ -1,6 +1,7 @@
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameState;
@@ -105,7 +106,39 @@ namespace Byzantium1071.Campaign.UI
         // Columns dirty — set on daily tick or user action (tab/sort/page).
         // Non-Nearby tabs only rebuild when this is true.
         private static bool _columnsDirty = true;
-        private static string _searchQuery = string.Empty;
+        private static readonly B1071_LedgerSearchState _search = new();
+        private static readonly List<SearchResultRow> _searchMatches = new(256);
+        private static readonly List<SearchResultRow> _filteredSearchMatches = new(256);
+        private static bool _searchCacheStale = true;
+        private static int _pageCount = 1;
+        internal static B1071LedgerTab ActiveTab => _activeTab;
+        internal static B1071_LedgerColumns Columns => B1071_LedgerColumns.For(_activeTab);
+        internal static bool CanPreviousPage => _activeTab != B1071LedgerTab.Current && _pageIndex > 0;
+        internal static bool CanNextPage => _activeTab != B1071LedgerTab.Current && _pageIndex + 1 < _pageCount;
+        internal static B1071SearchFilter SearchFilter => _search.Filter;
+
+        internal static string HeaderHint(int column)
+        {
+            string label = column switch { 1 => _header1, 2 => _header2, 3 => _header3, 4 => _header4, _ => _header5 };
+            string explanation = (_activeTab, column) switch
+            {
+                (B1071LedgerTab.Armies, 2) => L("b1071_ledger_hint_power", "Military power: sum of troop tier squared times troop count."),
+                (B1071LedgerTab.Rebellion, 3) => L("b1071_ledger_hint_conditions", "Loyalty / Security / daily Food change, in that order."),
+                (B1071LedgerTab.Rebellion, 4) => L("b1071_ledger_hint_estimate", "Rebellious is the game's unrest state, not an active revolt. Days estimate when loyalty reaches 25 at its current trend; no decline means no threshold crossing is projected."),
+                (B1071LedgerTab.ClanInstability, 3) => L("b1071_ledger_hint_clan", "Political status / wealth band / number of fiefs."),
+                (B1071LedgerTab.NearbyPools, 3) => L("b1071_ledger_hint_fill", "Pool fullness. An upward arrow indicates replenishment."),
+                (B1071LedgerTab.Wars, 2) => L("b1071_ledger_hint_sides", "Values follow the faction order in the first column."),
+                (B1071LedgerTab.Casualties, 2) => L("b1071_ledger_hint_sides", "Values follow the faction order in the first column."),
+                (B1071LedgerTab.Casualties, 3) => L("b1071_ledger_hint_sides", "Values follow the faction order in the first column."),
+                (B1071LedgerTab.Casualties, 5) => L("b1071_ledger_hint_sides", "Values follow the faction order in the first column."),
+                (B1071LedgerTab.Characters, 4) => L("b1071_ledger_hint_distance", "Distance from your party. A dash means the location is unknown."),
+                (B1071LedgerTab.Search, 4) => L("b1071_ledger_hint_distance", "Distance from your party. A dash means the location is unknown."),
+                (B1071LedgerTab.Search, 5) => L("b1071_ledger_hint_type", "Result type and current status. Filter by type above."),
+                _ => L("b1071_ledger_hint_sort", "Click to sort; click again to reverse. Hover a row for its full values.")
+            };
+            return label.TrimEnd(' ', '\u2191', '\u2193') + "\n" + explanation;
+        }
+
 
         // Registered by B1071_MapBarVMMixin to get same-frame UI sync when the overlay
         // hides — ensures the EditableTextWidget loses Gauntlet focus before the next
@@ -150,6 +183,7 @@ namespace Byzantium1071.Campaign.UI
             _cachedVillageRows = null;
             _cachedArmiesRows = null;
             _cacheStale = true;
+            _searchCacheStale = true;
             _armiesCacheStale = true;
             _scratchRows = null;
             _scratchVillageRows = null;
@@ -165,7 +199,11 @@ namespace Byzantium1071.Campaign.UI
             _columnsDirty = true;
             _sortTextCached = string.Empty;
             _lastCurrentContextSettlementId = string.Empty;
-            _searchQuery = string.Empty;
+            _search.Clear();
+            _searchCacheStale = true;
+            _searchMatches.Clear();
+            _filteredSearchMatches.Clear();
+            _pageCount = 1;
         }
 
         internal static bool IsVisible => _isVisible;
@@ -179,6 +217,32 @@ namespace Byzantium1071.Campaign.UI
         internal static string Totals4 => _totals4;
         internal static string Totals5 => _totals5;
         internal static bool TotalsVisible => _totalsVisible;
+        internal static bool UsesSummary => _activeTab == B1071LedgerTab.Casualties || _activeTab == B1071LedgerTab.Wars ||
+            _activeTab == B1071LedgerTab.Rebellion || _activeTab == B1071LedgerTab.Prisoners ||
+            _activeTab == B1071LedgerTab.Characters || _activeTab == B1071LedgerTab.Search || _activeTab == B1071LedgerTab.Armies;
+
+        internal static string SummaryText
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_totals2)) return string.Empty;
+                string Label(string label, string value) => string.IsNullOrEmpty(value) ? string.Empty : label + ": " + value;
+                string Join(params string[] values) => string.Join("  |  ", values.Where(value => !string.IsNullOrEmpty(value)));
+                return _activeTab switch
+                {
+                    B1071LedgerTab.Casualties => Join(Label(L("b1071_ledger_total_deaths", "Total deaths"), _totals2), _totals4, _totals3),
+                    B1071LedgerTab.Wars => Join(_totals2, Label(L("b1071_ledger_avg_peace", "Average peace bias"), _totals3), _totals4),
+                    B1071LedgerTab.Rebellion => Join(Label(_totals1, _totals2), _totals3, _totals4, _totals5),
+                    B1071LedgerTab.Prisoners => Join(Label(_totals1, _totals2), _totals3),
+                    B1071LedgerTab.Characters => Join(Label(L("b1071_tab_characters", "Characters"), _totals2), Label(_totals3, _totals4)),
+                    B1071LedgerTab.Search => Join(Label(_totals1, _totals2), Label(L("b1071_overlay_totals_query", "Query"), _totals4), _totals3),
+                    B1071LedgerTab.Armies => Join(Label(L("b1071_overlay_col_power", "Power"), _totals2),
+                        Label(L("b1071_overlay_col_troops", "Troops"), _totals3), Label(L("b1071_overlay_col_parties", "Parties"), _totals5), _totals4),
+                    _ => string.Empty
+                };
+            }
+        }
+
         internal static int PanelLeftOffset => Math.Max(0, Math.Min(300, Settings.OverlayPanelLeftOffset));
         internal static int PanelTopOffset => Math.Max(40, Math.Min(320, Settings.OverlayPanelTopOffset));
 
@@ -231,7 +295,7 @@ namespace Byzantium1071.Campaign.UI
         internal static bool IsTabSearchActive => _activeTab == B1071LedgerTab.Search;
         internal static bool IsTabCasualtiesActive => _activeTab == B1071LedgerTab.Casualties;
         internal static bool IsSearchControlsVisible => _activeTab == B1071LedgerTab.Search;
-        internal static string SearchQuery => _searchQuery;
+        internal static string SearchQuery => _search.Draft;
         private static readonly string[][] _sortKeys = new[]
         {
             new[] { "MP", "Regen", "Pool", "Name", "Garr" },
@@ -301,24 +365,32 @@ namespace Byzantium1071.Campaign.UI
 
         internal static void SetSearchQuery(string? query)
         {
-            string normalized = (query ?? string.Empty).Trim();
-            if (string.Equals(_searchQuery, normalized, StringComparison.Ordinal))
-                return;
-
-            _searchQuery = normalized;
-            _pageIndex = 0;
-            _columnsDirty = true;
-
-            if (_activeTab == B1071LedgerTab.Search)
-                ForceRefresh();
+            _search.Edit(query ?? string.Empty);
+            _viewDirty = true; // Also propagate Space inserted by the campaign key handler.
         }
 
         internal static void ExecuteSearch()
         {
+            _search.Submit();
+            _searchCacheStale = true;
             _pageIndex = 0;
             _columnsDirty = true;
-            if (_activeTab == B1071LedgerTab.Search)
-                ForceRefresh();
+            if (_activeTab == B1071LedgerTab.Search) ForceRefresh();
+        }
+
+        internal static void ClearSearch()
+        {
+            _search.Clear();
+            ExecuteSearch();
+        }
+
+        internal static void SetSearchFilter(B1071SearchFilter filter)
+        {
+            if (_search.Filter == filter) return;
+            _search.Filter = filter;
+            _pageIndex = 0;
+            _columnsDirty = true;
+            ForceRefresh();
         }
 
         /// <summary>
@@ -328,6 +400,7 @@ namespace Byzantium1071.Campaign.UI
         internal static void MarkCacheStale()
         {
             _cacheStale = true;
+            _searchCacheStale = true;
             _armiesCacheStale = true;
             _distancesDirty = true;
             _columnsDirty = true;
@@ -335,6 +408,7 @@ namespace Byzantium1071.Campaign.UI
 
         internal static void NextPage()
         {
+            if (!CanNextPage) return;
             _pageIndex++;
             ForceRefresh();
         }
@@ -431,7 +505,7 @@ namespace Byzantium1071.Campaign.UI
             if (_activeTab == B1071LedgerTab.Search)
             {
                 if (Input.IsKeyPressed(InputKey.Space))
-                    SetSearchQuery(_searchQuery + " ");
+                    SetSearchQuery(_search.Draft + " ");
                 if (Input.IsKeyPressed(InputKey.Enter))
                     ExecuteSearch();
             }
@@ -440,7 +514,7 @@ namespace Byzantium1071.Campaign.UI
             // Disabled on Search tab to avoid consuming arrow keys during text editing.
             if (_activeTab != B1071LedgerTab.Search)
             {
-                const int tabCount = (int)B1071LedgerTab.Search + 1;
+                const int tabCount = (int)B1071LedgerTab.Casualties + 1;
                 if (Input.IsKeyPressed(InputKey.Right))
                 {
                     int next = ((int)_activeTab + 1) % tabCount;
@@ -472,7 +546,7 @@ namespace Byzantium1071.Campaign.UI
 
                 _lastCurrentContextSettlementId = currentContextId;
             }
-            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && _activeTab != B1071LedgerTab.Characters && _activeTab != B1071LedgerTab.Search && !_columnsDirty)
+            else if (_activeTab != B1071LedgerTab.NearbyPools && _activeTab != B1071LedgerTab.Wars && _activeTab != B1071LedgerTab.Characters && !_columnsDirty)
             {
                 return;
             }
@@ -558,7 +632,8 @@ namespace Byzantium1071.Campaign.UI
                 if (_activeTab == B1071LedgerTab.Search)
                 {
                     _activeTab = B1071LedgerTab.NearbyPools;
-                    _searchQuery = string.Empty;
+                    _search.Clear();
+                    _searchCacheStale = true;
                     _columnsDirty = true;
                     _pageIndex = 0;
                 }
@@ -588,7 +663,8 @@ namespace Byzantium1071.Campaign.UI
             if (_activeTab == B1071LedgerTab.Search)
             {
                 _activeTab = B1071LedgerTab.NearbyPools;
-                _searchQuery = string.Empty;
+                _search.Clear();
+                _searchCacheStale = true;
                 _columnsDirty = true;
                 _pageIndex = 0;
             }
@@ -635,17 +711,20 @@ namespace Byzantium1071.Campaign.UI
 
         private static string BuildCurrentColumns(B1071_ManpowerBehavior behavior)
         {
+            _totalsVisible = false;
+            _pageCount = 1;
             Settlement? settlement = ResolveCurrentContextSettlement();
             if (settlement == null || settlement.IsHideout)
             {
                 ClearColumns(L("b1071_overlay_current_no_selection", "Current - No settlement selected."));
+                _totalsVisible = false;
                 _titleText = L("b1071_overlay_title_current", "Current Settlement");
                 _header1 = L("b1071_overlay_col_settlement", "Settlement");
                 _header2 = L("b1071_overlay_col_manpower", "Manpower");
                 _header3 = L("b1071_overlay_col_regen_day", "Regen/Day");
                 _header4 = L("b1071_overlay_col_pool", "Pool");
                 _header5 = L("b1071_overlay_col_garrison", "Garrison");
-                _ledgerRows.Add(new B1071_LedgerRowVM(
+                _ledgerRows.Insert(0, new B1071_LedgerRowVM(
                     L("b1071_overlay_current_hint_click", "Left-click a settlement to view its details."),
                     "",
                     "",
@@ -678,13 +757,11 @@ namespace Byzantium1071.Campaign.UI
             _header3 = L("b1071_overlay_col_regen_day", "Regen/Day");
             _header4 = L("b1071_overlay_col_pool", "Pool");
             _header5 = L("b1071_overlay_col_garrison", "Garrison");
-            ApplySortIndicator(new[] { 2, 3, 4, 1, 5 });
-
             int garrison = settlement.Town?.GarrisonParty?.MemberRoster?.TotalManCount ?? 0;
             string garrisonText = settlement.IsVillage ? "-" : garrison.ToString("N0");
 
             _ledgerRows.Clear();
-            _ledgerRows.Add(new B1071_LedgerRowVM(
+            _ledgerRows.Insert(0, new B1071_LedgerRowVM(
                 TruncateForColumn((settlement.Name?.ToString() ?? "?") + " (" + type + ")", 32),
                 FormatMp(current, maximum) + " (" + ratio + "%)",
                 new TextObject("{=b1071_overlay_regen_per_day}+{VALUE}/d").SetTextVariable("VALUE", dailyRegen.ToString("N0")).ToString(),
@@ -720,33 +797,33 @@ namespace Byzantium1071.Campaign.UI
 
                 if (!string.IsNullOrEmpty(diagRegen) || !string.IsNullOrEmpty(diagPool))
                 {
-                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                    _ledgerRows.Insert(0, new B1071_LedgerRowVM(
                         L("b1071_ui_status", "Status"),
                         string.Empty,
                         diagRegen,
                         diagPool,
                         false,
-                        false));
+                        false, isDetail: true));
                 }
             }
 
             if (behavior.ShouldShowTelemetryInOverlay)
             {
-                _ledgerRows.Add(new B1071_LedgerRowVM(
-                    behavior.GetTelemetryCurrentRowLabel(),
+                _ledgerRows.Insert(0, new B1071_LedgerRowVM(
+                    L("b1071_ledger_diagnostics", "Diagnostics") + ": " + behavior.GetTelemetryCurrentRowLabel(),
                     behavior.GetTelemetryCurrentRowC2(),
                     behavior.GetTelemetryCurrentRowC3(),
                     behavior.GetTelemetryCurrentRowC4(),
                     false,
-                    false));
+                    false, isDetail: true));
 
-                _ledgerRows.Add(new B1071_LedgerRowVM(
-                    L("b1071_overlay_diag_regen_dbg", "RegenDbg"),
+                _ledgerRows.Insert(0, new B1071_LedgerRowVM(
+                    L("b1071_ledger_regen_details", "Regeneration details"),
                     TruncateForColumn(behavior.GetTelemetryRegenBreakdown(), 20),
                     string.Empty,
                     string.Empty,
                     false,
-                    true));
+                    true, isDetail: true));
             }
 
             _totals1 = L("b1071_overlay_totals_selected", "Selected");
@@ -904,7 +981,7 @@ namespace Byzantium1071.Campaign.UI
         {
             _totalsVisible = true;
 
-            string query = _searchQuery;
+            string query = _search.Query;
             if (string.IsNullOrWhiteSpace(query))
             {
                 ClearColumns(L("b1071_overlay_title_search", "Search Intel"));
@@ -913,11 +990,11 @@ namespace Byzantium1071.Campaign.UI
                 _header2 = L("b1071_overlay_col_affiliation", "Affiliation");
                 _header3 = L("b1071_overlay_col_details", "Details");
                 _header4 = L("b1071_overlay_col_distance", "Distance");
-                _header5 = L("b1071_overlay_col_status", "Status");
+                _header5 = L("b1071_ledger_type_status", "Type / Status");
                 _pageLabel = new TextObject("{=b1071_overlay_page}Page {CURRENT}/{TOTAL}").SetTextVariable("CURRENT", 1).SetTextVariable("TOTAL", 1).ToString();
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
-                    L("b1071_overlay_search_prompt", "Enter a query (e.g., Andronikos, Grain)"),
+                    L("b1071_ledger_search_prompt", "Type a name or item, then press Enter."),
                     string.Empty,
                     L("b1071_overlay_search_scope", "Heroes, settlements, armies, market prices"),
                     string.Empty,
@@ -926,289 +1003,301 @@ namespace Byzantium1071.Campaign.UI
 
                 _totals1 = L("b1071_overlay_totals_results", "Results");
                 _totals2 = "0";
-                _totals3 = L("b1071_overlay_totals_query", "Query");
+                _totals3 = string.Empty;
                 _totals4 = "-";
                 return _titleText;
             }
 
-            var results = new List<SearchResultRow>(256);
-            MobileParty? mainParty = MobileParty.MainParty;
-            Vec2 mainPos = mainParty != null ? mainParty.GetPosition2D : default;
-
-            // ─── Heroes ───
-            // Field weights: Name=3 (primary), Clan=1.5 (affiliation), NearestSettlement=0.6
-            // Lower indirect weight prevents a hero near town "X" from outranking the town itself.
-            foreach (Hero hero in Hero.AllAliveHeroes)
+            if (_searchCacheStale)
             {
-                if (hero == null || !IsTrackedCharacter(hero))
-                    continue;
+                _searchMatches.Clear();
+                var matches = _searchMatches;
+                MobileParty? mainParty = MobileParty.MainParty;
+                Vec2 mainPos = mainParty != null ? mainParty.GetPosition2D : default;
 
-                string heroName = hero.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                string clanName = hero.Clan?.Name?.ToString() ?? (hero.CompanionOf?.Name?.ToString() ?? L("b1071_overlay_wanderer", "Wanderer"));
-                string statusDetail = GetHeroSearchStatus(hero, out Vec2 heroPos, out bool hasPosition, out string locationHint);
-
-                int score = ComputeQueryScore(query,
-                    new[] { heroName, clanName, locationHint },
-                    new[] { 3f,       1.5f,     0.6f });
-                if (score <= 0)
-                    continue;
-
-                results.Add(new SearchResultRow
+                // ─── Heroes ───
+                // Field weights: Name=3 (primary), Clan=1.5 (affiliation), NearestSettlement=0.6
+                // Lower indirect weight prevents a hero near town "X" from outranking the town itself.
+                foreach (Hero hero in Hero.AllAliveHeroes)
                 {
-                    Name = heroName,
-                    TypeTag = hero.IsPrisoner ? L("b1071_overlay_type_hero_prisoner", "Hero*") : L("b1071_overlay_type_hero", "Hero"),
-                    TypeCategory = "Hero",
-                    Affiliation = clanName,
-                    Detail = statusDetail,
-                    HasPosition = hasPosition,
-                    DistanceSq = hasPosition && mainParty != null ? (heroPos - mainPos).LengthSquared : float.MaxValue,
-                    MatchScore = score,
-                    Status = hero.IsPrisoner ? L("b1071_overlay_status_prisoner", "Prisoner") : (hero.IsWanderer || hero.CompanionOf != null ? L("b1071_overlay_status_wanderer", "Wanderer") : L("b1071_overlay_status_noble", "Noble"))
-                });
-            }
-
-            // ─── Settlements ───
-            // Field weights: Name=3, OwnerClan=1.5, Kingdom=1
-            foreach (Settlement settlement in Settlement.All)
-            {
-                if (settlement == null || settlement.IsHideout)
-                    continue;
-
-                if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage)
-                    continue;
-
-                string settlementName = settlement.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                string owner = settlement.OwnerClan?.Name?.ToString() ?? L("b1071_overlay_independent", "Independent");
-                string kingdomName = settlement.OwnerClan?.Kingdom?.Name?.ToString() ?? L("b1071_overlay_neutral", "Neutral");
-
-                int score = ComputeQueryScore(query,
-                    new[] { settlementName, owner, kingdomName },
-                    new[] { 3f,             1.5f,  1f });
-                if (score <= 0)
-                    continue;
-
-                behavior.GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
-                int ratio = max > 0 ? (int)((100f * cur) / max) : 0;
-                string type = settlement.IsTown ? L("b1071_overlay_type_town", "Town") : (settlement.IsCastle ? L("b1071_overlay_type_castle", "Castle") : L("b1071_overlay_type_village", "Village"));
-
-                results.Add(new SearchResultRow
-                {
-                    Name = settlementName,
-                    TypeTag = type,
-                    TypeCategory = "Place",
-                    Affiliation = owner,
-                    Detail = new TextObject("{=b1071_overlay_detail_mp}MP {VALUE} ({PCT}%)")
-                        .SetTextVariable("VALUE", FormatMp(cur, max))
-                        .SetTextVariable("PCT", ratio)
-                        .ToString(),
-                    HasPosition = true,
-                    DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
-                    MatchScore = score,
-                    Status = L("b1071_overlay_status_active", "Active")
-                });
-            }
-
-            // ─── Armies ───
-            // Field weights: ArmyName=3, Commander=2, Faction=1
-            foreach (Kingdom kingdom in Kingdom.All)
-            {
-                if (kingdom == null || kingdom.IsEliminated || kingdom.Armies == null)
-                    continue;
-
-                foreach (Army army in kingdom.Armies)
-                {
-                    if (army == null)
+                    if (hero == null || !IsTrackedCharacter(hero))
                         continue;
 
-                    string armyName = army.Name?.ToString() ?? L("b1071_overlay_army", "Army");
-                    string factionName = kingdom.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                    string commanderName = army.LeaderParty?.LeaderHero?.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    string heroName = hero.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    string clanName = hero.Clan?.Name?.ToString() ?? (hero.CompanionOf?.Name?.ToString() ?? L("b1071_overlay_wanderer", "Wanderer"));
+                    string statusDetail = GetHeroSearchStatus(hero, out Vec2 heroPos, out bool hasPosition, out string locationHint);
 
                     int score = ComputeQueryScore(query,
-                        new[] { armyName, commanderName, factionName },
-                        new[] { 3f,       2f,             1f });
+                        new[] { heroName, clanName, locationHint },
+                        new[] { 3f,       1.5f,     0.6f });
                     if (score <= 0)
                         continue;
 
-                    bool armyHasPos = army.LeaderParty != null;
-                    Vec2 armyPos = armyHasPos ? army.LeaderParty!.GetPosition2D : default;
-                    int armySize = army.LeaderParty?.MemberRoster.TotalManCount ?? 0;
-
-                    results.Add(new SearchResultRow
+                    matches.Add(new SearchResultRow
                     {
-                        Name = armyName,
-                        TypeTag = L("b1071_overlay_type_army", "Army"),
-                        TypeCategory = "Army",
-                        Affiliation = factionName,
-                        Detail = new TextObject("{=b1071_overlay_detail_cmd}Cmd: {NAME} ({SIZE})")
-                            .SetTextVariable("NAME", commanderName)
-                            .SetTextVariable("SIZE", armySize.ToString("N0"))
+                        Name = heroName,
+                        TypeTag = hero.IsPrisoner ? L("b1071_overlay_type_hero_prisoner", "Hero*") : L("b1071_overlay_type_hero", "Hero"),
+                        TypeCategory = "Hero",
+                        Affiliation = clanName,
+                        Detail = statusDetail,
+                        HasPosition = hasPosition,
+                        DistanceSq = hasPosition && mainParty != null ? (heroPos - mainPos).LengthSquared : float.MaxValue,
+                        MatchScore = score,
+                        Status = hero.IsPrisoner ? L("b1071_overlay_status_prisoner", "Prisoner") : (hero.IsWanderer || hero.CompanionOf != null ? L("b1071_overlay_status_wanderer", "Wanderer") : L("b1071_overlay_status_noble", "Noble"))
+                    });
+                }
+
+                // ─── Settlements ───
+                // Field weights: Name=3, OwnerClan=1.5, Kingdom=1
+                foreach (Settlement settlement in Settlement.All)
+                {
+                    if (settlement == null || settlement.IsHideout)
+                        continue;
+
+                    if (!settlement.IsTown && !settlement.IsCastle && !settlement.IsVillage)
+                        continue;
+
+                    string settlementName = settlement.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    string owner = settlement.OwnerClan?.Name?.ToString() ?? L("b1071_overlay_independent", "Independent");
+                    string kingdomName = settlement.OwnerClan?.Kingdom?.Name?.ToString() ?? L("b1071_overlay_neutral", "Neutral");
+
+                    int score = ComputeQueryScore(query,
+                        new[] { settlementName, owner, kingdomName },
+                        new[] { 3f,             1.5f,  1f });
+                    if (score <= 0)
+                        continue;
+
+                    behavior.GetManpowerPool(settlement, out int cur, out int max, out Settlement pool);
+                    int ratio = max > 0 ? (int)((100f * cur) / max) : 0;
+                    string type = settlement.IsTown ? L("b1071_overlay_type_town", "Town") : (settlement.IsCastle ? L("b1071_overlay_type_castle", "Castle") : L("b1071_overlay_type_village", "Village"));
+
+                    matches.Add(new SearchResultRow
+                    {
+                        Name = settlementName,
+                        TypeTag = type,
+                        TypeCategory = "Place",
+                        Affiliation = owner,
+                        Detail = new TextObject("{=b1071_overlay_detail_mp}MP {VALUE} ({PCT}%)")
+                            .SetTextVariable("VALUE", FormatMp(cur, max))
+                            .SetTextVariable("PCT", ratio)
                             .ToString(),
-                        HasPosition = armyHasPos,
-                        DistanceSq = armyHasPos && mainParty != null ? (armyPos - mainPos).LengthSquared : float.MaxValue,
+                        HasPosition = true,
+                        DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
                         MatchScore = score,
                         Status = L("b1071_overlay_status_active", "Active")
                     });
                 }
-            }
 
-            // ─── Clans ───
-            // Field weights: ClanName=3, Kingdom=1
-            // Distance: use clan leader's party position where available.
-            Clan? playerClan = Clan.PlayerClan;
-            Clan? playerRuler = playerClan?.Kingdom?.RulingClan;
-            foreach (Clan clan in Clan.All)
-            {
-                if (clan == null || clan.IsEliminated)
-                    continue;
-
-                if (clan.IsMinorFaction || clan.IsBanditFaction || clan.IsClanTypeMercenary || clan.IsRebelClan)
-                    continue;
-
-                string clanName = clan.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                string kingdomName = clan.Kingdom?.Name?.ToString() ?? L("b1071_overlay_neutral", "Neutral");
-                int fiefs = clan.Settlements?.Count ?? 0;
-                int relation = GetClanRelationToFactionLeader(clan, playerRuler);
-
-                int score = ComputeQueryScore(query,
-                    new[] { clanName, kingdomName },
-                    new[] { 3f,       1f });
-                if (score <= 0)
-                    continue;
-
-                Vec2 clanPos = default;
-                bool clanHasPos = clan.Leader != null && TryGetCharacterPosition(clan.Leader, out clanPos);
-
-                results.Add(new SearchResultRow
+                // ─── Armies ───
+                // Field weights: ArmyName=3, Commander=2, Faction=1
+                foreach (Kingdom kingdom in Kingdom.All)
                 {
-                    Name = clanName,
-                    TypeTag = L("b1071_overlay_type_clan", "Clan"),
-                    TypeCategory = "Clan",
-                    Affiliation = kingdomName,
-                    Detail = new TextObject("{=b1071_overlay_detail_clan}Fiefs {FIEFS} • Gold {GOLD} • Rel {REL}")
-                        .SetTextVariable("FIEFS", fiefs)
-                        .SetTextVariable("GOLD", clan.Gold.ToString("N0"))
-                        .SetTextVariable("REL", relation)
-                        .ToString(),
-                    HasPosition = clanHasPos,
-                    DistanceSq = clanHasPos && mainParty != null ? (clanPos - mainPos).LengthSquared : float.MaxValue,
-                    MatchScore = score,
-                    Status = L("b1071_overlay_status_active", "Active")
-                });
-            }
+                    if (kingdom == null || kingdom.IsEliminated || kingdom.Armies == null)
+                        continue;
 
-            // ─── Kingdoms ───
-            // Field weights: KingdomName=3, RulerClan=1.5
-            // Distance: FactionMidPoint gives approximate capital area.
-            foreach (Kingdom kingdom in Kingdom.All)
-            {
-                if (kingdom == null || kingdom.IsEliminated)
-                    continue;
-
-                string kingdomName = kingdom.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                string rulerClan = kingdom.RulingClan?.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                int wars = kingdom.FactionsAtWarWith?.Count ?? 0;
-                float exhaustion = string.IsNullOrEmpty(kingdom.StringId) ? 0f : behavior.GetWarExhaustion(kingdom.StringId);
-
-                int score = ComputeQueryScore(query,
-                    new[] { kingdomName, rulerClan },
-                    new[] { 3f,          1.5f });
-                if (score <= 0)
-                    continue;
-
-                Vec2 kingdomPos = default;
-                bool kingdomHasPos = kingdom.Leader != null && TryGetCharacterPosition(kingdom.Leader, out kingdomPos);
-
-                results.Add(new SearchResultRow
-                {
-                    Name = kingdomName,
-                    TypeTag = L("b1071_overlay_type_kingdom", "Kingdom"),
-                    TypeCategory = "Kingdom",
-                    Affiliation = new TextObject("{=b1071_overlay_ruler}Ruler: {NAME}").SetTextVariable("NAME", rulerClan).ToString(),
-                    Detail = new TextObject("{=b1071_overlay_detail_wars}Wars {COUNT} • Exhaust {EXH}")
-                        .SetTextVariable("COUNT", wars)
-                        .SetTextVariable("EXH", GetExhaustionCompact(exhaustion, kingdom.StringId))
-                        .ToString(),
-                    HasPosition = kingdomHasPos,
-                    DistanceSq = kingdomHasPos && mainParty != null ? (kingdomPos - mainPos).LengthSquared : float.MaxValue,
-                    MatchScore = score,
-                    Status = L("b1071_overlay_status_active", "Active")
-                });
-            }
-
-            // ─── Market: Trade goods & food ───
-            // Matches query against item names. For each matching item, shows one row per town
-            // with the local price, stock count, and distance. All APIs are read-only queries —
-            // no save-state modification. Our Harmony postfix on GetPrice fires automatically
-            // for slave items, so custom slave prices appear correctly without special handling.
-            {
-                var allItems = MBObjectManager.Instance?.GetObjectTypeList<ItemObject>();
-                if (allItems != null)
-                {
-                    // Collect matching items first (typically 1-3 out of ~40 trade/food items)
-                    var matchedItems = new List<(ItemObject item, string name, int score)>(8);
-                    for (int i = 0; i < allItems.Count; i++)
+                    foreach (Army army in kingdom.Armies)
                     {
-                        ItemObject item = allItems[i];
-                        if (item == null)
-                            continue;
-                        if (!item.IsTradeGood && !item.IsFood)
+                        if (army == null)
                             continue;
 
-                        string itemName = item.Name?.ToString() ?? string.Empty;
-                        if (itemName.Length == 0)
+                        string armyName = army.Name?.ToString() ?? L("b1071_overlay_army", "Army");
+                        string factionName = kingdom.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                        string commanderName = army.LeaderParty?.LeaderHero?.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+
+                        int score = ComputeQueryScore(query,
+                            new[] { armyName, commanderName, factionName },
+                            new[] { 3f,       2f,             1f });
+                        if (score <= 0)
                             continue;
 
-                        // Also match against ItemCategory name for broader discoverability
-                        // (e.g., searching "grain" finds the Grain trade good).
-                        string catName = item.ItemCategory?.GetName()?.ToString() ?? string.Empty;
-                        int itemScore = ComputeQueryScore(query,
-                            new[] { itemName, catName },
-                            new[] { 3f,       1f });
-                        if (itemScore <= 0)
-                            continue;
+                        bool armyHasPos = army.LeaderParty != null;
+                        Vec2 armyPos = armyHasPos ? army.LeaderParty!.GetPosition2D : default;
+                        int armySize = army.LeaderParty?.MemberRoster.TotalManCount ?? 0;
 
-                        matchedItems.Add((item, itemName, itemScore));
-                    }
-
-                    // For each matching item, iterate towns to build price rows.
-                    for (int mi = 0; mi < matchedItems.Count; mi++)
-                    {
-                        var (item, itemName, itemScore) = matchedItems[mi];
-
-                        foreach (Settlement settlement in Settlement.All)
+                        matches.Add(new SearchResultRow
                         {
-                            if (settlement == null || !settlement.IsTown)
+                            Name = armyName,
+                            TypeTag = L("b1071_overlay_type_army", "Army"),
+                            TypeCategory = "Army",
+                            Affiliation = factionName,
+                            Detail = new TextObject("{=b1071_overlay_detail_cmd}Cmd: {NAME} ({SIZE})")
+                                .SetTextVariable("NAME", commanderName)
+                                .SetTextVariable("SIZE", armySize.ToString("N0"))
+                                .ToString(),
+                            HasPosition = armyHasPos,
+                            DistanceSq = armyHasPos && mainParty != null ? (armyPos - mainPos).LengthSquared : float.MaxValue,
+                            MatchScore = score,
+                            Status = L("b1071_overlay_status_active", "Active")
+                        });
+                    }
+                }
+
+                // ─── Clans ───
+                // Field weights: ClanName=3, Kingdom=1
+                // Distance: use clan leader's party position where available.
+                Clan? playerClan = Clan.PlayerClan;
+                Clan? playerRuler = playerClan?.Kingdom?.RulingClan;
+                foreach (Clan clan in Clan.All)
+                {
+                    if (clan == null || clan.IsEliminated)
+                        continue;
+
+                    if (clan.IsMinorFaction || clan.IsBanditFaction || clan.IsClanTypeMercenary || clan.IsRebelClan)
+                        continue;
+
+                    string clanName = clan.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    string kingdomName = clan.Kingdom?.Name?.ToString() ?? L("b1071_overlay_neutral", "Neutral");
+                    int fiefs = clan.Settlements?.Count ?? 0;
+                    int relation = GetClanRelationToFactionLeader(clan, playerRuler);
+
+                    int score = ComputeQueryScore(query,
+                        new[] { clanName, kingdomName },
+                        new[] { 3f,       1f });
+                    if (score <= 0)
+                        continue;
+
+                    Vec2 clanPos = default;
+                    bool clanHasPos = clan.Leader != null && TryGetCharacterPosition(clan.Leader, out clanPos);
+
+                    matches.Add(new SearchResultRow
+                    {
+                        Name = clanName,
+                        TypeTag = L("b1071_overlay_type_clan", "Clan"),
+                        TypeCategory = "Clan",
+                        Affiliation = kingdomName,
+                        Detail = new TextObject("{=b1071_overlay_detail_clan}Fiefs {FIEFS} • Gold {GOLD} • Rel {REL}")
+                            .SetTextVariable("FIEFS", fiefs)
+                            .SetTextVariable("GOLD", clan.Gold.ToString("N0"))
+                            .SetTextVariable("REL", relation)
+                            .ToString(),
+                        HasPosition = clanHasPos,
+                        DistanceSq = clanHasPos && mainParty != null ? (clanPos - mainPos).LengthSquared : float.MaxValue,
+                        MatchScore = score,
+                        Status = L("b1071_overlay_status_active", "Active")
+                    });
+                }
+
+                // ─── Kingdoms ───
+                // Field weights: KingdomName=3, RulerClan=1.5
+                // Distance: FactionMidPoint gives approximate capital area.
+                foreach (Kingdom kingdom in Kingdom.All)
+                {
+                    if (kingdom == null || kingdom.IsEliminated)
+                        continue;
+
+                    string kingdomName = kingdom.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    string rulerClan = kingdom.RulingClan?.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                    int wars = kingdom.FactionsAtWarWith?.Count ?? 0;
+                    float exhaustion = string.IsNullOrEmpty(kingdom.StringId) ? 0f : behavior.GetWarExhaustion(kingdom.StringId);
+
+                    int score = ComputeQueryScore(query,
+                        new[] { kingdomName, rulerClan },
+                        new[] { 3f,          1.5f });
+                    if (score <= 0)
+                        continue;
+
+                    Vec2 kingdomPos = default;
+                    bool kingdomHasPos = kingdom.Leader != null && TryGetCharacterPosition(kingdom.Leader, out kingdomPos);
+
+                    matches.Add(new SearchResultRow
+                    {
+                        Name = kingdomName,
+                        TypeTag = L("b1071_overlay_type_kingdom", "Kingdom"),
+                        TypeCategory = "Kingdom",
+                        Affiliation = new TextObject("{=b1071_overlay_ruler}Ruler: {NAME}").SetTextVariable("NAME", rulerClan).ToString(),
+                        Detail = new TextObject("{=b1071_overlay_detail_wars}Wars {COUNT} • Exhaust {EXH}")
+                            .SetTextVariable("COUNT", wars)
+                            .SetTextVariable("EXH", GetExhaustionCompact(exhaustion, kingdom.StringId))
+                            .ToString(),
+                        HasPosition = kingdomHasPos,
+                        DistanceSq = kingdomHasPos && mainParty != null ? (kingdomPos - mainPos).LengthSquared : float.MaxValue,
+                        MatchScore = score,
+                        Status = L("b1071_overlay_status_active", "Active")
+                    });
+                }
+
+                // ─── Market: Trade goods & food ───
+                // Matches query against item names. For each matching item, shows one row per town
+                // with the local price, stock count, and distance. All APIs are read-only queries —
+                // no save-state modification. Our Harmony postfix on GetPrice fires automatically
+                // for slave items, so custom slave prices appear correctly without special handling.
+                {
+                    var allItems = MBObjectManager.Instance?.GetObjectTypeList<ItemObject>();
+                    if (allItems != null)
+                    {
+                        // Collect matching items first (typically 1-3 out of ~40 trade/food items)
+                        var matchedItems = new List<(ItemObject item, string name, int score)>(8);
+                        for (int i = 0; i < allItems.Count; i++)
+                        {
+                            ItemObject item = allItems[i];
+                            if (item == null)
+                                continue;
+                            if (!item.IsTradeGood && !item.IsFood)
                                 continue;
 
-                            Town? town = settlement.Town;
-                            if (town == null)
+                            string itemName = item.Name?.ToString() ?? string.Empty;
+                            if (itemName.Length == 0)
                                 continue;
 
-                            string townName = settlement.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
-                            int price = town.GetItemPrice(item);
-                            int stock = settlement.ItemRoster?.GetItemNumber(item) ?? 0;
+                            // Also match against ItemCategory name for broader discoverability
+                            // (e.g., searching "grain" finds the Grain trade good).
+                            string catName = item.ItemCategory?.GetName()?.ToString() ?? string.Empty;
+                            int itemScore = ComputeQueryScore(query,
+                                new[] { itemName, catName },
+                                new[] { 3f,       1f });
+                            if (itemScore <= 0)
+                                continue;
 
-                            results.Add(new SearchResultRow
+                            matchedItems.Add((item, itemName, itemScore));
+                        }
+
+                        // For each matching item, iterate towns to build price rows.
+                        for (int mi = 0; mi < matchedItems.Count; mi++)
+                        {
+                            var (item, itemName, itemScore) = matchedItems[mi];
+
+                            foreach (Settlement settlement in Settlement.All)
                             {
-                                Name = townName,
-                                TypeTag = L("b1071_overlay_type_market", "Market"),
-                                TypeCategory = "Market",
-                                Affiliation = itemName,
-                                Detail = new TextObject("{=b1071_overlay_detail_market}{PRICE}d (×{STOCK})")
-                                    .SetTextVariable("PRICE", price.ToString("N0"))
-                                    .SetTextVariable("STOCK", stock)
-                                    .ToString(),
-                                HasPosition = true,
-                                DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
-                                MatchScore = itemScore,
-                                SortValue = price,
-                                Status = L("b1071_overlay_status_active", "Active")
-                            });
+                                if (settlement == null || !settlement.IsTown)
+                                    continue;
+
+                                Town? town = settlement.Town;
+                                if (town == null)
+                                    continue;
+
+                                string townName = settlement.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
+                                int price = town.GetItemPrice(item);
+                                int stock = settlement.ItemRoster?.GetItemNumber(item) ?? 0;
+
+                                matches.Add(new SearchResultRow
+                                {
+                                    Name = townName,
+                                    TypeTag = L("b1071_overlay_type_market", "Market"),
+                                    TypeCategory = "Market",
+                                    Affiliation = itemName,
+                                    Detail = new TextObject("{=b1071_overlay_detail_market}{PRICE}d (×{STOCK})")
+                                        .SetTextVariable("PRICE", price.ToString("N0"))
+                                        .SetTextVariable("STOCK", stock)
+                                        .ToString(),
+                                    HasPosition = true,
+                                    DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
+                                    MatchScore = itemScore,
+                                    SortValue = price,
+                                    Status = L("b1071_overlay_status_active", "Active")
+                                });
+                            }
                         }
                     }
                 }
+
+                _searchCacheStale = false;
             }
+
+
+            var results = _filteredSearchMatches;
+            results.Clear();
+            foreach (SearchResultRow match in _searchMatches)
+                if (_search.Includes(match.TypeCategory)) results.Add(match);
 
             if (results.Count == 0)
             {
@@ -1217,17 +1306,17 @@ namespace Byzantium1071.Campaign.UI
                 _header2 = L("b1071_overlay_col_affiliation", "Affiliation");
                 _header3 = L("b1071_overlay_col_details", "Details");
                 _header4 = L("b1071_overlay_col_distance", "Distance");
-                _header5 = L("b1071_overlay_col_status", "Status");
+                _header5 = L("b1071_ledger_type_status", "Type / Status");
                 _ledgerRows.Add(new B1071_LedgerRowVM(
-                    L("b1071_overlay_no_matches", "No matches"),
+                    _searchMatches.Count > 0 ? L("b1071_ledger_no_filter_matches", "No matches in this category") : L("b1071_overlay_no_matches", "No matches"),
                     string.Empty,
-                    L("b1071_overlay_try_broader", "Try broader text"),
+                    _searchMatches.Count > 0 ? L("b1071_ledger_try_all", "Choose All to see other results") : L("b1071_overlay_try_broader", "Try broader text"),
                     string.Empty,
                     false,
                     true));
                 _totals1 = L("b1071_overlay_totals_results", "Results");
                 _totals2 = "0";
-                _totals3 = L("b1071_overlay_totals_query", "Query");
+                _totals3 = string.Empty;
                 _totals4 = TruncateForColumn(query, 18);
                 _pageLabel = new TextObject("{=b1071_overlay_page}Page {CURRENT}/{TOTAL}").SetTextVariable("CURRENT", 1).SetTextVariable("TOTAL", 1).ToString();
                 return _titleText;
@@ -1298,7 +1387,7 @@ namespace Byzantium1071.Campaign.UI
             _header2 = L("b1071_overlay_col_affiliation", "Affiliation");
             _header3 = L("b1071_overlay_col_details", "Details");
             _header4 = L("b1071_overlay_col_distance", "Distance");
-            _header5 = L("b1071_overlay_col_status", "Status");
+            _header5 = L("b1071_ledger_type_status", "Type / Status");
             ApplySortIndicator(new[] { 4, 2, 3, 1, 5 });
 
             _ledgerRows.Clear();
@@ -1311,7 +1400,7 @@ namespace Byzantium1071.Campaign.UI
                     ? Math.Sqrt(row.DistanceSq).ToString("F1") + " km"
                     : "-";
 
-                string nameCell = rank + ". [" + row.TypeTag + "] " + TruncateForColumn(row.Name, 22, out string hint);
+                string nameCell = rank + ". " + TruncateForColumn(row.Name, 22, out string hint);
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     nameCell,
                     TruncateForColumn(row.Affiliation, 18),
@@ -1319,7 +1408,7 @@ namespace Byzantium1071.Campaign.UI
                     distance,
                     false,
                     even,
-                    row.Status,
+                    row.TypeTag + " / " + row.Status,
                     hintText: hint));
             }
 
@@ -1337,12 +1426,12 @@ namespace Byzantium1071.Campaign.UI
                 }
             }
 
-            // Build compact type summary: "H:3  P:2  A:1  M:12  +1"
+            // Full type breakdown is available in the totals tooltip.
             var typeParts = new System.Text.StringBuilder();
-            if (heroCount  > 0) typeParts.Append("H:").Append(heroCount).Append("  ");
-            if (placeCount > 0) typeParts.Append("P:").Append(placeCount).Append("  ");
-            if (armyCount  > 0) typeParts.Append("A:").Append(armyCount).Append("  ");
-            if (marketCount > 0) typeParts.Append("M:").Append(marketCount).Append("  ");
+            if (heroCount  > 0) typeParts.Append(L("b1071_ledger_filter_hero", "Heroes")).Append(": ").Append(heroCount).Append("  ");
+            if (placeCount > 0) typeParts.Append(L("b1071_ledger_filter_place", "Places")).Append(": ").Append(placeCount).Append("  ");
+            if (armyCount  > 0) typeParts.Append(L("b1071_ledger_filter_army", "Armies")).Append(": ").Append(armyCount).Append("  ");
+            if (marketCount > 0) typeParts.Append(L("b1071_ledger_filter_market", "Markets")).Append(": ").Append(marketCount).Append("  ");
             if (otherCount > 0) typeParts.Append("+").Append(otherCount);
             string typeSummary = typeParts.ToString().TrimEnd();
 
@@ -1492,8 +1581,8 @@ namespace Byzantium1071.Campaign.UI
             _titleText = new TextObject("{=b1071_overlay_title_prisoners}World Prisoners Ledger  ({COUNT} nobles)").SetTextVariable("COUNT", rows.Count).ToString();
             _header1 = L("b1071_overlay_col_noble", "Noble");
             _header2 = L("b1071_overlay_col_captor", "Captor");
-            _header3 = L("b1071_overlay_col_by", "By");
-            _header4 = L("b1071_overlay_col_where", "Where");
+            _header3 = L("b1071_ledger_held_by", "Held by");
+            _header4 = L("b1071_ledger_location", "Location");
             _header5 = L("b1071_overlay_col_clan", "Clan");
             ApplySortIndicator(new[] { 2, 4, 3, 1, 5 });
 
@@ -1725,7 +1814,7 @@ namespace Byzantium1071.Campaign.UI
             _header1 = L("b1071_overlay_col_clan", "Clan");
             _header2 = L("b1071_overlay_col_kingdom", "Kingdom");
             _header3 = L("b1071_overlay_col_vassal_wealth_fiefs", "Vassal/Wealth/Fiefs");
-            _header4 = L("b1071_overlay_col_risk", "Risk");
+            _header4 = L("b1071_ledger_risk", "Risk / 100");
             _header5 = L("b1071_overlay_col_leader", "Leader");
             ApplySortIndicator(new[] { 4, 2, 3, 1, 5 });
 
@@ -1736,8 +1825,8 @@ namespace Byzantium1071.Campaign.UI
                 int rank = i + 1;
 
                 string clanCell = TruncateForColumn(row.ClanName, 24);
-                string statusCell = TruncateForColumn(row.StatusCode, 28);
-                string riskCell = L("b1071_overlay_risk_prefix", "R") + row.Score;
+                string statusCell = row.StatusCode.Replace("/", " / ");
+                string riskCell = row.Score.ToString();
 
                 bool highlight = false;
                 bool even = (i - startIndex) % 2 == 0;
@@ -2033,6 +2122,8 @@ namespace Byzantium1071.Campaign.UI
 
         private static void ClearColumns(string fallback)
         {
+            _pageCount = 1;
+            _pageIndex = 0;
             _titleText = fallback;
             _ledgerRows.Clear();
             _totals1 = string.Empty;
@@ -2386,7 +2477,7 @@ namespace Byzantium1071.Campaign.UI
             ApplySortIndicator(new[] { 5, 4, 3, 1, 2 });
 
             _ledgerRows.Clear();
-            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            // The row list stacks bottom to top, so append the page in reverse order.
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 FactionLedgerRow row = factionRows[i];
@@ -2461,7 +2552,7 @@ namespace Byzantium1071.Campaign.UI
             string playerFaction, Func<LedgerRow, int, string, (string c1, string c2, string c3, string c4, string c5, string hint)> formatter)
         {
             _ledgerRows.Clear();
-            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            // The row list stacks bottom to top, so append the page in reverse order.
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 LedgerRow row = rows[i];
@@ -2479,11 +2570,14 @@ namespace Byzantium1071.Campaign.UI
             => B1071_DisplayMath.FormatManpower(current, maximum);
 
         private static string TruncateForColumn(string text, int maxLength)
-            => B1071_DisplayMath.TruncateForColumn(text, maxLength);
+            => text ?? string.Empty;
 
-        /// <summary>Overload that returns the full text as hintText when truncation occurs.</summary>
+        /// <summary>Keep full values until the row applies its column width; retain the tooltip contract.</summary>
         private static string TruncateForColumn(string text, int maxLength, out string hintText)
-            => B1071_DisplayMath.TruncateForColumn(text, maxLength, out hintText);
+        {
+            hintText = text ?? string.Empty;
+            return hintText;
+        }
 
         private static string GetExhaustionLabel(float exhaustion, string? kingdomId = null)
         {
@@ -2706,10 +2800,15 @@ namespace Byzantium1071.Campaign.UI
             if (_pageIndex < 0)
                 _pageIndex = 0;
 
+            _pageCount = totalPages;
             _pageLabel = new TextObject("{=b1071_overlay_page}Page {CURRENT}/{TOTAL}")
                 .SetTextVariable("CURRENT", _pageIndex + 1)
                 .SetTextVariable("TOTAL", totalPages)
                 .ToString();
+            _pageLabel += "  |  " + new TextObject("{=b1071_ledger_range}{FIRST}–{LAST} of {COUNT}")
+                .SetTextVariable("FIRST", totalEntries == 0 ? 0 : _pageIndex * pageSize + 1)
+                .SetTextVariable("LAST", Math.Min(totalEntries, (_pageIndex + 1) * pageSize))
+                .SetTextVariable("COUNT", totalEntries).ToString();
             return _pageIndex * pageSize;
         }
 
@@ -2900,12 +2999,13 @@ namespace Byzantium1071.Campaign.UI
         private static string FormatFoodTrendCompact(float foodChange)
             => B1071_DisplayMath.FormatFoodTrendCompact(foodChange);
 
-        private static string FormatTimeToRebelLabel(int days)
+        internal static string FormatRebellionOutlook(int days, float loyalty)
         {
-            if (days <= 0) return L("b1071_overlay_ttr_now", "Now");
-            if (days == int.MaxValue) return L("b1071_overlay_ttr_stable", "Stable");
-            if (days >= 999) return L("b1071_overlay_ttr_cap", "999+d");
-            return new TextObject("{=b1071_overlay_days_short}{DAYS}d").SetTextVariable("DAYS", days).ToString();
+            if (days <= 0) return L("b1071_ledger_rebellious", "Rebellious");
+            if (loyalty <= 25f) return L("b1071_ledger_low_loyalty", "Low loyalty");
+            if (days == int.MaxValue) return L("b1071_ledger_no_decline", "No decline");
+            if (days >= 999) return L("b1071_ledger_outlook_cap", "~999+d");
+            return new TextObject("{=b1071_ledger_outlook_days}~{DAYS}d").SetTextVariable("DAYS", days).ToString();
         }
 
         private static string BuildRebellionRiskColumns()
@@ -2998,9 +3098,9 @@ namespace Byzantium1071.Campaign.UI
 
             _titleText = new TextObject("{=b1071_overlay_title_rebellion}Rebellion Risk  ({COUNT} towns)").SetTextVariable("COUNT", rows.Count).ToString();
             _header1 = L("b1071_overlay_col_town_owner", "Town / Owner");
-            _header2 = L("b1071_overlay_col_risk", "Risk");
-            _header3 = L("b1071_overlay_col_lsf", "L/S/F");
-            _header4 = L("b1071_overlay_col_ttr", "TTR");
+            _header2 = L("b1071_ledger_risk", "Risk / 100");
+            _header3 = L("b1071_ledger_conditions", "Loyalty / Security / Food");
+            _header4 = L("b1071_ledger_rebel_eta", "Rebellion outlook");
             _header5 = L("b1071_overlay_col_culture", "Culture");
             ApplySortIndicator(new[] { 2, 4, 3, 1, 5 });
 
@@ -3019,9 +3119,9 @@ namespace Byzantium1071.Campaign.UI
 
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     prefix + rank + ". " + townOwner,
-                        L("b1071_overlay_risk_prefix", "R") + row.RiskScore.ToString("0"),
+                        row.RiskScore.ToString("0"),
                     lsf,
-                    FormatTimeToRebelLabel(row.TimeToRebelDays),
+                    FormatRebellionOutlook(row.TimeToRebelDays, row.Loyalty),
                     highlight,
                     even,
                     row.CultureMismatch ? L("b1071_overlay_mismatch", "Mismatch") : L("b1071_overlay_native", "Native")));
@@ -3030,7 +3130,7 @@ namespace Byzantium1071.Campaign.UI
             int avgRisk = rows.Count > 0 ? (int)Math.Round(totalRisk / (double)rows.Count, MidpointRounding.AwayFromZero) : 0;
             _totals1 = L("b1071_overlay_totals_avg_risk", "Avg Risk");
             _totals2 = avgRisk.ToString("0");
-            _totals3 = new TextObject("{=b1071_overlay_totals_urgent}<=30d: {COUNT}").SetTextVariable("COUNT", urgentCount.ToString("N0")).ToString();
+            _totals3 = new TextObject("{=b1071_ledger_urgent_threshold}Low loyalty / <=30d: {COUNT}").SetTextVariable("COUNT", urgentCount.ToString("N0")).ToString();
             _totals4 = new TextObject("{=b1071_overlay_total_entries}Towns: {COUNT}").SetTextVariable("COUNT", rows.Count.ToString("N0")).ToString();
             _totals5 = mismatchCount > 0
                 ? new TextObject("{=b1071_overlay_totals_mismatch}Mismatch: {COUNT}").SetTextVariable("COUNT", mismatchCount.ToString("N0")).ToString()
@@ -3299,6 +3399,7 @@ namespace Byzantium1071.Campaign.UI
             int remainingTruceCount = Math.Max(0, activeTruces.Count - firstPageTruceCount);
             int trucePages = remainingTruceCount > 0 ? (int)Math.Ceiling(remainingTruceCount / (double)pageSize) : 0;
             int totalPages = warPages + trucePages;
+            _pageCount = totalPages;
             if (_pageIndex < 0) _pageIndex = 0;
             if (_pageIndex > totalPages - 1) _pageIndex = totalPages - 1;
             _pageLabel = new TextObject("{=b1071_overlay_page}Page {CURRENT}/{TOTAL}")
@@ -3391,7 +3492,7 @@ namespace Byzantium1071.Campaign.UI
                 string nameCell = prefix + rank + ". " + TruncateForColumn(row.PairName, 26, out string hint);
                 _ledgerRows.Add(new B1071_LedgerRowVM(
                     nameCell,
-                    GetExhaustionCompact(row.ExhaustionA, row.SideAId) + "/" + GetExhaustionCompact(row.ExhaustionB, row.SideBId),
+                    GetExhaustionLabel(row.ExhaustionA, row.SideAId) + " / " + GetExhaustionLabel(row.ExhaustionB, row.SideBId),
                     GetPeacePressureBand(row.PeacePressure),
                     FormatWarDuration(row.DurationDays),
                     involvesPlayer,
@@ -3405,7 +3506,8 @@ namespace Byzantium1071.Campaign.UI
                 if (r.DurationDays > maxDuration) maxDuration = r.DurationDays;
 
             _totals1 = L("b1071_overlay_totals_total", "Total");
-            _totals2 = rows.Count.ToString("N0") + (activeTruces.Count > 0 ? " +" + activeTruces.Count + "T" : "");
+            _totals2 = new TextObject("{=b1071_ledger_wars_truces}Wars: {WARS}  |  Truces: {TRUCES}")
+                .SetTextVariable("WARS", rows.Count).SetTextVariable("TRUCES", activeTruces.Count).ToString();
             _totals3 = rows.Count > 0 ? GetPeacePressureBand(totalPressure / rows.Count) : L("b1071_overlay_warstate_neutral", "Neutral");
             _totals4 = maxDuration > 0
                 ? new TextObject("{=b1071_overlay_oldest_war}Longest: {DAYS}d").SetTextVariable("DAYS", maxDuration).ToString()
@@ -3667,7 +3769,7 @@ namespace Byzantium1071.Campaign.UI
             ApplySortIndicator(new[] { 2, 3, 4, 1, 5 });
 
             _ledgerRows.Clear();
-            // Iterate in reverse: Bannerlord's VerticalTopToBottom renders first child at bottom.
+            // The row list stacks bottom to top, so append the page in reverse order.
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 ArmiesLedgerRow row = rows[i];
@@ -3690,7 +3792,8 @@ namespace Byzantium1071.Campaign.UI
             _totals1 = L("b1071_overlay_totals_total", "Total");
             _totals2 = totalPower.ToString("N0");
             _totals3 = totalTroops.ToString("N0");
-            _totals4 = rows.Count > 0 ? GetExhaustionLabel(totalExhaustion / rows.Count) : L("b1071_overlay_exhaustion_fresh", "Fresh");
+            _totals4 = new TextObject("{=b1071_ledger_avg_exhaustion}Average exhaustion: {VALUE}/100")
+                .SetTextVariable("VALUE", rows.Count > 0 ? (totalExhaustion / rows.Count).ToString("0") : "0").ToString();
             int totalParties = 0;
             foreach (ArmiesLedgerRow r in rows) totalParties += r.PartyCount;
             _totals5 = totalParties.ToString("N0");

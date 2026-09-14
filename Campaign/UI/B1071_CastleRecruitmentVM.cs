@@ -1,6 +1,7 @@
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using System;
+using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -71,23 +72,23 @@ namespace Byzantium1071.Campaign.UI
             GoldLabelText = L("b1071_ui_gold", "Gold:");
             ManpowerLabelText = L("b1071_ui_manpower", "Manpower:");
             EliteHeaderText = (B1071_McmSettings.Instance?.EnableDiversifiedCastlePool ?? false)
-                ? L("b1071_cr_elite_header_div", "Castle Levy (Diversified Pool)")
+                ? L("b1071_cr_elite_header_div", "Castle Levy")
                 : L("b1071_cr_elite_header", "Elite Troops (Culture Pool)");
-            ReadyHeaderText = L("b1071_cr_ready_header", "Ready to Recruit (Prisoners)");
-            PendingHeaderText = L("b1071_cr_pending_header", "Pending (Training)");
+            ReadyHeaderText = L("b1071_cr_ready_header", "Prisoners Ready to Recruit");
+            PendingHeaderText = L("b1071_cr_pending_header", "Prisoners Awaiting Recruitment");
             TroopColumnText = L("b1071_ui_troop", "Troop");
             TierColumnText = L("b1071_ui_tier", "Tier");
-            CountColumnText = L("b1071_ui_count", "Count");
-            GoldCostColumnText = L("b1071_ui_gold_cost", "Gold Cost");
-            StatusColumnText = L("b1071_ui_status", "Status");
-            NoEliteText = L("b1071_cr_no_elite", "No elite troops available. Pool regenerates daily from castle manpower.");
+            CountColumnText = L("b1071_cr_available", "Available");
+            GoldCostColumnText = L("b1071_cr_gold_each", "Gold Each");
+            StatusColumnText = L("b1071_cr_days_eligible", "Days Until Eligible");
+            NoEliteText = L("b1071_cr_pool_empty", "No troops available. The pool replenishes daily from castle manpower.");
             NoReadyText = L("b1071_cr_no_ready", "No prisoners ready for recruitment.");
             NoPendingText = L("b1071_cr_no_pending", "No prisoners pending.");
             RecruitAllText = L("b1071_cr_recruit_all", "Recruit All");
         }
 
         /// <summary>
-        /// Rebuilds both lists from current prison state. Called after each recruitment.
+        /// Rebuilds all three lists from current castle state. Called after each recruitment.
         /// </summary>
         public void RefreshLists()
         {
@@ -165,6 +166,44 @@ namespace Byzantium1071.Campaign.UI
             HasNoAvailableTroops = _availableTroops.Count == 0;
             HasPendingTroops = _pendingTroops.Count > 0;
             HasNoPendingTroops = _pendingTroops.Count == 0;
+
+            foreach (var list in new[] { _eliteTroops, _availableTroops, _pendingTroops })
+                for (int i = 0; i < list.Count; i++) list[i].IsEven = i % 2 == 0;
+
+            RefreshLocalizedLabels();
+            EliteHeaderText = SectionCount(EliteHeaderText, _eliteTroops.Sum(t => t.NumericCount));
+            ReadyHeaderText = SectionCount(ReadyHeaderText, _availableTroops.Sum(t => t.NumericCount));
+            PendingHeaderText = SectionCount(PendingHeaderText, _pendingTroops.Sum(t => t.NumericCount));
+            OnPropertyChanged(nameof(CanRecruitAnyElite));
+            OnPropertyChanged(nameof(CanRecruitAnyReady));
+        }
+
+        private static string SectionCount(string label, int count) =>
+            new TextObject("{=b1071_cr_section_count}{SECTION} — {COUNT}")
+                .SetTextVariable("SECTION", label).SetTextVariable("COUNT", count.ToString("N0")).ToString();
+
+        [DataSourceProperty]
+        public string NextCostColumnText
+        {
+            get => L("b1071_cr_gold_next", "Gold (Next)");
+        }
+
+        [DataSourceProperty]
+        public string ActionColumnText
+        {
+            get => L("b1071_cr_action", "Action");
+        }
+
+        [DataSourceProperty]
+        public bool CanRecruitAnyElite
+        {
+            get => _eliteTroops.Any(t => t.CanRecruit);
+        }
+
+        [DataSourceProperty]
+        public bool CanRecruitAnyReady
+        {
+            get => _availableTroops.Any(t => t.CanRecruit);
         }
 
         // ── Data-bound properties ─────────────────────────────────────────────────

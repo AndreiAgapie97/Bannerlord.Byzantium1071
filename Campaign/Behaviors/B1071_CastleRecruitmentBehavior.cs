@@ -2514,9 +2514,15 @@ namespace Byzantium1071.Campaign.Behaviors
             Settlement castle, Hero? recruiterHero,
             string? depositorHeroId, int goldCostPerTroop)
         {
-            if (goldCostPerTroop <= 0) return 0;
+            return GetRecruitmentFeeBreakdown(castle, recruiterHero, depositorHeroId, goldCostPerTroop).RecruiterCost;
+        }
 
-            Hero? owner = castle?.Owner;
+        // Shared by affordability checks and the UI quote; does not transfer gold.
+        private CastleFeeSplit GetRecruitmentFeeBreakdown(
+            Settlement castle, Hero? recruiterHero, string? depositorHeroId, int goldCostPerTroop)
+        {
+            if (goldCostPerTroop <= 0) return new CastleFeeSplit(0, 0, 0);
+
             Hero? depositor = FindAliveHero(depositorHeroId);
 
             Clan? recruiterClan = recruiterHero?.Clan;
@@ -2533,7 +2539,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 Settings.CastleHoldingFeePercent,
                 hasSeparateDepositor,
                 recruiterIsSameClanAsOwner,
-                recruiterIsSameClanAsDepositor).RecruiterCost;
+                recruiterIsSameClanAsDepositor);
         }
 
         /// <summary>
@@ -2568,6 +2574,35 @@ namespace Byzantium1071.Campaign.Behaviors
             int baseCost = GetGoldCostForTier(troop.Tier);
             string? depositorId = PeekDepositor(castle.StringId, troop.StringId);
             return GetEffectiveGoldCost(castle, Hero.MainHero, depositorId, baseCost);
+        }
+
+        /// <summary>Detached UI snapshot in recruitment order, capped to the displayed prison count.
+        /// Unrecorded prisoners follow tracked deposits, matching consumption. Never merges or consumes tracking.</summary>
+        internal IReadOnlyList<(string? HeroId, int Count)> GetPrisonerDepositors(
+            string castleId, string troopId, int count)
+        {
+            var result = new List<(string?, int)>();
+            int remaining = count;
+            if (_depositorTracking.TryGetValue(castleId, out var troops)
+                && troops.TryGetValue(troopId, out var entries))
+            {
+                foreach (var entry in entries)
+                {
+                    if (remaining <= 0) break;
+                    int take = Math.Min(remaining, entry.Count);
+                    result.Add((entry.HeroId, take));
+                    remaining -= take;
+                }
+            }
+            if (remaining > 0) result.Add((null, remaining));
+            return result.AsReadOnly();
+        }
+
+        /// <summary>Current next-prisoner fee split for display, using the affordability calculation.</summary>
+        internal CastleFeeSplit GetPlayerPrisonerFeeBreakdown(Settlement castle, CharacterObject troop)
+        {
+            return GetRecruitmentFeeBreakdown(castle, Hero.MainHero,
+                PeekDepositor(castle.StringId, troop.StringId), GetGoldCostForTier(troop.Tier));
         }
 
         /// <summary>

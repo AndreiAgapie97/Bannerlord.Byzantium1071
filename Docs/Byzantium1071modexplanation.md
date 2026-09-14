@@ -1076,6 +1076,18 @@ All 14 tabs use a 5-column layout. Click any column header to sort; click again 
 - **Keyboard navigation**: Left/Right arrow keys cycle tabs (wraps around). Disabled on Search tab to allow text editing.
 - **Font-safe glyphs**: All text uses glyphs verified to exist in Bannerlord's embedded font (dagger † instead of ⚔, em-dash — instead of box-drawing ──).
 
+### Ledger layout and submitted search
+
+The ledger retains its 1200-unit outer width, configured offsets, `200 + rows × 20` panel height, and 20-unit rows. The inner stack runs top to bottom: navigation, title, optional search toolbar, table, totals, and footer. Row collections remain reversed for the bottom-to-top row list. Current inserts its settlement row first visually and suppresses the duplicate totals; telemetry remains under its existing gate.
+
+`B1071_LedgerColumns` assigns widths and alignment per tab within 1152 units, including four 24-unit gutters. Heading, data, and additive total columns share those widths. Mixed summaries use one full-width, explicitly labeled strip: combined casualty deaths are not placed under Kills A, and army exhaustion is labeled as an arithmetic average out of 100 rather than a pressure band. Current status and telemetry rows use a separate 180-unit label and the remaining width for details, retaining the existing telemetry gate and row height. Long row values remain intact in the controller and in `HintViewModel`; displayed text uses a conservative width-based character budget and clips to its cell. Row and totals tooltips expose the full values. Header tooltips explain abbreviated concepts and faction-side ordering. Pagination tracks actual page count, disables endpoints, and clamps after results shrink; ordinary ledgers show an entry range, while Wars retains its mixed war/truce pagination.
+
+Alignment deliberately does not use enum data-source properties. In the installed Bannerlord binding API, unsupported value types fall through to a generic notification method constrained to reference types. Registering a `TextHorizontalAlignment` data source can therefore fail during map UI creation despite a successful C# build. Boolean visibility selects text widgets with literal Left/Right XML alignment instead. `LedgerUiContractTests` checks supported binding types, XML bindings, column budgets, search state, and pagination boundaries.
+
+`B1071_LedgerSearchState` separates draft text from the submitted query. Enter or Search submits; typing only updates the draft. Category selection filters the cached match list without rescanning the world. Sorting and paging retain the submitted query. Clear resets both query and category. Full matches refresh on explicit submission and daily cache invalidation; displayed positions and prices are a snapshot between refreshes. Search no longer rebuilds its bound rows on every periodic overlay refresh. This reduces work during text editing; it is not a claim that the historical native Search crash has been reproduced or solved.
+
+Rebellion outlook describes the existing estimate without implying a scheduled revolt. `FormatRebellionOutlook` displays Rebellious for the game's unrest state, Low loyalty at or below 25, No decline when the current trend projects no crossing, and an approximate day count otherwise. The calculation and rebellion mechanics are unchanged. Ledger hints retain the native tooltip appearance and fade behavior; a faint screenshot alone does not establish an opacity defect.
+
 ### Hotkey note
 
 Letter hotkeys (M, N, K) are suppressed while the Search tab is active to prevent search query input from triggering the toggle.

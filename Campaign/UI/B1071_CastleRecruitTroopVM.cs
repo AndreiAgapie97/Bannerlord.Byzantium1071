@@ -1,4 +1,6 @@
 using Byzantium1071.Campaign.Behaviors;
+using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -6,6 +8,7 @@ using TaleWorlds.Core.ViewModelCollection.ImageIdentifiers;
 using TaleWorlds.Core.ViewModelCollection.Information;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using TaleWorlds.ObjectSystem;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -23,6 +26,7 @@ namespace Byzantium1071.Campaign.UI
         private readonly Settlement _castle;
         private readonly bool _isElite;
         private int _numericCount;
+        private bool _isEven;
 
         private ImageIdentifierVM _visual;
         private string _name = string.Empty;
@@ -75,15 +79,15 @@ namespace Byzantium1071.Campaign.UI
             _visual = new CharacterImageIdentifierVM(CharacterCode.CreateFrom(character));
             _name = character.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
             _tier = character.Tier.ToString();
-            _goldCost = goldCost.ToString();
             _count = count.ToString();
             _numericCount = count;
             _isReady = true;
-            _recruitText = L("b1071_ui_recruit", "Recruit");
+            _recruitText = L("b1071_cr_recruit_one", "Recruit 1");
 
             // B-3: Same-clan lords pay 50% (family discount) — match backend TryRecruitElite logic.
             bool isSameClan = (Clan.PlayerClan == castle.OwnerClan);
             int effectiveCost = isSameClan ? goldCost / 2 : goldCost;
+            _goldCost = FormatGoldCost(effectiveCost);
             _canRecruit = Hero.MainHero.Gold >= effectiveCost;
             _statusText = isSameClan
                 ? L("b1071_cr_status_elite_discount", "Elite (50%)")
@@ -122,11 +126,10 @@ namespace Byzantium1071.Campaign.UI
             _visual = new CharacterImageIdentifierVM(CharacterCode.CreateFrom(character));
             _name = character.Name?.ToString() ?? L("b1071_ui_unknown", "Unknown");
             _tier = character.Tier.ToString();
-            _goldCost = goldCost.ToString();
             _count = count.ToString();
             _numericCount = count;
             _isReady = isReady;
-            _recruitText = L("b1071_ui_recruit", "Recruit");
+            _recruitText = L("b1071_cr_recruit_one", "Recruit 1");
 
             // Compute effective cost for hint text (used by both ready and pending branches).
             int hintEffectiveCost = goldCost;
@@ -151,22 +154,70 @@ namespace Byzantium1071.Campaign.UI
                     : L("b1071_cr_status_ready", "Ready");
             }
 
-            _recruitHint = _canRecruit
-                ? new HintViewModel(
-                    hintEffectiveCost == 0
-                        ? TV("b1071_cr_hint_recruit_clan_waiver", "Recruit one {TROOP} (clan waivers — free)",
-                            ("TROOP", _name))
-                        : TV("b1071_cr_hint_recruit_for_gold", "Recruit one {TROOP} for {COST} gold",
-                            ("TROOP", _name),
-                            ("COST", hintEffectiveCost.ToString())))
-                : new HintViewModel(
-                    !isReady
-                        ? TV("b1071_cr_hint_not_ready", "Not yet ready — {STATUS}", ("STATUS", _statusText))
-                        : TV("b1071_cr_hint_not_enough_gold", "Not enough gold (need {COST})", ("COST", hintEffectiveCost.ToString())));
+            // Quote the next FIFO prisoner, not the undiscounted tier price.
+            _goldCost = FormatGoldCost(hintEffectiveCost);
+
+            _recruitHint = new HintViewModel(BuildPrisonerHint());
+        }
+
+        private TextObject BuildPrisonerHint()
+        {
+            var behavior = B1071_CastleRecruitmentBehavior.Instance;
+            if (behavior == null) return new TextObject("{=!}" + _name);
+
+            var deposits = behavior.GetPrisonerDepositors(_castle.StringId, _character.StringId, _numericCount);
+            var fee = behavior.GetPlayerPrisonerFeeBreakdown(_castle, _character);
+            var lines = new List<string> { _name, _statusText };
+            lines.Add(L("b1071_cr_depositors", "Deposited by:"));
+            // Aggregate only the display. The underlying batches and recruitment order stay intact.
+            foreach (var group in deposits.GroupBy(entry => entry.HeroId))
+                lines.Add(TV("b1071_cr_depositor_count", "{NAME}: {COUNT}",
+                    ("NAME", DepositorName(group.Key)), ("COUNT", group.Sum(entry => entry.Count).ToString("N0"))).ToString());
+
+            lines.Add(string.Empty);
+            lines.Add(TV("b1071_cr_next_depositor", "Next depositor: {NAME}",
+                ("NAME", DepositorName(deposits.FirstOrDefault().HeroId))).ToString());
+            lines.Add(TV("b1071_cr_next_fee", "Next recruit: {COST}",
+                ("COST", FormatGoldCost(fee.RecruiterCost))).ToString());
+            lines.Add(TV("b1071_cr_fee_split", "Gold to castle owner: {OWNER}; to depositor: {DEPOSITOR}.",
+                ("OWNER", fee.OwnerPayment.ToString("N0")), ("DEPOSITOR", fee.DepositorPayment.ToString("N0"))).ToString());
+            lines.Add(L("b1071_cr_fee_rules", "Shares owed to your clan are waived. Without an eligible separate depositor, the fee belongs to the castle owner."));
+            lines.Add(L("b1071_cr_fifo_note", "Recruitment follows deposit order. Later recruits may cost a different amount."));
+            if (!_isReady)
+                lines.Add(L("b1071_cr_pending_quote", "This is the current fee; recruitment is unavailable until the waiting period ends."));
+            else if (!_canRecruit)
+                lines.Add(L("b1071_cr_unaffordable_next", "Not enough gold for the next recruit."));
+            return new TextObject("{=!}" + string.Join("\n", lines));
+        }
+
+        private static string DepositorName(string? heroId)
+        {
+            if (string.IsNullOrEmpty(heroId)) return L("b1071_cr_depositor_unrecorded", "Unrecorded depositor");
+            Hero? hero = MBObjectManager.Instance.GetObject<Hero>(heroId);
+            if (hero == null) return L("b1071_cr_depositor_unknown", "Unknown depositor");
+            if (hero == Hero.MainHero) return L("b1071_cr_depositor_you", "You");
+            string name = hero.Name.ToString();
+            if (hero.IsDead)
+                return TV("b1071_cr_depositor_deceased", "{NAME} (deceased)", ("NAME", name)).ToString();
+            if (hero.Clan == Clan.PlayerClan)
+                return TV("b1071_cr_depositor_clan", "{NAME} (your clan)", ("NAME", name)).ToString();
+            return hero.Clan == null ? name : TV("b1071_cr_depositor_affiliation", "{NAME} ({CLAN})",
+                ("NAME", name), ("CLAN", hero.Clan.Name.ToString())).ToString();
         }
 
         public CharacterObject Character => _character;
         public int NumericCount => _numericCount;
+
+        internal static string FormatGoldCost(int cost) => cost == 0
+            ? L("b1071_cr_free", "Free") : cost.ToString("N0");
+
+        // Notify existing bindings when the parent refreshes the row order.
+        [DataSourceProperty]
+        public bool IsEven
+        {
+            get => _isEven;
+            set { if (_isEven != value) { _isEven = value; OnPropertyChangedWithValue(value, nameof(IsEven)); } }
+        }
 
         // ── Data-bound properties ─────────────────────────────────────────────────
 
@@ -234,6 +285,12 @@ namespace Byzantium1071.Campaign.UI
         }
 
         [DataSourceProperty]
+        public string RecruitAllText
+        {
+            get => L("b1071_cr_recruit_all", "Recruit All");
+        }
+
+        [DataSourceProperty]
         public HintViewModel? RecruitHint
         {
             get => _recruitHint;
@@ -242,21 +299,34 @@ namespace Byzantium1071.Campaign.UI
 
         // ── Commands ──────────────────────────────────────────────────────────────
 
-        public void ExecuteRecruit()
+        public void ExecuteRecruit() => RecruitUnits(1);
+
+        public void ExecuteRecruitAll() => RecruitUnits(_numericCount);
+
+        private void RecruitUnits(int maximum)
         {
             if (!_canRecruit || !_isReady) return;
 
             var behavior = Byzantium1071.Campaign.Behaviors.B1071_CastleRecruitmentBehavior.Instance;
             if (behavior == null) return;
 
-            bool success = _isElite
-                ? behavior.TryRecruitElite(_castle, _character)
-                : behavior.TryRecruitPrisoner(_castle, _character);
-
-            if (success)
+            int recruited = 0;
+            try
             {
-                // Refresh the parent VM to reflect the change.
-                _parent.RefreshLists();
+                // Each call rechecks the current price, stock, and applicable manpower requirement.
+                while (recruited < maximum)
+                {
+                    bool success = _isElite
+                        ? behavior.TryRecruitElite(_castle, _character)
+                        : behavior.TryRecruitPrisoner(_castle, _character);
+                    if (!success) break;
+                    recruited++;
+                }
+            }
+            finally
+            {
+                // Refresh once, including when a later attempt fails after partial success.
+                if (recruited > 0) _parent.RefreshLists();
             }
         }
     }

@@ -90,13 +90,18 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | Control | What It Does |
 |---------|--------------|
 | **Click a column header** | Sorts the table by that column (click again to reverse) |
-| **◀ / ▶ arrows** | Page through rows (default 9 rows per page, adjustable in MCM) |
+| **◀ / ▶ arrows** | Page through rows (default 9 rows per page, adjustable in MCM). Unavailable arrows are dimmed; the footer shows your page and entry range. |
 | **← / → arrow keys** | Cycle between tabs (wraps around; disabled on Search tab to allow text editing) |
-| **Hover a truncated cell** | Shows full text in a tooltip |
-| **Type in Search tab** | Filters settlements, heroes, clans, and market prices by your search text. Try typing a trade good name (e.g., "Grain", "Slaves") to compare prices across all towns |
+| **Hover a row or totals** | Shows all five values in full. Hover a column heading for its explanation. |
+| **Search, then Enter or Search button** | Submit a name or trade good (e.g., "Grain", "Slaves"). Editing the text keeps the previous results visible until you submit. |
+| **All / Heroes / Places / Armies / Markets / Other** | Narrow submitted results by category. Other includes clans and kingdoms. Clear resets the query and category. |
 | **Left-click a settlement on the map** | Updates the "Current" tab with that settlement's details |
 
-> **Visual cues:** Alternating rows have subtle zebra striping. Rows belonging to your faction are highlighted in gold.
+> **Visual cues:** Alternating rows have subtle zebra striping. Rows belonging to your faction are highlighted in gold. The active tab and sorted column also use gold text. Columns adapt to each ledger; numerical columns align to the right.
+
+Search results are a snapshot from the last submitted search or daily refresh. Submit again to refresh prices and positions immediately. Changing category, sorting, or paging keeps your submitted query. An empty category is distinguished from a search with no matches. The ledger keeps its existing width, position settings, and row density.
+
+Current shows the selected settlement first, followed by recovery information and any enabled diagnostics in separate, wider detail rows. Mixed totals have their own labeled summary line. Rebellion outlook distinguishes rebellious conditions, low loyalty, and an approximate time until loyalty falls to 25. It does not predict the day a revolt will happen; No decline means the current loyalty trend projects no crossing. Wars keep truces in a separate section; exhaustion and casualty values follow the faction order in the first column. Unknown character distances remain a dash, rather than zero.
 
 ---
 
@@ -937,7 +942,7 @@ If you add or remove one of these mods mid-save, use **Campaign++ Compatibility 
 | **See manpower/war data** | Press **M** on campaign map |
 | **Check a specific settlement** | Click it on the map, then look at the **Current** tab |
 | **Find settlements near me** | Press **M** → **Nearby** tab |
-| **Search for anything** | Press **M** → **Search** tab → type your query |
+| **Search for anything** | Press **M** → **Search** tab → type your query → **Enter** |
 | **Recruit elite troops** | Go to a non-hostile castle → click **🏰 Recruit troops** |
 | **Deposit prisoners** | Go to a castle → dungeon → **Donate prisoners** (allied) or **⚔️ Deposit prisoners** (neutral) |
 | **Invest in a village** | Go to a non-hostile village → click **🏠 Invest in village** → pick a tier |

@@ -105,8 +105,8 @@
     <string id="b1071_cr_no_ready" text="没有可供招募的俘虏。" />
     <string id="b1071_cr_no_screen" text="城堡招募：没有活动界面。" />
     <string id="b1071_cr_open_fail" text="城堡招募界面打开失败：{ERR}" />
-    <string id="b1071_cr_pending_header" text="训练中" />
-    <string id="b1071_cr_ready_header" text="可招募（俘虏）" />
+    <string id="b1071_cr_pending_header" text="等待招募的俘虏" />
+    <string id="b1071_cr_ready_header" text="可招募的俘虏" />
     <string id="b1071_cr_recruit_available" text="招募部队（{READY} 名可招募）" />
     <string id="b1071_cr_recruit_all" text="全部招募" />
     <string id="b1071_cr_recruit_available_pending" text="招募部队（{READY} 名可招募，{PENDING} 名训练中）" />
@@ -1224,7 +1224,7 @@
     <string id="b1071_sc_total_selected" text="已选择 {COUNT} 名囚犯" />
     <string id="b1071_sc_open_fail" text="奴役选择界面打开失败：{ERR}" />
     <string id="b1071_sc_no_screen" text="奴役选择：没有活动界面。" />
-    <string id="b1071_cr_elite_header_div" text="城堡征召兵（多样化兵池）" />
+    <string id="b1071_cr_elite_header_div" text="城堡征召兵" />
     <!-- v0.2.8: MCM new settings -->
     <string id="b1071_mcm_t_8c3e9a1b01" text="启用奴役选择界面" />
     <string id="b1071_mcm_h_8c3e9a1b01" text="启用后，城镇的“奴役囚犯”选项会打开选择界面，让你选择要转化的囚犯。禁用时，所有符合条件的囚犯会批量转化。默认：开启。" />
@@ -1422,5 +1422,67 @@
     <string id="b1071_mcm_h_ai_recovery_days" text="当领主部队仍低于容量的 80% 时，已确认的招募行程最多可持续的战役天数。到期后，部队必须再次低于 60% 才能开始新的恢复行程。默认：1。" />
     <string id="b1071_qs_name_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
     <string id="b1071_qs_hint_ai_recovery" text="兵力不足的 AI 领主可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。正在执行的命令不受影响。" />
+    <string id="b1071_ledger_range" text="{FIRST}–{LAST}，共 {COUNT}" />
+    <string id="b1071_ledger_clear" text="清除" />
+    <string id="b1071_ledger_filter_all" text="全部" />
+    <string id="b1071_ledger_filter_hero" text="英雄" />
+    <string id="b1071_ledger_filter_place" text="地点" />
+    <string id="b1071_ledger_filter_army" text="军团" />
+    <string id="b1071_ledger_filter_market" text="市场" />
+    <string id="b1071_ledger_filter_other" text="其他" />
+    <string id="b1071_ledger_regen_details" text="恢复详情" />
+    <string id="b1071_ledger_diagnostics" text="诊断" />
+    <string id="b1071_ledger_conditions" text="忠诚 / 治安 / 粮食" />
+    <string id="b1071_ledger_rebel_eta" text="叛乱趋势" />
+    <string id="b1071_ledger_held_by" text="关押者" />
+    <string id="b1071_ledger_location" text="位置" />
+    <string id="b1071_ledger_risk" text="风险 / 100" />
+    <string id="b1071_ledger_search_prompt" text="输入名称或物品，然后按回车。" />
+    <string id="b1071_ledger_hint_power" text="军力：各兵种的阶级平方乘以人数之和。" />
+    <string id="b1071_ledger_hint_conditions" text="依次为忠诚度、治安和每日粮食变化。" />
+    <string id="b1071_ledger_hint_estimate" text="叛乱状态是游戏中的不安状态，并不代表已发生叛乱。天数是按当前趋势估算忠诚度降至25所需的时间；未下降表示预计不会降至该阈值。" />
+    <string id="b1071_ledger_hint_clan" text="政治地位 / 财富等级 / 封地数量。" />
+    <string id="b1071_ledger_hint_fill" text="兵源池充满比例。向上箭头表示正在补充。" />
+    <string id="b1071_ledger_hint_sides" text="数值顺序与第一列的势力顺序一致。" />
+    <string id="b1071_ledger_hint_distance" text="距你部队的距离。横线表示位置未知。" />
+    <string id="b1071_ledger_hint_type" text="结果类型和当前状态。可使用上方按钮按类型筛选。" />
+    <string id="b1071_ledger_hint_sort" text="点击排序，再次点击反向排序。悬停在行上可查看完整数值。" />
+    <string id="b1071_ledger_no_filter_matches" text="此类别中没有匹配项" />
+    <string id="b1071_ledger_try_all" text="选择“全部”查看其他结果" />
+    <string id="b1071_ledger_type_status" text="类型 / 状态" />
+    <string id="b1071_ledger_rebellious" text="叛乱状态" />
+    <string id="b1071_ledger_low_loyalty" text="低忠诚度" />
+    <string id="b1071_ledger_no_decline" text="未下降" />
+    <string id="b1071_ledger_outlook_days" text="约{DAYS}天" />
+    <string id="b1071_ledger_outlook_cap" text="约999+天" />
+    <string id="b1071_ledger_urgent_threshold" text="低忠诚度 / 30天内：{COUNT}" />
+    <string id="b1071_ledger_avg_peace" text="平均和平倾向" />
+    <string id="b1071_ledger_avg_exhaustion" text="平均厌战：{VALUE}/100" />
+    <string id="b1071_ledger_wars_truces" text="战争：{WARS}  |  停战：{TRUCES}" />
+    <string id="b1071_ledger_total_deaths" text="总阵亡人数" />
+    <string id="b1071_cr_depositors" text="交存者：" />
+    <string id="b1071_cr_depositor_count" text="{NAME}：{COUNT}人" />
+    <string id="b1071_cr_next_depositor" text="下一名俘虏的交存者：{NAME}" />
+    <string id="b1071_cr_next_fee" text="下一次招募费用：{COST}" />
+    <string id="b1071_cr_fee_split" text="支付城堡领主：{OWNER}金币；支付交存者：{DEPOSITOR}金币。" />
+    <string id="b1071_cr_fee_rules" text="应付给你家族的份额予以免除。若没有符合条件的独立交存者，费用归城堡领主所有。" />
+    <string id="b1071_cr_fifo_note" text="按交存顺序招募。后续俘虏的招募费用可能不同。" />
+    <string id="b1071_cr_pending_quote" text="此为当前费用；等待期结束前无法招募。" />
+    <string id="b1071_cr_unaffordable_next" text="金币不足，无法招募下一名俘虏。" />
+    <string id="b1071_cr_depositor_unrecorded" text="未记录的交存者" />
+    <string id="b1071_cr_depositor_unknown" text="未知交存者" />
+    <string id="b1071_cr_depositor_you" text="你" />
+    <string id="b1071_cr_depositor_deceased" text="{NAME}（已故）" />
+    <string id="b1071_cr_depositor_clan" text="{NAME}（你的家族）" />
+    <string id="b1071_cr_depositor_affiliation" text="{NAME}（{CLAN}家族）" />
+    <string id="b1071_cr_recruit_one" text="招募1人" />
+    <string id="b1071_cr_free" text="免费" />
+    <string id="b1071_cr_available" text="可用人数" />
+    <string id="b1071_cr_gold_each" text="每人费用" />
+    <string id="b1071_cr_gold_next" text="下一人费用" />
+    <string id="b1071_cr_days_eligible" text="距可招募天数" />
+    <string id="b1071_cr_action" text="操作" />
+    <string id="b1071_cr_pool_empty" text="暂无可用士兵。兵源每日从城堡人力中补充。" />
+    <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}人" />
   </strings>
 </base>

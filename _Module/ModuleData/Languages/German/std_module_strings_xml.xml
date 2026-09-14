@@ -105,8 +105,8 @@
     <string id="b1071_cr_no_ready" text="Keine zur Rekrutierung bereiten Gefangenen." />
     <string id="b1071_cr_no_screen" text="Burgrekrutierung: kein aktiver Bildschirm." />
     <string id="b1071_cr_open_fail" text="Der Rekrutierungsbildschirm der Burg konnte nicht geöffnet werden: {ERR}" />
-    <string id="b1071_cr_pending_header" text="Ausstehend (Schulung)" />
-    <string id="b1071_cr_ready_header" text="Bereit zur Rekrutierung (Gefangene)" />
+    <string id="b1071_cr_pending_header" text="Gefangene vor der Rekrutierung" />
+    <string id="b1071_cr_ready_header" text="Rekrutierbare Gefangene" />
     <string id="b1071_cr_recruit_available" text="Truppen rekrutieren ({READY} verfügbar)" />
     <string id="b1071_cr_recruit_all" text="Alle rekrutieren" />
     <string id="b1071_cr_recruit_available_pending" text="Truppen rekrutieren ({READY} verfügbar, {PENDING} ausstehend)" />
@@ -1422,5 +1422,67 @@
     <string id="b1071_mcm_h_ai_recovery_days" text="So viele Kampagnentage darf eine bestätigte Rekrutierungsreise fortgesetzt werden, solange die Truppe des Lords unter 80 % ihrer Kapazität bleibt. Danach muss sie wieder unter 60 % fallen, um eine neue Erholungsreise zu beginnen. Standard: 1." />
     <string id="b1071_qs_name_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
     <string id="b1071_qs_hint_ai_recovery" text="Unterbesetzte KI-Lords bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Aktive Befehle bleiben geschützt." />
+    <string id="b1071_ledger_range" text="{FIRST}–{LAST} von {COUNT}" />
+    <string id="b1071_ledger_clear" text="Leeren" />
+    <string id="b1071_ledger_filter_all" text="Alle" />
+    <string id="b1071_ledger_filter_hero" text="Helden" />
+    <string id="b1071_ledger_filter_place" text="Orte" />
+    <string id="b1071_ledger_filter_army" text="Armeen" />
+    <string id="b1071_ledger_filter_market" text="Märkte" />
+    <string id="b1071_ledger_filter_other" text="Andere" />
+    <string id="b1071_ledger_regen_details" text="Regenerationsdetails" />
+    <string id="b1071_ledger_diagnostics" text="Diagnose" />
+    <string id="b1071_ledger_conditions" text="Loyalität / Sicherheit / Nahrung" />
+    <string id="b1071_ledger_rebel_eta" text="Aufstandsausblick" />
+    <string id="b1071_ledger_held_by" text="Festgehalten von" />
+    <string id="b1071_ledger_location" text="Ort" />
+    <string id="b1071_ledger_risk" text="Risiko / 100" />
+    <string id="b1071_ledger_search_prompt" text="Namen oder Ware eingeben, dann Eingabe drücken." />
+    <string id="b1071_ledger_hint_power" text="Militärstärke: Summe aus Truppenstufe zum Quadrat mal Truppenzahl." />
+    <string id="b1071_ledger_hint_conditions" text="Loyalität / Sicherheit / tägliche Nahrungsänderung, in dieser Reihenfolge." />
+    <string id="b1071_ledger_hint_estimate" text="Aufrührerisch bezeichnet den Unruhezustand des Spiels, keinen ausgebrochenen Aufstand. Die Tage schätzen, wann die Loyalität beim aktuellen Trend 25 erreicht; Kein Rückgang bedeutet, dass kein Unterschreiten erwartet wird." />
+    <string id="b1071_ledger_hint_clan" text="Politischer Status / Vermögensstufe / Anzahl der Lehen." />
+    <string id="b1071_ledger_hint_fill" text="Füllstand des Rekrutenpools. Ein Aufwärtspfeil zeigt Nachschub an." />
+    <string id="b1071_ledger_hint_sides" text="Die Werte folgen der Fraktionsreihenfolge in der ersten Spalte." />
+    <string id="b1071_ledger_hint_distance" text="Entfernung zu eurer Gruppe. Ein Strich bedeutet, dass der Standort unbekannt ist." />
+    <string id="b1071_ledger_hint_type" text="Ergebnistyp und aktueller Status. Oben nach Typ filtern." />
+    <string id="b1071_ledger_hint_sort" text="Zum Sortieren klicken, erneut zum Umkehren. Zeilen zeigen beim Darüberfahren alle Werte." />
+    <string id="b1071_ledger_no_filter_matches" text="Keine Treffer in dieser Kategorie" />
+    <string id="b1071_ledger_try_all" text="Alle wählen, um weitere Treffer zu sehen" />
+    <string id="b1071_ledger_type_status" text="Typ / Status" />
+    <string id="b1071_ledger_rebellious" text="Aufrührerisch" />
+    <string id="b1071_ledger_low_loyalty" text="Geringe Loyalität" />
+    <string id="b1071_ledger_no_decline" text="Kein Rückgang" />
+    <string id="b1071_ledger_outlook_days" text="~{DAYS}T" />
+    <string id="b1071_ledger_outlook_cap" text="~999+T" />
+    <string id="b1071_ledger_urgent_threshold" text="Geringe Loyalität / &lt;=30T: {COUNT}" />
+    <string id="b1071_ledger_avg_peace" text="Mittlere Friedensneigung" />
+    <string id="b1071_ledger_avg_exhaustion" text="Mittlere Erschöpfung: {VALUE}/100" />
+    <string id="b1071_ledger_wars_truces" text="Kriege: {WARS}  |  Waffenruhen: {TRUCES}" />
+    <string id="b1071_ledger_total_deaths" text="Tote insgesamt" />
+    <string id="b1071_cr_depositors" text="Eingeliefert von:" />
+    <string id="b1071_cr_depositor_count" text="{NAME}: {COUNT}" />
+    <string id="b1071_cr_next_depositor" text="Nächster Einlieferer: {NAME}" />
+    <string id="b1071_cr_next_fee" text="Nächster Rekrut: {COST}" />
+    <string id="b1071_cr_fee_split" text="Gold an den Burgherrn: {OWNER}; an den Einlieferer: {DEPOSITOR}." />
+    <string id="b1071_cr_fee_rules" text="Anteile für euren Clan entfallen. Ohne berechtigten separaten Einlieferer steht die Gebühr dem Burgherrn zu." />
+    <string id="b1071_cr_fifo_note" text="Rekrutiert wird in Einlieferungsreihenfolge. Spätere Rekruten können anders viel kosten." />
+    <string id="b1071_cr_pending_quote" text="Dies ist die aktuelle Gebühr; rekrutiert werden kann erst nach Ablauf der Wartezeit." />
+    <string id="b1071_cr_unaffordable_next" text="Nicht genug Gold für den nächsten Rekruten." />
+    <string id="b1071_cr_depositor_unrecorded" text="Einlieferer nicht erfasst" />
+    <string id="b1071_cr_depositor_unknown" text="Unbekannter Einlieferer" />
+    <string id="b1071_cr_depositor_you" text="Ihr" />
+    <string id="b1071_cr_depositor_deceased" text="{NAME} (verstorben)" />
+    <string id="b1071_cr_depositor_clan" text="{NAME} (euer Clan)" />
+    <string id="b1071_cr_depositor_affiliation" text="{NAME} ({CLAN})" />
+    <string id="b1071_cr_recruit_one" text="1 rekrutieren" />
+    <string id="b1071_cr_free" text="Kostenlos" />
+    <string id="b1071_cr_available" text="Verfügbar" />
+    <string id="b1071_cr_gold_each" text="Gold je Soldat" />
+    <string id="b1071_cr_gold_next" text="Gold (nächster)" />
+    <string id="b1071_cr_days_eligible" text="Tage bis rekrutierbar" />
+    <string id="b1071_cr_action" text="Aktion" />
+    <string id="b1071_cr_pool_empty" text="Keine Truppen verfügbar. Der Vorrat wird täglich aus der Mannstärke der Burg aufgefüllt." />
+    <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
   </strings>
 </base>

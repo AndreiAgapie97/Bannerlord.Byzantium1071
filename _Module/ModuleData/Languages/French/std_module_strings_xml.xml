@@ -105,8 +105,8 @@
     <string id="b1071_cr_no_ready" text="Aucun prisonnier prêt à être recruté." />
     <string id="b1071_cr_no_screen" text="Recrutement au château : pas d'écran actif." />
     <string id="b1071_cr_open_fail" text="L'écran de recrutement du château n'a pas pu s'ouvrir : {ERR}" />
-    <string id="b1071_cr_pending_header" text="En attente (formation)" />
-    <string id="b1071_cr_ready_header" text="Prêt à recruter (prisonniers)" />
+    <string id="b1071_cr_pending_header" text="Prisonniers en attente de recrutement" />
+    <string id="b1071_cr_ready_header" text="Prisonniers prêts au recrutement" />
     <string id="b1071_cr_recruit_available" text="Recruter des troupes ({READY} disponibles)" />
     <string id="b1071_cr_recruit_all" text="Tout recruter" />
     <string id="b1071_cr_recruit_available_pending" text="Recruter des troupes ({READY} disponibles, {PENDING} en attente)" />
@@ -1224,7 +1224,7 @@
     <string id="b1071_sc_total_selected" text="{COUNT} prisonnier{PLURAL} sélectionné{PLURAL}" />
     <string id="b1071_sc_open_fail" text="Impossible d'ouvrir l'écran de conversion des esclaves : {ERR}" />
     <string id="b1071_sc_no_screen" text="Conversion des esclaves : aucun écran actif." />
-    <string id="b1071_cr_elite_header_div" text="Levée du château (pool diversifié)" />
+    <string id="b1071_cr_elite_header_div" text="Levée du château" />
     <!-- v0.2.8: MCM new settings -->
     <string id="b1071_mcm_t_8c3e9a1b01" text="Activer l'écran de sélection d'asservissement" />
     <string id="b1071_mcm_h_8c3e9a1b01" text="Quand cette option est activée, l'option Asservir les prisonniers en ville ouvre un écran où choisir les prisonniers à convertir. Sinon, tous les prisonniers admissibles sont convertis en lot. Par défaut : activé." />
@@ -1422,5 +1422,67 @@
     <string id="b1071_mcm_h_ai_recovery_days" text="Nombre de jours de campagne pendant lesquels un trajet de recrutement confirmé peut continuer tant que la troupe du seigneur reste sous 80 % de sa capacité. Ensuite, elle doit repasser sous 60 % pour commencer un nouveau trajet de récupération. Défaut : 1." />
     <string id="b1071_qs_name_ai_recovery" text="Les seigneurs IA cherchent des recrues Campaign++" />
     <string id="b1071_qs_hint_ai_recovery" text="Les seigneurs IA en sous-effectif peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Les ordres en cours restent protégés." />
+    <string id="b1071_ledger_range" text="{FIRST}–{LAST} sur {COUNT}" />
+    <string id="b1071_ledger_clear" text="Effacer" />
+    <string id="b1071_ledger_filter_all" text="Tous" />
+    <string id="b1071_ledger_filter_hero" text="Héros" />
+    <string id="b1071_ledger_filter_place" text="Lieux" />
+    <string id="b1071_ledger_filter_army" text="Armées" />
+    <string id="b1071_ledger_filter_market" text="Marchés" />
+    <string id="b1071_ledger_filter_other" text="Autres" />
+    <string id="b1071_ledger_regen_details" text="Détails de récupération" />
+    <string id="b1071_ledger_diagnostics" text="Diagnostic" />
+    <string id="b1071_ledger_conditions" text="Loyauté / Sécurité / Nourriture" />
+    <string id="b1071_ledger_rebel_eta" text="Risque de révolte" />
+    <string id="b1071_ledger_held_by" text="Détenu par" />
+    <string id="b1071_ledger_location" text="Lieu" />
+    <string id="b1071_ledger_risk" text="Risque / 100" />
+    <string id="b1071_ledger_search_prompt" text="Saisissez un nom ou un objet, puis appuyez sur Entrée." />
+    <string id="b1071_ledger_hint_power" text="Puissance militaire : somme du carré du rang multiplié par les effectifs." />
+    <string id="b1071_ledger_hint_conditions" text="Loyauté / Sécurité / variation quotidienne de nourriture, dans cet ordre." />
+    <string id="b1071_ledger_hint_estimate" text="En rébellion désigne l’état d’agitation du jeu, pas une révolte déclenchée. Les jours estiment quand la loyauté atteindra 25 au rythme actuel ; Sans baisse signifie qu’aucun franchissement n’est prévu." />
+    <string id="b1071_ledger_hint_clan" text="Statut politique / niveau de richesse / nombre de fiefs." />
+    <string id="b1071_ledger_hint_fill" text="Remplissage du réservoir. Une flèche vers le haut indique un réapprovisionnement." />
+    <string id="b1071_ledger_hint_sides" text="Les valeurs suivent l’ordre des factions de la première colonne." />
+    <string id="b1071_ledger_hint_distance" text="Distance de votre troupe. Un tiret indique une position inconnue." />
+    <string id="b1071_ledger_hint_type" text="Type de résultat et statut actuel. Filtrez par type ci-dessus." />
+    <string id="b1071_ledger_hint_sort" text="Cliquez pour trier, puis à nouveau pour inverser. Survolez une ligne pour tous les détails." />
+    <string id="b1071_ledger_no_filter_matches" text="Aucun résultat dans cette catégorie" />
+    <string id="b1071_ledger_try_all" text="Choisissez Tous pour les autres résultats" />
+    <string id="b1071_ledger_type_status" text="Type / Statut" />
+    <string id="b1071_ledger_rebellious" text="En rébellion" />
+    <string id="b1071_ledger_low_loyalty" text="Faible loyauté" />
+    <string id="b1071_ledger_no_decline" text="Sans baisse" />
+    <string id="b1071_ledger_outlook_days" text="~{DAYS}j" />
+    <string id="b1071_ledger_outlook_cap" text="~999+j" />
+    <string id="b1071_ledger_urgent_threshold" text="Faible loyauté / &lt;=30j : {COUNT}" />
+    <string id="b1071_ledger_avg_peace" text="Tendance moyenne à la paix" />
+    <string id="b1071_ledger_avg_exhaustion" text="Épuisement moyen : {VALUE}/100" />
+    <string id="b1071_ledger_wars_truces" text="Guerres : {WARS}  |  Trêves : {TRUCES}" />
+    <string id="b1071_ledger_total_deaths" text="Total des morts" />
+    <string id="b1071_cr_depositors" text="Déposés par :" />
+    <string id="b1071_cr_depositor_count" text="{NAME} : {COUNT}" />
+    <string id="b1071_cr_next_depositor" text="Prochain déposant : {NAME}" />
+    <string id="b1071_cr_next_fee" text="Prochaine recrue : {COST}" />
+    <string id="b1071_cr_fee_split" text="Or au seigneur du château : {OWNER} ; au déposant : {DEPOSITOR}." />
+    <string id="b1071_cr_fee_rules" text="Les parts dues à votre clan sont annulées. Sans déposant distinct admissible, les frais reviennent au seigneur du château." />
+    <string id="b1071_cr_fifo_note" text="Le recrutement suit l’ordre des dépôts. Le prix des recrues suivantes peut varier." />
+    <string id="b1071_cr_pending_quote" text="Ces frais sont actuels ; le recrutement reste indisponible avant la fin du délai." />
+    <string id="b1071_cr_unaffordable_next" text="Pas assez d’or pour la prochaine recrue." />
+    <string id="b1071_cr_depositor_unrecorded" text="Déposant non enregistré" />
+    <string id="b1071_cr_depositor_unknown" text="Déposant inconnu" />
+    <string id="b1071_cr_depositor_you" text="Vous" />
+    <string id="b1071_cr_depositor_deceased" text="{NAME} (décédé)" />
+    <string id="b1071_cr_depositor_clan" text="{NAME} (votre clan)" />
+    <string id="b1071_cr_depositor_affiliation" text="{NAME} ({CLAN})" />
+    <string id="b1071_cr_recruit_one" text="Recruter 1" />
+    <string id="b1071_cr_free" text="Gratuit" />
+    <string id="b1071_cr_available" text="Disponibles" />
+    <string id="b1071_cr_gold_each" text="Or par soldat" />
+    <string id="b1071_cr_gold_next" text="Or (prochain)" />
+    <string id="b1071_cr_days_eligible" text="Jours avant recrutement" />
+    <string id="b1071_cr_action" text="Action" />
+    <string id="b1071_cr_pool_empty" text="Aucune troupe disponible. Le vivier se renouvelle chaque jour grâce aux effectifs du château." />
+    <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
   </strings>
 </base>
