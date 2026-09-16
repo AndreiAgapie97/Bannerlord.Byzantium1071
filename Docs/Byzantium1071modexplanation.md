@@ -1,6 +1,6 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.3.9
+**Version:** 1.0.4.0
 **Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
 **Mod ID:** `Byzantium1071`
 
@@ -42,6 +42,7 @@
 30. [Village Investment (Patronage) — Gold-sink village development](#30-village-investment)
 31. [Town Investment (Civic Patronage) — Gold-sink town development](#31-town-investment)
 32. [Mod Compatibility System — Runtime load-order scan and report](#32-mod-compatibility-system)
+34. [Settlement Revenue Tuning — Tapering tax, town tariffs, and village income](#34-settlement-revenue-tuning)
 
 ---
 
@@ -2345,3 +2346,286 @@ should influence, but not automatically beat, Bannerlord's other new tasks.
 `AiRecoveryIntentDurationDays` — *Recovery intent days*, default **1**, range **1–30**. A
 confirmed recovery journey expires after this many campaign days if the party has not reached 80%.
 Migration profile **v27** sets it to one day for existing profiles.
+
+## 34. Settlement Revenue Tuning
+
+### Problem
+
+Vanilla pays a fief's owner a fixed share of a settlement's revenue with **no curvature anywhere
+in the chain**. Three independent lines, each linear in a quantity the settlement's own growth
+drives:
+
+| Line | Vanilla formula | Scales with |
+|---|---|---|
+| Town tax | `Prosperity × 0.35`, then policy, loyalty, security, building factors | prosperity, no ceiling |
+| Town tariff | `town.TradeTaxAccumulated / RevenueSmoothenFraction()` | daily trade commission |
+| Village income | `village.TradeTaxAccumulated / RevenueSmoothenFraction()` | daily trade commission |
+
+The tax side is stateless — recomputed from prosperity every call. The tariff side is a **stored
+pool**, and this is the part that is easy to misread. `Town.OnInit` seeds it at
+`1000 + RandomInt(1000)`; castles and villages start at zero, and
+`CalculateInitialAccumulatedTaxes` gives each village `Σ(itemValue × dailyProduction) × (0.6 + 0.3
+× rand) × RevenueSmoothenFraction()`. It then grows from the commission the settlement earns when
+it **sells** goods: `SellItemsAction` computes `MBRandom.RoundRandomized(price ×
+GetTownTaxRatio(town))` — 0.7 for a town, 1.0 for a village — scales it by
+`GetTownCommissionChangeBasedOnSecurity`, and adds it to the pool
+(`TaleWorlds.CampaignSystem.Actions.SellItemsAction:70,90`). Villages also accrue from their
+villager parties trading, via `CalculateVillageTaxFromIncome`
+(`CampaignBehaviors\VillagerCampaignBehavior.cs:334-336`). The only perk trickles are
+`Trade.Tollgates` and `Trade.TravelingRumors`, a few denars per arrival.
+
+**The pool is never reset, but it does reach a steady state — and saying otherwise would be
+wrong.** Four drains act on it:
+
+| Drain | Effect | Where |
+|---|---|---|
+| Tariff payout | `pool / 5` (+ perks + `TariffIncome` buildings); withdraws the **pre-perk** `num` | `CalculateTownIncomeFromTariffs` |
+| `CrownDuty` policy | −5% of the pool per fief, to the ruling clan | `AddRulingClanIncome` |
+| `RoadTolls` policy | −`pool / 30` per town | `AddRulingClanIncome` |
+| Village tariff | −5% of the village basis | `CalculateVillageIncome` |
+
+The 1/5 withdrawal is a proportional drain, so with it alone a town pool converges on five days of
+its daily commission inflow; with `CrownDuty` and `RoadTolls` active it converges on roughly
+**4.2 days** and stays there. Villages have no payout-side decay of this kind and only accrue, so
+their pool is closer to a pure running total, though `LandTax` takes 5% of the basis from
+non-owner villages when that policy is in force.
+
+That correction matters for how the problem is stated. Late-game settlement income is large
+because the **inflow** grows — a mature town's daily trade is many times a young one's — not
+because the pool runs away without limit. The pool tracks the inflow, which is why the reference
+constants below can be read as "days of trade throughput" at all. The defect is unchanged either
+way: neither model has any curvature, so a town whose trade doubles pays its owner twice as much,
+and nothing in the chain asks whether that town is already the largest in the world.
+
+### Solution
+
+`B1071_SettlementRevenueTuningPatch` adds three postfixes — one per line — that scale the amount
+**the clan receives**, through `B1071_RevenueMath`:
+
+```
+taperCurve(ratio, curve) = 1 / (1 + ratio / curve) ^ (1 / curve)
+excess                   = max(0, basis − knee)
+ratio                    = excess / reference
+retainedBasis            = strength × (min(basis, knee) + excess × taperCurve(ratio, curve))
+scale                    = retainedBasis / basis
+```
+
+| Base | Reference | Basis | Knee range |
+|---|---|---|---|
+| Town tariff | 12,000 denars/day | pool / 5 | 0–30,000 |
+| Village tariff | 2,500 denars/day | pool / 5 | 0–10,000 |
+| Town tax | 3,960 above the fixed 40 floor | prosperity − 40 | 0–4,000, effective cap 3,960 |
+
+The two pool references are the "five days of throughput" reading made concrete: a reference basis
+of 12,000 corresponds to a town whose trade earns about 12,000 a day. They are derived, not
+measured, which is why the telemetry below exists. The enabled preset still needs long-campaign balance validation.
+
+The reference itself (ratio 1) is the legible point on the curve: it yields (1 + 1/curve)^(−1/curve)
+of the strength — about 0.817 at curve 2. That figure is not fixed across the slider
+(0.500 at curve 1, 0.946 at curve 4, 0.991 at curve 10), which is why the hints quote worked numbers
+at specific curve values. Low values spread the reduction evenly across every settlement; high
+values leave ordinary ones almost untouched and bend hard past the reference. The half-of-cut point
+sits at r = curve × (2^curve − 1) ratios out — 1, 6, 21, 155, 10,230 for curves 1 through 10 — so
+larger curves reduce income less; the sliders allow values from 1 to 10.
+
+### Why a knee is not optional
+
+The retained basis blends the strength share below the knee with the tapered excess above it.
+Because the curve is at most 1, **strength is the maximum share retained, not a minimum.** A strength of 70 keeps every settlement at or
+below 70% of its revenue: ordinary settlements sit just under that, and larger ones keep
+progressively less without a floor — at curve 2 the spread between the smallest and largest
+observed town was about 13 percentage points, and a settlement many times its reference approaches
+0%. A player who reaches for the strength slider therefore cuts every fief they own, not just the
+runaway ones.
+
+`curve` cannot fix this. It controls how sharply the cut varies with size, but the plateau is still
+the strength, so raising it to spare ordinary settlements also flattens the taper into a uniform
+cut. The knee is what decouples the two: at or below it `ratio` is exactly 0, so the curve
+contributes nothing and the settlement keeps exactly its strength share, while the deeper cut above
+the knee lands only on the settlements that have outgrown it.
+
+The transition is a ramp, not a cliff, and that is deliberate — a hard threshold would be a line
+for a player to sit just underneath. At knee 6,000, curve 2, strength 70:
+
+| Town tariff basis | 3,000 | 6,000 | 6,500 | 8,000 | 20,000 | 40,000 |
+|---|---|---|---|---|---|---|
+| Share kept | 70.0% | 70.0% | 69.9% | 69.3% | 59.9% | 48.8% |
+
+Three properties hold and are tested: a knee of 0 reproduces the no-knee taper exactly, a negative
+knee is read as 0 (a negative one would bite *harder* than leaving the slider alone), and the tax
+knee is capped at `TaxReferenceProsperity − TaxKneeProsperity` = 3,960 — past that the exemption has
+reached the 4,000 reference, so the slider would only be offering travel that behaves identically.
+The tax slider therefore stops at 4,000.
+
+The extra taper applies only to the portion above the knee. Applying its multiplier to the
+whole basis instead can make larger settlements pay less total income when the knee exceeds
+the reference. With village strength 70, curve 1 and knee 10,000, the corrected payout grows
+from 7,000 at basis 10,000 to about 8,166 at basis 15,000. Curves above 1 grow sublinearly;
+curve 1 approaches a finite total. Regression checks sweep the allowed curve and knee ranges.
+
+### Why the payout and not the drain
+
+The tariff classes use observation-only prefixes to capture the daily basis in Harmony
+__state before the original methods withdraw gold. They use the original model's
+RevenueSmoothenFraction(), without changing it. Postfixes use that captured basis for
+both preview and payment, and for withdrawal-only telemetry. This prevents previews from
+using a larger pool than actual payments.
+
+The drain stays at its vanilla value. The settlement pays exactly what it paid before, and the clan
+receives what is left after the taper. That asymmetry can only ever **remove** gold from the
+campaign. The reverse — cutting the drain while paying the full amount — would create gold from
+nothing, and it is why this is a postfix on the returned amount rather than a prefix on the pool.
+The pool's trajectory is exactly vanilla — the drain and the inflow are untouched — so nothing
+downstream of `TradeTaxAccumulated` sees any difference; only the owner's payout is smaller.
+
+`RevenueSmoothenFraction` is **not** patched. It is shared with `CalculateOwnerIncomeFromCaravan`,
+`CalculateOwnerIncomeFromWorkshop` and `AddMercenaryIncome`, so patching it would silently nerf
+caravans, workshops and mercenary pay along with tariffs.
+
+### Edge cases the code actually handles
+
+These are not defensive padding. Each one is a case where the naive implementation is wrong:
+
+- **Negative tariff results.** Town tax ends in `result.Clamp(0f, float.MaxValue)`, so it can never
+  be negative. The tariff result is clamped **nowhere**, and it sums `AddPerkBonusForTown` and
+  `AddEffectOfBuildings(TariffIncome)` contributions that can be negative. For a negative value,
+  `value × (scale − 1)` is *positive*, so an unguarded taper would **raise** income. Every postfix
+  returns early on a non-positive result.
+- **Existing factors must not multiply the adjustment again.** ExplainedNumber.Add changes
+  BaseNumber, which existing factors multiply. Apply first copies the resolved value and
+  explanation lines into a fresh number with AddFromExplainedNumber, then adds one negative
+  Revenue Taper line. Positive results are scaled once and rounded down; zero and negative
+  results are left unchanged. This also preserves clamp contributions in the breakdown.
+- **NaN curves.** `TaperCurve` tests `!(curve > 0f)` rather than `curve <= 0f`, because the latter
+  is false for `NaN`. A corrupted settings file would otherwise produce a `NaN` scale and a broken
+  income line.
+- **Low loyalty.** Vanilla zeroes town tax with `AddFactor(-1)` below 25 loyalty. The result is
+  already zero by the time the postfix runs, and the non-positive guard leaves it alone.
+- **One denar.** Village income of 1 is left alone: an integer currency cannot taper it, and
+  truncating to zero would make the steepest settings a no-op on exactly the settlements they exist
+  to bite.
+- **Perk and building immunity is not preserved.** Scaling the returned `ExplainedNumber` shrinks
+  perks and building bonuses proportionally, so a governor's tax perks no longer fully offset the
+  taper. Scaling only the base and leaving perks intact was the alternative; it was rejected because
+  it breaks the relationship between a settlement's size and its owner's income, which is the one
+  property this feature exists to restore.
+- **`OnPlayerEarnedGoldFromAsset` over-reports.** Vanilla raises it with the *untapered*
+  `bonuses.ResultNumber` while the drain uses the pre-perk `num`. Tapering the result without
+  touching that call means asset-income tracking sees a larger figure than the player receives. It
+  is cosmetic — no gold moves on it — and it is recorded here rather than silently fixed, because
+  the mod uses `CampaignEventDispatcher` nowhere else and adding a second call site to correct a
+  statistic is a larger change than this one.
+
+### Telemetry
+
+The end-of-session summary carries a basis range, followed by two distribution lines:
+
+```
+tariffBasis(town=min-max(n),village=min-max(n),refs=12000/2500)
+TariffBasisSpread town: atleast2048=141,atleast4096=196,atleast8192=241,...
+TariffBasisSpread village: atleast512=903,atleast1024=1488,atleast2048=2103,...
+```
+
+Recorded from the two tariff postfixes on the `applyWithdrawals` path, which is the daily tick — the
+finance panel calls the same method with `applyWithdrawals` false, so recording unconditionally
+would have logged every settlement several times per UI refresh. Towns and villages are tracked
+apart because their pools differ by roughly a factor of five. The village postfix records the basis
+**before** its one-denary early return, so a village too small to taper is still counted: that is
+precisely the settlement a knee is chosen from.
+
+The counts are per power of two, rendered from the lowest to the highest non-empty bucket with the
+empty ones between them printed as zero, so a bimodal spread stays visible. Memory is a fixed
+seventeen integers per series however long the session runs, which is why the distribution is kept
+as octaves rather than as a sorted list of every sample.
+
+**A range alone cannot calibrate anything.** A 46-day session reported `town=94-13035`, which is
+equally consistent with a median of 500 and with a median of 9,000 — and the second would mean the
+reference constant was four times too low. The octave counts are what answer that, and they are
+what the knee settings are read against. **Nothing in the mod reported a tariff figure before
+this**, so the defaults are a reasoned estimate and a session log is what corrects them.
+
+The observed range from that first play-test also shows the town reference is set high: the largest
+town of the session reached basis 13,035 against a 12,000 reference, so the taper never got out of
+first gear. The village reference of 2,500 is the more aggressive of the two, since villages were
+observed up to 5,618 — 2.2× their reference, and 43% of the town maximum, where the "roughly a
+fifth" assumption in the code comments holds only for the middle of the distribution.
+
+### Settings
+
+MCM group **Settlement Revenue**, `GroupOrder = 27`. The master toggle defaults **on**.
+Town tariffs use strength **90**, curve **1**, knee **2,000**; villages use **90 / 1 / 500**.
+Tax remains **100 / 2 / 0**, so the tax taper is bypassed. Profile **v28** applies all ten
+values once to older profiles, preserving unrelated settings. Once current, migration leaves
+player customization untouched, including an explicit opt-out.
+
+| Setting | Range | Default |
+|---|---|---|
+| `EnableSettlementRevenueTuning` | — | on |
+| `SettlementTariffStrengthTown` | 5–100 % | 90 |
+| `SettlementTariffCurveTown` | 1.00–10.00 | 1.00 |
+| `SettlementTariffKneeTown` | 0–30,000 denars/day | 2,000 |
+| `SettlementTariffStrengthVillage` | 5–100 % | 90 |
+| `SettlementTariffCurveVillage` | 1.00–10.00 | 1.00 |
+| `SettlementTariffKneeVillage` | 0–10,000 denars/day | 500 |
+| `SettlementTaxStrength` | 5–100 % | 100 |
+| `SettlementTaxCurve` | 1.00–10.00 | 2.00 |
+| `SettlementTaxKnee` | 0–4,000 prosperity | 0 |
+
+Strength is a percentage because the curve multiplies a share in `[0, 1]`; a raw 0..1 float slider
+would spend most of its travel in a range no player would ever pick. The knee is an integer
+denar-per-day figure for the two tariff bases and a prosperity figure for tax, because prosperity is
+the one of the three a player can read straight off the settlement screen. The master toggle is
+mirrored in Quick Settings.
+
+Optional comparison figures at strength 60, curve 2, knee 0 (not the shipped preset):
+
+| Town tariff, daily basis | 3,000 | 12,000 | 48,000 |
+|---|---|---|---|
+| Share kept | 57% | 49% | 35% |
+
+| Town tax, prosperity | 2,000 | 6,000 | 20,000 |
+|---|---|---|---|
+| Share kept | 54% | 45% | 32% |
+
+Anything at or below 40 prosperity is never touched, which keeps villages out of a tax setting aimed
+at runaway towns. These comparison values are covered by `RevenueMathTests`. The enabled default preset
+approaches 12,600/2,700 denars for town/village trade bases before additional payout modifiers.
+The ceilings follow strength × (knee + reference) at curve 1; they are not caps on total fief income.
+
+### Compatibility
+
+`DefaultSettlementTaxModel` and `DefaultClanFinanceModel` are registered by
+`Campaign.Current.Models`, both as `AddModel(new Default…())`. A mod that replaces either model
+outright with its own `AddModel` shadows these postfixes entirely — they attach to the vanilla type
+and would simply never run. The startup compatibility snapshot reports `modelOverrides`, so that is
+visible in the log rather than assumed. EconomyOverhaul v1.1.6 declares neither of the three patched
+methods, so it does not collide.
+
+### Verification
+
+RevenueTuningRegressionTests exercises the installed ExplainedNumber with positive and
+negative factors, fractional amounts, clamped totals and values above int.MaxValue.
+It also calls the real prefix/postfix pairs around a simulated vanilla withdrawal to verify
+identical previews/payments and unchanged pools. This is headless validation, not a live campaign.
+
+`RevenueMathTests` (fast suite) pins the curve against its own definition written out independently,
+the bound that a scale can never exceed the strength asked for, monotonicity, sub-linear growth, the
+knee, the edge cases above, and the hint figures. `RevenueTuningPatchBindingTests` (game suite)
+applies all three patch classes to the installed game the way `SubModule` does and asserts the
+postfix attached, because `PatchAssemblySafely` logs a patch-time `HarmonyException` and carries on:
+**a postfix that fails to bind is a skipped patch with a quiet log line, and nothing else in the
+suite would notice**, since `DeclarativeHarmonyPatchTargetStillExists` resolves the target by
+reflection and never asks whether the postfix attached. Harmony binds parameters by name, so that
+test is what turns a renamed parameter from a silent no-op into a failure. It also asserts that each
+knee setting is read by the patch that owns it and passed to the math call following its own curve —
+a slider that compiled but was never consumed would look like a working toggle and do nothing. Town
+tax is the only one of the three targets this mod has never patched, and its parameter names are
+asserted directly there.
+
+All three targets are public overrides named with nameof(). They are also registered in
+VerifyCriticalPatches and the matching CriticalTargets test list. Tariff binding tests verify
+both the observation prefix and the payout postfix.
+
+The release snapshot with the enabled preset and profile v28 migration passed 578 fast
+tests and 219 game-backed tests. Migration coverage checks the one-time preset, unrelated
+setting preservation and subsequent player customization. In-game validation remains outstanding.

@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 27;
+        internal const int LATEST_PROFILE_VERSION = 28;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -472,6 +472,22 @@ namespace Byzantium1071.Campaign.Settings
             {
                 AiRecoveryIntentDurationDays = 1;
                 migrated += "Confirmed AI recovery journeys now expire after a configurable number of campaign days. ";
+            }
+
+            // ── Profile v28: enable the settlement trade-income preset ──
+            if (SettingsProfileVersion < 28)
+            {
+                EnableSettlementRevenueTuning = true;
+                SettlementTariffStrengthTown = 90;
+                SettlementTariffCurveTown = 1.0f;
+                SettlementTariffKneeTown = 2000;
+                SettlementTariffStrengthVillage = 90;
+                SettlementTariffCurveVillage = 1.0f;
+                SettlementTariffKneeVillage = 500;
+                SettlementTaxStrength = 100;
+                SettlementTaxCurve = 2.0f;
+                SettlementTaxKnee = 0;
+                migrated += "Settlement revenue tuning is enabled: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500; town tax remains unchanged. ";
             }
 
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
@@ -1952,6 +1968,65 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
         [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}Currently unused. Reserved for possible future culture-based clan placement scoring. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 2.0.")]
         public float ClanSurvivalCultureWeight { get; set; } = 2.0f;
+
+        // ─── Settlement Revenue ───
+        // Vanilla pays a fief's owner a fixed share of the settlement's revenue with no curvature:
+        // tax rises with prosperity without limit, and the tariff pool rises with trade volume
+        // without limit because every sale adds a commission to it and nothing resets it. By the
+        // late game a mature town out-earns an early-game kingdom. These settings add the missing
+        // curvature. They scale only the clan's payout -- the settlement's own side of the
+        // transaction is untouched -- so the feature can remove gold but never create it.
+        //
+        // Strength is a percentage for a reason: the curve multiplies a share in [0, 1], and a raw
+        // 0..1 float slider would spend most of its travel in a range nobody would ever use.
+        // 100 bypasses an income line. Defaults enable trade tapering at 90% with curve 1,
+        // thresholds of 2,000/500 for towns/villages, and unchanged tax. Profile v28 applies this once.
+        //
+        // Strength is the maximum retained share: 70 cuts at least 30% from each positive
+        // income line. The knee protects the portion below it from the EXTRA curved reduction;
+        // it does not exempt a settlement from the strength reduction. Only the excess is
+        // tapered further, so increasing the basis cannot lower the total payout.
+        // A zero knee applies the curve from the first denar; default trade knees protect the lower portion.
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyBool("{=b1071_mcm_t_settle_rev_enable}Enable settlement revenue tuning", Order = 0, HintText = "{=b1071_mcm_h_settle_rev_enable}Reduces town tariffs and village income for player and AI clans. Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays at 100%, unchanged. Disable to restore untapered income.")]
+        public bool EnableSettlementRevenueTuning { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_strength_town}Town tariff strength (%)", 5, 100, "0", Order = 1, HintText = "{=b1071_mcm_h_settle_tariff_strength_town}Maximum share of normal town tariffs retained. 90 keeps 90% below the threshold; only the portion above it receives an extra reduction. 100 bypasses the entire town tariff taper. Default: 90.")]
+        public int SettlementTariffStrengthTown { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tariff_curve_town}Town tariff curve", 1f, 10f, "0.00", Order = 2, HintText = "{=b1071_mcm_h_settle_tariff_curve_town}Curve 1 makes the trade-based payout approach a ceiling as trade grows. Higher values reduce income less and allow continued growth. Perks and buildings can change the final payout. Only active below 100% strength. Default: 1.00.")]
+        public float SettlementTariffCurveTown { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_knee_town}Town tariff starts at (denars/day)", 0, 30000, "0", Order = 3, HintText = "{=b1071_mcm_h_settle_tariff_knee_town}Daily trade basis above which the extra reduction begins. The portion up to this threshold still receives the strength reduction. Growing trade never lowers total income. 0 applies the curve from the first denar. Default: 2,000.")]
+        public int SettlementTariffKneeTown { get; set; } = 2000;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_strength_village}Village tariff strength (%)", 5, 100, "0", Order = 4, HintText = "{=b1071_mcm_h_settle_tariff_strength_village}Maximum share of normal village income retained. The portion above the threshold receives an extra reduction. 100 bypasses the village taper. Default: 90.")]
+        public int SettlementTariffStrengthVillage { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tariff_curve_village}Village tariff curve", 1f, 10f, "0.00", Order = 5, HintText = "{=b1071_mcm_h_settle_tariff_curve_village}Curve 1 makes the trade-based village payout approach a ceiling. Higher values allow continued growth. The village reference is 2,500 daily denars. Only active below 100% strength. Default: 1.00.")]
+        public float SettlementTariffCurveVillage { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_knee_village}Village tariff starts at (denars/day)", 0, 10000, "0", Order = 6, HintText = "{=b1071_mcm_h_settle_tariff_knee_village}Daily trade basis above which the extra village reduction begins. The portion up to the threshold keeps the strength share. Growing trade never lowers total income. Default: 500.")]
+        public int SettlementTariffKneeVillage { get; set; } = 500;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tax_strength}Town tax strength (%)", 5, 100, "0", Order = 7, HintText = "{=b1071_mcm_h_settle_tax_strength}The most of its usual tax a town can keep. 100 leaves tax exactly as it is. Tax is the largest of the three lines, so it is the one worth tuning first -- and the safest to leave alone, because unlike a tariff pool it is capped by prosperity and cannot run away on its own. At 60 a town of 2,000 prosperity pays about 54% of its usual tax, one of 6,000 pays about 45%, and one of 20,000 pays about 32%. Anything at or below 40 prosperity is never touched. Default: 100.")]
+        public int SettlementTaxStrength { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tax_curve}Town tax curve", 1f, 10f, "0.00", Order = 8, HintText = "{=b1071_mcm_h_settle_tax_curve}Shape of the town tax taper. A low value spreads the reduction evenly across every taxable town; a high value leaves small towns untouched and bends hard near the 4,000 prosperity reference. Only matters when strength is below 100. Default: 2.00.")]
+        public float SettlementTaxCurve { get; set; } = 2.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tax_knee}Town tax starts at (prosperity)", 0, 4000, "0", Order = 9, HintText = "{=b1071_mcm_h_settle_tax_knee}Sets where the extra tax taper begins. The portion below the threshold keeps the strength share; only the excess gets the additional taper. Added to the fixed 40-prosperity floor; the effective threshold stops at 4,000 prosperity. With 0, the curve applies immediately above the fixed floor. Default: 0.")]
+        public int SettlementTaxKnee { get; set; } = 0;
 
     }
 }

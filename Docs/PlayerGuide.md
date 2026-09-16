@@ -1,6 +1,6 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.3.9 — Everything you need to know, step by step.*
+*Version 1.0.4.0 — Everything you need to know, step by step.*
 
 **Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
 
@@ -30,6 +30,7 @@
 11. [War Exhaustion & Diplomacy](#11-war-exhaustion--diplomacy)
 12. [Army Economics](#12-army-economics)
 13. [MCM Settings](#13-mcm-settings)
+13A. [Settlement Revenue Tuning](#13a-settlement-revenue-tuning)
 14. [Clan Survival](#14-clan-survival)
 15. [Mod Compatibility Report](#15-mod-compatibility-report)
 16. [Quick Reference Cheat Sheet](#16-quick-reference-cheat-sheet)
@@ -773,6 +774,13 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Recovery intent days | AI Recovery | 1 | Ends a confirmed recovery journey after this many campaign days if the lord has not rebuilt to 80%; range 1–30 |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
 | Telemetry debug logs | Developer Tools | OFF | Writes a daily record of what the AI is doing to the mod's Logs folder — see below |
+| Enable settlement revenue tuning | Settlement Revenue | ON | Reduces trade payouts for player and AI clans; see the preset below |
+| Town tariff strength % | Settlement Revenue | 90 | The most of its usual tariff a town can keep. Lower it to slow down runaway town income first |
+| Town tax strength % | Settlement Revenue | 100 | The most of its usual tax a town can keep. This is the biggest of the three income lines |
+| Village tariff strength % | Settlement Revenue | 90 | Same, for villages. Set separately — a village's trade is much smaller than its town's |
+| Town tariff starts at | Settlement Revenue | 2,000 | Towns earning this much or less keep exactly the strength share; above it bigger towns keep less. Aims the deep cuts at the biggest towns |
+| Village tariff starts at | Settlement Revenue | 500 | Same, for villages, on a village's smaller scale |
+| Town tax starts at | Settlement Revenue | 0 | Towns at or below this prosperity keep exactly the strength share; above it bigger towns keep less. The one threshold you can read off the settlement screen |
 
 ### Watching What the AI Does (v1.0.3.8)
 
@@ -781,6 +789,65 @@ Several recent changes affect how lords judge army strength and where they go to
 Turn on **Telemetry debug logs** in Developer Tools and Campaign++ writes a short summary once per in-game day into the mod's `Logs` folder — how many lords are in the field, how many armies and new wars there are, how the lords rate their own troops, how often they head somewhere to recruit and come away empty-handed, and what they are paying to keep veterans in service. Two files are written: a readable log and a spreadsheet-friendly `.csv` you can chart.
 
 This is for troubleshooting and for anyone curious about what the AI is up to. It changes nothing in your campaign, and it costs a little performance, so leave it off for normal play.
+
+---
+
+## 13A. Settlement Revenue Tuning
+
+Settlement revenue tuning reduces the trade income paid to owners of towns and villages. It applies equally to player and AI clans. **It is enabled by default in v1.0.4.0; town tax is unchanged by the default preset.**
+
+### Default Preset
+
+Open MCM → **Settlement Revenue** to adjust these values:
+
+| Setting | Default |
+|---|---:|
+| Enable settlement revenue tuning | ON |
+| Town tariff strength (%) | 90 |
+| Town tariff curve | 1.00 |
+| Town tariff starts at (denars/day) | 2,000 |
+| Village tariff strength (%) | 90 |
+| Village tariff curve | 1.00 |
+| Village tariff starts at (denars/day) | 500 |
+| Town tax strength (%) | 100 |
+| Town tax curve | 2.00 (inactive at 100% strength) |
+| Town tax starts at (prosperity) | 0 (inactive at 100% strength) |
+
+**Existing settings profiles receive this preset once when updating to v1.0.4.0.** Review it in MCM after loading. Later changes you make, including disabling it, are preserved on subsequent loads.
+
+### What the Controls Mean
+
+- **Strength** is the maximum percentage retained, not the percentage removed. At 90, income below the threshold keeps 90%. Setting a strength to 100 completely bypasses that income line's taper.
+- **Starts at** marks where the extra reduction begins. The portion up to the threshold still receives the strength reduction; only the excess receives the extra curved reduction. A threshold does not completely exempt a small settlement.
+- **Curve 1** makes the trade-based payout approach a ceiling as trade grows. Higher values reduce income less and allow continued growth. Growing trade never reduces the total payout.
+
+Town and village thresholds use the daily trade amount before perks and other income modifiers. The tax threshold uses prosperity, added above a fixed 40-prosperity floor and capped at an effective 4,000 prosperity. These are separate controls: adjusting tariffs does not adjust tax.
+
+### What the Preset Does
+
+Examples below assume the normal payout equals its daily trade basis, with no additional income modifiers:
+
+| Income source | Before per day | After, approximately |
+|---|---:|---:|
+| Town tariffs | 3,000 | 2,630 |
+| Town tariffs | 12,000 | 6,709 |
+| Town tariffs | 48,000 | 10,365 |
+| Village income | 2,500 | 1,450 |
+| Village income | 40,000 | 2,566 |
+
+The underlying town tariff payout approaches 12,600 denars/day, and village income approaches 2,700. Perks and buildings can change the actual payout. These are not hard caps on a settlement's combined income, and they do not compare income to a kingdom's treasury. The preset is a starting balance choice; long-campaign balance still needs observation.
+
+### Checking and Disabling It
+
+Town tax and town tariff breakdowns show a **Revenue Taper** reduction when applicable. The default leaves town tax unchanged, so no tax reduction is expected. Village income is reduced in its final amount rather than gaining a separate explanation line. Compare finance previews with actual daily payments when testing.
+
+Switch **Enable settlement revenue tuning** off to restore untapered future income, or set an individual strength to 100 to exempt that income line. Previously reduced payments are not refunded. The feature adds no campaign save data.
+
+Caravans, workshops, mercenary pay, tribute and trade agreements are unchanged. If you choose to reduce town tax, the **War Tax** policy's tax-derived payment also falls.
+
+### Calibrating a Campaign
+
+The session log echoes the active revenue settings and records town/village daily trade bases. End-of-session `TariffBasisSpread` entries count observations in size bands; these are readings over time, not counts of unique settlements. Use them with your finance panel to decide whether to adjust the thresholds. The reference sizes are 12,000 daily denars for town tariffs, 2,500 for villages, and 3,960 prosperity above the fixed tax floor.
 
 ---
 

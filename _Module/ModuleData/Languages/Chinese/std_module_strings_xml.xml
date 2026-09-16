@@ -257,6 +257,7 @@
     <string id="b1071_dev_hinterlands" text="残破的腹地" />
     <string id="b1071_dev_villages" text="残破的村庄" />
     <string id="b1071_frontier_rev" text="边境收入" />
+    <string id="b1071_revenue_taper" text="收入递减" />
     <string id="b1071_gov_strain" text="治理压力" />
     <string id="b1071_gov_stabilization" text="行省安抚" />
     <string id="b1071_gs_enter" text="安抚行省" />
@@ -1415,14 +1416,37 @@
     <string id="b1071_nameplate_full" text="已满" />
     <string id="b1071_garrison_manpower_limit" text="Campaign++ 兵源" />
     <string id="b1071_mcm_g_ai_recovery" text="AI 恢复" />
+    <string id="b1071_mcm_g_settlement_revenue" text="定居点收入" />
     <string id="b1071_mcm_t_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
     <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点，并重建至 80%。正在执行的军队、战斗、攻城、劫掠、防御、巡逻、撤退和紧急补给任务不受影响。默认：开启。" />
     <string id="b1071_mcm_t_ai_recovery_priority" text="恢复优先" />
     <string id="b1071_mcm_h_ai_recovery_priority" text="开启后，符合条件且兵力不足的领主会先前往 Campaign++ 招募点，再开始新任务。正在执行的命令不受影响。关闭后，增强的定居点评分将与 Bannerlord 的其他新命令正常竞争。默认：开启。" />
     <string id="b1071_mcm_t_ai_recovery_days" text="恢复意图天数" />
+    <string id="b1071_mcm_t_settle_rev_enable" text="启用定居点收入调节" />
+    <string id="b1071_mcm_t_settle_tariff_strength_town" text="城镇关税强度（%）" />
+    <string id="b1071_mcm_t_settle_tariff_curve_town" text="城镇关税曲线" />
+    <string id="b1071_mcm_t_settle_tariff_strength_village" text="村庄关税强度（%）" />
+    <string id="b1071_mcm_t_settle_tariff_curve_village" text="村庄关税曲线" />
+    <string id="b1071_mcm_t_settle_tax_strength" text="城镇税收强度（%）" />
+    <string id="b1071_mcm_t_settle_tax_curve" text="城镇税收曲线" />
     <string id="b1071_mcm_h_ai_recovery_days" text="当领主部队仍低于容量的 80% 时，已确认的招募行程最多可持续的战役天数。到期后，部队必须再次低于 60% 才能开始新的恢复行程。默认：1。" />
+    <string id="b1071_mcm_h_settle_rev_enable" text="降低玩家和AI家族的城镇关税及村庄收入。默认启用：城镇90% / 曲线1 / 阈值2,000；村庄90% / 曲线1 / 阈值500。城镇税收保持100%，不变。关闭可恢复未经递减的收入。" />
+    <string id="b1071_mcm_h_settle_tariff_strength_town" text="保留正常城镇关税的最大比例。90表示阈值以下保留90%；只有超出阈值的部分受到额外削减。100完全关闭城镇关税递减。默认：90。" />
+    <string id="b1071_mcm_h_settle_tariff_curve_town" text="曲线为1时，随着贸易增长，基于贸易的收入逐渐接近上限。数值越高，削减越少，并允许持续增长。技能专长和建筑可能影响最终收入。仅在强度低于100%时生效。默认：1.00。" />
+    <string id="b1071_mcm_h_settle_tariff_strength_village" text="保留正常村庄收入的最大比例。超出阈值的部分受到额外削减。100关闭村庄收入递减。默认：90。" />
+    <string id="b1071_mcm_h_settle_tariff_curve_village" text="曲线为1时，基于贸易的村庄收入逐渐接近上限。较高数值允许持续增长。村庄基准为每日2,500第纳尔。仅在强度低于100%时生效。默认：1.00。" />
+    <string id="b1071_mcm_h_settle_tax_strength" text="城市能保留其平时税收的最大份额。100 表示税收完全不变。税收是三条收入线中最大的一条，所以最值得优先调整——同时也是最安全的一条，因为与关税储备不同，它受繁荣度封顶，不会自行失控。设为 60 时，繁荣度 2,000 的城市约缴纳平时税收的 54%，6,000 的约 45%，20,000 的约 32%。繁荣度在 40 及以下的城市永远不会被调整。默认：100。" />
+    <string id="b1071_mcm_h_settle_tax_curve" text="城镇税收递减的形状。数值较低时削减均匀分布于所有应税城镇；数值较高时小城镇不受影响，而在 4000 繁荣度基准附近急剧弯折。仅当强度低于 100 时生效。默认：2.00。" />
+    <string id="b1071_mcm_t_settle_tariff_knee_town" text="城市关税起始值（第纳尔/日）" />
+    <string id="b1071_mcm_h_settle_tariff_knee_town" text="额外削减开始生效的每日贸易基数。阈值以内的部分仍按强度比例削减。贸易增长不会降低总收入。0表示从第一个第纳尔起应用曲线。默认：2,000。" />
+    <string id="b1071_mcm_t_settle_tariff_knee_village" text="村庄关税起始值（第纳尔/日）" />
+    <string id="b1071_mcm_h_settle_tariff_knee_village" text="额外村庄削减开始生效的每日贸易基数。阈值以内保留强度比例。贸易增长不会降低总收入。默认：500。" />
+    <string id="b1071_mcm_t_settle_tax_knee" text="城市税收起始值（繁荣度）" />
+    <string id="b1071_mcm_h_settle_tax_knee" text="设定额外税收递减的起点。阈值以内的部分保留强度份额，只有超出部分受到额外递减。此值加在固定的 40 繁荣度下限之上，实际阈值最高为 4,000 繁荣度。设为 0 时，超过固定下限即应用曲线。默认：0。" />
     <string id="b1071_qs_name_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
+    <string id="b1071_qs_name_settlement_revenue" text="定居点收入递减" />
     <string id="b1071_qs_hint_ai_recovery" text="兵力不足的 AI 领主可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点。正在执行的命令不受影响。" />
+    <string id="b1071_qs_hint_settlement_revenue" text="默认启用：城镇关税90% / 曲线1 / 阈值2,000；村庄90% / 曲线1 / 阈值500。城镇税收保持100%，不变。玩家与AI家族适用相同规则。可在Campaign++主设置中调整。" />
     <string id="b1071_ledger_range" text="{FIRST}–{LAST}，共 {COUNT}" />
     <string id="b1071_ledger_clear" text="清除" />
     <string id="b1071_ledger_filter_all" text="全部" />

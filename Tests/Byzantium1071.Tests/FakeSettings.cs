@@ -357,5 +357,15 @@ namespace Byzantium1071.Tests
         public bool PurgeLeftoverRebelClans { get; set; }
         public int ClanSurvivalGracePeriodDays { get; set; }
         public float ClanSurvivalCultureWeight { get; set; }
+        public bool EnableSettlementRevenueTuning { get; set; } = true;
+        public int SettlementTariffStrengthTown { get; set; } = 90;
+        public float SettlementTariffCurveTown { get; set; } = 1.0f;
+        public int SettlementTariffStrengthVillage { get; set; } = 90;
+        public float SettlementTariffCurveVillage { get; set; } = 1.0f;
+        public int SettlementTaxStrength { get; set; } = 100;
+        public float SettlementTaxCurve { get; set; } = 2.0f;
+        public int SettlementTariffKneeTown { get; set; } = 2000;
+        public int SettlementTariffKneeVillage { get; set; } = 500;
+        public int SettlementTaxKnee { get; set; } = 0;
     }
 }

@@ -58,6 +58,15 @@ namespace Byzantium1071.GameTests
             yield return Target(
                 "TaleWorlds.CampaignSystem.CampaignBehaviors.GarrisonRecruitmentCampaignBehavior",
                 "TickAutoRecruitmentGarrisonChange");
+            yield return Target(
+                "TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel",
+                "CalculateTownIncomeFromTariffs");
+            yield return Target(
+                "TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel",
+                "CalculateVillageIncome");
+            yield return Target(
+                "TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementTaxModel",
+                "CalculateTownTax");
         }
 
         /// <summary>

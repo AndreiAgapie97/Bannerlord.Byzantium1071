@@ -169,6 +169,20 @@ namespace Byzantium1071
                  "TickAutoRecruitmentGarrisonChange",
                  new[] { typeof(TaleWorlds.CampaignSystem.Settlements.Town) },
                  "Garrison Auto-Recruit Manpower Consumption"),
+
+                // -- Public overrides (named with nameof()). Patch() does not throw when the
+                // target method is missing -- it silently skips -- and when it does throw, for a
+                // parameter-name mismatch, PatchAssemblySafely swallows it into one log line.
+                // Either way attachment is asserted here at launch, not assumed. --
+                ("TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel",
+                 "CalculateTownIncomeFromTariffs", null,
+                 "Settlement Tariff Taper"),
+                ("TaleWorlds.CampaignSystem.GameComponents.DefaultClanFinanceModel",
+                 "CalculateVillageIncome", null,
+                 "Village Income Taper"),
+                ("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementTaxModel",
+                 "CalculateTownTax", null,
+                 "Settlement Tax Taper"),
             };
 
             int verified = 0;

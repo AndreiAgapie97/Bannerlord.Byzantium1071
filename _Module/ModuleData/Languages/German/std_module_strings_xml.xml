@@ -257,6 +257,7 @@
     <string id="b1071_dev_hinterlands" text="Verwüstetes Hinterland" />
     <string id="b1071_dev_villages" text="Verwüstete Dörfer" />
     <string id="b1071_frontier_rev" text="Grenzeinnahmen" />
+    <string id="b1071_revenue_taper" text="Ertragsdämpfung" />
     <string id="b1071_gov_strain" text="Governance-Belastung" />
     <string id="b1071_gov_stabilization" text="Provinzstabilisierung" />
     <string id="b1071_gs_enter" text="Provinz stabilisieren" />
@@ -1415,14 +1416,37 @@
     <string id="b1071_nameplate_full" text="Voll" />
     <string id="b1071_garrison_manpower_limit" text="Campaign++-Menschenreserven" />
     <string id="b1071_mcm_g_ai_recovery" text="KI-Erholung" />
+    <string id="b1071_mcm_g_settlement_revenue" text="Siedlungseinkünfte" />
     <string id="b1071_mcm_t_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
     <string id="b1071_mcm_h_ai_recovery" text="KI-Lords mit weniger als 60 % Truppenkapazität bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Sie füllen ihre Truppe bis 80 % auf. Aktive Armeen, Schlachten, Belagerungen, Überfälle, Verteidigungen, Patrouillen, Rückzüge und dringende Nahrungsbeschaffung bleiben geschützt. Standard: wahr." />
     <string id="b1071_mcm_t_ai_recovery_priority" text="Erholung hat Vorrang" />
     <string id="b1071_mcm_h_ai_recovery_priority" text="Wenn aktiviert, wählt ein geeigneter unterbesetzter Lord einen Campaign++-Rekrutierungsstopp, bevor er eine neue Aufgabe beginnt. Aktive Befehle bleiben geschützt. Deaktiviert konkurriert die verbesserte Siedlungswertung normal mit Bannerlords anderen neuen Befehlen. Standard: wahr." />
     <string id="b1071_mcm_t_ai_recovery_days" text="Erholungsdauer (Tage)" />
+    <string id="b1071_mcm_t_settle_rev_enable" text="Anpassung der Siedlungseinkünfte aktivieren" />
+    <string id="b1071_mcm_t_settle_tariff_strength_town" text="Stärke des Stadtzolls (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_town" text="Kurve des Stadtzolls" />
+    <string id="b1071_mcm_t_settle_tariff_strength_village" text="Stärke des Dorfzolls (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_village" text="Kurve des Dorfzolls" />
+    <string id="b1071_mcm_t_settle_tax_strength" text="Stärke der Stadtsteuer (%)" />
+    <string id="b1071_mcm_t_settle_tax_curve" text="Kurve der Stadtsteuer" />
     <string id="b1071_mcm_h_ai_recovery_days" text="So viele Kampagnentage darf eine bestätigte Rekrutierungsreise fortgesetzt werden, solange die Truppe des Lords unter 80 % ihrer Kapazität bleibt. Danach muss sie wieder unter 60 % fallen, um eine neue Erholungsreise zu beginnen. Standard: 1." />
+    <string id="b1071_mcm_h_settle_rev_enable" text="Senkt Stadtzölle und Dorfeinkünfte für Spieler und KI-Clans. Standardmäßig aktiviert: Städte 90 % / Kurve 1 / Schwelle 2.000; Dörfer 90 % / Kurve 1 / Schwelle 500. Stadtsteuern bleiben bei 100 % unverändert. Ausschalten stellt die ungekürzten Einkünfte wieder her." />
+    <string id="b1071_mcm_h_settle_tariff_strength_town" text="Maximaler Anteil der üblichen Stadtzölle, der erhalten bleibt. 90 erhält 90 % unterhalb der Schwelle; nur der darüberliegende Anteil wird zusätzlich gekürzt. 100 deaktiviert die gesamte Stadtzollkürzung. Standard: 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_town" text="Bei Kurve 1 nähert sich die handelsabhängige Auszahlung mit wachsendem Handel einer Obergrenze. Höhere Werte kürzen weniger und erlauben weiteres Wachstum. Vorteile und Gebäude können die Auszahlung ändern. Nur unter 100 % Stärke aktiv. Standard: 1,00." />
+    <string id="b1071_mcm_h_settle_tariff_strength_village" text="Maximaler Anteil der üblichen Dorfeinkünfte, der erhalten bleibt. Der Anteil oberhalb der Schwelle wird zusätzlich gekürzt. 100 deaktiviert die Dorfkürzung. Standard: 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_village" text="Bei Kurve 1 nähert sich die handelsabhängige Dorfauszahlung einer Obergrenze. Höhere Werte erlauben weiteres Wachstum. Der Dorfrichtwert beträgt 2.500 Denare täglich. Nur unter 100 % Stärke aktiv. Standard: 1,00." />
+    <string id="b1071_mcm_h_settle_tax_strength" text="Der Höchstanteil seiner üblichen Steuer, den eine Stadt behalten kann. 100 lässt die Steuer genau wie sie ist. Die Steuer ist die größte der drei Linien, also die, die man zuerst einstellen sollte — und die sicherste, die man in Ruhe lässt, denn anders als ein Zollvorrat ist sie durch den Wohlstand gedeckelt und kann nicht von allein davonlaufen. Bei 60 zahlt eine Stadt mit 2.000 Wohlstand etwa 54 % ihrer üblichen Steuer, eine mit 6.000 etwa 45 %, und eine mit 20.000 etwa 32 %. Alles mit 40 Wohlstand oder weniger wird nie angetastet. Standard: 100." />
+    <string id="b1071_mcm_h_settle_tax_curve" text="Form der Dämpfung der Stadtsteuer. Ein niedriger Wert verteilt die Kürzung gleichmäßig auf alle steuerpflichtigen Städte; ein hoher Wert verschont kleine Städte und knickt nahe dem Richtwert von 4.000 Wohlstand stark ab. Wirkt nur, wenn die Stärke unter 100 liegt. Standard: 2,00." />
+    <string id="b1071_mcm_t_settle_tariff_knee_town" text="Stadtzoll beginnt bei (Denare/Tag)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_town" text="Tägliche Handelsgrundlage, oberhalb der die zusätzliche Kürzung beginnt. Der Anteil bis zur Schwelle unterliegt weiterhin der Stärkekürzung. Mehr Handel senkt nie den Gesamtertrag. 0 wendet die Kurve ab dem ersten Denar an. Standard: 2.000." />
+    <string id="b1071_mcm_t_settle_tariff_knee_village" text="Dorfzoll beginnt bei (Denare/Tag)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_village" text="Tägliche Handelsgrundlage, oberhalb der die zusätzliche Dorfkürzung beginnt. Bis zur Schwelle bleibt der Stärkeanteil erhalten. Mehr Handel senkt nie den Gesamtertrag. Standard: 500." />
+    <string id="b1071_mcm_t_settle_tax_knee" text="Stadtsteuer beginnt bei (Wohlstand)" />
+    <string id="b1071_mcm_h_settle_tax_knee" text="Legt den Beginn der zusätzlichen Steuerdämpfung fest. Der Anteil unter der Schwelle behält den Stärkeanteil; nur der Rest wird zusätzlich gedämpft. Wird zu den festen 40 Wohlstand addiert; die wirksame Schwelle endet bei 4.000 Wohlstand. Bei 0 gilt die Kurve direkt oberhalb der festen Untergrenze. Standard: 0." />
     <string id="b1071_qs_name_ai_recovery" text="KI-Lords suchen Campaign++-Rekruten" />
+    <string id="b1071_qs_name_settlement_revenue" text="Dämpfung der Siedlungseinkünfte" />
     <string id="b1071_qs_hint_ai_recovery" text="Unterbesetzte KI-Lords bevorzugen möglicherweise befreundete Siedlungen mit Veteranen, Burgtruppen oder bekehrten Gefangenen. Aktive Befehle bleiben geschützt." />
+    <string id="b1071_qs_hint_settlement_revenue" text="Standardmäßig aktiviert: Stadtzölle 90 % / Kurve 1 / Schwelle 2.000; Dörfer 90 % / Kurve 1 / Schwelle 500. Stadtsteuern bleiben bei 100 % unverändert. Gilt gleichermaßen für Spieler und KI-Clans. Anpassbar in den Haupteinstellungen von Campaign++." />
     <string id="b1071_ledger_range" text="{FIRST}–{LAST} von {COUNT}" />
     <string id="b1071_ledger_clear" text="Leeren" />
     <string id="b1071_ledger_filter_all" text="Alle" />

@@ -257,6 +257,7 @@
     <string id="b1071_dev_hinterlands" text="Arrière-pays dévastés" />
     <string id="b1071_dev_villages" text="Villages dévastés" />
     <string id="b1071_frontier_rev" text="Revenus frontaliers" />
+    <string id="b1071_revenue_taper" text="Réduction des revenus" />
     <string id="b1071_gov_strain" text="Pression sur la gouvernance" />
     <string id="b1071_gov_stabilization" text="Stabilisation provinciale" />
     <string id="b1071_gs_enter" text="Stabiliser la province" />
@@ -1415,14 +1416,37 @@
     <string id="b1071_nameplate_full" text="Maximum" />
     <string id="b1071_garrison_manpower_limit" text="Main d'œuvre Campaign++" />
     <string id="b1071_mcm_g_ai_recovery" text="Récupération de l'IA" />
+    <string id="b1071_mcm_g_settlement_revenue" text="Revenus des localités" />
     <string id="b1071_mcm_t_ai_recovery" text="Les seigneurs IA cherchent des recrues Campaign++" />
     <string id="b1071_mcm_h_ai_recovery" text="Les seigneurs IA dont la troupe est sous 60 % de sa capacité peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Ils se reconstituent jusqu'à 80 %. Les armées, batailles, sièges, raids, défenses, patrouilles, retraites et ravitaillements urgents en cours restent protégés. Défaut : vrai." />
     <string id="b1071_mcm_t_ai_recovery_priority" text="Priorité à la récupération" />
     <string id="b1071_mcm_h_ai_recovery_priority" text="Si activé, un seigneur admissible en sous-effectif choisit une étape de recrutement Campaign++ avant de commencer une nouvelle tâche. Les ordres en cours restent protégés. Désactivez cette option pour laisser le score amélioré du fief rivaliser normalement avec les autres nouveaux ordres de Bannerlord. Défaut : vrai." />
     <string id="b1071_mcm_t_ai_recovery_days" text="Durée de récupération (jours)" />
+    <string id="b1071_mcm_t_settle_rev_enable" text="Activer le réglage des revenus des localités" />
+    <string id="b1071_mcm_t_settle_tariff_strength_town" text="Force du tarif des villes (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_town" text="Courbe du tarif des villes" />
+    <string id="b1071_mcm_t_settle_tariff_strength_village" text="Force du tarif des villages (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_village" text="Courbe du tarif des villages" />
+    <string id="b1071_mcm_t_settle_tax_strength" text="Force de l'impôt des villes (%)" />
+    <string id="b1071_mcm_t_settle_tax_curve" text="Courbe de l'impôt des villes" />
     <string id="b1071_mcm_h_ai_recovery_days" text="Nombre de jours de campagne pendant lesquels un trajet de recrutement confirmé peut continuer tant que la troupe du seigneur reste sous 80 % de sa capacité. Ensuite, elle doit repasser sous 60 % pour commencer un nouveau trajet de récupération. Défaut : 1." />
+    <string id="b1071_mcm_h_settle_rev_enable" text="Réduit les tarifs urbains et les revenus villageois des clans du joueur et de l’IA. Activé par défaut : villes 90 % / courbe 1 / seuil 2 000 ; villages 90 % / courbe 1 / seuil 500. Les impôts urbains restent inchangés à 100 %. Désactiver rétablit les revenus sans réduction." />
+    <string id="b1071_mcm_h_settle_tariff_strength_town" text="Part maximale du tarif urbain habituel conservée. 90 conserve 90 % sous le seuil ; seule la partie au-dessus subit une réduction supplémentaire. 100 désactive toute réduction du tarif urbain. Défaut : 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_town" text="Avec la courbe 1, le versement lié au commerce approche un plafond quand le commerce augmente. Les valeurs supérieures réduisent moins les revenus et permettent une croissance continue. Les atouts et bâtiments peuvent modifier le versement final. Active uniquement sous 100 % de force. Défaut : 1,00." />
+    <string id="b1071_mcm_h_settle_tariff_strength_village" text="Part maximale du revenu villageois habituel conservée. La partie au-dessus du seuil subit une réduction supplémentaire. 100 désactive la réduction villageoise. Défaut : 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_village" text="Avec la courbe 1, le versement villageois lié au commerce approche un plafond. Les valeurs supérieures permettent une croissance continue. Le repère villageois est de 2 500 deniers par jour. Active uniquement sous 100 % de force. Défaut : 1,00." />
+    <string id="b1071_mcm_h_settle_tax_strength" text="La part maximale de son impôt habituel qu’une ville peut conserver. 100 laisse l’impôt exactement tel quel. L’impôt est la plus grosse des trois lignes : c’est donc celle qu’il faut régler en premier — et la plus sûre à laisser tranquille, car contrairement à une réserve de tarifs il est plafonné par la prospérité et ne peut pas s’emballer tout seul. À 60, une ville de 2 000 de prospérité paie environ 54 % de son impôt habituel, une ville de 6 000 environ 45 %, et une ville de 20 000 environ 32 %. Tout ce qui est à 40 de prospérité ou moins n’est jamais touché. Défaut : 100." />
+    <string id="b1071_mcm_h_settle_tax_curve" text="Forme de la réduction de l'impôt urbain. Une valeur basse répartit la baisse uniformément entre toutes les villes imposables ; une valeur haute épargne les petites villes et courbe fortement près du repère de 4 000 de prospérité. N'a d'effet que si la force est inférieure à 100. Défaut : 2,00." />
+    <string id="b1071_mcm_t_settle_tariff_knee_town" text="Tarif urbain à partir de (deniers/jour)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_town" text="Base commerciale quotidienne au-delà de laquelle commence la réduction supplémentaire. La partie sous le seuil subit toujours la réduction de force. Plus de commerce ne diminue jamais le revenu total. 0 applique la courbe dès le premier denier. Défaut : 2 000." />
+    <string id="b1071_mcm_t_settle_tariff_knee_village" text="Tarif villageois à partir de (deniers/jour)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_village" text="Base commerciale quotidienne au-delà de laquelle commence la réduction villageoise supplémentaire. Sous le seuil, la part de force est conservée. Plus de commerce ne diminue jamais le revenu total. Défaut : 500." />
+    <string id="b1071_mcm_t_settle_tax_knee" text="Impôt urbain à partir de (prospérité)" />
+    <string id="b1071_mcm_h_settle_tax_knee" text="Définit le début de la réduction fiscale supplémentaire. La partie sous le seuil conserve la part de force ; seul l'excédent subit la réduction supplémentaire. S'ajoute au plancher fixe de 40 de prospérité ; le seuil effectif s'arrête à 4 000. À 0, la courbe s'applique dès que le plancher fixe est dépassé. Défaut : 0." />
     <string id="b1071_qs_name_ai_recovery" text="Les seigneurs IA cherchent des recrues Campaign++" />
+    <string id="b1071_qs_name_settlement_revenue" text="Réduction des revenus des localités" />
     <string id="b1071_qs_hint_ai_recovery" text="Les seigneurs IA en sous-effectif peuvent privilégier les fiefs amis abritant des vétérans, des troupes de château ou des prisonniers convertis. Les ordres en cours restent protégés." />
+    <string id="b1071_qs_hint_settlement_revenue" text="Activé par défaut : tarifs urbains 90 % / courbe 1 / seuil 2 000 ; villages 90 % / courbe 1 / seuil 500. Les impôts urbains restent inchangés à 100 %. Même règle pour le joueur et les clans de l’IA. Modifiable dans les réglages principaux de Campaign++." />
     <string id="b1071_ledger_range" text="{FIRST}–{LAST} sur {COUNT}" />
     <string id="b1071_ledger_clear" text="Effacer" />
     <string id="b1071_ledger_filter_all" text="Tous" />

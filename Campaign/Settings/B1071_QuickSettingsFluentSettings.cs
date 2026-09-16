@@ -111,6 +111,10 @@ namespace Byzantium1071.Campaign.Settings
                     AddToggle(g, "qs_garrison_wage", L("b1071_qs_name_garrison_wage", "Garrison Wage Discount"),
                         L("b1071_qs_hint_garrison_wage", "Garrison troops cost a reduced percentage of field wages (default 80%)."),
                         4, () => s.EnableGarrisonWageDiscount, v => s.EnableGarrisonWageDiscount = v);
+
+                    AddToggle(g, "qs_settlement_revenue", L("b1071_qs_name_settlement_revenue", "Settlement Revenue Taper"),
+                        L("b1071_qs_hint_settlement_revenue", "Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays unchanged at 100%. Applies equally to player and AI clans. Adjust the preset in the main Campaign++ settings."),
+                        5, () => s.EnableSettlementRevenueTuning, v => s.EnableSettlementRevenueTuning = v);
                 });
 
                 // ── Recruitment & Military ─────────────────────────────────────────

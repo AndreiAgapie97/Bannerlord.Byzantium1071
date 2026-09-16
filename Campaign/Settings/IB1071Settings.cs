@@ -355,5 +355,15 @@ namespace Byzantium1071.Campaign.Settings
         bool PurgeLeftoverRebelClans { get; set; }
         int ClanSurvivalGracePeriodDays { get; set; }
         float ClanSurvivalCultureWeight { get; set; }
+        bool EnableSettlementRevenueTuning { get; set; }
+        int SettlementTariffStrengthTown { get; set; }
+        float SettlementTariffCurveTown { get; set; }
+        int SettlementTariffStrengthVillage { get; set; }
+        float SettlementTariffCurveVillage { get; set; }
+        int SettlementTaxStrength { get; set; }
+        float SettlementTaxCurve { get; set; }
+        int SettlementTariffKneeTown { get; set; }
+        int SettlementTariffKneeVillage { get; set; }
+        int SettlementTaxKnee { get; set; }
     }
 }

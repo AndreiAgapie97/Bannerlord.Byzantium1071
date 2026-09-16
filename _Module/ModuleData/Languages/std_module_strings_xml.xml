@@ -257,6 +257,7 @@
     <string id="b1071_dev_hinterlands" text="Devastated Hinterlands" />
     <string id="b1071_dev_villages" text="Devastated Villages" />
     <string id="b1071_frontier_rev" text="Frontier Revenue" />
+    <string id="b1071_revenue_taper" text="Revenue Taper" />
     <string id="b1071_gov_strain" text="Governance Strain" />
     <string id="b1071_gov_stabilization" text="Provincial Stabilization" />
     <string id="b1071_gs_enter" text="Stabilize province" />
@@ -1417,14 +1418,37 @@
     <string id="b1071_nameplate_full" text="Full" />
     <string id="b1071_garrison_manpower_limit" text="Campaign++ manpower" />
     <string id="b1071_mcm_g_ai_recovery" text="AI Recovery" />
+    <string id="b1071_mcm_g_settlement_revenue" text="Settlement Revenue" />
     <string id="b1071_mcm_t_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
     <string id="b1071_mcm_h_ai_recovery" text="AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80%. Active armies, battles, sieges, raids, defence, patrols, retreats, and urgent food runs remain protected. Default: true." />
     <string id="b1071_mcm_t_ai_recovery_priority" text="Recovery Takes Priority" />
     <string id="b1071_mcm_h_ai_recovery_priority" text="When enabled, an eligible under-strength lord chooses a Campaign++ recruitment stop before starting a new task. Active orders remain protected. Turn this off to let the improved settlement score compete normally with Bannerlord's other new orders. Default: true." />
     <string id="b1071_mcm_t_ai_recovery_days" text="Recovery intent days" />
+    <string id="b1071_mcm_t_settle_rev_enable" text="Enable settlement revenue tuning" />
+    <string id="b1071_mcm_t_settle_tariff_strength_town" text="Town tariff strength (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_town" text="Town tariff curve" />
+    <string id="b1071_mcm_t_settle_tariff_strength_village" text="Village tariff strength (%)" />
+    <string id="b1071_mcm_t_settle_tariff_curve_village" text="Village tariff curve" />
+    <string id="b1071_mcm_t_settle_tax_strength" text="Town tax strength (%)" />
+    <string id="b1071_mcm_t_settle_tax_curve" text="Town tax curve" />
     <string id="b1071_mcm_h_ai_recovery_days" text="How many campaign days a confirmed recruitment journey may continue while the lord remains below 80% party capacity. After this, the lord must fall below 60% to begin another recovery journey. Default: 1." />
+    <string id="b1071_mcm_h_settle_rev_enable" text="Reduces town tariffs and village income for player and AI clans. Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays at 100%, unchanged. Disable to restore untapered income." />
+    <string id="b1071_mcm_h_settle_tariff_strength_town" text="Maximum share of normal town tariffs retained. 90 keeps 90% below the threshold; only the portion above it receives an extra reduction. 100 bypasses the entire town tariff taper. Default: 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_town" text="Curve 1 makes the trade-based payout approach a ceiling as trade grows. Higher values reduce income less and allow continued growth. Perks and buildings can change the final payout. Only active below 100% strength. Default: 1.00." />
+    <string id="b1071_mcm_h_settle_tariff_strength_village" text="Maximum share of normal village income retained. The portion above the threshold receives an extra reduction. 100 bypasses the village taper. Default: 90." />
+    <string id="b1071_mcm_h_settle_tariff_curve_village" text="Curve 1 makes the trade-based village payout approach a ceiling. Higher values allow continued growth. The village reference is 2,500 daily denars. Only active below 100% strength. Default: 1.00." />
+    <string id="b1071_mcm_h_settle_tax_strength" text="The most of its usual tax a town can keep. 100 leaves tax exactly as it is. Tax is the largest of the three lines, so it is the one worth tuning first -- and the safest to leave alone, because unlike a tariff pool it is capped by prosperity and cannot run away on its own. At 60 a town of 2,000 prosperity pays about 54% of its usual tax, one of 6,000 pays about 45%, and one of 20,000 pays about 32%. Anything at or below 40 prosperity is never touched. Default: 100." />
+    <string id="b1071_mcm_h_settle_tax_curve" text="Shape of the town tax taper. A low value spreads the reduction evenly across every taxable town; a high value leaves small towns untouched and bends hard near the 4,000 prosperity reference. Only matters when strength is below 100. Default: 2.00." />
+    <string id="b1071_mcm_t_settle_tariff_knee_town" text="Town tariff starts at (denars/day)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_town" text="Daily trade basis above which the extra reduction begins. The portion up to this threshold still receives the strength reduction. Growing trade never lowers total income. 0 applies the curve from the first denar. Default: 2,000." />
+    <string id="b1071_mcm_t_settle_tariff_knee_village" text="Village tariff starts at (denars/day)" />
+    <string id="b1071_mcm_h_settle_tariff_knee_village" text="Daily trade basis above which the extra village reduction begins. The portion up to the threshold keeps the strength share. Growing trade never lowers total income. Default: 500." />
+    <string id="b1071_mcm_t_settle_tax_knee" text="Town tax starts at (prosperity)" />
+    <string id="b1071_mcm_h_settle_tax_knee" text="Sets where the extra tax taper begins. The portion below the threshold keeps the strength share; only the excess gets the additional taper. Added to the fixed 40-prosperity floor; the effective threshold stops at 4,000 prosperity. With 0, the curve applies immediately above the fixed floor. Default: 0." />
     <string id="b1071_qs_name_ai_recovery" text="AI Lords Seek Campaign++ Recruits" />
+    <string id="b1071_qs_name_settlement_revenue" text="Settlement Revenue Taper" />
     <string id="b1071_qs_hint_ai_recovery" text="Under-strength AI lords may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild. Active orders remain protected." />
+    <string id="b1071_qs_hint_settlement_revenue" text="Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays unchanged at 100%. Applies equally to player and AI clans. Adjust the preset in the main Campaign++ settings." />
     <string id="b1071_ledger_range" text="{FIRST}–{LAST} of {COUNT}" />
     <string id="b1071_ledger_clear" text="Clear" />
     <string id="b1071_ledger_filter_all" text="All" />
