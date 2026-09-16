@@ -4,7 +4,8 @@
     <tag language="English" />
   </tags>
   <strings>
-    <string id="b1071_demob_age" text="Age" />
+    <string id="b1071_demob_age" text="Service Days" />
+    <string id="b1071_demob_service_days_hint" text="Days counted toward the current service term, not biological age or total lifetime service. Extensions and promotion credits reduce this counter." />
     <string id="b1071_demob_extend" text="Extend" />
     <string id="b1071_demob_extend_cost" text="Extend Cost" />
     <string id="b1071_demob_extend_done" text="Extended service for {COUNT} {TROOP} by {DAYS} days for {COST}g. Extension {USED} of {MAX}." />
@@ -1027,7 +1028,7 @@
     <string id="b1071_overlay_ruler" text="Ruler: {NAME}" />
     <string id="b1071_overlay_detail_wars" text="Wars {COUNT} • Exhaust {EXH}" />
     <string id="b1071_overlay_type_market" text="Market" />
-    <string id="b1071_overlay_detail_market" text="{PRICE}d (×{STOCK})" />
+    <string id="b1071_overlay_detail_market" text="{PRICE} gold · Stock: {STOCK}" />
     <string id="b1071_overlay_no_matches" text="No matches" />
     <string id="b1071_overlay_try_broader" text="Try broader text" />
     <string id="b1071_overlay_title_search_count" text="Search Intel  ({COUNT} matches)" />
@@ -1486,5 +1487,10 @@
     <string id="b1071_cr_action" text="Action" />
     <string id="b1071_cr_pool_empty" text="No troops available. The pool replenishes daily from castle manpower." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
-  </strings>
+      <string id="b1071_ledger_fullscreen" text="Full Screen" />
+    <string id="b1071_ledger_summary_others" text="Others" />
+    <string id="b1071_ledger_compact" text="Compact" />
+    <string id="b1071_ledger_close" text="Close" />
+    <string id="b1071_ledger_fullscreen_error" text="Ledger could not open full screen: {ERROR}" />
+</strings>
 </base>

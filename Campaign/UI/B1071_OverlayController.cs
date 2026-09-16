@@ -112,7 +112,37 @@ namespace Byzantium1071.Campaign.UI
         private static bool _searchCacheStale = true;
         private static int _pageCount = 1;
         internal static B1071LedgerTab ActiveTab => _activeTab;
-        internal static B1071_LedgerColumns Columns => B1071_LedgerColumns.For(_activeTab);
+        internal static B1071_LedgerColumns Columns => IsFullScreen
+            ? _fullScreenColumns[(int)_activeTab] : B1071_LedgerColumns.For(_activeTab);
+        private static B1071_LedgerColumns[] _fullScreenColumns = Array.Empty<B1071_LedgerColumns>();
+        internal static int FullScreenWidth { get; private set; }
+        internal static int FullScreenHeight { get; private set; }
+        internal static bool IsFullScreen => FullScreenWidth > 0;
+
+        internal static int FullScreenRows(int height, bool search) => Math.Max(1,
+            (height - B1071_FullScreenLedgerLayout.ChromeHeight - (search ? B1071_FullScreenLedgerLayout.SearchHeight : 0))
+            / B1071_FullScreenLedgerLayout.RowHeight);
+
+        internal static bool SetFullScreenViewport(int width, int height)
+        {
+            int panelWidth = width > 0 ? Math.Max(320, width - 32) : 0;
+            int panelHeight = height > 0 ? Math.Max(320, height - 32) : 0;
+            if (FullScreenWidth == panelWidth && FullScreenHeight == panelHeight) return false;
+            int firstEntry = _pageIndex * GetRowsPerPage();
+            FullScreenWidth = panelWidth;
+            FullScreenHeight = panelHeight;
+            if (IsFullScreen)
+            {
+                var tabs = (B1071LedgerTab[])Enum.GetValues(typeof(B1071LedgerTab));
+                _fullScreenColumns = new B1071_LedgerColumns[tabs.Length];
+                foreach (var tab in tabs) _fullScreenColumns[(int)tab] = B1071_LedgerColumns.For(tab).Widen(panelWidth - 2 * B1071_FullScreenLedgerLayout.SidePadding);
+            }
+            // Keep the old first entry on the new page; tab, sorting and submitted search stay intact.
+            _pageIndex = firstEntry / GetRowsPerPage();
+            _columnsDirty = true;
+            _viewDirty = true;
+            return true;
+        }
         internal static bool CanPreviousPage => _activeTab != B1071LedgerTab.Current && _pageIndex > 0;
         internal static bool CanNextPage => _activeTab != B1071LedgerTab.Current && _pageIndex + 1 < _pageCount;
         internal static B1071SearchFilter SearchFilter => _search.Filter;
@@ -153,6 +183,7 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         internal static void Reset()
         {
+            B1071_FullScreenLedger.Close();
             B1071_PanelInjectionGuard.Reset();
             _isVisible = true;
             _isExpanded = true;
@@ -350,6 +381,24 @@ namespace Byzantium1071.Campaign.UI
             _viewDirty = true;
         }
 
+        // Match the left-to-right order of the tab buttons, independently of enum IDs.
+        private static readonly B1071LedgerTab[] _navigationTabs =
+        {
+            B1071LedgerTab.Current, B1071LedgerTab.NearbyPools, B1071LedgerTab.Castles,
+            B1071LedgerTab.Towns, B1071LedgerTab.Villages, B1071LedgerTab.Factions,
+            B1071LedgerTab.Armies, B1071LedgerTab.Wars, B1071LedgerTab.Casualties,
+            B1071LedgerTab.Rebellion, B1071LedgerTab.Prisoners, B1071LedgerTab.ClanInstability,
+            B1071LedgerTab.Characters, B1071LedgerTab.Search
+        };
+
+        internal static B1071LedgerTab AdjacentTab(B1071LedgerTab tab, bool next)
+        {
+            // Leave arrows with the search field while editing.
+            if (tab == B1071LedgerTab.Search) return tab;
+            int index = Array.IndexOf(_navigationTabs, tab);
+            return _navigationTabs[(index + (next ? 1 : _navigationTabs.Length - 1)) % _navigationTabs.Length];
+        }
+
         internal static void SetLedgerTab(B1071LedgerTab tab)
         {
             if (_activeTab == tab)
@@ -358,7 +407,7 @@ namespace Byzantium1071.Campaign.UI
             _activeTab = tab;
             _pageIndex = 0;
             _sortColumn = 0;
-            _sortAscending = tab == B1071LedgerTab.NearbyPools || tab == B1071LedgerTab.Search;
+            _sortAscending = tab == B1071LedgerTab.NearbyPools || tab == B1071LedgerTab.Search || tab == B1071LedgerTab.Characters;
             UpdateSortTextCache();
             ForceRefresh();
         }
@@ -473,6 +522,7 @@ namespace Byzantium1071.Campaign.UI
             }
 
             EnsureLedgerInitialized();
+            B1071_FullScreenLedger.Tick();
 
             if (Settings.EnableOverlayHotkey && Input.IsKeyPressed(GetConfiguredHotkey()))
             {
@@ -502,9 +552,10 @@ namespace Byzantium1071.Campaign.UI
             // Key interception: Space and Enter are consumed by campaign GameKey bindings
             // before reaching the EditableTextWidget's OS character-input pipeline.  These
             // must be injected manually so the search bar behaves like a normal text field.
+            // The focused full-screen layer receives normal spaces; only the map-bar box needs injection.
             if (_activeTab == B1071LedgerTab.Search)
             {
-                if (Input.IsKeyPressed(InputKey.Space))
+                if (!IsFullScreen && Input.IsKeyPressed(InputKey.Space))
                     SetSearchQuery(_search.Draft + " ");
                 if (Input.IsKeyPressed(InputKey.Enter))
                     ExecuteSearch();
@@ -514,17 +565,10 @@ namespace Byzantium1071.Campaign.UI
             // Disabled on Search tab to avoid consuming arrow keys during text editing.
             if (_activeTab != B1071LedgerTab.Search)
             {
-                const int tabCount = (int)B1071LedgerTab.Casualties + 1;
                 if (Input.IsKeyPressed(InputKey.Right))
-                {
-                    int next = ((int)_activeTab + 1) % tabCount;
-                    SetLedgerTab((B1071LedgerTab)next);
-                }
+                    SetLedgerTab(AdjacentTab(_activeTab, next: true));
                 else if (Input.IsKeyPressed(InputKey.Left))
-                {
-                    int prev = ((int)_activeTab - 1 + tabCount) % tabCount;
-                    SetLedgerTab((B1071LedgerTab)prev);
-                }
+                    SetLedgerTab(AdjacentTab(_activeTab, next: false));
             }
 
             _refreshTimer -= dt;
@@ -653,6 +697,7 @@ namespace Byzantium1071.Campaign.UI
 
         private static void HideOverlayIfVisible()
         {
+            B1071_FullScreenLedger.Close();
             if (!_isVisible)
                 return;
 
@@ -815,7 +860,7 @@ namespace Byzantium1071.Campaign.UI
                     behavior.GetTelemetryCurrentRowC3(),
                     behavior.GetTelemetryCurrentRowC4(),
                     false,
-                    false, isDetail: true));
+                    false, isDetail: true) { BeginsDiagnostics = true });
 
                 _ledgerRows.Insert(0, new B1071_LedgerRowVM(
                     L("b1071_ledger_regen_details", "Regeneration details"),
@@ -1275,9 +1320,9 @@ namespace Byzantium1071.Campaign.UI
                                     TypeTag = L("b1071_overlay_type_market", "Market"),
                                     TypeCategory = "Market",
                                     Affiliation = itemName,
-                                    Detail = new TextObject("{=b1071_overlay_detail_market}{PRICE}d (×{STOCK})")
+                                    Detail = new TextObject("{=b1071_overlay_detail_market}{PRICE} gold · Stock: {STOCK}")
                                         .SetTextVariable("PRICE", price.ToString("N0"))
-                                        .SetTextVariable("STOCK", stock)
+                                        .SetTextVariable("STOCK", stock.ToString("N0"))
                                         .ToString(),
                                     HasPosition = true,
                                     DistanceSq = mainParty != null ? (settlement.GetPosition2D - mainPos).LengthSquared : float.MaxValue,
@@ -1365,7 +1410,7 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.MatchScore.CompareTo(b.MatchScore)
                 };
 
-                if (_sortAscending) compare = -compare;
+                if (!_sortAscending) compare = -compare;
 
                 if (compare != 0) return compare;
 
@@ -1432,7 +1477,7 @@ namespace Byzantium1071.Campaign.UI
             if (placeCount > 0) typeParts.Append(L("b1071_ledger_filter_place", "Places")).Append(": ").Append(placeCount).Append("  ");
             if (armyCount  > 0) typeParts.Append(L("b1071_ledger_filter_army", "Armies")).Append(": ").Append(armyCount).Append("  ");
             if (marketCount > 0) typeParts.Append(L("b1071_ledger_filter_market", "Markets")).Append(": ").Append(marketCount).Append("  ");
-            if (otherCount > 0) typeParts.Append("+").Append(otherCount);
+            if (otherCount > 0) typeParts.Append(L("b1071_ledger_summary_others", "Others")).Append(": ").Append(otherCount);
             string typeSummary = typeParts.ToString().TrimEnd();
 
             _totals1 = L("b1071_overlay_totals_results", "Results");
@@ -2030,14 +2075,7 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.DistanceSq.CompareTo(b.DistanceSq)
                 };
 
-                if (_sortColumn != 0)
-                {
-                    if (!_sortAscending) compare = -compare;
-                }
-                else
-                {
-                    if (_sortAscending) compare = -compare;
-                }
+                if (!_sortAscending) compare = -compare;
 
                 if (compare != 0) return compare;
                 return string.Compare(a.HeroName, b.HeroName, StringComparison.Ordinal);
@@ -2053,7 +2091,7 @@ namespace Byzantium1071.Campaign.UI
                 rows.Sort((a, b) =>
                 {
                     int compare = a.DistanceSq.CompareTo(b.DistanceSq);
-                    if (_sortAscending) compare = -compare;
+                    if (!_sortAscending) compare = -compare;
                     if (compare != 0) return compare;
                     return string.Compare(a.HeroName, b.HeroName, StringComparison.Ordinal);
                 });
@@ -2153,8 +2191,7 @@ namespace Byzantium1071.Campaign.UI
                     4 => string.Compare(a.FactionName, b.FactionName, StringComparison.Ordinal),
                     _ => a.DistanceSq.CompareTo(b.DistanceSq)
                 };
-                if (!_sortAscending && _sortColumn != 3) compare = -compare;
-                if (_sortColumn == 3 && _sortAscending) compare = -compare;
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return _sortColumn == 0 ? string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal)
                     : a.DistanceSq.CompareTo(b.DistanceSq);
@@ -2253,8 +2290,7 @@ namespace Byzantium1071.Campaign.UI
                     4 => string.Compare(a.OwnerName, b.OwnerName, StringComparison.Ordinal),
                     _ => a.Current.CompareTo(b.Current)
                 };
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal);
             });
@@ -2319,8 +2355,7 @@ namespace Byzantium1071.Campaign.UI
                     4 => string.Compare(a.OwnerName, b.OwnerName, StringComparison.Ordinal),
                     _ => a.Hearth.CompareTo(b.Hearth)
                 };
-                if (_sortColumn == 0) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.SettlementName, b.SettlementName, StringComparison.Ordinal);
             });
@@ -2447,8 +2482,7 @@ namespace Byzantium1071.Campaign.UI
                     4 => a.RulerAge.CompareTo(b.RulerAge),
                     _ => a.TotalProsperity.CompareTo(b.TotalProsperity)
                 };
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
             });
@@ -2814,6 +2848,7 @@ namespace Byzantium1071.Campaign.UI
 
         private static int GetRowsPerPage()
         {
+            if (IsFullScreen) return FullScreenRows(FullScreenHeight, _activeTab == B1071LedgerTab.Search);
             int rows = Settings.OverlayLedgerRowsPerPage;
             if (rows < 3) rows = 3;
             if (rows > 22) rows = 22;   // raised from 15 to fit the larger 273px panel
@@ -2862,7 +2897,7 @@ namespace Byzantium1071.Campaign.UI
             _activeTab = (B1071LedgerTab)tabValue;
             _pageIndex = 0;
             _sortColumn = 0;
-            _sortAscending = false;
+            _sortAscending = _activeTab == B1071LedgerTab.NearbyPools || _activeTab == B1071LedgerTab.Search || _activeTab == B1071LedgerTab.Characters;
             _ledgerInitialized = true;
             UpdateSortTextCache();
             ForceRefresh();
@@ -3346,8 +3381,7 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.PeacePressure.CompareTo(b.PeacePressure)
                 };
 
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.PairName, b.PairName, StringComparison.Ordinal);
             });
@@ -3439,9 +3473,9 @@ namespace Byzantium1071.Campaign.UI
                                                string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
                     _ledgerRows.Add(new B1071_LedgerRowVM(
                         (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
-                        new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
-                        L("b1071_overlay_truce", "Truce"),
                         "-",
+                        L("b1071_overlay_truce", "Truce"),
+                        new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
                         involvesPlayerTruce,
                         false));
                 }
@@ -3464,9 +3498,9 @@ namespace Byzantium1071.Campaign.UI
                                                string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
                     _ledgerRows.Add(new B1071_LedgerRowVM(
                         (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
-                        new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
-                        L("b1071_overlay_truce", "Truce"),
                         "-",
+                        L("b1071_overlay_truce", "Truce"),
+                        new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
                         involvesPlayerTruce,
                         false));
                 }
@@ -3557,8 +3591,7 @@ namespace Byzantium1071.Campaign.UI
                     _ => a.Total.CompareTo(b.Total)
                 };
 
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.NameA, b.NameA, StringComparison.Ordinal);
             });
@@ -3596,7 +3629,7 @@ namespace Byzantium1071.Campaign.UI
             _header3 = L("b1071_overlay_col_cas_killb", "Kills B");
             _header4 = L("b1071_overlay_col_cas_total", "Total");
             _header5 = L("b1071_overlay_col_cas_ratio", "Ratio");
-            ApplySortIndicator(new[] { 3, 2, 4, 1, 5 });
+            ApplySortIndicator(new[] { 4, 2, 3, 1, 5 });
 
             _ledgerRows.Clear();
             for (int i = endIndex - 1; i >= startIndex; i--)
@@ -3733,8 +3766,7 @@ namespace Byzantium1071.Campaign.UI
                     4 => a.PartyCount.CompareTo(b.PartyCount),
                     _ => a.MilitaryPower.CompareTo(b.MilitaryPower)
                 };
-                if (_sortColumn != 3) { if (!_sortAscending) compare = -compare; }
-                else { if (_sortAscending) compare = -compare; }
+                if (!_sortAscending) compare = -compare;
                 if (compare != 0) return compare;
                 return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
             });

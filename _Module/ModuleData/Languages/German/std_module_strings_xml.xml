@@ -4,7 +4,8 @@
     <tag language="German" />
   </tags>
   <strings>
-        <string id="b1071_demob_age" text="Alter" />
+        <string id="b1071_demob_age" text="Diensttage" />
+        <string id="b1071_demob_service_days_hint" text="Tage, die auf die aktuelle Dienstzeit angerechnet werden, nicht das biologische Alter oder die gesamte bisherige Dienstzeit. Verlängerungen und Zeitgutschriften bei Beförderungen verringern diesen Zähler." />
         <string id="b1071_demob_extend" text="Verlängern" />
         <string id="b1071_demob_extend_cost" text="Verlängerungskosten" />
         <string id="b1071_demob_extend_done" text="Dienst für {COUNT} {TROOP} um {DAYS} Tage für {COST}g verlängert. Verlängerung {USED} von {MAX}." />
@@ -1027,7 +1028,7 @@
     <string id="b1071_overlay_ruler" text="Herrscher: {NAME}" />
     <string id="b1071_overlay_detail_wars" text="Kriege {COUNT} • Ersch. {EXH}" />
     <string id="b1071_overlay_type_market" text="Markt" />
-    <string id="b1071_overlay_detail_market" text="{PRICE}d (×{STOCK})" />
+    <string id="b1071_overlay_detail_market" text="{PRICE} Gold · Bestand: {STOCK}" />
     <string id="b1071_overlay_no_matches" text="Keine Treffer" />
     <string id="b1071_overlay_try_broader" text="Breiteren Begriff versuchen" />
     <string id="b1071_overlay_title_search_count" text="Suchaufklärung  ({COUNT} Treffer)" />
@@ -1224,7 +1225,7 @@
                                 <string id="b1071_sc_total_selected" text="{COUNT} Gefangene{PLURAL} ausgewählt" />
                                 <string id="b1071_sc_open_fail" text="Sklavenumwandlungsbildschirm konnte nicht geöffnet werden: {ERR}" />
                                 <string id="b1071_sc_no_screen" text="Sklavenumwandlung: kein aktiver Bildschirm." />
-                                <string id="b1071_cr_elite_header_div" text="Burgaufgebot (diversifizierter Pool)" />
+                                <string id="b1071_cr_elite_header_div" text="Burgaufgebot" />
                                 <!-- v0.2.8: MCM new settings -->
                                 <string id="b1071_mcm_t_8c3e9a1b01" text="Auswahlbildschirm für Versklavung aktivieren" />
                                 <string id="b1071_mcm_h_8c3e9a1b01" text="Wenn aktiviert, öffnet die Stadtoption Gefangene versklaven einen Bildschirm zur Auswahl der umzuwandelnden Gefangenen. Wenn deaktiviert, werden alle geeigneten Gefangenen gesammelt umgewandelt. Standard: aktiviert." />
@@ -1484,5 +1485,10 @@
     <string id="b1071_cr_action" text="Aktion" />
     <string id="b1071_cr_pool_empty" text="Keine Truppen verfügbar. Der Vorrat wird täglich aus der Mannstärke der Burg aufgefüllt." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
-  </strings>
+      <string id="b1071_ledger_fullscreen" text="Vollbild" />
+    <string id="b1071_ledger_summary_others" text="Andere" />
+    <string id="b1071_ledger_compact" text="Kompakt" />
+    <string id="b1071_ledger_close" text="Schließen" />
+    <string id="b1071_ledger_fullscreen_error" text="Das Verzeichnis konnte nicht im Vollbild geöffnet werden: {ERROR}" />
+</strings>
 </base>

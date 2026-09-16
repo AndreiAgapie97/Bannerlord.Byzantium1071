@@ -1,6 +1,7 @@
 using Byzantium1071.Campaign.Behaviors;
 using System;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core.ViewModelCollection.Information;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
@@ -8,6 +9,10 @@ namespace Byzantium1071.Campaign.UI
 {
     public sealed class B1071_DemobilizationVM : ViewModel
     {
+        [DataSourceProperty]
+        public HintViewModel ServiceDaysHint { get; } = new HintViewModel(new TextObject(
+            "{=b1071_demob_service_days_hint}Days counted toward the current service term, not biological age or total lifetime service. Extensions and promotion credits reduce this counter."));
+
         private Action? _onClose;
         private string _titleText = string.Empty;
         private string _goldLabelText = string.Empty;
@@ -46,7 +51,7 @@ namespace Byzantium1071.Campaign.UI
             TroopColumnText = L("b1071_ui_troop", "Troop");
             TierColumnText = L("b1071_ui_tier", "Tier");
             CountColumnText = L("b1071_ui_men", "Men");
-            AgeColumnText = L("b1071_demob_age", "Age");
+            AgeColumnText = L("b1071_demob_age", "Service Days");
             HomeColumnText = L("b1071_demob_home", "Home");
             RemainingColumnText = L("b1071_demob_remaining", "Days Left");
             CostColumnText = L("b1071_demob_extend_cost_each", "Extend (each)");

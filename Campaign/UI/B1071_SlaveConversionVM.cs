@@ -80,7 +80,10 @@ namespace Byzantium1071.Campaign.UI
                 if (element.Character != null && !element.Character.IsHero
                     && element.Number > 0 && element.Character.Tier <= maxTier)
                 {
-                    _troops.Add(new B1071_SlaveConversionTroopVM(this, element.Character, element.Number));
+                    _troops.Add(new B1071_SlaveConversionTroopVM(this, element.Character, element.Number)
+                    {
+                        IsAlternateRow = _troops.Count % 2 != 0
+                    });
                 }
             }
 

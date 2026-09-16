@@ -4,7 +4,8 @@
     <tag language="French" />
   </tags>
   <strings>
-    <string id="b1071_demob_age" text="Âge" />
+    <string id="b1071_demob_age" text="Jours de service" />
+    <string id="b1071_demob_service_days_hint" text="Jours comptabilisés pour la période de service actuelle, et non l’âge biologique ou la durée totale du service. Les prolongations et les crédits accordés lors des promotions réduisent ce compteur." />
     <string id="b1071_demob_extend" text="Prolonger" />
     <string id="b1071_demob_extend_cost" text="Coût de prolongation" />
     <string id="b1071_demob_extend_done" text="Service prolongé pour {COUNT} {TROOP} de {DAYS} jours pour {COST}g. Prolongation {USED} sur {MAX}." />
@@ -1027,7 +1028,7 @@
     <string id="b1071_overlay_ruler" text="Souverain : {NAME}" />
     <string id="b1071_overlay_detail_wars" text="Guerres {COUNT} • Épuis. {EXH}" />
     <string id="b1071_overlay_type_market" text="Marché" />
-    <string id="b1071_overlay_detail_market" text="{PRICE}d (×{STOCK})" />
+    <string id="b1071_overlay_detail_market" text="{PRICE} or · Stock : {STOCK}" />
     <string id="b1071_overlay_no_matches" text="Aucun résultat" />
     <string id="b1071_overlay_try_broader" text="Essayez un terme plus large" />
     <string id="b1071_overlay_title_search_count" text="Renseignement de recherche  ({COUNT} résultats)" />
@@ -1484,5 +1485,10 @@
     <string id="b1071_cr_action" text="Action" />
     <string id="b1071_cr_pool_empty" text="Aucune troupe disponible. Le vivier se renouvelle chaque jour grâce aux effectifs du château." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
-  </strings>
+      <string id="b1071_ledger_fullscreen" text="Plein écran" />
+    <string id="b1071_ledger_summary_others" text="Autres" />
+    <string id="b1071_ledger_compact" text="Vue compacte" />
+    <string id="b1071_ledger_close" text="Fermer" />
+    <string id="b1071_ledger_fullscreen_error" text="Impossible d’ouvrir le registre en plein écran : {ERROR}" />
+</strings>
 </base>

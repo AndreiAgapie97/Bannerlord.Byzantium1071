@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Change — Full-screen ledger and management menu polish
+
+**The ledger can expand to the screen for larger text and more visible entries; recruitment and service menus retain their existing actions with clearer presentation.**
+
+- **Layout:** Full Screen and Compact share ledger data, tabs, sorting and submitted searches. Full-screen paging follows the logical viewport (28 rows, or 27 for Search, at 1080 units); compact mode retains its configured size. Both modes have Close controls. Current settlement diagnostics are separated, table widths adapt per tab, and market results label gold and stock explicitly.
+- **Correctness:** Sort arrows agree with numeric direction, Characters defaults to nearest first, Casualties marks the actual sort column, and truce days appear under Duration. Keyboard tab order follows the visible buttons. Full-screen movie changes run outside button dispatch; castle cleanup releases movie bindings before removing the layer.
+- **Management menus:** Castle Recruitment stays 820 units wide and grows to at most 1,000 units high, capped to the logical viewport with 48 units of clearance. Its independent lists use whole rows. Troop Service labels the adjusted counter Service Days and explains extension/promotion credits on hover; a fixed-height header prevents its tooltip from pushing the roster outside the frame. Prisoner selection gains alternating row shading and matching gold headings.
+- **Validation:** Binding, sizing, navigation, sorting, lifecycle and header regression checks cover the UI changes. Recruitment rules, service accounting and saved campaign data are unchanged.
+
 ### Change — Ledger layout and search controls
 
 **The ledger uses a top-aligned layout, columns sized for each tab, full-value tooltips, and submitted search with category filters.**

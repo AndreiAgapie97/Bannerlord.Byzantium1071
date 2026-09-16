@@ -20,6 +20,40 @@ namespace Byzantium1071.Campaign.UI
     /// </summary>
     public sealed class B1071_CastleRecruitmentVM : ViewModel
     {
+        // Logical UI units: fixed title/summary, three section headers and columns,
+        // dividers, and 16 units of padding at both ends. Keep in sync with the prefab.
+        internal const int ChromeHeight = 318;
+        internal const int RowHeight = 29;
+        private float _windowHeight = 1000;
+        private float _eliteListHeight = 232;
+        private float _readyListHeight = 232;
+        private float _pendingListHeight = 203;
+
+        // Set before LoadMovie; these dimensions do not change when troops are recruited.
+        internal void SetViewportHeight(float height)
+        {
+            _windowHeight = Math.Min(1000, height - 48);
+            int rows = Math.Max(0, (int)((_windowHeight - ChromeHeight) / RowHeight));
+            _eliteListHeight = ((rows + 2) / 3) * RowHeight;
+            _readyListHeight = ((rows + 1) / 3) * RowHeight;
+            _pendingListHeight = (rows / 3) * RowHeight;
+        }
+
+        [DataSourceProperty]
+        public float WindowHeight { get => _windowHeight; }
+        [DataSourceProperty]
+        public float EliteListHeight { get => _eliteListHeight; }
+        [DataSourceProperty]
+        public float ReadyListHeight { get => _readyListHeight; }
+        [DataSourceProperty]
+        public float PendingListHeight { get => _pendingListHeight; }
+        [DataSourceProperty]
+        public float EmptyEliteHeight { get => _eliteListHeight + 58; }
+        [DataSourceProperty]
+        public float EmptyReadyHeight { get => _readyListHeight + 58; }
+        [DataSourceProperty]
+        public float EmptyPendingHeight { get => _pendingListHeight + 58; }
+
         private readonly Settlement _castle;
         private Action? _onClose;
 

@@ -130,25 +130,25 @@
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="260"
                                 Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.FontSize="13" Brush.FontColor="#D4B870FF"
                                 Brush.TextHorizontalAlignment="Left"
                                 Text="@TroopColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="50"
                                 Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.FontSize="13" Brush.FontColor="#D4B870FF"
                                 Brush.TextHorizontalAlignment="Center"
                                 Text="@TierColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="60"
                                 Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.FontSize="13" Brush.FontColor="#D4B870FF"
                                 Brush.TextHorizontalAlignment="Center"
                                 Text="@TotalColumnText" />
                     <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren"
                                 SuggestedWidth="120"
                                 Brush="Encyclopedia.SubPage.History.Text"
-                                Brush.FontSize="13" Brush.FontColor="#9F947DFF"
+                                Brush.FontSize="13" Brush.FontColor="#D4B870FF"
                                 Brush.TextHorizontalAlignment="Center"
                                 Text="@SelectedColumnText" />
                   </Children>
@@ -186,78 +186,84 @@
                                        WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                        StackLayout.LayoutMethod="VerticalTopToBottom">
                               <ItemTemplate>
-                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                                           SuggestedHeight="30" MarginBottom="1"
-                                           StackLayout.LayoutMethod="HorizontalLeftToRight">
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="30" MarginBottom="1">
                                   <Children>
-                                    <!-- Troop name -->
-                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
-                                                SuggestedWidth="260"
-                                                Brush="Encyclopedia.SubPage.History.Text"
-                                                Brush.FontSize="15"
-                                                Brush.TextHorizontalAlignment="Left"
-                                                Brush.TextVerticalAlignment="Center"
-                                                Text="@Name" />
-                                    <!-- Tier -->
-                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
-                                                SuggestedWidth="50"
-                                                Brush="Encyclopedia.SubPage.History.Text"
-                                                Brush.FontSize="15"
-                                                Brush.TextHorizontalAlignment="Center"
-                                                Brush.TextVerticalAlignment="Center"
-                                                Text="@Tier" />
-                                    <!-- Total count -->
-                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
-                                                SuggestedWidth="60"
-                                                Brush="Encyclopedia.SubPage.History.Text"
-                                                Brush.FontSize="15"
-                                                Brush.TextHorizontalAlignment="Center"
-                                                Brush.TextVerticalAlignment="Center"
-                                                Text="@TotalText" />
-                                    <!-- Decrement button -->
-                                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                                                  SuggestedWidth="35" SuggestedHeight="28"
-                                                  VerticalAlignment="Center"
-                                                  Brush="B1071.QuietButton"
-                                                  DoNotPassEventsToChildren="true"
-                                                  UpdateChildrenStates="true"
-                                                  Command.Click="ExecuteDecrement">
+                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                            Sprite="BlankWhiteSquare_9" Color="#FFFFFF14"
+                                            IsVisible="@IsAlternateRow" DoNotAcceptEvents="true" />
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                               StackLayout.LayoutMethod="HorizontalLeftToRight">
                                       <Children>
-                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                                    Brush="Encyclopedia.SubPage.Element.Name.Text"
-                                                    Brush.FontSize="18" Brush.FontColor="#DD8888FF"
+                                        <!-- Troop name -->
+                                        <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                                    SuggestedWidth="260"
+                                                    Brush="Encyclopedia.SubPage.History.Text"
+                                                    Brush.FontSize="15"
+                                                    Brush.TextHorizontalAlignment="Left"
+                                                    Brush.TextVerticalAlignment="Center"
+                                                    Text="@Name" />
+                                        <!-- Tier -->
+                                        <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                                    SuggestedWidth="50"
+                                                    Brush="Encyclopedia.SubPage.History.Text"
+                                                    Brush.FontSize="15"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
-                                                    Text="-" />
-                                      </Children>
-                                    </ButtonWidget>
-                                    <!-- Selected count -->
-                                    <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
-                                                SuggestedWidth="50"
-                                                Brush="Encyclopedia.SubPage.History.Text"
-                                                Brush.FontSize="15" Brush.FontColor="#FFD700FF"
-                                                Brush.TextHorizontalAlignment="Center"
-                                                Brush.TextVerticalAlignment="Center"
-                                                Text="@SelectedText" />
-                                    <!-- Increment button -->
-                                    <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                                                  SuggestedWidth="35" SuggestedHeight="28"
-                                                  VerticalAlignment="Center"
-                                                  Brush="B1071.QuietButton"
-                                                  DoNotPassEventsToChildren="true"
-                                                  UpdateChildrenStates="true"
-                                                  Command.Click="ExecuteIncrement">
-                                      <Children>
-                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                                    Brush="Encyclopedia.SubPage.Element.Name.Text"
-                                                    Brush.FontSize="18" Brush.FontColor="#88DD88FF"
+                                                    Text="@Tier" />
+                                        <!-- Total count -->
+                                        <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                                    SuggestedWidth="60"
+                                                    Brush="Encyclopedia.SubPage.History.Text"
+                                                    Brush.FontSize="15"
                                                     Brush.TextHorizontalAlignment="Center"
                                                     Brush.TextVerticalAlignment="Center"
-                                                    Text="+" />
+                                                    Text="@TotalText" />
+                                        <!-- Decrement button -->
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                                      SuggestedWidth="35" SuggestedHeight="28"
+                                                      VerticalAlignment="Center"
+                                                      Brush="B1071.QuietButton"
+                                                      DoNotPassEventsToChildren="true"
+                                                      UpdateChildrenStates="true"
+                                                      Command.Click="ExecuteDecrement">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                        Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                                        Brush.FontSize="18" Brush.FontColor="#DD8888FF"
+                                                        Brush.TextHorizontalAlignment="Center"
+                                                        Brush.TextVerticalAlignment="Center"
+                                                        Text="-" />
+                                          </Children>
+                                        </ButtonWidget>
+                                        <!-- Selected count -->
+                                        <TextWidget WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                                    SuggestedWidth="50"
+                                                    Brush="Encyclopedia.SubPage.History.Text"
+                                                    Brush.FontSize="15" Brush.FontColor="#FFD700FF"
+                                                    Brush.TextHorizontalAlignment="Center"
+                                                    Brush.TextVerticalAlignment="Center"
+                                                    Text="@SelectedText" />
+                                        <!-- Increment button -->
+                                        <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                                      SuggestedWidth="35" SuggestedHeight="28"
+                                                      VerticalAlignment="Center"
+                                                      Brush="B1071.QuietButton"
+                                                      DoNotPassEventsToChildren="true"
+                                                      UpdateChildrenStates="true"
+                                                      Command.Click="ExecuteIncrement">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                        Brush="Encyclopedia.SubPage.Element.Name.Text"
+                                                        Brush.FontSize="18" Brush.FontColor="#88DD88FF"
+                                                        Brush.TextHorizontalAlignment="Center"
+                                                        Brush.TextVerticalAlignment="Center"
+                                                        Text="+" />
+                                          </Children>
+                                        </ButtonWidget>
                                       </Children>
-                                    </ButtonWidget>
+                                    </ListPanel>
                                   </Children>
-                                </ListPanel>
+                                </Widget>
                               </ItemTemplate>
                             </ListPanel>
                           </Children>

@@ -5,6 +5,7 @@
   </tags>
   <strings>
     <string id="b1071_demob_age" text="服役天数" />
+    <string id="b1071_demob_service_days_hint" text="计入当前服役期的天数，并非实际年龄或累计服役总天数。延长服役期和晋升奖励会减少此计数。" />
     <string id="b1071_demob_extend" text="延长" />
     <string id="b1071_demob_extend_cost" text="延长费用" />
     <string id="b1071_demob_extend_done" text="已为 {COUNT} 名{TROOP}延长服役 {DAYS} 天，花费 {COST}g。第 {USED} 次延长，共 {MAX} 次。" />
@@ -1027,7 +1028,7 @@
     <string id="b1071_overlay_ruler" text="君主：{NAME}" />
     <string id="b1071_overlay_detail_wars" text="战争 {COUNT} • 疲惫 {EXH}" />
     <string id="b1071_overlay_type_market" text="市场" />
-    <string id="b1071_overlay_detail_market" text="{PRICE}第纳尔（×{STOCK}）" />
+    <string id="b1071_overlay_detail_market" text="{PRICE} 金币 · 库存：{STOCK}" />
     <string id="b1071_overlay_no_matches" text="无匹配结果" />
     <string id="b1071_overlay_try_broader" text="请尝试更宽泛的关键词" />
     <string id="b1071_overlay_title_search_count" text="情报搜索  （{COUNT} 条匹配）" />
@@ -1484,5 +1485,10 @@
     <string id="b1071_cr_action" text="操作" />
     <string id="b1071_cr_pool_empty" text="暂无可用士兵。兵源每日从城堡人力中补充。" />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}人" />
-  </strings>
+      <string id="b1071_ledger_fullscreen" text="全屏" />
+    <string id="b1071_ledger_summary_others" text="其他" />
+    <string id="b1071_ledger_compact" text="紧凑视图" />
+    <string id="b1071_ledger_close" text="关闭" />
+    <string id="b1071_ledger_fullscreen_error" text="无法以全屏模式打开账簿：{ERROR}" />
+</strings>
 </base>

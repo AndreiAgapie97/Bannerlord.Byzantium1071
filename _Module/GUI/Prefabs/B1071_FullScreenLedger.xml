@@ -1,0 +1,7 @@
+<Prefab>
+  <Window>
+    <Widget Id="LedgerHost" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+      <Children />
+    </Widget>
+  </Window>
+</Prefab>

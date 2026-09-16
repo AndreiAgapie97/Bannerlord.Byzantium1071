@@ -44,14 +44,18 @@ namespace Byzantium1071.Campaign.UI
         // Current's status and diagnostics are details, not values under the statistics headings.
         [DataSourceProperty] public bool IsDetail { get; private set; }
         [DataSourceProperty] public bool IsTableRow => !IsDetail;
-        [DataSourceProperty] public string DetailLabel => B1071_DisplayMath.TruncateForColumn(_cell1, 25);
+        // Set before binding the first diagnostics row; compact mode keeps its original height.
+        [DataSourceProperty] public bool BeginsDiagnostics { get; internal set; }
+        [DataSourceProperty] public int FullScreenRowHeight => BeginsDiagnostics ? 44 : 28;
+        [DataSourceProperty] public int FullScreenDetailTopMargin => BeginsDiagnostics ? 16 : 0;
+        [DataSourceProperty] public string DetailLabel => B1071_DisplayMath.TruncateForColumn(_cell1, _columns.CharacterWidth > 7f ? 27 : 25);
         [DataSourceProperty] public string DetailText => B1071_DisplayMath.TruncateForColumn(
-            string.Join("  |  ", new[] { _cell2, _cell3, _cell4, _cell5 }.Where(value => !string.IsNullOrEmpty(value))), 134);
+            string.Join("  |  ", new[] { _cell2, _cell3, _cell4, _cell5 }.Where(value => !string.IsNullOrEmpty(value))), _columns.CharacterWidth > 7f ? (int)((_columns.Widths.Sum() - 188f) / _columns.CharacterWidth) : 134);
 
         [DataSourceProperty]
         public string Cell1
         {
-            get => B1071_DisplayMath.TruncateForColumn(_cell1, (int)(_columns.Widths[0] / 7f));
+            get => B1071_DisplayMath.TruncateForColumn(_cell1, (int)(_columns.Widths[0] / _columns.CharacterWidth));
             set
             {
                 if (_cell1 != value) { _cell1 = value; OnPropertyChangedWithValue(Cell1, nameof(Cell1)); }
@@ -61,7 +65,7 @@ namespace Byzantium1071.Campaign.UI
         [DataSourceProperty]
         public string Cell2
         {
-            get => B1071_DisplayMath.TruncateForColumn(_cell2, (int)(_columns.Widths[1] / 7f));
+            get => B1071_DisplayMath.TruncateForColumn(_cell2, (int)(_columns.Widths[1] / _columns.CharacterWidth));
             set
             {
                 if (_cell2 != value) { _cell2 = value; OnPropertyChangedWithValue(Cell2, nameof(Cell2)); }
@@ -71,7 +75,7 @@ namespace Byzantium1071.Campaign.UI
         [DataSourceProperty]
         public string Cell3
         {
-            get => B1071_DisplayMath.TruncateForColumn(_cell3, (int)(_columns.Widths[2] / 7f));
+            get => B1071_DisplayMath.TruncateForColumn(_cell3, (int)(_columns.Widths[2] / _columns.CharacterWidth));
             set
             {
                 if (_cell3 != value) { _cell3 = value; OnPropertyChangedWithValue(Cell3, nameof(Cell3)); }
@@ -81,7 +85,7 @@ namespace Byzantium1071.Campaign.UI
         [DataSourceProperty]
         public string Cell4
         {
-            get => B1071_DisplayMath.TruncateForColumn(_cell4, (int)(_columns.Widths[3] / 7f));
+            get => B1071_DisplayMath.TruncateForColumn(_cell4, (int)(_columns.Widths[3] / _columns.CharacterWidth));
             set
             {
                 if (_cell4 != value) { _cell4 = value; OnPropertyChangedWithValue(Cell4, nameof(Cell4)); }
@@ -91,7 +95,7 @@ namespace Byzantium1071.Campaign.UI
         [DataSourceProperty]
         public string Cell5
         {
-            get => B1071_DisplayMath.TruncateForColumn(_cell5, (int)(_columns.Widths[4] / 7f));
+            get => B1071_DisplayMath.TruncateForColumn(_cell5, (int)(_columns.Widths[4] / _columns.CharacterWidth));
             set
             {
                 if (_cell5 != value) { _cell5 = value; OnPropertyChangedWithValue(Cell5, nameof(Cell5)); }

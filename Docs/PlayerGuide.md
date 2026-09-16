@@ -61,6 +61,8 @@ You don't need to press anything. Just start playing.
 | Action | What Happens |
 |--------|--------------|
 | **Press M** on the campaign map | Toggles the overlay on/off |
+| **Full Screen / Compact** | Switch between the larger ledger and the small overlay, keeping the current tab, sorting and submitted search |
+| **Close** | Close either size of ledger; Escape also closes full-screen mode |
 
 > The hotkey is configurable in MCM: M (default), N, K, F9, F10, F11, or F12.
 
@@ -78,20 +80,20 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | 6 | **Factions** | Kingdom-level view — Faction \| Ruler \| Treasury \| Manpower \| Prosperity |
 | 7 | **Armies** | Active armies — power rating, troop count, kingdom exhaustion |
 | 8 | **Wars** | Active wars — exhaustion levels, peace pressure, territory counts (e.g., "9 vs 15") |
-| 9 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
-| 10 | **Prisoners** | Captured nobles — who captured them, where they're held |
-| 11 | **Clans** | Clan loyalty/instability within kingdoms |
-| 12 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
-| 13 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
-| 14 | **Casualties** | Cumulative battlefield deaths by kingdom pair since the feature became active — compare who has bled most across the campaign |
+| 9 | **Casualties** | Cumulative battlefield deaths by kingdom pair since the feature became active — compare who has bled most across the campaign |
+| 10 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
+| 11 | **Prisoners** | Captured nobles — who captured them, where they're held |
+| 12 | **Clans** | Clan loyalty/instability within kingdoms |
+| 13 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
+| 14 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
 
 ### Overlay Controls
 
 | Control | What It Does |
 |---------|--------------|
 | **Click a column header** | Sorts the table by that column (click again to reverse) |
-| **◀ / ▶ arrows** | Page through rows (default 9 rows per page, adjustable in MCM). Unavailable arrows are dimmed; the footer shows your page and entry range. |
-| **← / → arrow keys** | Cycle between tabs (wraps around; disabled on Search tab to allow text editing) |
+| **◀ / ▶ arrows** | Page through rows. Compact mode defaults to 9 rows per page (adjustable in MCM); full-screen mode fits more rows to your screen and UI scale, typically 28, or 27 on Search. Unavailable arrows are dimmed; the footer shows your page and entry range. |
+| **← / → arrow keys** | Cycle through the visible tabs from left to right (wraps around; disabled on Search tab to allow text editing) |
 | **Hover a row or totals** | Shows all five values in full. Hover a column heading for its explanation. |
 | **Search, then Enter or Search button** | Submit a name or trade good (e.g., "Grain", "Slaves"). Editing the text keeps the previous results visible until you submit. |
 | **All / Heroes / Places / Armies / Markets / Other** | Narrow submitted results by category. Other includes clans and kingdoms. Clear resets the query and category. |
@@ -209,7 +211,7 @@ They do not vanish. A soldier who finishes his term walks back to the settlement
 ### How to Read It
 
 - Press the configured **Troop Service hotkey** on the campaign map (default: F9) to open the service screen.
-- The screen shows one line per group of men, how long they have served, how many days remain, and the gold cost to extend each of them.
+- The screen shows one line per group of men, **Service Days**, days remaining, and the gold cost to extend each man. Service Days is the counter for the current term: extensions and promotion credits reduce it. It is neither biological age nor total lifetime service; hover its heading for the explanation.
 - Men of the same troop who came from the same place and joined on the same day share a line, so a line can hold one man or fifty. The **Men** column tells you how many.
 - **Click a button for one man, Shift+click for five, Ctrl+click for the whole line.** This works on both **Extend** and **Send Home**.
 - The **Status** column is coloured: green still serving, amber close to leaving, red overdue.
@@ -288,6 +290,8 @@ Castles now have their own recruitment system with **three sources of troops**.
    - **Converted prisoners** — T4+ prisoners that have finished their holding period.
 6. **Click individual troops to recruit them.** Each has a gold cost.
 7. **"Recruit All" buttons** — each section (Elite and Ready) has a "Recruit All" button that recruits all available troops of that type in one click.
+
+The recruitment window is taller and fits to your screen height. The levy, ready-prisoner and waiting-prisoner lists each have more space and scroll independently when needed. Whole rows fit above the bottom frame; the number visible depends on your UI scale.
 
 ### Troop Costs
 

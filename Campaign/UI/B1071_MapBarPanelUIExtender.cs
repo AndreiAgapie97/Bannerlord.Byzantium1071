@@ -68,7 +68,7 @@ namespace Byzantium1071.Campaign.UI
             "<Children>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.85\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.5\" Color=\"#000000FF\"/>" +
-            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" Brush.FontSize=\"15\" DefaultSearchText=\"@B1071SearchPlaceholder\" IsAutoFocused=\"true\"/>" +
+            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" Brush.FontSize=\"15\" DefaultSearchText=\"@B1071SearchPlaceholder\" IsAutoFocused=\"true\" IsVisible=\"@B1071SearchControlsVisible\"/>" +
             "</Children>" +
             "</Widget>" +
             "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071SearchButtonText\"/></Children></ButtonWidget>" +
@@ -147,6 +147,8 @@ namespace Byzantium1071.Campaign.UI
             "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginTop=\"1\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" IsEnabled=\"@B1071CanPreviousPage\" Command.Click=\"ExecuteB1071PrevPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Previous.Page.Navigation.Button\"/></Children></ButtonWidget>" +
             "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginLeft=\"4\" MarginTop=\"1\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" IsEnabled=\"@B1071CanNextPage\" Command.Click=\"ExecuteB1071NextPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Next.Page.Navigation.Button\"/></Children></ButtonWidget>" +
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"16\" MarginTop=\"1\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071PageText\" />" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"140\" SuggestedHeight=\"25\" MarginLeft=\"12\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071CloseLedger\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071CloseText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"140\" SuggestedHeight=\"25\" MarginLeft=\"12\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071FullScreen\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FullScreenText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -251,8 +253,11 @@ namespace Byzantium1071.Campaign.UI
         private string _header4 = string.Empty;
         private string _header5 = string.Empty;
 
+        private readonly MapBarVM _mapBar;
+
         public B1071_MapBarVMMixin(MapBarVM vm) : base(vm)
         {
+            _mapBar = vm;
             B1071_OverlayController.SetPanelMode(true);
             // Register force-sync callback so the controller can push UI state synchronously
             // (e.g., hide the search widget in the same frame the overlay closes).
@@ -268,6 +273,7 @@ namespace Byzantium1071.Campaign.UI
 
         public override void OnFinalize()
         {
+            B1071_FullScreenLedger.Close();
             B1071_OverlayController._forceSyncCallback = null;
             B1071_OverlayController.SetPanelMode(false);
             base.OnFinalize();
@@ -867,6 +873,16 @@ namespace Byzantium1071.Campaign.UI
             RefreshLedgerBindings();
         }
 
+        [DataSourceProperty] public int B1071FullScreenWidth => B1071_OverlayController.FullScreenWidth;
+        [DataSourceProperty] public int B1071FullScreenHeight => B1071_OverlayController.FullScreenHeight;
+        [DataSourceProperty] public bool B1071FullScreenSearchVisible => B1071_OverlayController.IsFullScreen && B1071_OverlayController.IsSearchControlsVisible;
+        [DataSourceProperty] public string B1071FullScreenText => new TextObject("{=b1071_ledger_fullscreen}Full Screen").ToString();
+        [DataSourceProperty] public string B1071CompactText => new TextObject("{=b1071_ledger_compact}Compact").ToString();
+        [DataSourceProperty] public string B1071CloseText => new TextObject("{=b1071_ledger_close}Close").ToString();
+        [DataSourceMethod] public void ExecuteB1071FullScreen() => B1071_FullScreenLedger.RequestOpen(_mapBar);
+        [DataSourceMethod] public void ExecuteB1071Compact() => B1071_FullScreenLedger.RequestClose(false);
+        [DataSourceMethod] public void ExecuteB1071CloseLedger() => B1071_FullScreenLedger.RequestClose(true);
+
         [DataSourceProperty] public bool B1071CanPreviousPage => B1071_OverlayController.CanPreviousPage;
         [DataSourceProperty] public bool B1071CanNextPage => B1071_OverlayController.CanNextPage;
         [DataSourceProperty] public bool B1071CanSort => !B1071_OverlayController.IsTabCurrentActive;
@@ -949,7 +965,10 @@ namespace Byzantium1071.Campaign.UI
         private void SyncFromController(bool notifyAll)
         {
             _isSyncingFromController = true;
-            B1071PanelVisible = B1071_OverlayController.IsVisible;
+            B1071PanelVisible = B1071_OverlayController.IsVisible && !B1071_OverlayController.IsFullScreen;
+            OnPropertyChangedWithValue(B1071FullScreenWidth, nameof(B1071FullScreenWidth));
+            OnPropertyChangedWithValue(B1071FullScreenHeight, nameof(B1071FullScreenHeight));
+            OnPropertyChangedWithValue(B1071FullScreenSearchVisible, nameof(B1071FullScreenSearchVisible));
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelLeftOffset = B1071_OverlayController.PanelLeftOffset;
             B1071PanelTopOffset = B1071_OverlayController.PanelTopOffset;
@@ -984,20 +1003,21 @@ namespace Byzantium1071.Campaign.UI
             B1071TabCharactersSelected = B1071_OverlayController.IsTabCharactersActive;
             B1071TabSearchSelected = B1071_OverlayController.IsTabSearchActive;
             B1071TabCasualtiesSelected = B1071_OverlayController.IsTabCasualtiesActive;
-            B1071SearchControlsVisible = B1071_OverlayController.IsSearchControlsVisible;
+            B1071SearchControlsVisible = B1071_OverlayController.IsSearchControlsVisible && !B1071_OverlayController.IsFullScreen;
             B1071SearchQuery = B1071_OverlayController.SearchQuery;
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
             // B1071LedgerRows is bound directly to the controller's MBBindingList (no copy needed)
-            B1071Totals1 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals1, (int)(B1071Width1 / 7f));
-            B1071Totals2 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals2, (int)(B1071Width2 / 7f));
-            B1071Totals3 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals3, (int)(B1071Width3 / 7f));
-            B1071Totals4 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals4, (int)(B1071Width4 / 7f));
-            B1071Totals5 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals5, (int)(B1071Width5 / 7f));
+            B1071Totals1 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals1, (int)(B1071Width1 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals2 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals2, (int)(B1071Width2 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals3 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals3, (int)(B1071Width3 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals4 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals4, (int)(B1071Width4 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals5 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals5, (int)(B1071Width5 / B1071_OverlayController.Columns.CharacterWidth));
             B1071TotalsVisible = B1071_OverlayController.TotalsVisible;
             string summaryText = B1071_OverlayController.SummaryText;
-            B1071SummaryText = B1071_DisplayMath.TruncateForColumn(summaryText, 164);
+            B1071SummaryText = B1071_DisplayMath.TruncateForColumn(summaryText, B1071_OverlayController.IsFullScreen
+                ? (B1071FullScreenWidth - 2 * B1071_FullScreenLedgerLayout.SidePadding) / 9 : 164);
             OnPropertyChangedWithValue(B1071SummaryVisible, nameof(B1071SummaryVisible));
             OnPropertyChangedWithValue(B1071ColumnTotalsVisible, nameof(B1071ColumnTotalsVisible));
             B1071Header1 = B1071_OverlayController.Header1;

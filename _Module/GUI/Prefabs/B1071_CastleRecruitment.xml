@@ -9,9 +9,9 @@
         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                 Sprite="BlankWhiteSquare_9" Color="#000000AA" DoNotAcceptEvents="true" />
 
-        <!-- Main panel — centered, 820 x 650 -->
+        <!-- Main panel — centered, taller height bounded by the logical viewport -->
         <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-                SuggestedWidth="820" SuggestedHeight="650"
+                SuggestedWidth="820" SuggestedHeight="@WindowHeight"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
           <Children>
 
@@ -79,8 +79,8 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.85" />
 
                 <!-- ===== STATS ROW: Gold (left) + Manpower (right) ===== -->
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                        MarginBottom="8">
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="24" MarginBottom="8">
                   <Children>
                     <!-- Gold: pinned left -->
                     <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
@@ -125,8 +125,8 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
 
                 <!-- ===== ELITE TROOPS SECTION ===== -->
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                        MarginBottom="8" IsVisible="@HasEliteTroops">
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="24" MarginBottom="8" IsVisible="@HasEliteTroops">
                   <Children>
                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 Brush="Encyclopedia.SubPage.Element.Name.Text"
@@ -197,9 +197,9 @@
                   </Children>
                 </Widget>
 
-                <!-- Elite troop rows (scrollable container: 5 rows × 29px = 145px) -->
+                <!-- Elite troop rows (whole-row height sized for the viewport) -->
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                        SuggestedHeight="145" IsVisible="@HasEliteTroops">
+                        SuggestedHeight="@EliteListHeight" IsVisible="@HasEliteTroops">
                   <Children>
                     <ScrollbarWidget Id="EliteScrollbar" HeightSizePolicy="StretchToParent" WidthSizePolicy="Fixed"
                                      SuggestedWidth="8" AlignmentAxis="Vertical"
@@ -318,7 +318,7 @@
 
                 <!-- Empty-state for Elite (fixed height matches filled section) -->
                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                            SuggestedHeight="195"
+                            SuggestedHeight="@EmptyEliteHeight"
                             Brush="Encyclopedia.SubPage.History.Text"
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"
@@ -332,8 +332,8 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
 
                 <!-- ===== READY TO RECRUIT SECTION ===== -->
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                        MarginBottom="8" IsVisible="@HasAvailableTroops">
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="24" MarginBottom="8" IsVisible="@HasAvailableTroops">
                   <Children>
                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 Brush="Encyclopedia.SubPage.Element.Name.Text"
@@ -404,9 +404,9 @@
                   </Children>
                 </Widget>
 
-                <!-- Ready troop rows (scrollable container: 4 rows × 29px = 116px) -->
+                <!-- Ready troop rows (whole-row height sized for the viewport) -->
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                        SuggestedHeight="116" IsVisible="@HasAvailableTroops">
+                        SuggestedHeight="@ReadyListHeight" IsVisible="@HasAvailableTroops">
                   <Children>
                     <ScrollbarWidget Id="ReadyScrollbar" HeightSizePolicy="StretchToParent" WidthSizePolicy="Fixed"
                                      SuggestedWidth="8" AlignmentAxis="Vertical"
@@ -525,7 +525,7 @@
 
                 <!-- Empty-state for Ready (fixed height matches filled section) -->
                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                            SuggestedHeight="165"
+                            SuggestedHeight="@EmptyReadyHeight"
                             Brush="Encyclopedia.SubPage.History.Text"
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"
@@ -539,8 +539,8 @@
                         Sprite="Encyclopedia\list_divider" AlphaFactor="0.62" />
 
                 <!-- ===== PENDING SECTION ===== -->
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                            MarginBottom="8"
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                            SuggestedHeight="24" MarginBottom="8"
                             Brush="Encyclopedia.SubPage.Element.Name.Text"
                             Brush.FontSize="17" Brush.FontColor="#E8DBBFFF"
                             Brush.TextHorizontalAlignment="Left"
@@ -586,8 +586,8 @@
                 </Widget>
 
                 <!-- Pending troop rows (scrollable container) -->
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                        IsVisible="@HasPendingTroops">
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                        SuggestedHeight="@PendingListHeight" IsVisible="@HasPendingTroops">
                   <Children>
                     <ScrollbarWidget Id="PendingScrollbar" HeightSizePolicy="StretchToParent" WidthSizePolicy="Fixed"
                                      SuggestedWidth="8" AlignmentAxis="Vertical"
@@ -672,8 +672,8 @@
                   </Children>
                 </Widget>
 
-                <!-- Empty-state for Pending (stretches to fill remaining space) -->
-                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                <!-- Empty-state for Pending (fixed height matches filled section) -->
+                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="@EmptyPendingHeight"
                             Brush="Encyclopedia.SubPage.History.Text"
                             Brush.FontSize="14" Brush.FontColor="#9F947DFF"
                             Brush.TextHorizontalAlignment="Center"

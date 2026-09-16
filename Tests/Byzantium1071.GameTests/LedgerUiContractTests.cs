@@ -9,8 +9,36 @@ using Xunit;
 
 namespace Byzantium1071.GameTests
 {
+    [CollectionDefinition(nameof(LedgerUiCollection), DisableParallelization = true)]
+    public sealed class LedgerUiCollection { }
+
+    [Collection(nameof(LedgerUiCollection))]
     public sealed class LedgerUiContractTests
     {
+        [Fact]
+        public void ArrowNavigationMatchesTheRenderedTabsAndLeavesSearchEditingAlone()
+        {
+            foreach (string xml in new[] { B1071_MapBarPanelLayout.Text, B1071_FullScreenLedgerLayout.Text })
+            {
+                var tabs = XElement.Parse(xml).Descendants("ButtonWidget")
+                    .Select(e => (string)e.Attribute("Command.Click") ?? "")
+                    .Where(command => command.StartsWith("ExecuteB1071Tab"))
+                    .Select(command => command.Substring("ExecuteB1071Tab".Length))
+                    .Select(name => name == "Nearby" ? B1071LedgerTab.NearbyPools
+                        : name == "Instability" ? B1071LedgerTab.ClanInstability
+                        : (B1071LedgerTab)Enum.Parse(typeof(B1071LedgerTab), name)).ToArray();
+                Assert.Equal(Enum.GetValues(typeof(B1071LedgerTab)).Length, tabs.Distinct().Count());
+                for (int i = 0; i < tabs.Length; i++)
+                {
+                    bool search = tabs[i] == B1071LedgerTab.Search;
+                    Assert.Equal(search ? tabs[i] : tabs[(i + 1) % tabs.Length],
+                        B1071_OverlayController.AdjacentTab(tabs[i], next: true));
+                    Assert.Equal(search ? tabs[i] : tabs[(i + tabs.Length - 1) % tabs.Length],
+                        B1071_OverlayController.AdjacentTab(tabs[i], next: false));
+                }
+            }
+        }
+
         [Fact]
         public void EveryTabFitsTheExistingInnerWidth()
         {

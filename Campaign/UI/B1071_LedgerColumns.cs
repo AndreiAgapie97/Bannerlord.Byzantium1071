@@ -17,6 +17,32 @@ namespace Byzantium1071.Campaign.UI
                 Alignments[i] = align[i] == 'R' ? TextHorizontalAlignment.Right : TextHorizontalAlignment.Left;
         }
 
+        internal readonly float CharacterWidth = 7f;
+
+        private B1071_LedgerColumns(B1071_LedgerColumns source, float innerWidth)
+        {
+            Widths = new float[5];
+            float available = innerWidth - 96f;
+            for (int i = 0; i < 5; i++) Widths[i] = source.Widths[i] * available / 1056f;
+            Alignments = source.Alignments;
+            // Current is a single settlement: keep its stats together. Other tabs use
+            // their proportional profiles so surplus width is shared across all columns.
+            if (ReferenceEquals(source, Current))
+            {
+                float scale = System.Math.Min(1f, available / 1300f);
+                Widths[0] = 360f * scale;
+                Widths[1] = 190f * scale;
+                Widths[2] = 150f * scale;
+                Widths[3] = 250f * scale;
+                Widths[4] = available - Widths[0] - Widths[1] - Widths[2] - Widths[3];
+                Alignments = (TextHorizontalAlignment[])source.Alignments.Clone();
+                Alignments[4] = TextHorizontalAlignment.Left;
+            }
+            CharacterWidth = 9.5f;
+        }
+
+        internal B1071_LedgerColumns Widen(float innerWidth) => new B1071_LedgerColumns(this, innerWidth);
+
         private static readonly B1071_LedgerColumns Settlements = new(330, 170, 150, 150, "LRRRL");
         private static readonly B1071_LedgerColumns Current = new(310, 180, 190, 230, "LRRLR");
         private static readonly B1071_LedgerColumns Nearby = new(300, 170, 90, 130, "LRRRL");

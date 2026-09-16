@@ -66,12 +66,59 @@ namespace Byzantium1071.GameTests
                     type.Name + "." + property.Name);
         }
 
+        [Theory]
+        [InlineData(720)]
+        [InlineData(864)] // 1080p with a larger interface scale.
+        [InlineData(900)]
+        [InlineData(1080)]
+        [InlineData(1440)]
+        public void AllSectionCombinationsFitTheViewportWithWholeRows(float viewportHeight)
+        {
+            // Sizing does not need live settlement or campaign state.
+            var vm = (B1071_CastleRecruitmentVM)System.Runtime.Serialization.FormatterServices
+                .GetUninitializedObject(typeof(B1071_CastleRecruitmentVM));
+            vm.SetViewportHeight(viewportHeight);
+            Assert.InRange(vm.WindowHeight, 1, viewportHeight - 48);
+            Assert.True(vm.WindowHeight <= 1000);
+            XElement panel = Prefab().Descendants("Widget").Single(e => (string)e.Attribute("SuggestedWidth") == "820");
+            XElement content = panel.Element("Children").Elements("ListPanel").Single();
+            float padding = (float)content.Attribute("MarginTop") + (float)content.Attribute("MarginBottom");
+            foreach (float height in new[] { vm.EliteListHeight, vm.ReadyListHeight, vm.PendingListHeight })
+            {
+                Assert.True(height >= 3 * 29);
+                Assert.Equal(0, height % 29);
+                if (viewportHeight >= 1080) Assert.True(height >= 7 * 29);
+            }
+            for (int combination = 0; combination < 8; combination++)
+            {
+                bool elite = (combination & 1) != 0, ready = (combination & 2) != 0, pending = (combination & 4) != 0;
+                float used = padding;
+                foreach (XElement child in content.Element("Children").Elements())
+                {
+                    string visible = (string)child.Attribute("IsVisible");
+                    if ((visible == "@HasEliteTroops" && !elite) || (visible == "@HasNoEliteTroops" && elite)
+                        || (visible == "@HasAvailableTroops" && !ready) || (visible == "@HasNoAvailableTroops" && ready)
+                        || (visible == "@HasPendingTroops" && !pending) || (visible == "@HasNoPendingTroops" && pending)) continue;
+                    Assert.Equal("Fixed", (string)child.Attribute("HeightSizePolicy"));
+                    string height = (string)child.Attribute("SuggestedHeight");
+                    used += height.StartsWith("@")
+                        ? (float)typeof(B1071_CastleRecruitmentVM).GetProperty(height.Substring(1)).GetValue(vm)
+                        : float.Parse(height, System.Globalization.CultureInfo.InvariantCulture);
+                    used += (float?)child.Attribute("MarginTop") ?? 0;
+                    used += (float?)child.Attribute("MarginBottom") ?? 0;
+                }
+                Assert.InRange(vm.WindowHeight - used, 0, 28); // No clipping, no wasted full row.
+                Assert.Equal(B1071_CastleRecruitmentVM.ChromeHeight,
+                    used - vm.EliteListHeight - vm.ReadyListHeight - vm.PendingListHeight);
+            }
+        }
+
         [Fact]
-        public void OriginalWindowAndIndependentListAreasKeepTheirCapacity()
+        public void TallerWindowKeepsIndependentListsAndRecruitmentControls()
         {
             XElement root = Prefab();
             XElement panel = root.Descendants("Widget").Single(e => (string)e.Attribute("SuggestedWidth") == "820");
-            Assert.Equal("650", (string)panel.Attribute("SuggestedHeight"));
+            Assert.Equal("@WindowHeight", (string)panel.Attribute("SuggestedHeight"));
             Assert.Equal(3, root.Descendants("ScrollablePanel").Count());
             foreach (string section in new[] { "Elite", "Ready", "Pending" })
             {
@@ -82,10 +129,8 @@ namespace Byzantium1071.GameTests
                 XElement clip = scroll.Descendants("Widget").Single(e => (string)e.Attribute("Id") == section + "ClipRect");
                 Assert.Equal("true", (string)clip.Attribute("ClipContents"));
                 XElement viewport = scroll.Parent.Parent;
-                if (section == "Pending")
-                    Assert.Equal("StretchToParent", (string)viewport.Attribute("HeightSizePolicy"));
-                else
-                    Assert.Equal(section == "Elite" ? "145" : "116", (string)viewport.Attribute("SuggestedHeight"));
+                Assert.Equal("Fixed", (string)viewport.Attribute("HeightSizePolicy"));
+                Assert.Equal("@" + section + "ListHeight", (string)viewport.Attribute("SuggestedHeight"));
                 XElement template = Assert.Single(clip.Descendants("ItemTemplate"));
                 XElement row = template.Element("Widget");
                 Assert.Equal("28", (string)row.Attribute("SuggestedHeight"));
@@ -108,10 +153,8 @@ namespace Byzantium1071.GameTests
             foreach (string section in new[] { "Elite", "Ready", "Pending" })
             {
                 XElement empty = root.Descendants("TextWidget").Single(e => (string)e.Attribute("Text") == "@No" + section + "Text");
-                if (section == "Pending")
-                    Assert.Equal("StretchToParent", (string)empty.Attribute("HeightSizePolicy"));
-                else
-                    Assert.Equal(section == "Elite" ? "195" : "165", (string)empty.Attribute("SuggestedHeight"));
+                Assert.Equal("Fixed", (string)empty.Attribute("HeightSizePolicy"));
+                Assert.Equal("@Empty" + section + "Height", (string)empty.Attribute("SuggestedHeight"));
             }
             Assert.Equal(2, root.Descendants("ButtonWidget").Count(e => (string)e.Attribute("Command.Click") == "ExecuteRecruit"));
             Assert.Equal(2, root.Descendants("ButtonWidget").Count(e => (string)e.Attribute("Command.Click") == "ExecuteRecruitAll"));
