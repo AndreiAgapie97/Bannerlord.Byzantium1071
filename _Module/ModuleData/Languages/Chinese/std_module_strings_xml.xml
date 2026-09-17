@@ -515,7 +515,7 @@
     <string id="b1071_mcm_h_252273c0d1" text="所属村庄平均残破度为 100 时，对其城镇/城堡每日施加的治安惩罚。默认：1.5。" />
     <string id="b1071_mcm_h_25ebdb5741" text="城镇的基础兵源池（未计入经济缩放）。" />
     <string id="b1071_mcm_h_26252463e6" text="招募同文化部队时的兵源花费百分比。75 = 部队只消耗正常兵源的 75%（打 25% 折扣）。" />
-    <string id="b1071_mcm_h_26939354d2" text="总开关。启用城堡俘虏自动处置（1-3 阶贩往最近的城镇市场，4 阶及以上在等待期后可供招募）以及城堡招募菜单。" />
+    <string id="b1071_mcm_h_26939354d2" text="总开关。启用城堡俘虏自动处理（T1-T3在最近的城镇市场转为奴隶；更高阶俘虏逐步获得城堡共享的服从度，总督统御可提高获取速度）及城堡招募菜单。" />
     <string id="b1071_mcm_h_2860da12d7" text="忠诚为 0 时的恢复倍率。例如 50 = 民心离散会使恢复减半。" />
     <string id="b1071_mcm_h_29e86259f4" text="[旧版 — 未使用] 此设置已不再生效。兵源花费现已改为每名部队固定值（BaseManpowerCostPerTroop）。仅为存档兼容而保留。" />
     <string id="b1071_mcm_h_2ae9834ed8" text="以“低/上升/危机”三档区间和滞后机制取代生硬的疲惫阈值，使外交转变更为平滑。" />
@@ -640,7 +640,7 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="回落至较低区间前，需低于区间阈值的缓冲量。避免在两档之间频繁来回跳动。" />
     <string id="b1071_mcm_h_ad9b011697" text="启用后，AI 领主造访本势力的村庄时会进行投资（前提是负担得起）。档次费用与加成效果均与玩家相同。默认：开启。" />
     <string id="b1071_mcm_h_adb939cb85" text="每名奴隶每日消耗的粮食。为囤积奴隶设下一道自然的经济上限。取 0.05 时：50 名奴隶 = 每日 -2.5 粮食，100 名 = 每日 -5.0 粮食（大致相当于一个村庄的产出），200 名 = 每日 -10.0 粮食（相当严重）。历史上，奴隶劳工领取的口粮与守军士兵相当（约 0.04–0.06 单位）。设为 0 则关闭。默认：0.05。" />
-    <string id="b1071_mcm_h_adbcaeef5e" text="6 阶及以上俘虏须关押多少天才可供招募。冠军级部队抵抗得最久。默认：35。" />
+    <string id="b1071_mcm_h_adbcaeef5e" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
     <string id="b1071_mcm_h_b00260dc2c" text="当 AI 领主投资你名下的村庄时显示消息。让你看到庇护系统在你的领地上运作。默认：开启。" />
     <string id="b1071_mcm_h_b13ff83c9c" text="大额投资的金钱花费。档次最高，加成最强、持续最久。默认：12000。" />
     <string id="b1071_mcm_h_b170010cab" text="春夏提升恢复速度，冬季则施加惩罚。" />
@@ -704,7 +704,7 @@
     <string id="b1071_mcm_h_e55ef8ccea" text="大额投资对每位城镇名流增加的势力。默认：20。" />
     <string id="b1071_mcm_h_e5ffddeee0" text="目前未使用。为未来可能加入的家族文化匹配安置评分保留。当前版本中更改此设置不会产生任何效果。为兼容旧配置而保留。默认：2.0。" />
     <string id="b1071_mcm_h_e66eeb63a3" text="小额投资获得的影响力（仅当该村庄属于你的王国时）。默认：2.5。" />
-    <string id="b1071_mcm_h_e6b821a5cd" text="4 阶俘虏须关押多少天才可供招募。代表瓦解其抵抗并谈妥效忠所需的时间。默认：10。" />
+    <string id="b1071_mcm_h_e6b821a5cd" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
     <string id="b1071_mcm_h_e85b2eeed7" text="守军队伍的军饷低于野战部队。这符合史实：守军士兵的军饷往往较低，但另有住所与口粮补贴。在原版特长和建筑折扣之上叠加生效。" />
     <string id="b1071_mcm_h_ec969a4c7a" text="慷慨投资对每位村庄名流增加的好感度。默认：6。" />
     <string id="b1071_mcm_h_ed62e6a96f" text="攻城战结束后，进攻王国增加的战争疲惫。" />
@@ -718,7 +718,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="残破度为 100 时，直接施加于该村庄的每日炉灶增长惩罚。默认：2.0。" />
     <string id="b1071_mcm_h_f3f8c898fa" text="当前处于雇佣合约中的小势力，按家族等级计的每日收入。低于无从属势力，因为它们另有雇主王国支付的合约收入。默认：250。" />
     <string id="b1071_mcm_h_f6c1c42513" text="总开关。启用：(1) 洗劫村庄获取奴隶，(2) 在城镇菜单中“贩卖俘虏”，(3) 城镇平民市场有奴隶商品时的每日城镇加成。" />
-    <string id="b1071_mcm_h_f6d04613d7" text="5 阶俘虏须关押多少天才可供招募。精锐部队抵抗更久。默认：21。" />
+    <string id="b1071_mcm_h_f6d04613d7" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
     <string id="b1071_mcm_h_f786952c1d" text="通过城镇投资可达到的名流势力上限。若名流势力已达到或超过此值，则跳过投资的势力加成。默认：200。" />
     <string id="b1071_mcm_h_f7c27f4ab3" text="招募 5 阶俘虏的金钱花费。默认：2500。" />
     <string id="b1071_mcm_h_f7e2549a92" text="当王国定居点的平均兵源枯竭时，战争疲惫的增长会被放大。体现出这样的反馈循环：兵池见底时，损失的痛感更为剧烈。" />
@@ -1492,7 +1492,7 @@
     <string id="b1071_cr_fee_split" text="支付城堡领主：{OWNER}金币；支付交存者：{DEPOSITOR}金币。" />
     <string id="b1071_cr_fee_rules" text="应付给你家族的份额予以免除。若没有符合条件的独立交存者，费用归城堡领主所有。" />
     <string id="b1071_cr_fifo_note" text="按交存顺序招募。后续俘虏的招募费用可能不同。" />
-    <string id="b1071_cr_pending_quote" text="此为当前费用；等待期结束前无法招募。" />
+    <string id="b1071_cr_pending_quote" text="此报价适用于该兵种的下一名新兵，包括已就绪的俘虏。等待中的俘虏需要更多服从度；后续招募的费用可能不同。" />
     <string id="b1071_cr_unaffordable_next" text="金币不足，无法招募下一名俘虏。" />
     <string id="b1071_cr_depositor_unrecorded" text="未记录的交存者" />
     <string id="b1071_cr_depositor_unknown" text="未知交存者" />
@@ -1505,7 +1505,7 @@
     <string id="b1071_cr_available" text="可用人数" />
     <string id="b1071_cr_gold_each" text="每人费用" />
     <string id="b1071_cr_gold_next" text="下一人费用" />
-    <string id="b1071_cr_days_eligible" text="距可招募天数" />
+    <string id="b1071_cr_days_eligible" text="服从度" />
     <string id="b1071_cr_action" text="操作" />
     <string id="b1071_cr_pool_empty" text="暂无可用士兵。兵源每日从城堡人力中补充。" />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}人" />
@@ -1514,5 +1514,10 @@
     <string id="b1071_ledger_compact" text="紧凑视图" />
     <string id="b1071_ledger_close" text="关闭" />
     <string id="b1071_ledger_fullscreen_error" text="无法以全屏模式打开账簿：{ERROR}" />
+  <string id="b1071_cr_conformity_points" text="{POINTS} / {REQUIRED} 点" />
+  <string id="b1071_cr_conformity_help" text="城堡每天提供240点服从度，总督每点统御额外提供1.2点。尚未全部就绪的兵种共享这些点数，不应用领队专长。每招募一名俘虏都会消耗该兵种所需的点数；等级越高，所需点数越多。" />
+  <string id="b1071_cr_all_type_depositors" text="交押者（该兵种的全部俘虏）：" />
+  <string id="b1071_cr_withdraw_consigned" text="此兵种包含仍需支付招募费用的俘虏。请通过城堡招募菜单招募并支付费用。" />
+  <string id="b1071_cr_withdraw_rule" text="仍需支付招募费用的兵种必须留在地牢中。请通过此菜单招募。仍可撤回在当前地牢界面中刚存入的俘虏。" />
 </strings>
 </base>

@@ -114,7 +114,7 @@ namespace Byzantium1071.Campaign.UI
             TierColumnText = L("b1071_ui_tier", "Tier");
             CountColumnText = L("b1071_cr_available", "Available");
             GoldCostColumnText = L("b1071_cr_gold_each", "Gold Each");
-            StatusColumnText = L("b1071_cr_days_eligible", "Days Until Eligible");
+            StatusColumnText = L("b1071_cr_days_eligible", "Conformity");
             NoEliteText = L("b1071_cr_pool_empty", "No troops available. The pool replenishes daily from castle manpower.");
             NoReadyText = L("b1071_cr_no_ready", "No prisoners ready for recruitment.");
             NoPendingText = L("b1071_cr_no_pending", "No prisoners pending.");
@@ -176,7 +176,7 @@ namespace Byzantium1071.Campaign.UI
                     daysHeld,
                     goldCost,
                     isReady: true,
-                    daysRequired: behavior.GetRequiredDaysForTier(troop.Tier)));
+                    daysRequired: 0));
             }
 
             // Pending (not yet ready) prisoners

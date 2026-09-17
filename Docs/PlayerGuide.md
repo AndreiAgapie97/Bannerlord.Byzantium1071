@@ -288,7 +288,7 @@ Castles now have their own recruitment system with **three sources of troops**.
 4. **Click it** to open the castle recruitment screen.
 5. You'll see two types of troops:
    - **Elite pool troops** — culture-matching troops generated daily from the castle's manpower. By default T4–T6; with **Diversified Pool** enabled, also includes T2 levy, T2 noble, and T3–T4 troops.
-   - **Converted prisoners** — T4+ prisoners that have finished their holding period.
+   - **Converted prisoners** — prisoners above the enslavement tier cap with enough conformity to recruit.
 6. **Click individual troops to recruit them.** Each has a gold cost.
 7. **"Recruit All" buttons** — each section (Elite and Ready) has a "Recruit All" button that recruits all available troops of that type in one click.
 
@@ -316,14 +316,17 @@ The recruitment window is taller and fits to your screen height. The levy, ready
 | Both (your castle + your prisoner) | **Free** |
 | Otherwise | Full price |
 
-### Prisoner Holding Periods
+### Gradual Prisoner Recruitment
 
-Prisoners don't convert instantly. They must be held:
-- **T4**: 10 days
-- **T5**: 21 days
-- **T6+**: 35 days
+Each castle shares **240 conformity points per day**, plus **1.2 per point of its governor's Leadership**, between prisoner troop types that are not fully ready. No governor gives the base rate; party-leader perks do not apply. More prisoners do not increase the castle's budget.
 
-The menu shows pending prisoners with their progress. Check back later when they're ready.
+Each recruit needs the game's level-based conformity requirement: normally `(level + 6)² − 10`. Higher-level troops need more points. The castle distributes points in a fixed rotation, carries fractions into later days, and stops accumulating when everyone is ready. Recruiting a prisoner spends that prisoner's points. New arrivals increase the prisoner count without receiving a stack-wide ready flag.
+
+The menu can show the same troop type in both **Ready** and **Awaiting Recruitment**. Ready counts are the number you can actually recruit. The pending **Conformity** column shows points toward the next recruit, not a promised number of days. Pending ownership tooltips describe all prisoners of that type and quote the next recruit in deposit order. Player recruitment, AI recruitment, and garrison absorption all consume the same progress. Existing gold fees and clan waivers still apply.
+
+**Existing saves:** Prisoners already ready under the old timer remain ready. An unfinished timer becomes proportional progress toward one recruit; existing native conformity is retained if greater. This migration happens once. The old T4/T5/T6 wait settings remain under **Legacy** solely for interpreting old timers; they no longer set conversion speed.
+
+**Moving prisoners:** AI lords carry existing recruitment progress into the castle when depositing prisoners. A partial deposit keeps ready prisoners with the lord first. If any prisoners of a troop type still have recruitment fees owed, that type cannot be taken straight out of the dungeon: use **Castle Recruitment** to recruit them and settle the fees. This also applies to a type containing both your prisoners and another lord's prisoners. Types with no fees remain transferable, and you can still undo deposits made in the currently open dungeon screen.
 
 ### Neutral Castle Access
 
@@ -346,7 +349,7 @@ This applies identically to **player and AI**. AI lords that fail the restrictio
 AI lords recruit from castles on the same terms you do.
 
 - **They recruit as soon as they arrive.** Veterans are hired first, followed by castle elites and then converted prisoners. The daily castle check remains as a backup.
-- **A lord of your own clan now pays for elite troops instead of taking them free.** He pays the same half price you pay at a family castle, and the gold goes to whoever holds the fief — so if that is you, a clan-mate filling out his party pays into your purse.
+- **Your clan pays half price for castle levy troops, including at your own castle.** This is a recruitment expense: the gold is spent, rather than paid back to you or another member of your clan. Visiting lords from other clans still pay full price to the castle owner.
 - **Lords keep money back for wages.** A lord will not empty his treasury on castle troops any more, so expect visiting lords to leave the expensive elites behind unless they are genuinely wealthy. `AI recruitment treasury buffer` in MCM controls how much they hold in reserve; set it to 1 for the old behaviour.
 
 ### Diversified Pool (New)
@@ -509,7 +512,7 @@ There are **three ways** to acquire slaves:
    - The prisoner window stays compact for short lists and scrolls for longer ones. Framed buttons control quantities and confirmation. Smaller action buttons have slightly wider faces and subdued borders that brighten on hover; the confirmation keeps its stronger frame. The prisoner selector and management menus share dark headers and metal frames. Management headers separate resource summaries from section labels and notices. Management menus retain their existing layout; the ledger uses gold text for the active tab and sorted column.
 6. A gold notification confirms: *"⛓ Enslaved X T1–3 prisoners. Slave goods in inventory: Y. Open the Trade screen to sell them to the market."* By default, the action also grants **Roguery XP matching vanilla prisoner sales**.
 
-> **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they become elite recruits after a waiting period) or ransom them at the town tavern.
+> **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they gradually become eligible recruits by earning conformity) or ransom them at the town tavern.
 
 > **Tip:** The menu clearly shows how many prisoners are eligible (T1–3) and how many T4+ are kept. If you only have T4+ prisoners, the option appears greyed out with a tooltip explaining why.
 

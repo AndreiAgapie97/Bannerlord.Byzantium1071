@@ -290,7 +290,7 @@ Castles have their own dedicated recruitment system, separate from the normal vi
 
 1. **Elite Troop Pool** (culture-based)
 2. **Converted Prisoners** (ready for recruitment)
-3. **Pending Prisoners** (still serving their waiting period)
+3. **Pending Prisoners** (still earning conformity)
 
 Players access this via the castle game menu option "🏰 Recruit troops". AI lords recruit automatically during their daily visit.
 
@@ -322,21 +322,27 @@ Because volunteer-board troop trees can be altered by other mods after a save al
 
 ### Source 2: Converted Prisoners
 
-T4+ prisoners held at a castle for a configured number of days become recruitable:
+Prisoners above `CastlePrisonerAutoEnslaveTierMax` earn conformity from one shared castle budget each daily settlement tick, after low-tier processing and before AI recruitment and garrison absorption.
 
-| Tier | Required Days (default) | Gold Cost (default) |
-|------|------------------------|---------------------|
-| T4   | 10 days                | 1,200g              |
-| T5   | 21 days                | 2,500g              |
-| T6   | 35 days                | 5,000g              |
+- Daily budget: `24 × (10 + 0.05 × governor Leadership)` = `240 + 1.2 × Leadership`. Without a governor, Leadership is zero. Party recruitment perks are deliberately excluded.
+- Requirement: `CharacterObject.ConformityNeededToRecruitPrisoner`, from the active game model; vanilla uses `(level + 6)² − 10`.
+- Points live in the native prison roster's XP, already persisted by Bannerlord. Read them directly from the roster because the cached troop-list copies can contain stale XP.
+- A stable ordinal troop-ID rotation distributes points equally among unfinished types, skipping fully ready types. A fifth-of-a-point remainder and next rotation index persist as three parallel lists (`b1071_cr_conformityCastles`, `b1071_cr_conformityRemainders`, `b1071_cr_conformityCursors`). Unspent budget and fractional remainder are discarded when every type is ready or the eligible roster is empty.
+- Ready count is `min(prisoner count, points / requirement)`. Pending count is the remainder of the prisoner count. More arrivals do not multiply the daily budget or mark the whole type ready.
+- Each player recruit, AI recruit, and garrison absorption removes one prisoner and one requirement of native XP. Gold distribution, FIFO depositor records and zero-manpower prisoner recruitment remain unchanged.
+- AI castle deposits use `TransferCastlePrisoners` to carry native conformity. As with native partial deposits, the source retains points up to its remaining prisoners' capacity; excess points move with the deposit. The source XP is explicitly debited because native count removal alone does not reliably clamp it. Full deposits carry all valid points; wounded counts are preserved.
+- `B1071_CastlePrisonerWithdrawalPatch` and its command-validation companion restrict native dungeon withdrawals for eligible troop types with any outstanding player recruitment cost. Otherwise, native withdrawal would carry conformity into the party and allow recruitment without paying the depositor. Both the transferability check and actual command count are guarded; a mixed type remains protected even when its first FIFO entry is free. Checks use the original castle count reconstructed from the native screen's net transfer history. Negative history permits undoing only the newly deposited count. No gold or FIFO state changes inside the reversible screen; ordinary free transfers, deposits and cancellation remain native.
+- On session launch, old per-type day counters are consumed once: completed timers credit the existing stack's full requirement; incomplete timers credit their fraction toward one recruit. Preserve greater existing native XP, cap to roster capacity, and clear legacy timers so save/reload cannot regrant migration credit. Missing troops receive nothing.
 
-- Day tracking is per troop *type* per castle (not per individual prisoner)
-- Once the waiting period is met, all prisoners of that type at that castle become ready simultaneously
-- Prisoner recruitment costs **zero manpower** — they are already captured, not drawn from the population
+| Tier | Gold Cost (default) |
+|------|---------------------|
+| T4   | 1,200g              |
+| T5   | 2,500g              |
+| T6+  | 5,000g              |
 
 ### Source 3: Pending Prisoners
 
-T4+ prisoners still serving their waiting period. Visible in the recruitment screen but not yet recruitable.
+Prisoners without sufficient conformity remain visible in the recruitment screen. The same type can appear in both lists with separate counts. The pending column displays `points toward next recruit / requirement`. Its ownership tooltip explicitly describes the whole troop type; the next fee still follows the actual FIFO order, including prisoners already ready. No fixed completion date is promised because the number of pending types and governor Leadership can change.
 
 ### Low-Tier Prisoner Auto-Enslavement
 
@@ -360,7 +366,7 @@ T1–T3 prisoners at castles are automatically enslaved to the nearest town's sl
 
 **Availability gate (v1.0.2.4):** `IsLowTierEnslavementAvailable(castle)` is the single source of truth for whether the enslavement pipeline can run at a given castle. It requires two *permanent* conditions: the Slave Economy is enabled, and `FindNearestTown` resolves a same-faction town to sell to. It deliberately does **not** test the slave price — a broke town, or a price that dipped after a large sale, is a temporary state the affordability gate above already handles by retrying tomorrow.
 
-**Stranded-prisoner safety net (v1.0.2.4):** `DrainStrandedLowTierPrisoners` runs immediately after `AutoEnslaveLowTierPrisoners` in the daily tick. When `IsLowTierEnslavementAvailable` returns false, T1–T3 prisoners have no exit from a castle dungeon at all — `TrackHighTierPrisonerDays` skips them, `IsReadyForRecruitment` refuses them, and `B1071_CastlePrisonerRetentionPatch` blocks vanilla's daily sale — so the dungeon saturates at `PrisonerSizeLimit` and every deposit route refuses on `room <= 0`, killing castle recruitment at that settlement. The safety net restores vanilla's suppressed sale for exactly those prisoners:
+**Stranded-prisoner safety net (v1.0.2.4):** `DrainStrandedLowTierPrisoners` runs immediately after `AutoEnslaveLowTierPrisoners` in the daily tick. When `IsLowTierEnslavementAvailable` returns false, T1–T3 prisoners have no exit from a castle dungeon at all — `AdvancePrisonerConformity` skips them, `IsReadyForRecruitment` refuses them, and `B1071_CastlePrisonerRetentionPatch` blocks vanilla's daily sale — so the dungeon saturates at `PrisonerSizeLimit` and every deposit route refuses on `room <= 0`, killing castle recruitment at that settlement. The safety net restores vanilla's suppressed sale for exactly those prisoners:
 - Same call as vanilla: `SellPrisonersAction.ApplyForSelectedPrisoners(settlement.Party, null, roster)` — null buyer, ransom into the castle treasury.
 - Same rate as vanilla: `MBRandom.RoundRandomized(count * 0.1f)`, which floors and then adds 1 with probability equal to the fraction, so even a single stranded prisoner drains eventually without needing an artificial floor.
 - Applied to the **stranded low-tier subset only**, not `TotalRegulars` — T4+ prisoners awaiting conversion are never touched, making this strictly gentler than the vanilla call being suppressed.
@@ -381,7 +387,7 @@ T1–T3 prisoners at castles are automatically enslaved to the nearest town's sl
 AI lord parties currently at a non-hostile castle (same-faction or neutral) auto-recruit from **both** the elite pool and converted prisoners during the daily tick. Hostile parties are skipped:
 
 - Lords recruit up to their party size limit (no daily cap)
-- **Same-clan lords recruit for 50% gold cost** — lords whose clan matches the castle's `OwnerClan` pay half price (same household, shared resources)
+- **Same-clan lords recruit elite-pool troops for 50% gold cost** — lords whose clan matches the castle's `OwnerClan` pay half price as a recruitment expense, including when the recruiter owns the castle. The payment leaves circulation rather than returning to the household
 - **Cross-clan lords pay gold** routed to the castle owner via `GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, settlement.Owner, cost)`
 - **Per-unit processing (v0.1.7.1):** AI prisoner recruitment processes one unit at a time, peeking the current depositor and checking affordability before each recruit. This ensures correct depositor attribution when a troop type has mixed depositors in the FIFO queue
 - **Treasury reserve (v1.0.2.9):** every gold decision on this path runs through `GetAiBufferedAffordableCount(gold, costPerUnit, maxUnits)`, which allows a batch of `n` only while `gold > n x costPerUnit x CastleAiGoldBufferMultiplier` (default **3**). It is `CanAiAfford` generalised from one hero's fee to a batch, so what a lord keeps back grows with the wage bill he is taking on instead of sitting at a flat floor. The elite pool and the prisoner loop share it. Set the multiplier to 1 for the old spend-to-the-last-coin behaviour.
@@ -395,9 +401,9 @@ The 820-unit-wide recruitment popup sizes itself before movie loading to `min(10
 
 Player recruitment follows the same clan-based rules:
 
-- **Recruiting from own clan's castle:** 50% gold discount (same-clan pricing)
+- **Recruiting elite-pool troops from own clan's castle:** 50% gold discount, with the discounted amount spent as a recruitment expense
 - **Recruiting from another clan's castle:** Full gold cost, paid to the castle owner
-- Gold transfers use `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, castle.Owner, goldCost)` — direct hero-to-hero transfer
+- Elite payments use `PayEliteRecruitment` on both player and AI paths: `GiveGoldAction.ApplyBetweenCharacters` receives a null recipient for same-clan expenses and the castle owner for cross-clan transfers
 - The recruit message shows effective cost (50% for same-clan elites, full cost for cross-clan)
 - **Batch recruit:** Each section (Elite and Ready) has a "Recruit All" button that loops through all available troops using snapshot iteration (avoids collection modification during loop). Single `RefreshLists()` call at the end for efficiency.
 
@@ -454,7 +460,7 @@ The castle recruitment system uses a **consignment model** for prisoner income. 
 - **Affordability gate (v0.1.7.1):** If the owner cannot afford the depositor's share, the prisoner is **not absorbed** — it stays in prison. This prevents the owner from getting free troops at the depositor's expense
 - Same-clan depositor prisoners are absorbed for free (no compensation needed)
 
-**Elite pool recruitment** is outside the depositor economy — elite troops are castle-generated, so there is nobody to compensate. Pricing is the household rule: same-clan pays 50% of the tier price, cross-clan pays full, and either way the gold goes to the castle owner.
+**Elite pool recruitment** is outside the depositor economy — elite troops are castle-generated, so there is no depositor to compensate. Same-clan recruitment spends 50% of the tier price through a null-recipient `GiveGoldAction`; cross-clan recruitment pays the full price to the castle owner. Paying the owner in both cases previously refunded an owner recruiting from their own castle and recycled clan-member payments within the household. `PayEliteRecruitment` now routes both player singles and AI batches consistently. Per-unit rounding, affordability gates, manpower charges and AI treasury reserves are unchanged. The existing missing-owner fallback for cross-clan transfers is preserved. Prisoner consignment fees and waivers are unaffected; no saved state or settings migration is needed.
 
 **Net effect:** Both the capturing lord and the castle owner benefit from the prisoner pipeline. A lord who captures 50 prisoners and deposits them at an allied castle receives 70% of all enslavement and recruitment income, even though they moved on to fight elsewhere. The castle owner earns a 30% commission for housing, processing, and providing the infrastructure.
 
@@ -494,7 +500,7 @@ T1–3 prisoners deposited this way will be auto-enslaved on the next daily tick
 The castle daily tick runs 5 steps in sequence:
 
 1. **AutoEnslave** — T1-T3 prisoners → slave market
-2. **TrackDays** — Increment day counters for T4+ prisoners
+2. **AdvancePrisonerConformity** — Share the castle budget among unfinished prisoner types
 3. **RegenerateElitePool** — Add culture troops from manpower
 4. **AiAutoRecruit** — AI lords take from elite pool + ready prisoners
 5. **GarrisonAbsorbPrisoners** — Garrison absorbs ready prisoners (1/day)
@@ -503,11 +509,13 @@ The castle daily tick runs 5 steps in sequence:
 
 All castle recruitment data is saved with the campaign:
 
-- `_prisonerDaysHeld`: per-castle per-troop day counters (prisoner conversion tracking)
+- Native prison roster XP: conformity points, saved by Bannerlord
+- `_conformityRemainders` / `_conformityCursors`: per-castle fractional budget and rotation, saved in parallel lists
+- `_prisonerDaysHeld`: legacy day counters consumed once on session launch
 - `_elitePool`: per-castle per-troop stock counts (culture elite pool)
 - `_enslavementXpTracking`: per-castle per-troop FIFO of original depositor hero + party for delayed Roguery XP attribution
 
-Both dictionaries are flattened into parallel lists for `SyncData` serialization. Stale entries are cleaned up when prisoners are fully recruited or removed from the prison roster.
+The mod dictionaries are flattened into parallel lists for `SyncData` serialization. Native roster XP is saved by the game. Empty prisoner entries lose their points, and stale depositor tracking is cleaned when prisoners are recruited or removed.
 
 ### MCM Settings (Castle Recruitment Group)
 
@@ -515,7 +523,7 @@ Both dictionaries are flattened into parallel lists for `SyncData` serialization
 |---------|---------|-------------|
 | `EnableCastleRecruitment` | true | Master toggle for the entire system |
 | `CastlePrisonerAutoEnslaveTierMax` | 3 | Unified enslavement tier cap (player + AI). Controls all enslavement paths: player town menu, AI town entry, castle auto-enslave. T4+ must go to castle or ransom. |
-| `CastleRecruitT4Days` / `T5Days` / `T6Days` | 10 / 21 / 35 | Days before prisoners become recruitable |
+| `CastleRecruitT4Days` / `T5Days` / `T6Days` | 10 / 21 / 35 | Legacy group: old-save timer migration only; no effect on ongoing conformity |
 | `CastleRecruitGoldT4` / `T5` / `T6` | 1200 / 2500 / 5000 | Gold cost per recruit by tier |
 | `CastleElitePoolMax` | 20 | Maximum elite troops per castle |
 | `CastleEliteRegenMin` / `RegenMax` | 1 / 3 | Daily regen range (scales with prosperity) |

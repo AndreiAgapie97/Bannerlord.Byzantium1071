@@ -515,7 +515,7 @@
     <string id="b1071_mcm_h_252273c0d1" text="Security penalty per day applied to the bound town/castle at avg bound village devastation 100. Default: 1.5." />
     <string id="b1071_mcm_h_25ebdb5741" text="Base manpower pool for towns before economic scaling." />
     <string id="b1071_mcm_h_26252463e6" text="Manpower cost % when recruiting from matching culture. 75 = troops cost 75% of normal manpower (25% discount)." />
-    <string id="b1071_mcm_h_26939354d2" text="Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, T4+ become recruitable after a waiting period) and the castle recruitment menu." />
+    <string id="b1071_mcm_h_26939354d2" text="Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, higher-tier prisoners gradually earn conformity from a shared castle budget, boosted by governor Leadership) and the castle recruitment menu." />
     <string id="b1071_mcm_h_2860da12d7" text="Regen multiplier when loyalty is 0. E.g., 50 = disloyal population halves regen." />
     <string id="b1071_mcm_h_29e86259f4" text="[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Replaces hard exhaustion thresholds with graded Low/Rising/Crisis bands and hysteresis. Produces smoother diplomatic transitions." />
@@ -640,7 +640,7 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation." />
     <string id="b1071_mcm_h_ad9b011697" text="When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true." />
     <string id="b1071_mcm_h_adb939cb85" text="Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 35." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate." />
     <string id="b1071_mcm_h_b00260dc2c" text="Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Gold cost for a Grand investment. Highest tier with the strongest bonuses and longest duration. Default: 12000." />
     <string id="b1071_mcm_h_b170010cab" text="Spring/summer boosts regen, winter penalizes it." />
@@ -704,7 +704,7 @@
     <string id="b1071_mcm_h_e55ef8ccea" text="Power added to each town notable from a Grand investment. Default: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Currently unused. Reserved for possible future culture-based clan placement scoring. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 2.0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence gained from a Modest investment (only if village is in your kingdom). Default: 2.5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garrison parties pay a reduced wage relative to field troops. Historically accurate: garrison soldiers often received lower pay, supplemented by shelter and rations. Applies on top of vanilla perk and building discounts." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Relation gained with each village notable from a Generous investment. Default: 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Exhaustion gained by attacking kingdom after siege aftermath." />
@@ -718,7 +718,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Hearth growth penalty per day applied directly to the village at devastation 100. Default: 2.0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Daily income per clan tier for minor factions that are currently under mercenary contract. Lower than unaligned factions because they receive contract pay from their employer kingdom. Default: 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Master toggle. Enables: (1) village-raid slave acquisition, (2) prisoner enslavement at the town 'Enslave prisoners' menu, (3) daily town bonuses while Slave goods are present in the town's civilian market." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 21." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate." />
     <string id="b1071_mcm_h_f786952c1d" text="Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Gold cost to recruit a Tier 5 prisoner. Default: 2500." />
     <string id="b1071_mcm_h_f7e2549a92" text="War exhaustion gains are amplified when a kingdom's average settlement manpower is depleted. Reflects the feedback loop: empty pools mean losses are felt more acutely." />
@@ -1494,7 +1494,7 @@
     <string id="b1071_cr_fee_split" text="Gold to castle owner: {OWNER}; to depositor: {DEPOSITOR}." />
     <string id="b1071_cr_fee_rules" text="Shares owed to your clan are waived. Without an eligible separate depositor, the fee belongs to the castle owner." />
     <string id="b1071_cr_fifo_note" text="Recruitment follows deposit order. Later recruits may cost a different amount." />
-    <string id="b1071_cr_pending_quote" text="This is the current fee; recruitment is unavailable until the waiting period ends." />
+    <string id="b1071_cr_pending_quote" text="This quote is for the next recruit of this type, including any already ready. Pending prisoners need more conformity; later recruits may have different fees." />
     <string id="b1071_cr_unaffordable_next" text="Not enough gold for the next recruit." />
     <string id="b1071_cr_depositor_unrecorded" text="Unrecorded depositor" />
     <string id="b1071_cr_depositor_unknown" text="Unknown depositor" />
@@ -1507,7 +1507,7 @@
     <string id="b1071_cr_available" text="Available" />
     <string id="b1071_cr_gold_each" text="Gold Each" />
     <string id="b1071_cr_gold_next" text="Gold (Next)" />
-    <string id="b1071_cr_days_eligible" text="Days Until Eligible" />
+    <string id="b1071_cr_days_eligible" text="Conformity" />
     <string id="b1071_cr_action" text="Action" />
     <string id="b1071_cr_pool_empty" text="No troops available. The pool replenishes daily from castle manpower." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
@@ -1516,5 +1516,10 @@
     <string id="b1071_ledger_compact" text="Compact" />
     <string id="b1071_ledger_close" text="Close" />
     <string id="b1071_ledger_fullscreen_error" text="Ledger could not open full screen: {ERROR}" />
+  <string id="b1071_cr_conformity_points" text="{POINTS} / {REQUIRED}" />
+  <string id="b1071_cr_conformity_help" text="Each day the castle shares 240 conformity points plus 1.2 per point of governor Leadership among unfinished troop types. No party perks apply. Recruiting one prisoner spends that troop's requirement; higher-level troops need more points." />
+  <string id="b1071_cr_all_type_depositors" text="Deposited by (all prisoners of this type):" />
+  <string id="b1071_cr_withdraw_consigned" text="This troop type includes prisoners with recruitment fees still owed. Use Castle Recruitment to recruit them and pay the fee." />
+  <string id="b1071_cr_withdraw_rule" text="Troop types with recruitment fees still owed must stay in the dungeon. Recruit them through this menu. Deposits made in the open dungeon screen can still be undone." />
 </strings>
 </base>

@@ -27,11 +27,11 @@ namespace Byzantium1071.Campaign.Behaviors
     ///      CastleElitePoolMax. Anyone visiting an allied/neutral castle can recruit.
     ///
     ///   2. CONVERTED PRISONERS (ready)
-    ///      T4+ prisoners held long enough become recruitable. Same waiting-period
-    ///      system as before.
+    ///      Prisoners above the enslavement cap gradually earn level-based conformity.
+    ///      Recruiting each prisoner consumes that troop's requirement.
     ///
     ///   3. PENDING PRISONERS (not yet ready)
-    ///      T4+ prisoners still serving their waiting period.
+    ///      Prisoners still earning conformity from the shared castle budget.
     ///
     ///  LOW-TIER PRISONER AUTO-ENSLAVEMENT
     ///   T1-T3 prisoners are auto-enslaved to the nearest town market (daily tick).
@@ -48,7 +48,8 @@ namespace Byzantium1071.Campaign.Behaviors
     ///   AI lords deposit prisoners at any non-hostile castle they enter.
     ///
     ///  PERSISTENCE
-    ///   _prisonerDaysHeld: per-castle per-troop day counters (prisoner conversion)
+    ///   Prisoner conformity: native prison roster XP; fractional budget and rotation via SyncData.
+    ///   _prisonerDaysHeld: legacy timers, consumed once on session launch
     ///   _elitePool: per-castle per-troop stock counts (culture elite pool)
     ///   Both saved via SyncData, null-safe on old save load.
     /// </summary>
@@ -69,6 +70,10 @@ namespace Byzantium1071.Campaign.Behaviors
         /// </summary>
         private Dictionary<string, Dictionary<string, int>> _prisonerDaysHeld
             = new Dictionary<string, Dictionary<string, int>>();
+
+        // Only scheduling state is separate; conformity itself lives in the native roster.
+        private Dictionary<string, int> _conformityRemainders = new Dictionary<string, int>();
+        private Dictionary<string, int> _conformityCursors = new Dictionary<string, int>();
 
         // ── Elite troop pool ──────────────────────────────────────────────────────
 
@@ -199,6 +204,27 @@ namespace Byzantium1071.Campaign.Behaviors
                 _prisonerDaysHeld = B1071_CastleSaveMath.ReadIntMap(
                     _savedPrisonerCastleIds, _savedPrisonerTroopIds, _savedPrisonerDays);
 
+            var conformityCastles = _conformityRemainders.Keys.OrderBy(id => id, StringComparer.Ordinal).ToList();
+            var conformityRemainders = conformityCastles.Select(id => _conformityRemainders[id]).ToList();
+            var conformityCursors = conformityCastles.Select(id => _conformityCursors[id]).ToList();
+            dataStore.SyncData("b1071_cr_conformityCastles", ref conformityCastles);
+            dataStore.SyncData("b1071_cr_conformityRemainders", ref conformityRemainders);
+            dataStore.SyncData("b1071_cr_conformityCursors", ref conformityCursors);
+            if (dataStore.IsLoading)
+            {
+                _conformityRemainders.Clear();
+                _conformityCursors.Clear();
+                int length = Math.Min(conformityCastles?.Count ?? 0,
+                    Math.Min(conformityRemainders?.Count ?? 0, conformityCursors?.Count ?? 0));
+                for (int i = 0; i < length; i++)
+                {
+                    string id = conformityCastles![i];
+                    if (string.IsNullOrEmpty(id)) continue;
+                    _conformityRemainders[id] = Math.Max(0, Math.Min(4, conformityRemainders![i]));
+                    _conformityCursors[id] = Math.Max(0, conformityCursors![i]);
+                }
+            }
+
             // ── Elite pool: flatten Dict<castle, Dict<troop, count>> → 3 parallel lists ──
             _savedEliteCastleIds ??= new List<string>();
             _savedEliteTroopIds ??= new List<string>();
@@ -298,6 +324,11 @@ namespace Byzantium1071.Campaign.Behaviors
             _cultureVolunteerRootCache.Clear();
             _pendingConsignmentNotice.Clear();
 
+            foreach (var castle in Settlement.All)
+                if (castle.IsCastle && castle.Party?.PrisonRoster != null)
+                    MigrateLegacyPrisonerProgress(castle.StringId, castle.Party.PrisonRoster);
+            _prisonerDaysHeld.Clear(); // Discard timers for settlements no longer present.
+
             RegisterMenus(starter);
         }
 
@@ -316,8 +347,8 @@ namespace Byzantium1071.Campaign.Behaviors
             // 1b. Safety net: release low-tier prisoners nothing can ever process.
             DrainStrandedLowTierPrisoners(settlement);
 
-            // 2. Track / increment days for high-tier prisoners
-            TrackHighTierPrisonerDays(settlement);
+            // 2. Distribute the shared daily conformity budget
+            AdvancePrisonerConformity(settlement);
 
             // 3. Regenerate elite troop pool from manpower
             RegenerateElitePool(settlement);
@@ -505,7 +536,7 @@ namespace Byzantium1071.Campaign.Behaviors
         ///
         /// Prisoners at or below CastlePrisonerAutoEnslaveTierMax have exactly one exit
         /// from a castle dungeon: <see cref="AutoEnslaveLowTierPrisoners"/>.
-        /// TrackHighTierPrisonerDays skips them, IsReadyForRecruitment refuses them (so
+        /// AdvancePrisonerConformity skips them, IsReadyForRecruitment refuses them (so
         /// neither the player, AI lords, nor GarrisonAbsorbPrisoners will take them), and
         /// B1071_CastlePrisonerRetentionPatch blocks vanilla's daily sale. When the
         /// enslavement pipeline is unavailable — slave economy off, or the castle's
@@ -592,42 +623,86 @@ namespace Byzantium1071.Campaign.Behaviors
                 $"T1-T{enslaveTierMax} prisoner(s) - no enslavement pipeline available.");
         }
 
-        // ── 2. Track high-tier prisoner days ──────────────────────────────────────
+        // ── 2. Shared castle conformity ──────────────────────────────────────────
 
-        private void TrackHighTierPrisonerDays(Settlement settlement)
+        private void AdvancePrisonerConformity(Settlement settlement)
         {
-            TroopRoster? prisonRoster = settlement.Party?.PrisonRoster;
-            if (prisonRoster == null || prisonRoster.TotalManCount == 0) return;
+            TroopRoster? roster = settlement.Party?.PrisonRoster;
+            if (roster == null) return;
+            int leadership = settlement.Town?.Governor?.GetSkillValue(DefaultSkills.Leadership) ?? 0;
+            AdvancePrisonerConformity(settlement.StringId, roster, leadership);
+            CleanupStalePrisonerEntries(settlement.StringId, roster);
+        }
 
-            string castleId = settlement.StringId;
-            int enslaveTierMax = Settings.CastlePrisonerAutoEnslaveTierMax;
-
-            var highTier = prisonRoster.GetTroopRoster()
-                .Where(e => e.Character != null
-                         && !e.Character.IsHero
-                         && e.Number > 0
-                         && e.Character.Tier > enslaveTierMax)
-                .ToList();
-
-            if (highTier.Count > 0)
+        internal void AdvancePrisonerConformity(string castleId, TroopRoster roster, int leadership)
+        {
+            var troops = Enumerable.Range(0, roster.Count).Select(roster.GetElementCopyAtIndex)
+                .Where(e => e.Character != null && !e.Character.IsHero && e.Number > 0
+                    && e.Character.Tier > Settings.CastlePrisonerAutoEnslaveTierMax)
+                .OrderBy(e => e.Character.StringId, StringComparer.Ordinal).ToList();
+            var needs = new int[troops.Count];
+            for (int i = 0; i < troops.Count; i++)
             {
-                if (!_prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
-                {
-                    castleDict = new Dictionary<string, int>();
-                    _prisonerDaysHeld[castleId] = castleDict;
-                }
-
-                foreach (var element in highTier)
-                {
-                    string troopId = element.Character.StringId;
-                    if (castleDict.TryGetValue(troopId, out int days))
-                        castleDict[troopId] = days + 1;
-                    else
-                        castleDict[troopId] = 1;
-                }
+                var e = troops[i];
+                int capacity = B1071_CastleConformityMath.Capacity(e.Number, ConformityCost(e.Character));
+                int points = Math.Max(0, Math.Min(capacity, e.Xp));
+                // Roster removals outside recruitment can leave excess XP until normalized.
+                if (points != e.Xp) roster.SetElementXp(roster.FindIndexOfTroop(e.Character), points);
+                needs[i] = capacity - points;
             }
 
-            CleanupStalePrisonerEntries(castleId, prisonRoster);
+            _conformityRemainders.TryGetValue(castleId, out int remainder);
+            _conformityCursors.TryGetValue(castleId, out int cursor);
+            int budget = B1071_CastleConformityMath.DailyBudget(leadership, ref remainder);
+            int[] grants = B1071_CastleConformityMath.Allocate(needs, budget, ref cursor);
+            bool pending = false;
+            for (int i = 0; i < troops.Count; i++)
+            {
+                if (grants[i] > 0) roster.AddXpToTroop(troops[i].Character, grants[i]);
+                pending |= grants[i] < needs[i];
+            }
+            if (pending)
+            {
+                _conformityRemainders[castleId] = remainder;
+                _conformityCursors[castleId] = cursor;
+            }
+            else
+            {
+                _conformityRemainders.Remove(castleId);
+                _conformityCursors.Remove(castleId);
+            }
+        }
+
+        internal void MigrateLegacyPrisonerProgress(string castleId, TroopRoster roster)
+        {
+            if (!_prisonerDaysHeld.TryGetValue(castleId, out var days)) return;
+            foreach (var e in Enumerable.Range(0, roster.Count).Select(roster.GetElementCopyAtIndex))
+            {
+                if (e.Character == null || e.Character.IsHero || e.Number <= 0
+                    || e.Character.Tier <= Settings.CastlePrisonerAutoEnslaveTierMax
+                    || !days.TryGetValue(e.Character.StringId, out int held)) continue;
+                int cost = ConformityCost(e.Character);
+                int migrated = B1071_CastleConformityMath.LegacyProgress(e.Number, cost, held,
+                    GetRequiredDaysForTier(e.Character.Tier));
+                int points = Math.Min(B1071_CastleConformityMath.Capacity(e.Number, cost), Math.Max(e.Xp, migrated));
+                roster.SetElementXp(roster.FindIndexOfTroop(e.Character), points);
+            }
+            _prisonerDaysHeld.Remove(castleId); // Saving again cannot grant migration credit twice.
+        }
+
+        private static int ConformityCost(CharacterObject troop) => Math.Max(1, troop.ConformityNeededToRecruitPrisoner);
+
+        internal static int ReadyPrisonerCount(TroopRoster roster, CharacterObject troop)
+        {
+            int index = roster.FindIndexOfTroop(troop);
+            if (index < 0) return 0;
+            var e = roster.GetElementCopyAtIndex(index);
+            return B1071_CastleConformityMath.ReadyCount(e.Number, e.Xp, ConformityCost(troop));
+        }
+
+        internal static void ConsumePrisonerConformity(TroopRoster roster, CharacterObject troop)
+        {
+            roster.RemoveTroop(troop, 1, xp: ConformityCost(troop));
         }
 
         // ── 3. Elite pool regeneration ────────────────────────────────────────────
@@ -1010,14 +1085,12 @@ namespace Byzantium1071.Campaign.Behaviors
                         party.MemberRoster.AddToCounts(troop, take);
                         B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, take, "castle_elite_ai", settlement);
 
-                        // Gold goes to the castle owner at both prices, as it does for the player.
+                        // Same-clan recruitment is an expense; visiting clans pay the owner.
+                        // Use the same payment path as the player for the entire batch.
                         if (costPer > 0)
                         {
                             int totalCost = costPer * take;
-                            Hero? owner = settlement.Owner;
-                            if (owner != null)
-                                GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, owner, totalCost, disableNotification: true);
-                            // If owner is null, skip — don't silently destroy gold.
+                            PayEliteRecruitment(party.LeaderHero, settlement.Owner, isSameClan, totalCost);
                             gold -= totalCost;
                         }
 
@@ -1054,7 +1127,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
                                 party.MemberRoster.AddToCounts(troop, 1);
                                 B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(party, troop, 1, "castle_prisoner_ai", settlement);
-                                prisonRoster.RemoveTroop(troop, 1);
+                                ConsumePrisonerConformity(prisonRoster, troop);
 
                                 var depositorEntries = ConsumeDepositorEntries(castleId, troop.StringId, 1);
                                 foreach (var (heroId, consumed) in depositorEntries)
@@ -1074,12 +1147,6 @@ namespace Byzantium1071.Campaign.Behaviors
                             }
 
                             totalRecruited += recruited;
-
-                            // Clean up prisoner day tracking for fully recruited entries.
-                            int remaining = prisonRoster.GetTroopRoster()
-                                .Where(e => e.Character == troop).Select(e => e.Number).FirstOrDefault();
-                            if (remaining <= 0 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
-                                castleDict.Remove(troop.StringId);
                         }
                     }
                 }
@@ -1229,7 +1296,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     }
 
                     garrisonParty.MemberRoster.AddToCounts(troop, 1);
-                    prisonRoster.RemoveTroop(troop, 1);
+                    ConsumePrisonerConformity(prisonRoster, troop);
                     absorbed++;
 
                     // Compensate cross-clan depositors: castle owner pays their share.
@@ -1259,12 +1326,6 @@ namespace Byzantium1071.Campaign.Behaviors
                         }
                     }
                 }
-
-                // Clean up prisoner day tracking for fully recruited entries.
-                int remaining = prisonRoster.GetTroopRoster()
-                    .Where(e => e.Character == troop).Select(e => e.Number).FirstOrDefault();
-                if (remaining <= 0 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
-                    castleDict.Remove(troop.StringId);
             }
 
             if (playerGarrisonConsignmentGold > 0)
@@ -1555,6 +1616,7 @@ namespace Byzantium1071.Campaign.Behaviors
         //  PUBLIC API — PRISONER CONVERSION
         // ══════════════════════════════════════════════════════════════════════════
 
+        /// <summary>Legacy wait setting, used only when migrating old saves.</summary>
         public int GetRequiredDaysForTier(int tier)
         {
             return B1071_CastlePoolMath.RequiredPrisonerDays(tier, Settings);
@@ -1565,6 +1627,7 @@ namespace Byzantium1071.Campaign.Behaviors
             return B1071_CastlePoolMath.GoldCostForTier(tier, Settings);
         }
 
+        /// <summary>Legacy timer; zero after session migration. Use GetPrisonerConformity instead.</summary>
         public int GetDaysHeld(string castleStringId, string troopStringId)
         {
             if (_prisonerDaysHeld.TryGetValue(castleStringId, out var castleDict))
@@ -1575,15 +1638,24 @@ namespace Byzantium1071.Campaign.Behaviors
 
         public bool IsReadyForRecruitment(string castleStringId, CharacterObject troop)
         {
-            if (troop == null) return false;
-            int tier = troop.Tier;
-            if (tier <= Settings.CastlePrisonerAutoEnslaveTierMax) return false;
-            int required = GetRequiredDaysForTier(tier);
-            int held = GetDaysHeld(castleStringId, troop.StringId);
-            return held >= required;
+            if (troop == null || troop.IsHero || troop.Tier <= Settings.CastlePrisonerAutoEnslaveTierMax) return false;
+            var castle = Settlement.All.FirstOrDefault(s => s.StringId == castleStringId && s.IsCastle);
+            return castle?.Party?.PrisonRoster != null && ReadyPrisonerCount(castle.Party.PrisonRoster, troop) > 0;
         }
 
-        /// <summary>Recruitable prisoners (conversion complete).</summary>
+        /// <summary>Native conformity points and requirement per recruit. Read-only; no party perks.</summary>
+        public (int Points, int Required) GetPrisonerConformity(Settlement castle, CharacterObject troop)
+        {
+            if (castle == null || !castle.IsCastle || troop == null || troop.IsHero) return (0, 0);
+            var roster = castle.Party?.PrisonRoster;
+            int index = roster?.FindIndexOfTroop(troop) ?? -1;
+            if (index < 0) return (0, ConformityCost(troop));
+            var e = roster!.GetElementCopyAtIndex(index);
+            int cost = ConformityCost(troop);
+            return (Math.Max(0, Math.Min(e.Xp, B1071_CastleConformityMath.Capacity(e.Number, cost))), cost);
+        }
+
+        /// <summary>Prisoners backed by sufficient conformity. Legacy DaysHeld is zero.</summary>
         public List<(CharacterObject Troop, int Count, int DaysHeld, int GoldCost)> GetRecruitablePrisoners(Settlement castle)
         {
             var result = new List<(CharacterObject, int, int, int)>();
@@ -1592,21 +1664,21 @@ namespace Byzantium1071.Campaign.Behaviors
             TroopRoster? prisonRoster = castle.Party?.PrisonRoster;
             if (prisonRoster == null) return result;
 
-            string castleId = castle.StringId;
             foreach (var element in prisonRoster.GetTroopRoster())
             {
                 if (element.Character == null || element.Character.IsHero || element.Number <= 0) continue;
                 if (element.Character.Tier <= Settings.CastlePrisonerAutoEnslaveTierMax) continue;
-                if (!IsReadyForRecruitment(castleId, element.Character)) continue;
+                int ready = ReadyPrisonerCount(prisonRoster, element.Character);
+                if (ready == 0) continue;
 
-                result.Add((element.Character, element.Number,
-                    GetDaysHeld(castleId, element.Character.StringId),
+                result.Add((element.Character, ready,
+                    0,
                     GetGoldCostForTier(element.Character.Tier)));
             }
             return result;
         }
 
-        /// <summary>Pending prisoners (still serving waiting period).</summary>
+        /// <summary>Prisoners without enough conformity. Legacy day fields are zero.</summary>
         public List<(CharacterObject Troop, int Count, int DaysHeld, int DaysRequired)> GetPendingPrisoners(Settlement castle)
         {
             var result = new List<(CharacterObject, int, int, int)>();
@@ -1615,16 +1687,14 @@ namespace Byzantium1071.Campaign.Behaviors
             TroopRoster? prisonRoster = castle.Party?.PrisonRoster;
             if (prisonRoster == null) return result;
 
-            string castleId = castle.StringId;
             foreach (var element in prisonRoster.GetTroopRoster())
             {
                 if (element.Character == null || element.Character.IsHero || element.Number <= 0) continue;
                 if (element.Character.Tier <= Settings.CastlePrisonerAutoEnslaveTierMax) continue;
-                if (IsReadyForRecruitment(castleId, element.Character)) continue;
+                int pending = element.Number - ReadyPrisonerCount(prisonRoster, element.Character);
+                if (pending == 0) continue;
 
-                result.Add((element.Character, element.Number,
-                    GetDaysHeld(castleId, element.Character.StringId),
-                    GetRequiredDaysForTier(element.Character.Tier)));
+                result.Add((element.Character, pending, 0, 0));
             }
             return result;
         }
@@ -1702,12 +1772,9 @@ namespace Byzantium1071.Campaign.Behaviors
             foreach (var (heroId, consumed) in depositorEntries)
                 HandleRecruitmentGold(castle, Hero.MainHero, heroId, baseCost, consumed);
 
-            prisonRoster.RemoveTroop(troop, 1);
+            ConsumePrisonerConformity(prisonRoster, troop);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
             B1071_DemobilizationBehavior.Instance?.RegisterDirectRecruitment(MobileParty.MainParty, troop, 1, "castle_prisoner_player", castle);
-
-            if (inPrison <= 1 && _prisonerDaysHeld.TryGetValue(castleId, out var castleDict))
-                castleDict.Remove(troop.StringId);
 
             ShowRecruitMessage(troop, castle, effectiveCost, "Prisoner");
             return true;
@@ -1716,7 +1783,7 @@ namespace Byzantium1071.Campaign.Behaviors
         /// <summary>
         /// Recruit one elite troop from the castle's culture pool.
         /// Same-clan recruitment costs 50% of the normal price; outsiders pay full price.
-        /// Gold goes to the castle owner. Drains manpower if configured.
+        /// Same-clan gold is a recruitment expense; outsiders pay the owner. Drains manpower if configured.
         /// </summary>
         public bool TryRecruitElite(Settlement castle, CharacterObject troop)
         {
@@ -1738,13 +1805,8 @@ namespace Byzantium1071.Campaign.Behaviors
 
             if (Settings.CastleRecruitDrainsManpower && !CheckManpower(castle, troop)) return false;
 
-            // Execute — gold goes to the castle owner via direct transfer.
-            if (goldCost > 0)
-            {
-                Hero? owner = castle.Owner;
-                if (owner != null)
-                    GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, owner, goldCost, disableNotification: true);
-            }
+            // Execute — charge the household expense or pay the other clan's castle owner.
+            PayEliteRecruitment(Hero.MainHero, castle.Owner, isSameClan, goldCost);
             poolDict[troopId] = available - 1;
             if (poolDict[troopId] <= 0) poolDict.Remove(troopId);
             MobileParty.MainParty.MemberRoster.AddToCounts(troop, 1);
@@ -1755,6 +1817,16 @@ namespace Byzantium1071.Campaign.Behaviors
 
             ShowRecruitMessage(troop, castle, goldCost, "Elite");
             return true;
+        }
+
+        internal static void PayEliteRecruitment(Hero recruiter, Hero? owner, bool isSameClan, int goldCost)
+        {
+            // A household levy costs gold even when the recruiter owns the castle.
+            // A null recipient makes this an explicit expense, avoiding a self-transfer
+            // or recycling the payment into the same clan. Cross-clan income is unchanged;
+            // preserve the existing no-transfer fallback if that owner is unavailable.
+            if (goldCost > 0 && (isSameClan || owner != null))
+                GiveGoldAction.ApplyBetweenCharacters(recruiter, isSameClan ? null : owner, goldCost, disableNotification: true);
         }
 
         private bool CheckManpower(Settlement castle, CharacterObject troop)
@@ -2108,16 +2180,10 @@ namespace Byzantium1071.Campaign.Behaviors
 
         private void CleanupStalePrisonerEntries(string castleId, TroopRoster prisonRoster)
         {
-            if (!_prisonerDaysHeld.TryGetValue(castleId, out var castleDict)) return;
-
             var currentTroopIds = new HashSet<string>();
             foreach (var element in prisonRoster.GetTroopRoster())
                 if (element.Character != null && element.Number > 0)
                     currentTroopIds.Add(element.Character.StringId);
-
-            var staleKeys = castleDict.Keys.Where(k => !currentTroopIds.Contains(k)).ToList();
-            foreach (var key in staleKeys) castleDict.Remove(key);
-            if (castleDict.Count == 0) _prisonerDaysHeld.Remove(castleId);
 
             // Also clean depositor tracking for troops no longer in the roster.
             if (_depositorTracking.TryGetValue(castleId, out var depDict))
@@ -2596,6 +2662,19 @@ namespace Byzantium1071.Campaign.Behaviors
             }
             if (remaining > 0) result.Add((null, remaining));
             return result.AsReadOnly();
+        }
+
+        // Native rosters cannot distinguish depositors within one troop type. Keep
+        // fee-bearing consignments in the dungeon until the recruitment path pays
+        // them. Negative screen history represents new deposits that can be undone.
+        internal int GetDirectPrisonerWithdrawalLimit(Settlement castle, CharacterObject troop,
+            int originalCount, int netTransfer)
+        {
+            int cost = GetGoldCostForTier(troop.Tier);
+            foreach (var entry in GetPrisonerDepositors(castle.StringId, troop.StringId, originalCount))
+                if (GetEffectiveGoldCost(castle, Hero.MainHero, entry.HeroId, cost) > 0)
+                    return Math.Max(0, -netTransfer);
+            return int.MaxValue;
         }
 
         /// <summary>Current next-prisoner fee split for display, using the affordability calculation.</summary>

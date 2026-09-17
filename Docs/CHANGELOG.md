@@ -1,5 +1,25 @@
 # Campaign++ — Changelog
 
+## Unreleased
+
+### Change — Castle prisoners convert gradually through shared conformity
+
+- **Behavior:** Replace stack-wide day gates with native prisoner conformity. Each castle distributes 240 points/day plus 1.2 per governor Leadership point among unfinished troop types in a fixed rotation. Use the game's level-based requirement; no party-leader perks, building multipliers or extra waiting period.
+- **Parity:** Player recruitment, AI recruitment and garrison absorption spend the same per-prisoner points. More prisoners do not multiply the conversion budget. Recruitment prices, manpower and consignment order remain unchanged.
+- **Transfer fixes:** AI castle deposits preserve native conformity, explicitly removing transferred points from the source party. Native dungeon withdrawal is restricted for troop types with outstanding recruitment fees, preventing free party recruitment from bypassing consignment payments. New deposits can still be undone; checks do not charge gold or consume FIFO records inside the reversible screen.
+- **Save compatibility:** Store points in native roster XP and persist fractional budget/rotation separately. Once per old save, retain already-ready stacks and translate unfinished timers into a fraction toward one recruit. Old wait-day settings move to Legacy for migration only.
+- **UI/API:** Ready and pending counts can split a troop type. Pending rows show conformity toward the next recruit, with translated explanations. Existing tuple signatures remain; legacy day fields return zero and a read-only conformity query exposes current progress.
+- **Validation:** Allocation is checked against an independent point-by-point reference; game-backed tests cover repeated daily ticks, roster point spending, arrival counts, caps, fractional save/resume, one-time migration, full/partial AI deposits and patched native withdrawal validation. The initial Debug build was reported working in-game; the subsequent transfer fixes still need in-game verification.
+
+### Fix — Own-clan castle levy recruitment has a real gold cost
+
+**The existing 50% same-clan levy price is now spent instead of refunded to the castle owner.**
+
+- **Root cause:** Elite recruitment paid the castle owner even when that owner was the recruiter, so a self-transfer passed the affordability check without reducing gold. Fellow clan members' payments also stayed within the household.
+- **Fix:** Player and AI elite recruitment share `PayEliteRecruitment`, which sends same-clan expenses to a null recipient through `GiveGoldAction`. Other clans still pay the castle owner in full.
+- **Impact:** Prices, per-unit rounding, manpower, treasury buffers, prisoner consignment and save data are unchanged.
+- **Validation:** Game-backed payment tests use the installed gold-transfer action and real hero balances for owners, clan members, visiting clans, single recruits, batches and zero-cost recruits; wiring checks cover both recruitment paths.
+
 ## [1.0.4.0] — 2026-09-16
 
 ### Change — Full-screen ledger and management menu polish

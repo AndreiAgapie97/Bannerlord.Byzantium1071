@@ -73,7 +73,7 @@ dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debu
 
 ### Castle recruitment pipeline
 - **Elite culture pool** generation
-- **Prisoner conversion** (T4/T5/T6 day gates + tiered gold costs)
+- **Prisoner conversion** (shared castle conformity, governor Leadership, level-based requirements and tiered gold costs)
 - **Consignment economy** (depositor/owner split)
 - **AI castle recruitment** and **garrison prisoner absorption** with affordability checks
 

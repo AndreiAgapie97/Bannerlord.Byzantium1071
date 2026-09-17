@@ -1,4 +1,5 @@
 using Byzantium1071.Campaign.Behaviors;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
@@ -16,8 +17,8 @@ namespace Byzantium1071.Campaign.UI
     /// ViewModel for a single troop row in the castle recruitment screen.
     /// Three states:
     ///   - Elite: CanRecruit = true (if gold sufficient), culture-based pool troop.
-    ///   - Ready: CanRecruit = true, prisoner that served their waiting period.
-    ///   - Pending: CanRecruit = false, shows "X days remaining" status text.
+    ///   - Ready: CanRecruit = true, prisoner backed by sufficient conformity.
+    ///   - Pending: CanRecruit = false, shows conformity toward the next recruit.
     /// </summary>
     public sealed class B1071_CastleRecruitTroopVM : ViewModel
     {
@@ -106,7 +107,7 @@ namespace Byzantium1071.Campaign.UI
         }
 
         /// <summary>
-        /// Constructor for PRISONER troops (with day tracking).
+        /// Constructor for PRISONER troops. Legacy day arguments are retained for compatibility.
         /// </summary>
         public B1071_CastleRecruitTroopVM(
             B1071_CastleRecruitmentVM parent,
@@ -146,12 +147,10 @@ namespace Byzantium1071.Campaign.UI
             else
             {
                 _canRecruit = false;
-                int remaining = daysRequired - daysHeld;
-                _statusText = remaining > 0
-                    ? TV("b1071_cr_status_days_remaining", "{DAYS} day{PLURAL} remaining",
-                        ("DAYS", remaining.ToString()),
-                        ("PLURAL", remaining == 1 ? string.Empty : "s")).ToString()
-                    : L("b1071_cr_status_ready", "Ready");
+                var progress = B1071_CastleRecruitmentBehavior.Instance?.GetPrisonerConformity(castle, character) ?? (0, 1);
+                _statusText = TV("b1071_cr_conformity_points", "{POINTS} / {REQUIRED}",
+                    ("POINTS", (progress.Item1 % Math.Max(1, progress.Item2)).ToString("N0")),
+                    ("REQUIRED", progress.Item2.ToString("N0"))).ToString();
             }
 
             // Quote the next FIFO prisoner, not the undiscounted tier price.
@@ -165,10 +164,16 @@ namespace Byzantium1071.Campaign.UI
             var behavior = B1071_CastleRecruitmentBehavior.Instance;
             if (behavior == null) return new TextObject("{=!}" + _name);
 
-            var deposits = behavior.GetPrisonerDepositors(_castle.StringId, _character.StringId, _numericCount);
+            var progress = behavior.GetPrisonerConformity(_castle, _character);
+            // Pending and ready rows may now share a type. Pending ownership describes
+            // the whole type, so its quote still refers to the actual next FIFO recruit.
+            int displayedCount = _numericCount + (_isReady ? 0 : progress.Points / Math.Max(1, progress.Required));
+            var deposits = behavior.GetPrisonerDepositors(_castle.StringId, _character.StringId, displayedCount);
             var fee = behavior.GetPlayerPrisonerFeeBreakdown(_castle, _character);
             var lines = new List<string> { _name, _statusText };
-            lines.Add(L("b1071_cr_depositors", "Deposited by:"));
+            lines.Add(L("b1071_cr_conformity_help", "Each day the castle shares 240 conformity points plus 1.2 per point of governor Leadership among unfinished troop types. No party perks apply. Recruiting one prisoner spends that troop's requirement; higher-level troops need more points."));
+            lines.Add(_isReady ? L("b1071_cr_depositors", "Deposited by:")
+                : L("b1071_cr_all_type_depositors", "Deposited by (all prisoners of this type):"));
             // Aggregate only the display. The underlying batches and recruitment order stay intact.
             foreach (var group in deposits.GroupBy(entry => entry.HeroId))
                 lines.Add(TV("b1071_cr_depositor_count", "{NAME}: {COUNT}",
@@ -183,8 +188,9 @@ namespace Byzantium1071.Campaign.UI
                 ("OWNER", fee.OwnerPayment.ToString("N0")), ("DEPOSITOR", fee.DepositorPayment.ToString("N0"))).ToString());
             lines.Add(L("b1071_cr_fee_rules", "Shares owed to your clan are waived. Without an eligible separate depositor, the fee belongs to the castle owner."));
             lines.Add(L("b1071_cr_fifo_note", "Recruitment follows deposit order. Later recruits may cost a different amount."));
+            lines.Add(L("b1071_cr_withdraw_rule", "Troop types with recruitment fees still owed must stay in the dungeon. Recruit them through this menu. Deposits made in the open dungeon screen can still be undone."));
             if (!_isReady)
-                lines.Add(L("b1071_cr_pending_quote", "This is the current fee; recruitment is unavailable until the waiting period ends."));
+                lines.Add(L("b1071_cr_pending_quote", "This quote is for the next recruit of this type, including any already ready. Pending prisoners need more conformity; later recruits may have different fees."));
             else if (!_canRecruit)
                 lines.Add(L("b1071_cr_unaffordable_next", "Not enough gold for the next recruit."));
             return new TextObject("{=!}" + string.Join("\n", lines));

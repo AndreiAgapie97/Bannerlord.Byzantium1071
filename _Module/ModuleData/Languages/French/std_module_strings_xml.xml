@@ -515,7 +515,7 @@
     <string id="b1071_mcm_h_252273c0d1" text="Pénalité de sécurité par jour appliquée à la ville/château lié avec une dévastation moyenne du village lié de 100. Par défaut : 1,5." />
     <string id="b1071_mcm_h_25ebdb5741" text="Réserve de main-d'œuvre de base pour les villes avant la mise à l'échelle économique." />
     <string id="b1071_mcm_h_26252463e6" text="% de coût de main d’œuvre lors du recrutement à partir d’une culture correspondante. 75 = les troupes coûtent 75 % de l'effectif normal (25 % de réduction)." />
-    <string id="b1071_mcm_h_26939354d2" text="Bascule principale. Permet le traitement automatique des prisonniers du château (T1-T3 asservis au marché de la ville le plus proche, T4+ pouvant être recrutés après une période d'attente) et le menu de recrutement du château." />
+    <string id="b1071_mcm_h_26939354d2" text="Active le traitement des prisonniers des châteaux (T1-T3 asservis au marché urbain le plus proche ; les niveaux supérieurs gagnent progressivement de la conformité grâce à un budget commun, renforcé par le Commandement du gouverneur) et le menu de recrutement." />
     <string id="b1071_mcm_h_2860da12d7" text="Multiplicateur de régénération lorsque la fidélité est de 0. Par exemple, 50 = la population déloyale réduit de moitié la régénération." />
     <string id="b1071_mcm_h_29e86259f4" text="[HÉRITAGE — NON UTILISÉ] Ce paramètre n'est plus actif. Le coût de la main-d'œuvre est désormais stable par troupe (BaseManpowerCostPerTroop). Conservé pour la compatibilité de sauvegarde." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Remplace les seuils d'épuisement strict par des bandes et une hystérésis graduées faibles/en hausse/crise. Produit des transitions diplomatiques plus fluides." />
@@ -640,7 +640,7 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Tampon en dessous du seuil de bande avant de revenir à la bande inférieure. Empêche les oscillations rapides vers le haut et vers le bas." />
     <string id="b1071_mcm_h_ad9b011697" text="Lorsque cette option est activée, les seigneurs de l'IA investissent dans les villages de leur propre faction lorsqu'ils leur rendent visite (s'ils en ont les moyens). Utilise les mêmes coûts de niveau et offre les mêmes bonus. Par défaut : vrai." />
     <string id="b1071_mcm_h_adb939cb85" text="Nourriture consommée par esclave et par jour. Crée un plafond économique naturel sur la thésaurisation des esclaves. À 0,05 : 50 esclaves = -2,5 nourriture/jour, 100 esclaves = -5,0 nourriture/jour (environ la production d'un village), 200 esclaves = -10,0 nourriture/jour (sévère). Historiquement, les travailleurs réduits en esclavage recevaient des rations de subsistance comparables à celles des troupes de garnison (~ 0,04 à 0,06 unités de nourriture). Réglez sur 0 pour désactiver. Par défaut : 0,05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Jours pendant lesquels un prisonnier de niveau 6+ doit être détenu avant de pouvoir être recruté. Les troupes de niveau Champion résistent le plus longtemps. Par défaut : 35." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Migration des anciennes sauvegardes uniquement. Convertit les anciens délais des prisonniers en conformité au premier chargement. Ne règle pas le rythme actuel du recrutement." />
     <string id="b1071_mcm_h_b00260dc2c" text="Affiche un message lorsqu'un seigneur IA investit dans un village que vous possédez. Vous permet de voir le système de favoritisme fonctionnant sur votre territoire. Par défaut : vrai." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Coût en or pour un investissement important. Niveau le plus élevé avec les bonus les plus élevés et la durée la plus longue. Par défaut : 12 000." />
     <string id="b1071_mcm_h_b170010cab" text="Le printemps/été booste la régénération, l’hiver la pénalise." />
@@ -704,7 +704,7 @@
     <string id="b1071_mcm_h_e55ef8ccea" text="Puissance ajoutée à chaque ville notable grâce à un grand investissement. Par défaut : 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Actuellement inutilisé. Réservé à un éventuel futur calcul du placement des clans selon la culture. Modifier ce paramètre n'a aucun effet dans la version actuelle. Conservé pour assurer la compatibilité des configurations. Valeur par défaut : 2,0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Influence obtenue grâce à un investissement modeste (uniquement si le village se trouve dans votre royaume). Par défaut : 2,5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Jours pendant lesquels un prisonnier de niveau 4 doit être détenu avant de pouvoir être recruté. Représente le temps nécessaire pour briser la résistance et négocier la loyauté. Par défaut : 10." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Migration des anciennes sauvegardes uniquement. Convertit les anciens délais des prisonniers en conformité au premier chargement. Ne règle pas le rythme actuel du recrutement." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Les troupes de garnison paient un salaire réduit par rapport aux troupes de campagne. Historiquement exact : les soldats de la garnison recevaient souvent un salaire inférieur, complété par un abri et des rations. S'applique en plus des avantages vanille et des réductions sur les bâtiments." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Relation tissée avec chaque village notable grâce à un investissement généreux. Par défaut : 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Épuisement obtenu en attaquant le royaume après le siège." />
@@ -718,7 +718,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Pénalité de croissance du foyer par jour appliquée directement au village lorsque la dévastation est de 100. Par défaut : 2,0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Revenu quotidien par niveau de clan pour les factions mineures actuellement sous contrat de mercenaire. Inférieur aux factions non alignées car elles reçoivent une rémunération contractuelle de leur royaume employeur. Par défaut : 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Bascule principale. Permet : (1) l'acquisition d'esclaves lors d'un raid dans un village, (2) l'esclavage de prisonniers dans le menu « Asserver les prisonniers » de la ville, (3) les bonus quotidiens de la ville lorsque des marchandises d'esclaves sont présentes sur le marché civil de la ville." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Jours pendant lesquels un prisonnier de niveau 5 doit être détenu avant de pouvoir être recruté. Les troupes d'élite résistent plus longtemps. Par défaut : 21." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Migration des anciennes sauvegardes uniquement. Convertit les anciens délais des prisonniers en conformité au premier chargement. Ne règle pas le rythme actuel du recrutement." />
     <string id="b1071_mcm_h_f786952c1d" text="Puissance notable maximale autorisée via l'investissement de la ville. Le bonus de pouvoir d’investissement est ignoré s’il est déjà atteint ou supérieur à ce niveau. Par défaut : 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Coût en or pour recruter un prisonnier de niveau 5. Par défaut : 2 500." />
     <string id="b1071_mcm_h_f7e2549a92" text="Les gains d'épuisement de guerre sont amplifiés lorsque la main-d'œuvre moyenne des colonies d'un royaume est faible. Cela reflète une boucle de rétroaction : des réserves vides signifient des pertes ressenties plus fortement." />
@@ -1492,7 +1492,7 @@
     <string id="b1071_cr_fee_split" text="Or au seigneur du château : {OWNER} ; au déposant : {DEPOSITOR}." />
     <string id="b1071_cr_fee_rules" text="Les parts dues à votre clan sont annulées. Sans déposant distinct admissible, les frais reviennent au seigneur du château." />
     <string id="b1071_cr_fifo_note" text="Le recrutement suit l’ordre des dépôts. Le prix des recrues suivantes peut varier." />
-    <string id="b1071_cr_pending_quote" text="Ces frais sont actuels ; le recrutement reste indisponible avant la fin du délai." />
+    <string id="b1071_cr_pending_quote" text="Ce tarif concerne le prochain recrutement de ce type, y compris les prisonniers déjà prêts. Ceux en attente ont besoin de plus de conformité ; les tarifs suivants peuvent varier." />
     <string id="b1071_cr_unaffordable_next" text="Pas assez d’or pour la prochaine recrue." />
     <string id="b1071_cr_depositor_unrecorded" text="Déposant non enregistré" />
     <string id="b1071_cr_depositor_unknown" text="Déposant inconnu" />
@@ -1505,7 +1505,7 @@
     <string id="b1071_cr_available" text="Disponibles" />
     <string id="b1071_cr_gold_each" text="Or par soldat" />
     <string id="b1071_cr_gold_next" text="Or (prochain)" />
-    <string id="b1071_cr_days_eligible" text="Jours avant recrutement" />
+    <string id="b1071_cr_days_eligible" text="Conformité" />
     <string id="b1071_cr_action" text="Action" />
     <string id="b1071_cr_pool_empty" text="Aucune troupe disponible. Le vivier se renouvelle chaque jour grâce aux effectifs du château." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
@@ -1514,5 +1514,10 @@
     <string id="b1071_ledger_compact" text="Vue compacte" />
     <string id="b1071_ledger_close" text="Fermer" />
     <string id="b1071_ledger_fullscreen_error" text="Impossible d’ouvrir le registre en plein écran : {ERROR}" />
+  <string id="b1071_cr_conformity_points" text="{POINTS} / {REQUIRED}" />
+  <string id="b1071_cr_conformity_help" text="Le château répartit chaque jour 240 points de conformité plus 1,2 par point de Commandement du gouverneur entre les types de troupes encore en attente. Les atouts du chef de groupe ne s'appliquent pas. Chaque prisonnier recruté consomme les points requis ; les troupes de niveau supérieur en demandent davantage." />
+  <string id="b1071_cr_all_type_depositors" text="Déposés par (tous les prisonniers de ce type) :" />
+  <string id="b1071_cr_withdraw_consigned" text="Ce type de troupe comprend des prisonniers dont les frais de recrutement restent dus. Recrutez-les via le menu de recrutement du château pour régler ces frais." />
+  <string id="b1071_cr_withdraw_rule" text="Les types de troupes dont les frais de recrutement restent dus doivent rester au cachot. Recrutez-les via ce menu. Les dépôts effectués dans la fenêtre du cachot actuellement ouverte peuvent toujours être annulés." />
 </strings>
 </base>

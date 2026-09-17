@@ -515,7 +515,7 @@
     <string id="b1071_mcm_h_252273c0d1" text="Sicherheitsstrafe pro Tag, die auf die gebundene Stadt/Burg angewendet wird, bei durchschnittlicher Zerstörung des gebundenen Dorfes 100. Standard: 1,5." />
     <string id="b1071_mcm_h_25ebdb5741" text="Basis-Mannstärkepool für Städte vor der wirtschaftlichen Skalierung." />
     <string id="b1071_mcm_h_26252463e6" text="Personalkosten in % bei Rekrutierung aus der passenden Kultur. 75 = Truppen kosten 75 % der normalen Mannstärke (25 % Rabatt)." />
-    <string id="b1071_mcm_h_26939354d2" text="Master-Umschaltung. Aktiviert die automatische Verarbeitung von Burggefangenen (T1-T3 werden auf dem nächstgelegenen Stadtmarkt versklavt, T4+ werden nach einer Wartezeit rekrutierbar) und das Burgrekrutierungsmenü." />
+    <string id="b1071_mcm_h_26939354d2" text="Hauptschalter. Aktiviert die Gefangenenverarbeitung in Burgen (T1-T3 werden auf dem nächsten Stadtmarkt versklavt; höhere Stufen erhalten schrittweise Konformität aus einem gemeinsamen Burgbudget, verstärkt durch die Führung des Statthalters) und das Rekrutierungsmenü." />
     <string id="b1071_mcm_h_2860da12d7" text="Regenerationsmultiplikator, wenn die Loyalität 0 ist. Beispiel: 50 = illoyale Bevölkerung halbiert die Regeneration." />
     <string id="b1071_mcm_h_29e86259f4" text="[LEGACY – NICHT VERWENDET] Diese Einstellung ist nicht mehr aktiv. Die Personalkosten sind jetzt pauschal pro Truppe (BaseMannstärkeCostPerTroop). Aus Kompatibilitätsgründen aufbewahrt." />
     <string id="b1071_mcm_h_2ae9834ed8" text="Ersetzt harte Erschöpfungsschwellenwerte durch abgestufte Niedrig-/Anstiegs-/Krisenbänder und Hysterese. Ermöglicht reibungslosere diplomatische Übergänge." />
@@ -640,7 +640,7 @@
     <string id="b1071_mcm_h_ad2cde5ab4" text="Puffer unterhalb des Bandschwellenwerts, bevor er auf das untere Band zurückfällt. Verhindert schnelle Auf-/Ab-Schwingungen." />
     <string id="b1071_mcm_h_ad9b011697" text="Wenn diese Option aktiviert ist, investieren KI-Lords in die Dörfer ihrer eigenen Fraktion, wenn sie diese besuchen (sofern sie es sich leisten können). Verwendet die gleichen Stufenkosten und bietet die gleichen Boni. Standard: true." />
     <string id="b1071_mcm_h_adb939cb85" text="Nahrungsaufnahme pro Sklave und Tag. Schafft eine natürliche wirtschaftliche Obergrenze für das Horten von Sklaven. Bei 0,05: 50 Sklaven = -2,5 Nahrung/Tag, 100 Sklaven = -5,0 Nahrung/Tag (ungefähr die Produktion eines Dorfes), 200 Sklaven = -10,0 Nahrung/Tag (schwerwiegend). Historisch gesehen erhielten versklavte Arbeiter Subsistenzrationen, die denen von Garnisonstruppen vergleichbar waren (~0,04–0,06 Lebensmitteleinheiten). Zum Deaktivieren auf 0 setzen. Standard: 0,05." />
-    <string id="b1071_mcm_h_adbcaeef5e" text="Tage muss ein Gefangener der Stufe 6+ festgehalten werden, bevor er rekrutiert werden kann. Truppen der Champion-Stufe widerstehen am längsten. Standard: 35." />
+    <string id="b1071_mcm_h_adbcaeef5e" text="Nur für die Migration alter Spielstände. Wandelt alte Gefangenen-Wartezeiten beim ersten Laden in Konformität um. Beeinflusst die aktuelle Rekrutierungsrate nicht." />
     <string id="b1071_mcm_h_b00260dc2c" text="Zeigt eine Nachricht an, wenn ein KI-Lord in ein Dorf investiert, das Ihnen gehört. Hier können Sie sehen, wie das Patronagesystem in Ihrem Gebiet funktioniert. Standard: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Goldkosten für eine großartige Investition. Höchste Stufe mit den stärksten Boni und der längsten Laufzeit. Standard: 12000." />
     <string id="b1071_mcm_h_b170010cab" text="Frühling/Sommer fördert die Regeneration, der Winter beeinträchtigt sie." />
@@ -704,7 +704,7 @@
     <string id="b1071_mcm_h_e55ef8ccea" text="Jeder bemerkenswerten Stadt wird durch eine Großinvestition mehr Macht verliehen. Standard: 20." />
     <string id="b1071_mcm_h_e5ffddeee0" text="Derzeit ungenutzt. Für eine mögliche künftige kulturbasierte Bewertung bei der Clan-Zuweisung reserviert. Änderungen an dieser Einstellung haben in der aktuellen Version keine Auswirkung. Aus Kompatibilitätsgründen beibehalten. Standard: 2,0." />
     <string id="b1071_mcm_h_e66eeb63a3" text="Einfluss, der durch eine bescheidene Investition erzielt wird (nur wenn das Dorf in Ihrem Königreich liegt). Standard: 2.5." />
-    <string id="b1071_mcm_h_e6b821a5cd" text="Tage, die ein Häftling der Stufe 4 festgehalten werden muss, bevor er rekrutiert werden kann. Stellt die Zeit dar, die benötigt wird, um Widerstand zu brechen und Loyalität auszuhandeln. Standard: 10." />
+    <string id="b1071_mcm_h_e6b821a5cd" text="Nur für die Migration alter Spielstände. Wandelt alte Gefangenen-Wartezeiten beim ersten Laden in Konformität um. Beeinflusst die aktuelle Rekrutierungsrate nicht." />
     <string id="b1071_mcm_h_e85b2eeed7" text="Garnisonsparteien zahlen im Vergleich zu Feldtruppen einen geringeren Lohn. Historisch korrekt: Garnisonssoldaten erhielten oft einen geringeren Lohn, ergänzt durch Unterkunft und Verpflegung. Gilt zusätzlich zu Vanilla-Vergünstigungen und Baurabatten." />
     <string id="b1071_mcm_h_ec969a4c7a" text="Durch eine großzügige Investition können Beziehungen zu jedem Dorf aufgebaut werden. Standard: 6." />
     <string id="b1071_mcm_h_ed62e6a96f" text="Erschöpfung durch den Angriff auf das Königreich nach der Belagerung." />
@@ -718,7 +718,7 @@
     <string id="b1071_mcm_h_f30fdd300a" text="Der Malus für das Herdwachstum pro Tag wird bei Zerstörung 100 direkt auf das Dorf angewendet. Standard: 2,0." />
     <string id="b1071_mcm_h_f3f8c898fa" text="Tägliches Einkommen pro Clanstufe für kleinere Fraktionen, die derzeit unter Söldnerverträgen stehen. Niedriger als blockfreie Fraktionen, weil sie Vertragslöhne von ihrem Arbeitgeberkönigreich erhalten. Standard: 250." />
     <string id="b1071_mcm_h_f6c1c42513" text="Master-Umschaltung. Ermöglicht: (1) Erwerb von Sklaven durch Dorfraub, (2) Versklavung von Gefangenen im Menü „Gefangene versklaven“ der Stadt, (3) tägliche Stadtboni, solange Sklavenwaren auf dem zivilen Markt der Stadt erhältlich sind." />
-    <string id="b1071_mcm_h_f6d04613d7" text="Tage muss ein Gefangener der Stufe 5 festgehalten werden, bevor er rekrutiert werden kann. Elitetruppen widerstehen länger. Standard: 21." />
+    <string id="b1071_mcm_h_f6d04613d7" text="Nur für die Migration alter Spielstände. Wandelt alte Gefangenen-Wartezeiten beim ersten Laden in Konformität um. Beeinflusst die aktuelle Rekrutierungsrate nicht." />
     <string id="b1071_mcm_h_f786952c1d" text="Maximal zulässige Nennleistung durch städtische Investitionen. Der Investitionskraftbonus wird übersprungen, wenn er bereits auf oder über diesem Niveau liegt. Standard: 200." />
     <string id="b1071_mcm_h_f7c27f4ab3" text="Die Goldkosten für die Rekrutierung eines Gefangenen der Stufe 5. Standard: 2500." />
     <string id="b1071_mcm_h_f7e2549a92" text="Die Kriegserschöpfungsgewinne werden verstärkt, wenn die durchschnittliche Siedlungskraft eines Königreichs erschöpft ist. Spiegelt die Rückkopplungsschleife wider: Leere Pools bedeuten, dass Verluste stärker spürbar sind." />
@@ -1492,7 +1492,7 @@
     <string id="b1071_cr_fee_split" text="Gold an den Burgherrn: {OWNER}; an den Einlieferer: {DEPOSITOR}." />
     <string id="b1071_cr_fee_rules" text="Anteile für euren Clan entfallen. Ohne berechtigten separaten Einlieferer steht die Gebühr dem Burgherrn zu." />
     <string id="b1071_cr_fifo_note" text="Rekrutiert wird in Einlieferungsreihenfolge. Spätere Rekruten können anders viel kosten." />
-    <string id="b1071_cr_pending_quote" text="Dies ist die aktuelle Gebühr; rekrutiert werden kann erst nach Ablauf der Wartezeit." />
+    <string id="b1071_cr_pending_quote" text="Dieser Preis gilt für den nächsten Rekruten dieses Typs, einschließlich bereits bereiter Gefangener. Wartende Gefangene benötigen mehr Konformität; spätere Rekruten können andere Gebühren haben." />
     <string id="b1071_cr_unaffordable_next" text="Nicht genug Gold für den nächsten Rekruten." />
     <string id="b1071_cr_depositor_unrecorded" text="Einlieferer nicht erfasst" />
     <string id="b1071_cr_depositor_unknown" text="Unbekannter Einlieferer" />
@@ -1505,7 +1505,7 @@
     <string id="b1071_cr_available" text="Verfügbar" />
     <string id="b1071_cr_gold_each" text="Gold je Soldat" />
     <string id="b1071_cr_gold_next" text="Gold (nächster)" />
-    <string id="b1071_cr_days_eligible" text="Tage bis rekrutierbar" />
+    <string id="b1071_cr_days_eligible" text="Konformität" />
     <string id="b1071_cr_action" text="Aktion" />
     <string id="b1071_cr_pool_empty" text="Keine Truppen verfügbar. Der Vorrat wird täglich aus der Mannstärke der Burg aufgefüllt." />
     <string id="b1071_cr_section_count" text="{SECTION} — {COUNT}" />
@@ -1514,5 +1514,10 @@
     <string id="b1071_ledger_compact" text="Kompakt" />
     <string id="b1071_ledger_close" text="Schließen" />
     <string id="b1071_ledger_fullscreen_error" text="Das Verzeichnis konnte nicht im Vollbild geöffnet werden: {ERROR}" />
+  <string id="b1071_cr_conformity_points" text="{POINTS} / {REQUIRED}" />
+  <string id="b1071_cr_conformity_help" text="Die Burg verteilt täglich 240 Konformitätspunkte plus 1,2 pro Führungspunkt des Statthalters auf noch nicht vollständig bereite Truppentypen. Gruppen-Vorteile gelten nicht. Jeder rekrutierte Gefangene verbraucht seinen Punktebedarf; höherstufige Truppen benötigen mehr Punkte." />
+  <string id="b1071_cr_all_type_depositors" text="Eingeliefert von (alle Gefangenen dieses Typs):" />
+  <string id="b1071_cr_withdraw_consigned" text="Dieser Truppentyp enthält Gefangene mit noch offenen Rekrutierungskosten. Rekrutiert sie über die Burgrekrutierung und begleicht die Kosten." />
+  <string id="b1071_cr_withdraw_rule" text="Truppentypen mit noch offenen Rekrutierungskosten müssen im Kerker bleiben. Rekrutiert sie über dieses Menü. Einlieferungen im aktuell geöffneten Kerkerfenster können weiterhin rückgängig gemacht werden." />
 </strings>
 </base>

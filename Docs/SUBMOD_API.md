@@ -55,7 +55,11 @@ if (behavior != null && behavior.GetManpowerPool(mySettlement, out int cur, out 
 **Access:** `B1071_CastleRecruitmentBehavior.Instance`
 
 **Public read-only methods:**
-- `GetRecruitablePrisoners(Settlement castle)` → `List<(CharacterObject troop, int count, int days_held, int gold_cost)>` — list all ready-to-recruit prisoners at a castle
+- `GetRecruitablePrisoners(Settlement castle)` → `List<(CharacterObject troop, int count, int days_held, int gold_cost)>` — return only the count backed by native conformity; legacy `days_held` is zero after migration
+- `GetPendingPrisoners(Settlement castle)` → `List<(CharacterObject Troop, int Count, int DaysHeld, int DaysRequired)>` — only the remaining unready count; both legacy day fields are zero
+- `GetPrisonerConformity(Settlement castle, CharacterObject troop)` → `(int Points, int Required)` — capped native conformity total and the active model requirement per recruit. To display progress toward the next prisoner, use `Points % Required` when `Required > 0`
+- `IsReadyForRecruitment(string castleStringId, CharacterObject troop)` → `bool` — at least one prisoner has enough conformity
+- `GetDaysHeld(...)` and `GetRequiredDaysForTier(...)` retain their signatures for compatibility; the former is zero after session migration and the latter is an old-save migration setting, not a current ETA
 - `GetElitePoolCount(Settlement castle, CharacterObject troop)` → `int` — retrieve elite pool stock for one troop at a castle
 - `IsLowTierEnslavementAvailable(Settlement castle)` → `bool` — whether low-tier prisoners held at this castle can be processed at all: the Slave Economy is enabled **and** the castle's faction owns a town to sell to. Deliberately does not test the current slave price, which is a temporary condition. Returns `false` for a null settlement. *(v1.0.2.4)*
 
@@ -63,7 +67,7 @@ if (behavior != null && behavior.GetManpowerPool(mySettlement, out int cur, out 
 
 **Off-limits:**
 - Prison roster mutation (use Bannerlord's prisoner actions)
-- `_elitePool`, `_prisonerDaysHeld`, `_depositorTracking` dicts (internal state)
+- `_elitePool`, `_prisonerDaysHeld`, `_conformityRemainders`, `_conformityCursors`, `_depositorTracking` dicts (internal state)
 - `AutoEnslaveLowTierPrisoners`, `DrainStrandedLowTierPrisoners`, `RegenerateElitePool` (called from daily tick)
 
 **Example:**
@@ -318,6 +322,7 @@ public members — it re-weights native AI scores and is not a supported extensi
 
 | Property | Retired in | Read this instead |
 |---|---|---|
+| `CastleRecruitT4Days` / `CastleRecruitT5Days` / `CastleRecruitT6Days` | Unreleased | Migration-only exception: used once to interpret old timers. Query `GetPrisonerConformity` for current progress. |
 | `TiersPerExtraCost` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
 | `CostMultiplierPercent` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
 | `EnableTierSurvivability` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |

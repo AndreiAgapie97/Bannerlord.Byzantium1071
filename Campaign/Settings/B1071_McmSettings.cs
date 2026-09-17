@@ -1604,23 +1604,23 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Castle Recruitment ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("{=b1071_mcm_t_0a9b801539}Enable castle recruitment", Order = 0, HintText = "{=b1071_mcm_h_26939354d2}Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, T4+ become recruitable after a waiting period) and the castle recruitment menu.")]
+        [SettingPropertyBool("{=b1071_mcm_t_0a9b801539}Enable castle recruitment", Order = 0, HintText = "{=b1071_mcm_h_26939354d2}Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, higher-tier prisoners gradually earn conformity from a shared castle budget, boosted by governor Leadership) and the castle recruitment menu.")]
         public bool EnableCastleRecruitment { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("{=b1071_mcm_t_3a8a2610f7}Auto-enslave tier max", 1, 6, "0", Order = 1, HintText = "{=b1071_mcm_h_5c9008c96e}Unified enslavement tier cap (player + AI parity). Prisoners at or below this tier can be enslaved: (1) player 'Enslave prisoners' at towns, (2) AI auto-enslave at towns, (3) castle auto-enslave to nearest market. Prisoners above this tier must be taken to castles for recruitment conversion or ransomed. Default: 3 (T1-T3 enslaved, T4+ recruitable).")]
         public int CastlePrisonerAutoEnslaveTierMax { get; set; } = 3;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 2, HintText = "{=b1071_mcm_h_e6b821a5cd}Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 90, HintText = "{=b1071_mcm_h_e6b821a5cd}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT4Days { get; set; } = 10;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_f6d04613d7}Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 21.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 91, HintText = "{=b1071_mcm_h_f6d04613d7}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT5Days { get; set; } = 21;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 4, HintText = "{=b1071_mcm_h_adbcaeef5e}Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 35.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 92, HintText = "{=b1071_mcm_h_adbcaeef5e}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT6Days { get; set; } = 35;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
