@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
 **Version:** 1.0.4.0
-**Target Game:** Mount & Blade II: Bannerlord v1.5.2 beta (installed target; Warsails/NavalDLC v1.3.2 verified)<br>
+**Target Game:** Mount & Blade II: Bannerlord v1.5.3 beta (installed target; Warsails/NavalDLC v1.3.3 verified)<br>
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -42,6 +42,7 @@
 30. [Village Investment (Patronage) — Gold-sink village development](#30-village-investment)
 31. [Town Investment (Civic Patronage) — Gold-sink town development](#31-town-investment)
 32. [Mod Compatibility System — Runtime load-order scan and report](#32-mod-compatibility-system)
+33. [AI Recovery Routing — Steering under-strength lords to Campaign++ recruits](#33-ai-recovery-routing)
 34. [Settlement Revenue Tuning — Tapering tax, town tariffs, and village income](#34-settlement-revenue-tuning)
 
 ---
@@ -1357,7 +1358,7 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
-**Game version:** targeted at the installed Bannerlord **v1.5.2 beta** (and Warsails/NavalDLC **v1.3.2**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
+**Game version:** targeted at the installed Bannerlord **v1.5.3 beta** (and Warsails/NavalDLC **v1.3.3**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
 
 **Required dependencies** (must load before this mod):
 - `Bannerlord.Harmony` ≥ v2.4.2
@@ -1390,9 +1391,9 @@ Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five c
 
 **No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
-### Warsails (NavalDLC) Interaction Map (v1.3.2)
+### Warsails (NavalDLC) Interaction Map (v1.3.3)
 
-Warsails registers roughly sixty campaign models of its own, ten of which sit on systems Campaign++ patches:
+Warsails registers roughly seventy campaign models of its own, ten of which sit on systems Campaign++ patches:
 
 | Model | Warsails replacement | Campaign++ still applies? |
 |---|---|---|
@@ -1411,7 +1412,7 @@ These derive from the abstract base rather than the vanilla `Default*` type, whi
 
 Models Warsails does **not** replace (still plain vanilla `Default*`): `SettlementFoodModel`, `SettlementLoyaltyModel`, `VolunteerModel`, `TradeItemPriceFactorModel`.
 
-`CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload in Warsails v1.2.8: `(Ship, Ship, PartyBase, PartyBase, SiegeEngineType, float, MapEvent, ref int)`. Campaign++ does not patch it, and its parameter types stay distinct enough that the explicit `argumentTypes` array still selects the troop overload unambiguously. Note that the troop overload itself **did** change in game v1.5.0 — see the tier armor note below.
+`CombatSimulationModel` gained a naval ship-vs-ship `SimulateHit` overload in Warsails v1.2.8: `(Ship, Ship, PartyBase, PartyBase, SiegeEngineType, float, MapEvent, out int)`. Campaign++ does not patch it, and its parameter types stay distinct enough that the explicit `argumentTypes` array still selects the troop overload unambiguously. Note that the troop overload itself **did** change in game v1.5.0 — see the tier armor note below.
 
 **Known caveat — militia perk bonus:** `B1071_ManpowerMilitiaModel` derives from `DefaultSettlementMilitiaModel` and calls `base.CalculateMilitiaChange()`. Because official modules load first, Campaign++'s model is registered last and therefore sits outermost in the chain, so that `base.` call goes straight to the vanilla model and skips `NavalDLCSettlementMilitiaModel`'s port-town Boatswain perk bonus. Gameplay-only, no crash; would be resolved by converting the model to a Harmony postfix or resolving `BaseModel` at runtime.
 
@@ -1445,6 +1446,8 @@ The checklist per update:
 **v1.5.0 / Warsails v1.3.0 result:** exactly one breaking change. `DefaultCombatSimulationModel.SimulateHit` gained a `TaleWorlds.Core.BattleEnvironment` parameter in position 7 (8 → 9 params), which stopped `B1071_TierArmorSimulationPatch`'s explicit `argumentTypes` array from resolving. `PatchAssemblySafely` caught and logged it per-class, so there was no crash and no save damage — the feature simply stopped working. Fixed in v1.0.2.5. Every other patch target and reflection path resolved with unchanged signatures.
 
 **v1.5.2 / Warsails v1.3.2 result:** no breaking changes. All 34 `[HarmonyPatch]` targets, 10 reflection paths and 8 prefab XPath anchors resolved with unchanged signatures and unchanged parameter names — including the nine-type `SimulateHit` array pinned in v1.0.2.5. The ten Warsails decorators were re-read from decompiled source, and every one still forwards through `((MBGameModel<T>)this).BaseModel`, so no patched `Default*` implementation is bypassed; the four undecorated models remain undecorated. `SettlementNameplateVM`, `TooltipRefresherCollection`, `PropertyBasedTooltipVM`, `CampaignUIHelper` and `SettlementNameplateItemWidget` decompile byte-identical to their v1.5.0/v1.5.1 form, so the v1.0.3.3 settlement tooltips are unaffected. No game enum is persisted or compared by ordinal, so a reordered enum cannot reach save state. Build is clean with no `BHA0001`; the fast suite and the game-backed suite both pass. **Steps 5 and 6 were not re-run** — both need a running campaign. No code changes were required. Note that v1.5.2 is a Steam `beta`-branch build, so the "beta" in the target-game string is still accurate.
+
+**v1.5.3 / Warsails v1.3.3 result:** no breaking changes. All 39 `[HarmonyPatch]` targets and 11 reflection paths resolved with unchanged signatures and unchanged parameter names. The target count grew from 34 because the sweep manifest had drifted behind the code: the three settlement-revenue taper targets (`CalculateTownIncomeFromTariffs`, `CalculateVillageIncome`, `CalculateTownTax`), `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange` and `DefaultMilitaryPowerModel.GetDefaultTroopPower` were in the source but not the manifest, and all five were verified present and name-identical in the v1.5.3 binaries before being added. `RevenueSmoothenFraction()` still returns `5f`, and the tariff and village originals still debit `TradeTaxAccumulated` from the untampered pool inside the method body, so the revenue taper's payout-only scaling remains sound. The ten Warsails decorators that override a patched method all still forward through `base.BaseModel`; the four undecorated models remain undecorated (105 first-party `*Model` subclasses seen); the ship-vs-ship `SimulateHit` overload still leaves the pinned nine-type troop array unambiguous. The `town` / `castle` / `village` / `castle_dungeon` menu IDs were confirmed statically in decompiled `AddGameMenu` calls — the first update where step 5's ID check did not need a running campaign. Build against the v1.5.3 assemblies reports no `BHA0001`; the fast suite (573 tests) and the game-backed suite (201 tests) both pass. **Step 6 was not re-run** — visual, needs the game on screen. No code changes were required. v1.5.3 is still a Steam `beta`-branch install (`BetaKey: beta` in the app manifest), so the "beta" in the target-game string is still accurate.
 
 **Lesson for future updates:** a patch pinned by an explicit `argumentTypes` array fails *silently* when the game inserts a parameter, and `VerifyCriticalPatches` will not catch it because that list only covers private methods resolved by string name. Build with the BUTR Harmony Analyzer enabled and treat any `BHA0001` warning as a release blocker — it caught this one at compile time.
 
@@ -1589,7 +1592,7 @@ The manumission fires after decay in `OnDailyTickSettlement`, so decay reduces s
 
 ### Slave food consumption (new in 0.1.6.0)
 
-Each slave in the town market consumes food daily. This is visible in the food tooltip as **"Slave Upkeep -X.XX"**. At default settings (0.05 food/slave/day):
+Each slave in a town market, settlement stash, or food-consuming mobile party consumes food daily. This is visible in the food tooltip as **"Slave Upkeep -X.XX"**. At default settings (0.05 food/slave/day):
 
 | Slaves | Food drain |
 |--------|-----------|
@@ -1598,6 +1601,16 @@ Each slave in the town market consumes food daily. This is visible in the food t
 | 200 | -10.0/day (severe — multiple villages' output) |
 
 Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units/day). This creates a natural economic cap on slave hoarding: at some point, the food cost of maintaining a large slave population outweighs the prosperity and construction benefits, forcing strategic balance.
+
+### Carried slaves, stashes and shared captive capacity
+
+- **Food:** `B1071_SlaveFoodPatch` sums market and stash counts; the existing `GetSlaveCountForTown` remains market-only so construction and prosperity cannot benefit from stashes. Town/castle stash upkeep is paid by settlement food stocks. `B1071_SlavePartyFoodPatch` adds upkeep to the base party ration calculation, using `DoesPartyConsumeFood` to preserve vanilla exemptions. Native food perks and War Sails modifiers then apply normally, without flattening or reinterpreting their additive factors. Native daily consumption, fractional rations, army food sharing and starvation still handle the actual party supplies. Settlement upkeep is added to the resolved settlement breakdown without reapplying its existing factors. No new settings or saved accumulators are needed.
+- **Capacity:** While Slave Economy is enabled and initialized, including at zero slaves, `B1071_SlavePrisonerCapacityPatch` queries the current size-limit model at the `PartyBase.PrisonerSizeLimit` getter, subtracts carried slave goods and clamps the remaining ordinary-prisoner limit to zero. Vanilla's prisoner-roster cache can miss troop-count changes as well as inventory transfers; bypassing it keeps the displayed reservation consistent with escapes and speed. Removing the last slave therefore cannot restore a stale native limit. The explainer shows occupied slots. The underlying size-limit model remains unchanged and supplies total shared capacity. Converting one prisoner into one slave therefore preserves total occupied capacity; all other acquisition paths are covered by live roster queries.
+- **Screen capacity:** `B1071_SlavePartyScreenCapacityPatch` reads the current ordinary-prisoner limit from the player party when the screen uses that party's live member roster. This keeps native labels, transfer allowances and mixed-captive warnings current after troop transfers and undo. Detached previews and other parties keep their supplied limits. The public getter is a trivial auto-property with no game-dependent static initialization; binding is tested before a campaign exists.
+- **Capacity warning:** `B1071_SlavePrisonerWarningPatch` augments the native `PartyVM.IsMainPrisonersLimitWarningEnabled` setter when slaves alone exceed total capacity. Otherwise the clamped zero ordinary-prisoner limit compared with zero ordinary prisoners cannot warn. It applies only to the player's right-hand party when prisoners are relevant, preserves native warnings, and uses the setter to notify Gauntlet of the corrected value. The recursive setter call stops immediately once the flag is true. The native setter has no game-dependent static initialization (verified against 1.5.3); tests bind the patch before a campaign exists and verify the notification value and warning clearing.
+- **Land speed:** `B1071_SlaveEscortSpeedPatch` adds only the difference between the native escort curves for prisoners plus slaves and prisoners alone: `(10 + men) / (10 + men + captives)`, raised to `0.33`, minus one. Counts include attached parties, matching the native escort aggregation. Caravans have no native ordinary-prisoner speed contribution, so their extra escort term uses slave counts only. Existing cargo weight stays intact. The native overcapacity contribution is read from the same capacity getter used by vanilla, then replaced with a single combined captive/capacity ratio using the current model. As in vanilla, the overcapacity ratio is per leading party, while the regular escort term includes attached parties. Native speed floors remain; sea speed is untouched.
+- **Overcapacity escapes:** `B1071_SlaveSharedEscapePatch` replaces private `PrisonerReleaseCampaignBehavior.HourlyPartyTick` only while the enabled system has carried slaves. The number of hourly attempts is combined captives minus total capacity. Each successful chance samples slaves and regular prisoners uniformly by headcount, falling back to heroes only when neither remains; the player hero is excluded. Base chance is native 10%, modified by Athletics Stamina and the leader's Valor trait. Map events, sieges, garrisons and militia retain their native exclusions. Slave goods are removed through the item roster; regular prisoners through the troop roster; heroes through `EndCaptivityAction`. No slave-only stock is immune, and no ordinary-prisoner-only escape penalty is introduced. Partial failures never run a second native escape pass.
+- **Compatibility:** Private target and native formula verified against Bannerlord 1.5.3; registered in launch verification and game-backed patch-binding tests. The installed War Sails decorators forward party food and land speed through their base models. Slave goods, prices, save formats, market-only decay/manumission and FIFO castle consignment are unchanged. Disabling Slave Economy restores native capacity, food and speed behavior.
 
 ### Slave attrition (new in 0.1.6.0)
 

@@ -1,4 +1,4 @@
-﻿﻿using MCM.Abstractions.Attributes;
+using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions;
 using MCM.Abstractions.Base.Global;
@@ -1216,7 +1216,7 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveConstructionBonusCap { get; set; } = 150f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_ea75746b26}Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "{=b1071_mcm_h_adb939cb85}Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_ea75746b26}Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "{=b1071_mcm_h_adb939cb85}Food consumed per slave per day in town markets, settlement stashes and food-consuming parties. Stashes draw from settlement food stocks and grant no labor bonuses. Vanilla party food exemptions remain. At 0.05, 100 slaves consume 5 food/day. Set to 0 to disable food upkeep. Default: 0.05.")]
         public float SlaveFoodConsumptionPerUnit { get; set; } = 0.05f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Security.Cryptography;
+using System.Text;
 using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Patches;
 using HarmonyLib;
@@ -13,6 +15,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Byzantium1071.GameTests
 {
@@ -20,6 +23,7 @@ namespace Byzantium1071.GameTests
     public sealed class CastleConformityTests : IDisposable
     {
         private readonly Harmony _harmony = new Harmony("B1071.Tests.CastleConformity");
+        private readonly ITestOutputHelper _output;
         private static bool TierPrefix(ref int __result) { __result = 4; return false; }
         private static bool CostPrefix(ref int __result) { __result = 1000; return false; }
         private static bool LevelPrefix(ref int __result) { __result = 21; return false; }
@@ -30,8 +34,9 @@ namespace Byzantium1071.GameTests
         private static bool PartyPrefix(ref PartyBase __result) { __result = _queryParty!; return false; }
         private static bool RosterPrefix(ref TroopRoster __result) { __result = _queryRoster!; return false; }
 
-        public CastleConformityTests()
+        public CastleConformityTests(ITestOutputHelper output)
         {
+            _output = output;
             // The game roster and all mod logic run normally. Character campaign/model
             // lookups alone are supplied because no campaign is running in this process.
             _harmony.Patch(AccessTools.PropertyGetter(typeof(CharacterObject), "Tier"),
@@ -218,6 +223,140 @@ namespace Byzantium1071.GameTests
             var type = typeof(B1071_CastleRecruitmentBehavior);
             Assert.Contains(PatchProcessor.GetOriginalInstructions(AccessTools.Method(type, method)),
                 i => Equals(i.operand, AccessTools.Method(type, "ConsumePrisonerConformity")));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(17)]
+        [InlineData(53)]
+        public void ScriptedArrivalsRecruitmentAndSaveResumePreserveRosterState(int checkpointInterval)
+        {
+            int days = int.Parse(Environment.GetEnvironmentVariable("B1071_SCENARIO_DAYS") ?? "365");
+            int seed = int.Parse(Environment.GetEnvironmentVariable("B1071_SCENARIO_SEED") ?? "42");
+            Assert.InRange(days, 1, 10000);
+            Assert.InRange(seed, 0, int.MaxValue);
+            _output.WriteLine($"Managed castle scenario: days={days}, seed={seed}, checkpoint interval={checkpointInterval}.");
+            var random = new Random(seed);
+            var original = new B1071_CastleRecruitmentBehavior();
+            var resumed = new B1071_CastleRecruitmentBehavior();
+            var live = TroopRoster.CreateDummyTroopRoster();
+            var restored = TroopRoster.CreateDummyTroopRoster();
+            var troops = new[] { Troop("scenario_a"), Troop("scenario_b"), Troop("scenario_c") };
+            int arrivals = 0, recruited = 0, withdrawn = 0, expectedRemainder = 0;
+            long granted = 0, spent = 0, withdrawnPoints = 0;
+            var trace = new StringBuilder();
+            for (int day = 1; day <= days; day++)
+            {
+                var arrivingTroop = troops[random.Next(troops.Length)];
+                int added = random.Next(5);
+                // Periodic emptying exercises removal/re-addition of native roster entries.
+                if (day % 31 == 0)
+                {
+                    foreach (var troop in troops)
+                    {
+                        int count = live.GetTroopCount(troop);
+                        if (count == 0) continue;
+                        int xp = Points(live, troop);
+                        live.AddToCounts(troop, -count);
+                        restored.AddToCounts(troop, -count);
+                        withdrawn += count;
+                        withdrawnPoints += xp;
+                    }
+                }
+                if (added > 0)
+                {
+                    int readyBefore = B1071_CastleRecruitmentBehavior.ReadyPrisonerCount(live, arrivingTroop);
+                    live.AddToCounts(arrivingTroop, added);
+                    restored.AddToCounts(arrivingTroop, added);
+                    arrivals += added;
+                    Assert.True(readyBefore == B1071_CastleRecruitmentBehavior.ReadyPrisonerCount(live, arrivingTroop),
+                        $"Day {day}: arriving prisoners gained eligibility without points.");
+                }
+                int leadership = random.Next(301);
+                long previousPoints = troops.Sum(t => live.GetTroopCount(t) == 0 ? 0L : Points(live, t));
+                long need = live.TotalManCount * 1000L - previousPoints;
+                int fifths = 1200 + 6 * leadership + expectedRemainder;
+                int budget = fifths / 5;
+                expectedRemainder = need > budget ? fifths % 5 : 0;
+                original.AdvancePrisonerConformity("scenario_castle", live, leadership);
+                resumed.AdvancePrisonerConformity("scenario_castle", restored, leadership);
+                long afterPoints = troops.Sum(t => live.GetTroopCount(t) == 0 ? 0L : Points(live, t));
+                long gain = afterPoints - previousPoints;
+                Assert.True(gain == Math.Min(need, budget),
+                    $"Day {day}: native rosters gained {gain} points, expected {Math.Min(need, budget)}.");
+                granted += gain;
+                foreach (var troop in troops)
+                {
+                    int ready = B1071_CastleRecruitmentBehavior.ReadyPrisonerCount(live, troop);
+                    int take = random.Next(ready + 1);
+                    for (int n = 0; n < take; n++)
+                    {
+                        B1071_CastleRecruitmentBehavior.ConsumePrisonerConformity(live, troop);
+                        B1071_CastleRecruitmentBehavior.ConsumePrisonerConformity(restored, troop);
+                        recruited++;
+                        spent += 1000; // The fixture supplies a fixed native requirement.
+                    }
+                    int count = live.GetTroopCount(troop);
+                    int points = count == 0 ? 0 : Points(live, troop);
+                    Assert.True(count == restored.GetTroopCount(troop) &&
+                        points == (count == 0 ? 0 : Points(restored, troop)), $"Day {day}: resumed roster diverged for {troop.StringId}.");
+                    Assert.True(points >= 0 && points <= count * 1000L, $"Day {day}: invalid native XP bounds.");
+                    trace.Append($"{day}:{troop.StringId}:{count}:{points};");
+                }
+                Assert.True(live.TotalManCount + recruited + withdrawn == arrivals, $"Day {day}: prisoner accounting diverged.");
+                Assert.True(troops.Sum(t => live.GetTroopCount(t) == 0 ? 0L : Points(live, t)) + spent + withdrawnPoints == granted,
+                    $"Day {day}: conformity accounting diverged.");
+                if (day % checkpointInterval == 0)
+                {
+                    var saved = new Store(false);
+                    resumed.SyncData(saved);
+                    resumed = new B1071_CastleRecruitmentBehavior();
+                    resumed.SyncData(new Store(true, saved.Values));
+                    var copy = TroopRoster.CreateDummyTroopRoster();
+                    for (int i = 0; i < restored.Count; i++) copy.Add(restored.GetElementCopyAtIndex(i));
+                    restored = copy;
+                }
+            }
+            using (var sha = SHA256.Create())
+                _output.WriteLine("PASS: daily native roster accounting and checkpoint equivalence. Trace SHA256: " +
+                    BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(trace.ToString()))).Replace("-", ""));
+            _output.WriteLine($"Remaining prisoners: {live.TotalManCount}; recruited: {recruited}; withdrawn: {withdrawn}. Native campaign serialization is not running.");
+        }
+
+        [Fact]
+        public void InterleavedCastlesKeepIndependentBudgetsAcrossSaveResume()
+        {
+            var shared = new B1071_CastleRecruitmentBehavior();
+            var separate = new[] { new B1071_CastleRecruitmentBehavior(), new B1071_CastleRecruitmentBehavior() };
+            var live = new[] { TroopRoster.CreateDummyTroopRoster(), TroopRoster.CreateDummyTroopRoster() };
+            var isolated = new[] { TroopRoster.CreateDummyTroopRoster(), TroopRoster.CreateDummyTroopRoster() };
+            var troops = new[] { Troop("north"), Troop("south") };
+            int[] leadership = { 1, 79 };
+            for (int castle = 0; castle < 2; castle++)
+                foreach (var troop in troops)
+                {
+                    live[castle].AddToCounts(troop, 1000);
+                    isolated[castle].AddToCounts(troop, 1000);
+                }
+            for (int day = 1; day <= 45; day++)
+            {
+                for (int castle = 0; castle < 2; castle++)
+                {
+                    string id = "castle_" + castle;
+                    shared.AdvancePrisonerConformity(id, live[castle], leadership[castle]);
+                    separate[castle].AdvancePrisonerConformity(id, isolated[castle], leadership[castle]);
+                    foreach (var troop in troops)
+                        Assert.Equal(Points(isolated[castle], troop), Points(live[castle], troop));
+                    Assert.Equal((1200 + 6 * leadership[castle]) * day / 5, troops.Sum(t => Points(live[castle], t)));
+                }
+                if (day == 17)
+                {
+                    var saved = new Store(false);
+                    shared.SyncData(saved);
+                    shared = new B1071_CastleRecruitmentBehavior();
+                    shared.SyncData(new Store(true, saved.Values));
+                }
+            }
         }
 
         private sealed class Store : IDataStore

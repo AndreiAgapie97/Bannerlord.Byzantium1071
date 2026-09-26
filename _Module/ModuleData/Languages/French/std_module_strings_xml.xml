@@ -373,6 +373,10 @@
     <string id="b1071_slave_enter_ok" text="Asservir les prisonniers ({COUNT} T1–{MAXTIER} éligibles{SKIPPED})" />
     <string id="b1071_slave_enter_tip" text="Seuls les prisonniers de niveau 1 à {MAXTIER} peuvent être réduits en esclavage. Emmenez T{NEXTTIER}+ dans un château pour une conversion de recrutement ou une rançon à la taverne." />
     <string id="b1071_slave_food" text="Entretien des esclaves" />
+    <string id="b1071_slave_capacity" text="Capacité occupée par les esclaves" />
+    <string id="b1071_slave_escort" text="Escorte des esclaves" />
+    <string id="b1071_slave_shared_capacity" text="Ajustement de capacité partagée des captifs" />
+    <string id="b1071_slave_escape" text="{COUNT} esclaves se sont échappés car votre groupe dépassait sa capacité partagée de prisonniers." />
     <string id="b1071_slave_labor" text="Travail d'esclave" />
     <string id="b1071_slave_manumit_msg" text="{SETTLEMENT} : {FREED} esclave{PLURAL} affranchi (plafond {CAP}). +{FREED} MP dans la réserve de la ville." />
     <string id="b1071_slave_raid_msg" text="+{COUNT} esclave{PLURAL} ({HEARTHS} foyers / {DIV} = {COUNT})." />
@@ -639,7 +643,7 @@
     <string id="b1071_mcm_h_aba304d75f" text="Influence obtenue grâce à un investissement généreux dans une ville (uniquement si la ville se trouve dans votre royaume). Par défaut : 25." />
     <string id="b1071_mcm_h_ad2cde5ab4" text="Tampon en dessous du seuil de bande avant de revenir à la bande inférieure. Empêche les oscillations rapides vers le haut et vers le bas." />
     <string id="b1071_mcm_h_ad9b011697" text="Lorsque cette option est activée, les seigneurs de l'IA investissent dans les villages de leur propre faction lorsqu'ils leur rendent visite (s'ils en ont les moyens). Utilise les mêmes coûts de niveau et offre les mêmes bonus. Par défaut : vrai." />
-    <string id="b1071_mcm_h_adb939cb85" text="Nourriture consommée par esclave et par jour. Crée un plafond économique naturel sur la thésaurisation des esclaves. À 0,05 : 50 esclaves = -2,5 nourriture/jour, 100 esclaves = -5,0 nourriture/jour (environ la production d'un village), 200 esclaves = -10,0 nourriture/jour (sévère). Historiquement, les travailleurs réduits en esclavage recevaient des rations de subsistance comparables à celles des troupes de garnison (~ 0,04 à 0,06 unités de nourriture). Réglez sur 0 pour désactiver. Par défaut : 0,05." />
+    <string id="b1071_mcm_h_adb939cb85" text="Nourriture consommée par esclave et par jour dans les marchés, les réserves des colonies et les groupes qui consomment de la nourriture. Les réserves puisent dans les stocks de la colonie sans bonus de travail. Les exemptions du jeu de base restent inchangées. À 0.05, 100 esclaves consomment 5 nourritures par jour. Mettre à 0 pour désactiver cet entretien. Défaut : 0.05." />
     <string id="b1071_mcm_h_adbcaeef5e" text="Migration des anciennes sauvegardes uniquement. Convertit les anciens délais des prisonniers en conformité au premier chargement. Ne règle pas le rythme actuel du recrutement." />
     <string id="b1071_mcm_h_b00260dc2c" text="Affiche un message lorsqu'un seigneur IA investit dans un village que vous possédez. Vous permet de voir le système de favoritisme fonctionnant sur votre territoire. Par défaut : vrai." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Coût en or pour un investissement important. Niveau le plus élevé avec les bonus les plus élevés et la durée la plus longue. Par défaut : 12 000." />

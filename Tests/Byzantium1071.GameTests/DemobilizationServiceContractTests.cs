@@ -215,6 +215,78 @@ namespace Byzantium1071.GameTests
             Assert.Single((IEnumerable)reserved);
         }
 
+        [Theory]
+        [InlineData(0, 1, 2, 3)]
+        [InlineData(3, 4, 5, 6)]
+        [InlineData(30, 21, 21, 21)]
+        public void IndividualHistorySurvivesTransferPromotionAndConfirmedDeath(
+            int promotionCredit, int firstJoinDay, int secondJoinDay, int thirdJoinDay)
+        {
+            var behavior = new B1071_DemobilizationBehavior();
+            IDictionary sourceParty = CreateCohortDictionary();
+            IList source = CreateCohortList();
+            for (int soldier = 1; soldier <= 8; soldier++)
+            {
+                object entry = CreateCohort(soldier, 1, "origin_" + soldier, "employer");
+                SetField(entry, "HomeId", "home_" + soldier);
+                SetField(entry, "ExtensionCount", soldier % 3);
+                source.Add(entry);
+            }
+            sourceParty.Add("troop", source);
+            Assert.Equal(5, (int)InvokeInstance(behavior, "BankMissingCohorts",
+                sourceParty, "troop", 5, 20, "employer", "source_party")!);
+            CheckHistory(source, new[] { 6, 7, 8 }, new[] { 6, 7, 8 });
+            IDictionary reserve = (IDictionary)GetField(behavior, "_transferReserve")!;
+            IList banked = (IList)((IDictionary)reserve["employer"]!)["troop"]!;
+            CheckHistory(banked, new[] { 1, 2, 3, 4, 5 }, new[] { 1, 2, 3, 4, 5 });
+            foreach (object entry in banked)
+            {
+                Assert.Equal("source_party", GetField(entry, "SourcePartyId"));
+                Assert.Equal(20, GetField(entry, "StoredDay"));
+            }
+
+            IDictionary destinationParty = CreateCohortDictionary();
+            IList restored = CreateCohortList();
+            destinationParty.Add("troop", restored);
+            Assert.Equal(0, (int)InvokeInstance(behavior, "RestoreTransferReserveEntriesForEmployer",
+                "other_employer", "troop", restored, 5, 21)!);
+            Assert.Empty((IEnumerable)restored);
+            Assert.Equal(2, (int)InvokeInstance(behavior, "RestoreTransferReserveEntriesForEmployer",
+                "employer", "troop", restored, 2, 21)!);
+            CheckHistory(restored, new[] { 1, 2 }, new[] { 1, 2 });
+            CheckHistory(banked, new[] { 3, 4, 5 }, new[] { 3, 4, 5 });
+            Assert.Equal(3, (int)InvokeInstance(behavior, "RestoreTransferReserveEntriesForEmployer",
+                "employer", "troop", restored, 10, 21)!);
+            Assert.Empty((IEnumerable)reserve);
+            CheckHistory(restored, new[] { 1, 2, 3, 4, 5 }, new[] { 1, 2, 3, 4, 5 });
+
+            Assert.Equal(3, (int)InvokeStatic("MoveOldestCohorts", destinationParty,
+                "troop", "upgraded", 3, promotionCredit, 21)!);
+            IList upgraded = (IList)destinationParty["upgraded"]!;
+            CheckHistory(upgraded, new[] { 1, 2, 3 }, new[] { firstJoinDay, secondJoinDay, thirdJoinDay });
+            CheckHistory(restored, new[] { 4, 5 }, new[] { 4, 5 });
+            InvokeStatic("RemoveOldestCohorts", destinationParty, "upgraded", 1);
+            CheckHistory(upgraded, new[] { 2, 3 }, new[] { secondJoinDay, thirdJoinDay });
+            CheckHistory(source, new[] { 6, 7, 8 }, new[] { 6, 7, 8 });
+            Assert.Empty((IEnumerable)reserve); // Confirmed deaths must not become restorable transfers.
+            Assert.Equal(7, source.Count + restored.Count + upgraded.Count);
+        }
+
+        private static void CheckHistory(IList entries, int[] soldiers, int[] joinDays)
+        {
+            Assert.Equal(soldiers.Length, entries.Count);
+            for (int i = 0; i < soldiers.Length; i++)
+            {
+                object entry = entries[i]!;
+                Assert.Equal(1, GetField(entry, "Count"));
+                Assert.Equal(joinDays[i], GetField(entry, "JoinDay"));
+                Assert.Equal(soldiers[i] % 3, GetField(entry, "ExtensionCount"));
+                Assert.Equal("home_" + soldiers[i], GetField(entry, "HomeId"));
+                Assert.Equal("origin_" + soldiers[i], GetField(entry, "OriginClanId"));
+                Assert.Equal("employer", GetField(entry, "EmployerClanId"));
+            }
+        }
+
         private static object CreatePendingRecall()
         {
             object pending = Activator.CreateInstance(GetNested("PendingRecallEntry"), nonPublic: true)!;

@@ -373,6 +373,10 @@
     <string id="b1071_slave_enter_ok" text="⛓ Enslave prisoners  ({COUNT} T1–{MAXTIER} eligible{SKIPPED})" />
     <string id="b1071_slave_enter_tip" text="Only Tier 1–{MAXTIER} prisoners can be enslaved. Take T{NEXTTIER}+ to a castle for recruitment conversion or ransom at the tavern." />
     <string id="b1071_slave_food" text="Slave Upkeep" />
+    <string id="b1071_slave_capacity" text="Capacity occupied by slaves" />
+    <string id="b1071_slave_escort" text="Slave escort" />
+    <string id="b1071_slave_shared_capacity" text="Shared captive capacity adjustment" />
+    <string id="b1071_slave_escape" text="{COUNT} slaves escaped because your party exceeded its shared prisoner capacity." />
     <string id="b1071_slave_labor" text="Slave Labor" />
     <string id="b1071_slave_manumit_msg" text="⚔ {SETTLEMENT}: {FREED} slave{PLURAL} manumitted (cap {CAP}). +{FREED} MP to town pool." />
     <string id="b1071_slave_raid_msg" text="⛓ +{COUNT} Slave{PLURAL} ({HEARTHS} hearths / {DIV} = {COUNT})." />
@@ -639,7 +643,7 @@
     <string id="b1071_mcm_h_aba304d75f" text="Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25." />
     <string id="b1071_mcm_h_ad2cde5ab4" text="Buffer below band threshold before dropping back to lower band. Prevents rapid up/down oscillation." />
     <string id="b1071_mcm_h_ad9b011697" text="When enabled, AI lords invest in their own faction's villages when visiting them (if they can afford it). Uses the same tier costs and provides the same bonuses. Default: true." />
-    <string id="b1071_mcm_h_adb939cb85" text="Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05." />
+    <string id="b1071_mcm_h_adb939cb85" text="Food consumed per slave per day in town markets, settlement stashes and food-consuming parties. Stashes draw from settlement food stocks and grant no labor bonuses. Vanilla party food exemptions remain. At 0.05, 100 slaves consume 5 food/day. Set to 0 to disable food upkeep. Default: 0.05." />
     <string id="b1071_mcm_h_adbcaeef5e" text="Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate." />
     <string id="b1071_mcm_h_b00260dc2c" text="Shows a message when an AI lord invests in a village you own. Lets you see the patronage system working in your territory. Default: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Gold cost for a Grand investment. Highest tier with the strongest bonuses and longest duration. Default: 12000." />

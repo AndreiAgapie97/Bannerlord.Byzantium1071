@@ -373,6 +373,10 @@
     <string id="b1071_slave_enter_ok" text="奴役俘虏  （{COUNT} 名 1–{MAXTIER} 阶符合条件{SKIPPED}）" />
     <string id="b1071_slave_enter_tip" text="只有 1–{MAXTIER} 阶的俘虏可以被奴役。{NEXTTIER} 阶及以上的俘虏请送往城堡转化为兵员，或在酒馆赎回。" />
     <string id="b1071_slave_food" text="奴隶给养" />
+    <string id="b1071_slave_capacity" text="奴隶占用的俘虏容量" />
+    <string id="b1071_slave_escort" text="押送奴隶" />
+    <string id="b1071_slave_shared_capacity" text="共享俘虏容量调整" />
+    <string id="b1071_slave_escape" text="由于部队超出共享俘虏容量，{COUNT}名奴隶逃跑了。" />
     <string id="b1071_slave_labor" text="奴隶劳力" />
     <string id="b1071_slave_manumit_msg" text="{SETTLEMENT}：释放了 {FREED} 名奴隶（上限 {CAP}）。城镇兵池 +{FREED}。" />
     <string id="b1071_slave_raid_msg" text="+{COUNT} 名奴隶（{HEARTHS} 炉灶 / {DIV} = {COUNT}）。" />
@@ -639,7 +643,7 @@
     <string id="b1071_mcm_h_aba304d75f" text="慷慨城镇投资获得的影响力（仅当该城镇属于你的王国时）。默认：25。" />
     <string id="b1071_mcm_h_ad2cde5ab4" text="回落至较低区间前，需低于区间阈值的缓冲量。避免在两档之间频繁来回跳动。" />
     <string id="b1071_mcm_h_ad9b011697" text="启用后，AI 领主造访本势力的村庄时会进行投资（前提是负担得起）。档次费用与加成效果均与玩家相同。默认：开启。" />
-    <string id="b1071_mcm_h_adb939cb85" text="每名奴隶每日消耗的粮食。为囤积奴隶设下一道自然的经济上限。取 0.05 时：50 名奴隶 = 每日 -2.5 粮食，100 名 = 每日 -5.0 粮食（大致相当于一个村庄的产出），200 名 = 每日 -10.0 粮食（相当严重）。历史上，奴隶劳工领取的口粮与守军士兵相当（约 0.04–0.06 单位）。设为 0 则关闭。默认：0.05。" />
+    <string id="b1071_mcm_h_adb939cb85" text="城镇市场、定居点仓库及需要食物的部队中，每名奴隶每天消耗的食物。仓库中的奴隶消耗定居点粮食，但不提供劳力加成。保留原版部队食物豁免规则。设为0.05时，100名奴隶每天消耗5份食物。设为0可关闭食物消耗。默认：0.05。" />
     <string id="b1071_mcm_h_adbcaeef5e" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
     <string id="b1071_mcm_h_b00260dc2c" text="当 AI 领主投资你名下的村庄时显示消息。让你看到庇护系统在你的领地上运作。默认：开启。" />
     <string id="b1071_mcm_h_b13ff83c9c" text="大额投资的金钱花费。档次最高，加成最强、持续最久。默认：12000。" />

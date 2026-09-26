@@ -144,6 +144,9 @@ namespace Byzantium1071
             var targets = new (string TypeName, string MethodName, Type[]? ParamTypes, string Description)[]
             {
                 // -- Private methods (fragile: target by string name) --
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.PrisonerReleaseCampaignBehavior",
+                 "HourlyPartyTick", null,
+                 "Shared Slave Prisoner Capacity"),
                 ("TaleWorlds.CampaignSystem.CampaignBehaviors.RecruitmentCampaignBehavior",
                  "ApplyInternal", null,
                  "AI Recruitment Manpower Gate"),

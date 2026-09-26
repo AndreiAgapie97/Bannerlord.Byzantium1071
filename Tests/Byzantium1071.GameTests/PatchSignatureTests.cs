@@ -35,6 +35,9 @@ namespace Byzantium1071.GameTests
         public static IEnumerable<object[]> CriticalTargets()
         {
             yield return Target(
+                "TaleWorlds.CampaignSystem.CampaignBehaviors.PrisonerReleaseCampaignBehavior",
+                "HourlyPartyTick");
+            yield return Target(
                 "TaleWorlds.CampaignSystem.CampaignBehaviors.RecruitmentCampaignBehavior",
                 "ApplyInternal");
             yield return Target(
@@ -353,6 +356,9 @@ namespace Byzantium1071.GameTests
             Type? declaringType = primary.declaringType ?? fallback.declaringType;
             string? methodName = primary.methodName ?? fallback.methodName;
             Type[]? argumentTypes = primary.argumentTypes ?? fallback.argumentTypes;
+            MethodType? methodType = primary.methodType ?? fallback.methodType;
+            if (methodType == MethodType.Getter) methodName = "get_" + methodName;
+            if (methodType == MethodType.Setter) methodName = "set_" + methodName;
 
             if (declaringType != null && !string.IsNullOrEmpty(methodName))
             {
@@ -370,6 +376,7 @@ namespace Byzantium1071.GameTests
                 merged.declaringType ??= info.declaringType;
                 merged.methodName ??= info.methodName;
                 merged.argumentTypes ??= info.argumentTypes;
+                merged.methodType ??= info.methodType;
             }
 
             return merged;

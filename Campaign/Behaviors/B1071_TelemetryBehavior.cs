@@ -118,6 +118,7 @@ namespace Byzantium1071.Campaign.Behaviors
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, OnHourlyTickParty);
             CampaignEvents.SettlementEntered.AddNonSerializedListener(this, OnSettlementEntered);
             CampaignEvents.OnSettlementLeftEvent.AddNonSerializedListener(this, OnSettlementLeft);
+            CampaignEvents.DailyTickSettlementEvent.AddNonSerializedListener(this, OnDailyTickSettlementForensics);
         }
 
         /// <summary>
@@ -288,6 +289,30 @@ namespace Byzantium1071.Campaign.Behaviors
                 B1071_TelemetryCounters.BeginDay(CurrentDay());
             }
             catch (Exception ex) { NoteFailure("DailyTick", ex); }
+        }
+
+        /// <summary>
+        /// Hang forensics: one line per settlement per day, written while the settlement's daily
+        /// work runs, so a future stall in the settlement pass leaves the last written name
+        /// pointing at the fief being processed instead of leaving the investigator to count log
+        /// lines. Written straight to the session file -- deliberately NOT through the verbose
+        /// gate, and NOT counted against the handler fuse, because it has to work in exactly the
+        /// session where nothing else gets logged. Bounded: roughly one line per owned settlement
+        /// per day.
+        /// </summary>
+        private void OnDailyTickSettlementForensics(Settlement settlement)
+        {
+            try
+            {
+                if (settlement == null) return;
+                B1071_SessionFileLog.WriteTagged(
+                    "Session",
+                    $"DailyTickSettlement: {settlement.Name} day={(int)CampaignTime.Now.ToDays}");
+            }
+            catch
+            {
+                // Forensics must never disable telemetry or throw into the daily tick.
+            }
         }
 
         /// <summary>

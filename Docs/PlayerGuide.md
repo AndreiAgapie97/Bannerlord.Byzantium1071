@@ -2,7 +2,7 @@
 
 *Version 1.0.4.0 — Everything you need to know, step by step.*
 
-**Game version:** Bannerlord **v1.5.2 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.2** is supported but not required — Campaign++ works with or without it.
+**Game version:** Bannerlord **v1.5.3 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.3** is supported but not required — Campaign++ works with or without it.
 
 **Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
 
@@ -525,6 +525,14 @@ When AI lords enter a town, their T1–3 prisoners are automatically enslaved in
 2. **Open the Trade screen** at any town (the normal trade button).
 3. **Sell the Slave goods** to the town market at market price.
 
+### Carrying and Storing Slaves
+
+Slaves remain trade goods, but carrying them now uses **one prisoner slot per slave**. The party's displayed prisoner limit shows the space left for ordinary prisoners; its tooltip lists the slots occupied by slaves. In the normal party screen, the limit and warning update when you transfer troops or undo a transfer. The prisoner-capacity warning also appears when slaves alone exceed capacity, even if you have no ordinary prisoners. Converting prisoners does not free shared capacity. Buying, looting or transferring slaves can exceed that capacity, just like taking too many prisoners: hourly escape checks then affect both slave goods and ordinary prisoners. Slave escapes produce a message for your party.
+
+Carried slaves also slow land travel through their escort burden, in addition to their existing cargo weight. Attached parties contribute to the army's escort burden.
+
+The existing **Food consumption per slave per day** setting now covers food-consuming parties and town/castle stashes as well as town markets. At the default **0.05**, 100 slaves consume **5 food/day**. Carried slaves eat party supplies, with normal party food perks and sea-travel modifiers applied to their rations. Stashed slaves draw from settlement food stocks and provide no construction or prosperity bonus. Vanilla food exemptions for caravans, bandits, villagers, garrisons, militia and patrols remain unchanged. Setting food upkeep to zero does not remove escort or capacity costs.
+
 ### Town Bonuses from Slaves
 
 While Slave goods remain in a town's market, the town gets **daily bonuses**:
@@ -533,7 +541,7 @@ While Slave goods remain in a town's market, the town gets **daily bonuses**:
 |-------|----------------------|
 | Prosperity | +0.01 |
 | Construction speed | +0.75 progress |
-| Food drain | -0.075 food |
+| Food drain | -0.05 food |
 
 Slaves also **decay at 1%/day** — they don’t last forever. A town with 100 slaves loses ~1 slave per day.
 

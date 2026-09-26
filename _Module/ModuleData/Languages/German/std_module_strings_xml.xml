@@ -373,6 +373,10 @@
     <string id="b1071_slave_enter_ok" text="Gefangene versklaven ({COUNT} T1–{MAXTIER} berechtigt{SKIPPED})" />
     <string id="b1071_slave_enter_tip" text="Nur Gefangene der Stufe 1–{MAXTIER} können versklavt werden. Bringen Sie T{NEXTTIER}+ zu einer Burg, um dort Rekruten anzuwerben oder in der Taverne ein Lösegeld zu erpressen." />
     <string id="b1071_slave_food" text="Sklavenunterhalt" />
+    <string id="b1071_slave_capacity" text="Von Sklaven belegte Kapazität" />
+    <string id="b1071_slave_escort" text="Sklaveneskorte" />
+    <string id="b1071_slave_shared_capacity" text="Anpassung der gemeinsamen Gefangenenkapazität" />
+    <string id="b1071_slave_escape" text="{COUNT} Sklaven sind entkommen, weil Eure Gruppe die gemeinsame Gefangenenkapazität überschritten hat." />
     <string id="b1071_slave_labor" text="Sklavenarbeit" />
     <string id="b1071_slave_manumit_msg" text="{SETTLEMENT}: {FREED} Sklave{PLURAL} freigelassen (Kappe {CAP}). +{FREED} MP zum Stadtpool." />
     <string id="b1071_slave_raid_msg" text="+{COUNT} Sklave{PLURAL} ({HEARTHS} Herde / {DIV} = {COUNT})." />
@@ -639,7 +643,7 @@
     <string id="b1071_mcm_h_aba304d75f" text="Einfluss, den Sie durch eine großzügige Stadtinvestition erhalten (nur wenn die Stadt in Ihrem Königreich liegt). Standard: 25." />
     <string id="b1071_mcm_h_ad2cde5ab4" text="Puffer unterhalb des Bandschwellenwerts, bevor er auf das untere Band zurückfällt. Verhindert schnelle Auf-/Ab-Schwingungen." />
     <string id="b1071_mcm_h_ad9b011697" text="Wenn diese Option aktiviert ist, investieren KI-Lords in die Dörfer ihrer eigenen Fraktion, wenn sie diese besuchen (sofern sie es sich leisten können). Verwendet die gleichen Stufenkosten und bietet die gleichen Boni. Standard: true." />
-    <string id="b1071_mcm_h_adb939cb85" text="Nahrungsaufnahme pro Sklave und Tag. Schafft eine natürliche wirtschaftliche Obergrenze für das Horten von Sklaven. Bei 0,05: 50 Sklaven = -2,5 Nahrung/Tag, 100 Sklaven = -5,0 Nahrung/Tag (ungefähr die Produktion eines Dorfes), 200 Sklaven = -10,0 Nahrung/Tag (schwerwiegend). Historisch gesehen erhielten versklavte Arbeiter Subsistenzrationen, die denen von Garnisonstruppen vergleichbar waren (~0,04–0,06 Lebensmitteleinheiten). Zum Deaktivieren auf 0 setzen. Standard: 0,05." />
+    <string id="b1071_mcm_h_adb939cb85" text="Täglicher Nahrungsverbrauch pro Sklave auf Stadtmärkten, in Siedlungslagern und in Gruppen mit Nahrungsverbrauch. Lagerbestände verbrauchen Siedlungsnahrung ohne Arbeitsbonus. Die Nahrungsausnahmen des Grundspiels bleiben bestehen. Bei 0.05 verbrauchen 100 Sklaven täglich 5 Nahrung. 0 deaktiviert den Nahrungsverbrauch. Standard: 0.05." />
     <string id="b1071_mcm_h_adbcaeef5e" text="Nur für die Migration alter Spielstände. Wandelt alte Gefangenen-Wartezeiten beim ersten Laden in Konformität um. Beeinflusst die aktuelle Rekrutierungsrate nicht." />
     <string id="b1071_mcm_h_b00260dc2c" text="Zeigt eine Nachricht an, wenn ein KI-Lord in ein Dorf investiert, das Ihnen gehört. Hier können Sie sehen, wie das Patronagesystem in Ihrem Gebiet funktioniert. Standard: true." />
     <string id="b1071_mcm_h_b13ff83c9c" text="Goldkosten für eine großartige Investition. Höchste Stufe mit den stärksten Boni und der längsten Laufzeit. Standard: 12000." />

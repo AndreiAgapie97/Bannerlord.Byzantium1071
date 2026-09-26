@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Roster;
@@ -526,6 +527,57 @@ namespace Byzantium1071.Campaign.Behaviors
             => (_slaveItem != null && town?.Settlement != null)
                ? town.Settlement.ItemRoster.GetItemNumber(_slaveItem)
                : 0;
+
+        internal int GetSlaveCount(ItemRoster? roster)
+            => _slaveItem != null && roster != null ? roster.GetItemNumber(_slaveItem) : 0;
+
+        internal void RemoveCarriedSlave(MobileParty party)
+        {
+            if (_slaveItem != null && GetSlaveCount(party.ItemRoster) > 0)
+                party.ItemRoster.AddToCounts(_slaveItem, -1);
+        }
+
+        internal void ApplySharedCaptiveEscapes(MobileParty party, int capacity, float chance)
+        {
+            int attempts = Math.Max(0, party.PrisonRoster.TotalManCount + GetSlaveCount(party.ItemRoster) - capacity);
+            int escapedSlaves = 0;
+            for (int i = 0; i < attempts; i++)
+            {
+                if (Random.RangeFloat(0f, 1f) >= chance) continue;
+                int slaves = GetSlaveCount(party.ItemRoster);
+                int regulars = party.PrisonRoster.TotalRegulars;
+                // Preserve vanilla's preference for ordinary captives before heroes.
+                // Slaves join that same pool rather than shielding themselves behind it.
+                int candidates = slaves + (regulars > 0 || slaves > 0 ? regulars : party.PrisonRoster.TotalManCount);
+                if (candidates == 0) break;
+                int selected = Random.Next(candidates);
+                if (selected < slaves)
+                {
+                    RemoveCarriedSlave(party);
+                    escapedSlaves++;
+                    continue;
+                }
+                selected -= slaves;
+                bool regularOnly = regulars > 0 || slaves > 0;
+                foreach (var entry in party.PrisonRoster.GetTroopRoster())
+                {
+                    if (regularOnly && entry.Character.IsHero) continue;
+                    if (selected >= entry.Number) { selected -= entry.Number; continue; }
+                    if (entry.Character.IsHero && entry.Character.IsPlayerCharacter) break;
+                    if (entry.Character.IsHero)
+                        EndCaptivityAction.ApplyByEscape(entry.Character.HeroObject);
+                    else
+                        party.PrisonRoster.AddToCounts(entry.Character, -1);
+                    break;
+                }
+            }
+            if (escapedSlaves > 0 && party.IsMainParty)
+            {
+                var message = new TextObject("{=b1071_slave_escape}{COUNT} slaves escaped because your party exceeded its shared prisoner capacity.");
+                message.SetTextVariable("COUNT", escapedSlaves);
+                InformationManager.DisplayMessage(new InformationMessage(message.ToString()));
+            }
+        }
 
         // ── Game menus ────────────────────────────────────────────────────────────
 

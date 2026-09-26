@@ -9,8 +9,8 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 ## At a glance
 
 - **Current version:** 1.0.4.0
-- **Target game:** Bannerlord v1.5.2 beta (installed target)
-- **Warsails (NavalDLC):** v1.3.2 verified compatible (optional — not required)
+- **Target game:** Bannerlord v1.5.3 beta (installed target)
+- **Warsails (NavalDLC):** v1.3.3 verified compatible (optional — not required)
 - **Module ID:** `Byzantium1071`
 
 ---
@@ -49,11 +49,21 @@ Campaign++ exposes a **stable public API** for third-party submods. If you're bu
 
 The repository includes a fast .NET 8 suite for pure campaign math, module data, localization, and settings contracts, plus .NET Framework game-backed migration tests when Bannerlord is installed at the configured game path. These tests exercise shared code only; they do not alter module behavior or game data.
 
-Run them separately from the repository root:
+Run all checks headlessly, or select a feature (Python 3.10+):
 
 ```powershell
-dotnet test Tests\Byzantium1071.Tests\Byzantium1071.Tests.csproj -c Debug --no-restore
-dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debug --no-restore
+python Tests/modtest.py list
+python Tests/modtest.py run all
+python Tests/modtest.py run castle-prisoners --days 1000 --seed 42
+```
+
+Use `--layer rules` without a game installation. Reports are written under `TestResults/headless/`; the runner builds without deploying or opening the game. See [Headless testing](Docs/HEADLESS_TESTING.md) for scenario limits, prerequisites and the feature coverage map.
+
+Alternatively, run the suites separately from the repository root:
+
+```powershell
+dotnet test Tests\Byzantium1071.Tests\Byzantium1071.Tests.csproj -c Debug --no-restore -p:ModuleId=
+dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debug --no-restore -p:ModuleId=
 ```
 
 ---

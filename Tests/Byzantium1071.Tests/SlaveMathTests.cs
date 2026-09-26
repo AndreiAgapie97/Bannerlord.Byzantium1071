@@ -82,6 +82,28 @@ namespace Byzantium1071.Tests
             return decay.WholeLoss <= slaveCount;
         }
 
+        [Theory]
+        [InlineData(100, 57, 0)]
+        [InlineData(100, 57, 43)]
+        [InlineData(100, 0, 100)]
+        [InlineData(0, 0, 100)]
+        public void EscortDeltaReproducesNativeCurveForCombinedCaptives(int men, int prisoners, int slaves)
+        {
+            float native = B1071_SlaveMath.EscortFactor(men, prisoners);
+            float extra = B1071_SlaveMath.EscortFactor(men, prisoners + slaves) - native;
+            double expected = 1d / Math.Pow((10d + men + prisoners + slaves) / (10d + men), 0.33d) - 1d;
+            Assert.InRange(Math.Abs(native + extra - expected), 0d, 0.000001d);
+            Assert.True(extra <= 0f);
+        }
+
+        [Theory]
+        [InlineData(0, 100, 0f)]
+        [InlineData(100, 100, 0f)]
+        [InlineData(200, 100, -0.5f)]
+        [InlineData(100, 0, -1f)]
+        public void CapacityBurdenUsesOneCombinedRatio(int captives, int capacity, float expected) =>
+            Assert.Equal(expected, B1071_SlaveMath.OverCapacityFactor(captives, capacity));
+
         private static FakeSettings SlaveSettings() =>
             new()
             {
