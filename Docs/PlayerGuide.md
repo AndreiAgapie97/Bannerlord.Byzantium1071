@@ -531,6 +531,8 @@ Slaves remain trade goods, but carrying them now uses **one prisoner slot per sl
 
 Carried slaves also slow land travel through their escort burden, in addition to their existing cargo weight. Attached parties contribute to the army's escort burden.
 
+Caravans, including your own, are not affected: they carry slaves as ordinary trade goods, without using prisoner slots, slowing down or losing slaves to escapes.
+
 The existing **Food consumption per slave per day** setting now covers food-consuming parties and town/castle stashes as well as town markets. At the default **0.05**, 100 slaves consume **5 food/day**. Carried slaves eat party supplies, with normal party food perks and sea-travel modifiers applied to their rations. Stashed slaves draw from settlement food stocks and provide no construction or prosperity bonus. Vanilla food exemptions for caravans, bandits, villagers, garrisons, militia and patrols remain unchanged. Setting food upkeep to zero does not remove escort or capacity costs.
 
 ### Town Bonuses from Slaves

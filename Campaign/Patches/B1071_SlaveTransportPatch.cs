@@ -18,7 +18,11 @@ namespace Byzantium1071.Campaign.Patches
         internal static IB1071Settings Settings =>
             B1071_TestHooks.Settings ?? B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
+        // Caravans carry slaves as ordinary trade cargo: no capacity reservation, escort
+        // burden or shared escapes. Native likewise exempts caravans from every prisoner
+        // speed term, and their small prisoner limit would otherwise strip trade stock.
         internal static int Count(PartyBase? party) => Settings.EnableSlaveEconomy && party?.IsMobile == true
+            && !party.MobileParty.IsCaravan
             ? B1071_SlaveEconomyBehavior.Instance?.GetSlaveCount(party.ItemRoster) ?? 0 : 0;
 
         internal static readonly TextObject CapacityLabel = new TextObject("{=b1071_slave_capacity}Capacity occupied by slaves");
@@ -151,13 +155,14 @@ namespace Byzantium1071.Campaign.Patches
                 }
                 if (slaves == 0) return;
                 // Cargo weight remains native. Add only the incremental human escort burden.
-                int nativeEscorted = mobileParty.IsCaravan ? 0 : prisoners;
-                __result.AddFactor(B1071_SlaveMath.EscortFactor(men, nativeEscorted + slaves)
-                    - B1071_SlaveMath.EscortFactor(men, nativeEscorted), EscortLabel);
+                // Caravans never get here: Count exempts them, so the native prisoner terms
+                // below always apply to the leading party.
+                __result.AddFactor(B1071_SlaveMath.EscortFactor(men, prisoners + slaves)
+                    - B1071_SlaveMath.EscortFactor(men, prisoners), EscortLabel);
                 if (ownSlaves == 0) return;
                 int ownPrisoners = mobileParty.PrisonRoster.TotalManCount;
                 int totalCapacity = B1071_SlaveTransport.TotalCapacity(mobileParty.Party);
-                float nativeOver = mobileParty.IsCaravan ? 0f : B1071_SlaveMath.OverCapacityFactor(
+                float nativeOver = B1071_SlaveMath.OverCapacityFactor(
                     ownPrisoners, mobileParty.Party.PrisonerSizeLimit);
                 // Native already uses the reduced regular-prisoner limit. Replace that
                 // contribution with one combined ratio, including slave-only inventories.

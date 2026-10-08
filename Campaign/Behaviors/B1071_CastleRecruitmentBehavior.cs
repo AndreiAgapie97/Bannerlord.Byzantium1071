@@ -1639,8 +1639,9 @@ namespace Byzantium1071.Campaign.Behaviors
         public bool IsReadyForRecruitment(string castleStringId, CharacterObject troop)
         {
             if (troop == null || troop.IsHero || troop.Tier <= Settings.CastlePrisonerAutoEnslaveTierMax) return false;
-            var castle = Settlement.All.FirstOrDefault(s => s.StringId == castleStringId && s.IsCastle);
-            return castle?.Party?.PrisonRoster != null && ReadyPrisonerCount(castle.Party.PrisonRoster, troop) > 0;
+            var castle = MBObjectManager.Instance?.GetObject<Settlement>(castleStringId);
+            return castle?.IsCastle == true && castle.Party?.PrisonRoster != null
+                && ReadyPrisonerCount(castle.Party.PrisonRoster, troop) > 0;
         }
 
         /// <summary>Native conformity points and requirement per recruit. Read-only; no party perks.</summary>

@@ -34,8 +34,10 @@ namespace Byzantium1071.Campaign.Behaviors
     ///   - Are AI lords paying to keep their veterans, and how many are they still losing?
     ///
     /// Counter increments live at the sites being measured; this class only snapshots, formats
-    /// and emits. Everything is gated on B1071_TelemetryCounters.Enabled, so an ordinary play
-    /// session does none of the work below.
+    /// and emits. Everything except OnDailyTickSettlementForensics is gated on
+    /// B1071_TelemetryCounters.Enabled, so an ordinary play session does none of the other
+    /// work below. That hang probe is deliberately ungated: it writes one session-file line
+    /// per settlement per day in every session.
     /// </summary>
     internal sealed class B1071_TelemetryBehavior : CampaignBehaviorBase
     {
@@ -294,11 +296,14 @@ namespace Byzantium1071.Campaign.Behaviors
         /// <summary>
         /// Hang forensics: one line per settlement per day, written while the settlement's daily
         /// work runs, so a future stall in the settlement pass leaves the last written name
-        /// pointing at the fief being processed instead of leaving the investigator to count log
-        /// lines. Written straight to the session file -- deliberately NOT through the verbose
-        /// gate, and NOT counted against the handler fuse, because it has to work in exactly the
-        /// session where nothing else gets logged. Bounded: roughly one line per owned settlement
-        /// per day.
+        /// pointing at the settlement being processed instead of leaving the investigator to count
+        /// log lines. If the stall is in a listener that runs before this one, the last name is the
+        /// previous settlement instead. Written straight to the session file -- deliberately NOT
+        /// through the verbose gate, NOT gated on B1071_TelemetryCounters.Enabled, and NOT counted
+        /// against the handler fuse, because it has to work in exactly the session where nothing
+        /// else gets logged. Bounded: one line per settlement per day. The event fires for every
+        /// settlement, villages included, not only owned fiefs, and each line is a separate
+        /// synchronous append.
         /// </summary>
         private void OnDailyTickSettlementForensics(Settlement settlement)
         {

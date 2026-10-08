@@ -1,4 +1,4 @@
-using MCM.Abstractions.Attributes;
+﻿using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions;
 using MCM.Abstractions.Base.Global;

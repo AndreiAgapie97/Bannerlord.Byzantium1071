@@ -321,6 +321,29 @@ namespace Byzantium1071.GameTests
         }
 
         [Fact]
+        public void CaravanSlaveCargoKeepsNativeCapacitySpeedAndEscapes()
+        {
+            var troop = Empty<CharacterObject>();
+            _base.MemberRoster.AddToCounts(troop, 20);
+            _base.PrisonRoster.AddToCounts(troop, 5);
+            _base.ItemRoster.AddToCounts(_slave, 150);
+            AccessTools.PropertySetter(typeof(MobileParty), nameof(MobileParty.IsCaravan)).Invoke(_party, new object[] { true });
+            PatchCapacity();
+            Assert.Equal(0, B1071_SlaveTransport.Count(_base));
+            // No slots reserved, even with slaves far above total capacity.
+            Assert.Equal(100, _base.PrisonerSizeLimit);
+            var capacity = new ExplainedNumber(100f);
+            B1071_SlavePrisonerCapacityExplanationPatch.Postfix(_base, ref capacity);
+            Assert.Equal(100f, capacity.ResultNumber);
+            var speed = new ExplainedNumber(5f);
+            B1071_SlaveEscortSpeedPatch.Postfix(_party, 0, 0, ref speed);
+            Assert.Equal(5f, speed.ResultNumber);
+            // The native pass runs instead and samples only ordinary prisoners.
+            Assert.True(B1071_SlaveSharedEscapePatch.Prefix(_party));
+            Assert.Equal(150, _behavior.GetSlaveCount(_base.ItemRoster));
+        }
+
+        [Fact]
         public void CapacityTooltipReportsReservationsAndNeverGoesNegative()
         {
             _base.ItemRoster.AddToCounts(_slave, 120);
