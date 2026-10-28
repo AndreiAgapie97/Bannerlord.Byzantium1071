@@ -259,6 +259,16 @@ namespace Byzantium1071.Campaign.Behaviors
             {
                 if (party == null || thinkParams == null) return;
 
+                // This hook fires for every party on the map, and caravans, villagers,
+                // militia, garrisons, patrols and bandits far outnumber lords. They can never
+                // be candidates, so they leave on a handful of flag reads instead of paying
+                // for GetBlockReasons (a fleeing check and a food-days calculation among
+                // others) and the global sweep below. Party type comes from the party
+                // component and never changes, so such a party cannot hold an intent,
+                // proposal or reservation for ClearPartyState to remove, and the blocked-party
+                // histogram drops ExcludedPartyType before counting anyway.
+                if (IsExcludedPartyType(party)) return;
+
                 float nowDay = (float)CampaignTime.Now.ToDays;
                 CleanupRuntimeState(nowDay);
                 LogNativeScoreObservationOnce(party, thinkParams);
@@ -347,7 +357,9 @@ namespace Byzantium1071.Campaign.Behaviors
                         party,
                         currentSettlement,
                         missing,
-                        currentReserved);
+                        currentReserved,
+                        party.IsWageLimitExceeded(),
+                        party.GetAvailableWageBudget());
                     // Total counts the vanilla volunteer board, which this system never
                     // takes -- vanilla hires it on arrival. Recruiting here must therefore
                     // test only the sources Campaign++ can actually move, or a lord parked
@@ -385,6 +397,15 @@ namespace Byzantium1071.Campaign.Behaviors
 
                 if (highestNativeScore == float.MinValue) return;
 
+                // The wage bill is read once for the whole candidate loop. Both vanilla
+                // helpers recompute it from the full roster through the wage model on every
+                // call, and the volunteer quoter needs both for every town and village
+                // candidate, so reading them per settlement walked the roster twice per
+                // candidate. Nothing in the loop changes the roster. It is read here, after
+                // RecruitAtCurrentSettlement above, because that may already have added men.
+                bool wageLimitExceeded = party.IsWageLimitExceeded();
+                int wageBudget = party.GetAvailableWageBudget();
+
                 var candidates = new List<RecoveryCandidate>();
 
                 // Settlements that quoted nobody. Held rather than forgotten so they can be
@@ -414,7 +435,9 @@ namespace Byzantium1071.Campaign.Behaviors
                         party,
                         settlement,
                         missing,
-                        reserved);
+                        reserved,
+                        wageLimitExceeded,
+                        wageBudget);
                     // Recorded before the drop so a settlement that can supply nothing is
                     // counted rather than vanishing -- that is the population an A3 penalty
                     // would act on.
@@ -702,7 +725,9 @@ namespace Byzantium1071.Campaign.Behaviors
             MobileParty party,
             Settlement settlement,
             int missing,
-            B1071_AiRecoveryReservedSupply reserved)
+            B1071_AiRecoveryReservedSupply reserved,
+            bool wageLimitExceeded,
+            int wageBudget)
         {
             if (missing <= 0 || party.LeaderHero == null) return default;
 
@@ -746,7 +771,8 @@ namespace Byzantium1071.Campaign.Behaviors
             if (budget.Room > 0)
             {
                 int volunteers = QuoteNotableVolunteers(
-                    party, settlement, budget, out int volunteerManpower);
+                    party, settlement, budget, wageLimitExceeded, wageBudget,
+                    out int volunteerManpower);
 
                 // The manpower is carried even though the men are not: vanilla's own
                 // recruitment on arrival goes through B1071_AiRecruitmentManpowerGatePatch
@@ -778,11 +804,18 @@ namespace Byzantium1071.Campaign.Behaviors
         /// already recruits from the board when an AI party is inside the settlement, and
         /// recruiting here as well would take the same men twice. The number exists to steer
         /// the journey; the arrival stays vanilla's to handle.
+        ///
+        /// <paramref name="wageLimitExceeded"/> and <paramref name="wageBudget"/> are the
+        /// party's IsWageLimitExceeded() and GetAvailableWageBudget(), read by the caller once
+        /// per pass rather than here once per settlement -- each recomputes the wage bill
+        /// from the full roster.
         /// </summary>
         private static int QuoteNotableVolunteers(
             MobileParty party,
             Settlement settlement,
             B1071_AiRecoveryBudget budget,
+            bool wageLimitExceeded,
+            int wageBudget,
             out int manpowerSpent)
         {
             manpowerSpent = 0;
@@ -828,12 +861,11 @@ namespace Byzantium1071.Campaign.Behaviors
             // RecruitVolunteersFromNotable entirely when the party is over its payment
             // limit, and refuses each individual recruit whose wage the remaining budget
             // cannot carry. A lord who cannot pay is not supplied by the fullest board.
-            if (party.IsWageLimitExceeded())
+            if (wageLimitExceeded)
             {
                 B1071_TelemetryCounters.RecordVolunteerWageBlocked();
                 return 0;
             }
-            int wageBudget = party.GetAvailableWageBudget();
 
             // Wages are not the only floor -- see IsBelowVanillaRecruitingMoneyFloor.
             //
@@ -1050,11 +1082,12 @@ namespace Byzantium1071.Campaign.Behaviors
             // Checked before touching the party so a normal session does none of this work.
             if (!B1071_TelemetryCounters.Enabled) return;
 
-            // Caravans, villagers, militia and bandits pour through this hook and are
-            // rejected for InvalidLeader and ExcludedPartyType every hour of every day.
-            // They were never recovery candidates, and counting them buries the gates that
-            // matter: in the first run carrying this histogram they were 86% of every
-            // rejection recorded, and the two flags they set were the top two buckets.
+            // Parties that were never recovery candidates are not missed recoveries, and
+            // counting them buries the gates that matter: in the first run carrying this
+            // histogram, caravans, villagers, militia and bandits were 86% of every rejection
+            // recorded, and the two flags they set were the top two buckets. Those party
+            // types now leave OnAiHourlyTick before reaching here; this filter still drops a
+            // lord party that is inactive or has lost its leader or clan.
             const B1071_AiRecoveryBlockReason notACandidate =
                 B1071_AiRecoveryBlockReason.Inactive
                 | B1071_AiRecoveryBlockReason.InvalidLeader
@@ -1133,17 +1166,24 @@ namespace Byzantium1071.Campaign.Behaviors
                 && party.DefaultBehavior != AiBehavior.PatrolAroundPoint)
                 reasons |= B1071_AiRecoveryBlockReason.ProtectedObjective;
 
-            if (!party.IsLordParty
-                || party.IsGarrison
-                || party.IsMilitia
-                || party.IsCaravan
-                || party.IsVillager
-                || party.IsBandit
-                || party.IsPatrolParty)
+            if (IsExcludedPartyType(party))
                 reasons |= B1071_AiRecoveryBlockReason.ExcludedPartyType;
 
             return reasons;
         }
+
+        /// <summary>
+        /// Parties recovery routing never serves. Shared by GetBlockReasons and the early
+        /// exit in OnAiHourlyTick so the two cannot disagree on the list.
+        /// </summary>
+        private static bool IsExcludedPartyType(MobileParty party)
+            => !party.IsLordParty
+               || party.IsGarrison
+               || party.IsMilitia
+               || party.IsCaravan
+               || party.IsVillager
+               || party.IsBandit
+               || party.IsPatrolParty;
 
         private B1071_AiRecoveryReservedSupply GetReservedSupply(
             Settlement settlement,

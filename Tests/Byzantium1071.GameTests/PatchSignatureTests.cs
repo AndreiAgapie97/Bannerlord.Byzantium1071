@@ -70,6 +70,9 @@ namespace Byzantium1071.GameTests
             yield return Target(
                 "TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementTaxModel",
                 "CalculateTownTax");
+            yield return Target(
+                "TaleWorlds.CampaignSystem.CampaignBehaviors.AllianceCampaignBehavior",
+                "StartCallToWarAgreement");
         }
 
         /// <summary>

@@ -173,7 +173,7 @@ namespace Byzantium1071.Campaign.Patches
         }
     }
 
-    // Private target verified against Bannerlord 1.5.3. Vanilla samples only
+    // Private target verified against Bannerlord 1.5.6. Vanilla samples only
     // PrisonRoster; while slave goods are carried, sample the combined captive pool.
     [HarmonyPatch(typeof(PrisonerReleaseCampaignBehavior), "HourlyPartyTick")]
     internal static class B1071_SlaveSharedEscapePatch
@@ -189,9 +189,9 @@ namespace Byzantium1071.Campaign.Patches
                 int capacity = B1071_SlaveTransport.TotalCapacity(mobileParty.Party);
                 if (mobileParty.PrisonRoster.TotalManCount + behavior.GetSlaveCount(mobileParty.ItemRoster) <= capacity) return false;
                 // Same hourly attempt chance and modifiers as vanilla's
-                // ApplyEscapeChanceToExceededPrisoners (1.5.3).
+                // ApplyEscapeChanceToExceededPrisoners (1.5.6).
                 var chance = new ExplainedNumber(0.1f);
-                if (mobileParty.HasPerk(DefaultPerks.Athletics.Stamina, out _, checkSecondaryRole: true))
+                if (mobileParty.HasPerk(DefaultPerks.Athletics.Stamina, checkSecondaryRole: true))
                     chance.AddFactor(-0.1f, DefaultPerks.Athletics.Stamina.Name);
                 if (mobileParty.LeaderHero != null)
                     TraitEffectHelper.ApplyTraitEffect(mobileParty.LeaderHero,

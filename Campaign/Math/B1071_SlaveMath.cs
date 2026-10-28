@@ -56,7 +56,7 @@ namespace Byzantium1071.Campaign
         internal static float FoodConsumption(int slaveCount, IB1071Settings settings) =>
             slaveCount * settings.SlaveFoodConsumptionPerUnit;
 
-        // Native prisoner escort curve (Bannerlord 1.5.3). Apply only the extra
+        // Native prisoner escort curve (Bannerlord 1.5.6). Apply only the extra
         // burden of slaves; ordinary prisoners already contribute to native speed.
         internal static float EscortFactor(int men, int captives) =>
             (float)Math.Pow((10d + men) / (10d + men + captives), 0.33d) - 1f;

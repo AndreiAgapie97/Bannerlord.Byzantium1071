@@ -1,7 +1,8 @@
 using Bannerlord.UIExtenderEx;
 using Bannerlord.UIExtenderEx.Attributes;
-using Bannerlord.UIExtenderEx.Prefabs2;
+using Bannerlord.UIExtenderEx.Prefabs;
 using Bannerlord.UIExtenderEx.ViewModels;
+using System.Xml;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapBar;
 using TaleWorlds.Library;
 using TaleWorlds.TwoDimension;
@@ -161,38 +162,47 @@ namespace Byzantium1071.Campaign.UI
             "</Widget>";
     }
 
-    // Injection guard: prevents the panel from being inserted multiple times
-    // if multiple PrefabExtension paths match in a given game version.
-    internal static class B1071_PanelInjectionGuard
+    /// <summary>
+    /// Inserts the ledger panel into the map bar prefab: after the map bar ListPanel, or after
+    /// the info bar in a game version without that ListPanel.
+    ///
+    /// One document patch instead of one insert patch per anchor. Both anchors exist in the
+    /// same prefab, so two insert patches would each add the panel. That used to be prevented
+    /// by a static one-shot guard on the patch text, which broke under UIExtenderEx 3.x:
+    /// every patch re-runs each time the prefab is processed, each pass starting from the
+    /// pristine XML, and 3.x processes the map bar more than once — for its compiled prefab
+    /// as well as for the screen. The first pass spent the guard, every later pass inserted
+    /// an empty widget, and M toggled a panel that was not there. Apply reads no state, so
+    /// every pass produces the same prefab.
+    ///
+    /// UIExtenderEx matches movies by bare file name (WidgetPrefabPatch.ProcessMovie ->
+    /// Path.GetFileNameWithoutExtension), so "MapBar" is the only registration that resolves.
+    /// </summary>
+    // No XPath: UIExtenderEx hands a CustomPatch<XmlDocument> the whole document. The
+    // explicit null only picks the two-argument constructor; with one argument the call is
+    // ambiguous with the obsolete three-argument overload.
+    [PrefabExtension("MapBar", null)]
+    public sealed class B1071_MapBarPanelPrefabExtension : CustomPatch<XmlDocument>
     {
-        private static bool _injected;
-        internal static bool TryInject()
+        internal const string PrimaryAnchor = "descendant::ListPanel[@Id='MapBar']";
+        internal const string FallbackAnchor = "descendant::MapInfoBarWidget[@Id='InfoBarWidget']";
+
+        public override string Id => "B1071MapBarPanel";
+
+        public override void Apply(XmlDocument document)
         {
-            if (_injected) return false;
-            _injected = true;
-            return true;
+            XmlNode? anchor = document.SelectSingleNode(PrimaryAnchor) ?? document.SelectSingleNode(FallbackAnchor);
+            XmlNode? parent = anchor?.ParentNode;
+            if (anchor == null || parent == null)
+            {
+                Debug.Print("[Byzantium1071][MapBar] MapBar prefab has neither ledger anchor; panel not inserted.");
+                return;
+            }
+
+            XmlDocument panel = new XmlDocument();
+            panel.LoadXml(B1071_MapBarPanelLayout.Text);
+            parent.InsertAfter(document.ImportNode(panel.DocumentElement!, deep: true), anchor);
         }
-        internal static void Reset() => _injected = false;
-    }
-
-    [PrefabExtension("MapBar", "descendant::ListPanel[@Id='MapBar']")]
-    [PrefabExtension("Map/MapBar", "descendant::ListPanel[@Id='MapBar']")]
-    public sealed class B1071_MapBarPanelPrefabExtension : PrefabExtensionInsertPatch
-    {
-        public override InsertType Type => InsertType.Append;
-
-        [PrefabExtensionText(false)]
-        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
-    }
-
-    [PrefabExtension("MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    [PrefabExtension("Map/MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    public sealed class B1071_MapBarPanelPrefabExtensionAlt : PrefabExtensionInsertPatch
-    {
-        public override InsertType Type => InsertType.Append;
-
-        [PrefabExtensionText(false)]
-        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
     }
 
     [ViewModelMixin(nameof(MapBarVM.OnRefresh), true)]

@@ -173,7 +173,7 @@ namespace Byzantium1071
                  new[] { typeof(TaleWorlds.CampaignSystem.Settlements.Town) },
                  "Garrison Auto-Recruit Manpower Consumption"),
 
-                // -- Public overrides (named with nameof()). Patch() does not throw when the
+                // -- Public overrides and methods (named with nameof()). Patch() does not throw when the
                 // target method is missing -- it silently skips -- and when it does throw, for a
                 // parameter-name mismatch, PatchAssemblySafely swallows it into one log line.
                 // Either way attachment is asserted here at launch, not assumed. --
@@ -186,6 +186,9 @@ namespace Byzantium1071
                 ("TaleWorlds.CampaignSystem.GameComponents.DefaultSettlementTaxModel",
                  "CalculateTownTax", null,
                  "Settlement Tax Taper"),
+                ("TaleWorlds.CampaignSystem.CampaignBehaviors.AllianceCampaignBehavior",
+                 "StartCallToWarAgreement", null,
+                 "Ally Call-to-War Truce and Crisis Block"),
             };
 
             int verified = 0;

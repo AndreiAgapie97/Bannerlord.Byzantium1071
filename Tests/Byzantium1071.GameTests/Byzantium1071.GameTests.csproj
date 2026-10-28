@@ -13,6 +13,14 @@
     <DefineConstants>$(DefineConstants);GAME_TESTS_ENABLED</DefineConstants>
   </PropertyGroup>
 
+  <!-- Read by LanguageLoadingTests, which runs the game's localization loader over Native. -->
+  <ItemGroup Condition="Exists('$(GameExecutable)')">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GameFolder</_Parameter1>
+      <_Parameter2>$(GameFolder)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.5.3" />

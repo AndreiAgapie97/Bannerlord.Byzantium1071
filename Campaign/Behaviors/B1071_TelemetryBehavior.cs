@@ -36,8 +36,8 @@ namespace Byzantium1071.Campaign.Behaviors
     /// Counter increments live at the sites being measured; this class only snapshots, formats
     /// and emits. Everything except OnDailyTickSettlementForensics is gated on
     /// B1071_TelemetryCounters.Enabled, so an ordinary play session does none of the other
-    /// work below. That hang probe is deliberately ungated: it writes one session-file line
-    /// per settlement per day in every session.
+    /// work below. That hang probe is gated on EnableVerboseModLog alone, so an ordinary play
+    /// session skips it too.
     /// </summary>
     internal sealed class B1071_TelemetryBehavior : CampaignBehaviorBase
     {
@@ -298,18 +298,22 @@ namespace Byzantium1071.Campaign.Behaviors
         /// work runs, so a future stall in the settlement pass leaves the last written name
         /// pointing at the settlement being processed instead of leaving the investigator to count
         /// log lines. If the stall is in a listener that runs before this one, the last name is the
-        /// previous settlement instead. Written straight to the session file -- deliberately NOT
-        /// through the verbose gate, NOT gated on B1071_TelemetryCounters.Enabled, and NOT counted
-        /// against the handler fuse, because it has to work in exactly the session where nothing
-        /// else gets logged. Bounded: one line per settlement per day. The event fires for every
-        /// settlement, villages included, not only owned fiefs, and each line is a separate
-        /// synchronous append.
+        /// previous settlement instead. Written straight to the session file rather than through
+        /// B1071_VerboseLog.Log, so it stays out of rgl_log, and NOT counted against the handler
+        /// fuse, so it keeps writing after the rest of this behavior has disabled itself.
+        ///
+        /// Gated on EnableVerboseModLog, and only on that -- not on B1071_TelemetryCounters.Enabled.
+        /// The event fires for every settlement, villages included, not only owned fiefs, and each
+        /// line is a separate synchronous append: about 540 a day on the map it was measured on,
+        /// roughly a tenth of a second of file writes per campaign day. Paying that in every
+        /// session to catch a rare hang is the wrong trade, so reproducing one now needs the
+        /// verbose log switched on.
         /// </summary>
         private void OnDailyTickSettlementForensics(Settlement settlement)
         {
             try
             {
-                if (settlement == null) return;
+                if (settlement == null || !Settings.EnableVerboseModLog) return;
                 B1071_SessionFileLog.WriteTagged(
                     "Session",
                     $"DailyTickSettlement: {settlement.Name} day={(int)CampaignTime.Now.ToDays}");

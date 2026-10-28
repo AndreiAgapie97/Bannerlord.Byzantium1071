@@ -68,8 +68,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private Dictionary<string, float> _investProsperityBonus = new();
 
         // Key = "{hero.StringId}" → campaign day of hero's last town investment (any town).
-        // Non-serialized — resets on load, which is fine (conservative: first visit post-load is allowed).
-        private readonly Dictionary<string, float> _heroLastInvestDay = new();
+        // Saved, so reloading does not let every AI lord invest again at the next visit.
+        private Dictionary<string, float> _heroLastInvestDay = new();
 
         // ── CampaignBehaviorBase ──────────────────────────────────────────────────
 
@@ -87,6 +87,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             dataStore.SyncData("b1071_townInvestProsperity", ref _investProsperityBonus);
             _investProsperityBonus ??= new Dictionary<string, float>();
+
+            dataStore.SyncData("b1071_townInvestHeroLastDay", ref _heroLastInvestDay);
+            _heroLastInvestDay ??= new Dictionary<string, float>();
         }
 
         // ── Session launched ──────────────────────────────────────────────────────

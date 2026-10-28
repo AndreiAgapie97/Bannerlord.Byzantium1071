@@ -26,6 +26,14 @@ namespace Byzantium1071.Tests
             "b1071_overlay_band_value"
         };
 
+        private static readonly Regex HangulPattern = new(@"[가-힣]", RegexOptions.Compiled);
+        private static readonly HashSet<string> IntentionalKoreanLatinOnlyIds = new(StringComparer.Ordinal)
+        {
+            "b1071_mod_name",
+            "b1071_mcm_display_name",
+            "b1071_ui_close"
+        };
+
         public static IEnumerable<object[]> EuropeanLanguages()
         {
             yield return new object[] { "French" };
@@ -45,6 +53,27 @@ namespace Byzantium1071.Tests
             Assert.True(
                 untranslated.Length == 0,
                 $"Chinese entries with Latin text and no CJK characters: {string.Join(", ", untranslated)}");
+        }
+
+        // Placeholders are stripped first, so an entry made only of placeholders and punctuation
+        // passes without being listed.
+        [Fact]
+        public void KoreanEntriesWithLatinTextContainHangulUnlessExplicitlyLanguageNeutral()
+        {
+            string[] untranslated = ReadEntries("Korean")
+                .Where(entry =>
+                {
+                    string text = PlaceholderPattern.Replace(entry.Value, string.Empty);
+                    return LatinLetterPattern.IsMatch(text) && !HangulPattern.IsMatch(text);
+                })
+                .Select(entry => entry.Key)
+                .Where(id => !IntentionalKoreanLatinOnlyIds.Contains(id))
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.True(
+                untranslated.Length == 0,
+                $"Korean entries with Latin text and no Hangul: {string.Join(", ", untranslated)}");
         }
 
         [Theory]

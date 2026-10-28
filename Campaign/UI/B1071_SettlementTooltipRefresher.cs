@@ -26,11 +26,12 @@ namespace Byzantium1071.Campaign.UI
     /// Rows come from B1071_SettlementTooltipContent, the same builder the nameplate hover
     /// tooltip uses, so the two surfaces cannot report different numbers for one settlement.
     ///
-    /// The block goes in above the trailing spacer rather than at the end of the list, so it
+    /// The block goes in above the footer spacer rather than at the end of the list, so it
     /// reads as the last section of settlement data instead of sitting underneath "Hold 'Alt'
     /// for more info." and the parley hint. FindFooterIndex finds that spacer by row shape —
-    /// empty definition, empty value, negative TextHeight — because matching the hint's wording
-    /// would only work in the languages the mod ships. A spacer, header and divider — vanilla's
+    /// empty definition, empty value, negative TextHeight, followed only by hint rows — because
+    /// matching the hint's wording would only work in the languages the mod ships. With no
+    /// footer, the block goes at the end. A spacer, header and divider — vanilla's
     /// own section break, the same one it uses between Owner, Information and Defenders — make
     /// the block read as its own section instead of as rows bolted onto the last vanilla one.
     /// </summary>
@@ -197,24 +198,31 @@ namespace Byzantium1071.Campaign.UI
         }
 
         /// <summary>
-        /// Where the Campaign++ section goes: the index of the trailing spacer, the empty row
+        /// Where the Campaign++ section goes: the index of the footer spacer, the empty row
         /// vanilla adds after the last block of settlement data and directly above "Hold 'Alt'
         /// for more info." and the parley hint.
         ///
-        /// The scan matches row shape rather than text — definition and value both empty with a
-        /// negative TextHeight — which is the spacer's signature and no other row's. Vanilla adds
-        /// spacers between sections too, so the search runs backwards and takes the last one.
-        /// Falls back to the end of the list if the footer is ever restructured away, which puts
-        /// the section below the hint: a worse position, not a broken one.
+        /// The scan matches row shape rather than text. The spacer has definition and value both
+        /// empty with a negative TextHeight; each hint below it has an empty definition, a
+        /// non-empty value and a negative TextHeight. Walking back from the end over hint rows,
+        /// the first other row is the footer spacer if it has the spacer's shape. In 1.5.6
+        /// vanilla adds the footer only through AddTooltipHintProperties, and only when there
+        /// is a hint to show, so an extended tooltip without a parley option has none. Anything
+        /// else at that position means there is no footer, and the section goes at the end of
+        /// the list. Taking the last spacer anywhere in the list would then pick a spacer
+        /// between vanilla sections and split them.
         /// </summary>
         private static int FindFooterIndex(MBBindingList<TooltipProperty> properties)
         {
             for (int i = properties.Count - 1; i >= 0; i--)
             {
                 TooltipProperty row = properties[i];
-                if (row.TextHeight < 0 &&
-                    string.IsNullOrEmpty(row.DefinitionLabel) &&
-                    string.IsNullOrEmpty(row.ValueLabel))
+                if (row.TextHeight >= 0 || !string.IsNullOrEmpty(row.DefinitionLabel))
+                {
+                    break;
+                }
+
+                if (string.IsNullOrEmpty(row.ValueLabel))
                 {
                     return i;
                 }

@@ -4,6 +4,7 @@ using HarmonyLib;
 using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
@@ -174,6 +175,54 @@ namespace Byzantium1071.Campaign.Patches
                       (effectiveMinDays < minDays ? " (multi-front relief)." : "."));
 
             return penalty;
+        }
+
+        /// <summary>
+        /// True when <paramref name="kingdom"/> may not enter a new war with <paramref name="target"/>:
+        /// a truce between them while truce enforcement is on, or war exhaustion at the no-new-war
+        /// level (the Crisis band, or the legacy threshold when bands are off). Shared by the
+        /// council war vote and an ally's call to war, so both routes follow one rule.
+        /// <paramref name="route"/> and <paramref name="telemetryLabel"/> name the blocked route in the logs.
+        /// </summary>
+        internal static bool IsNewWarBlocked(Kingdom kingdom, IFaction target, string route, string telemetryLabel)
+        {
+            // A truce left over from before enforcement was switched off does not block, and does
+            // not skip the exhaustion check either.
+            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
+            if (IsTruceEnforcementEnabled && behavior != null
+                && behavior.IsKingdomPairUnderTruce(kingdom, target, out float truceDaysLeft))
+            {
+                if (EnableDebugLogs)
+                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked {route} for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
+                RecordTelemetry($"Blocked {telemetryLabel}: truce {truceDaysLeft:0.0}d for {kingdom.Name}.");
+                return true;
+            }
+
+            if (!TryGetExhaustion(kingdom, out float exhaustion))
+                return false;
+
+            // WP5: Use band-based blocking (Crisis only) when bands enabled.
+            if (UsePressureBands)
+            {
+                DiplomacyPressureBand band = GetBand(kingdom);
+                if (band != DiplomacyPressureBand.Crisis)
+                    return false; // Allow war decisions in Low/Rising bands
+
+                if (EnableDebugLogs)
+                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked {route} for {kingdom.Name}: Crisis band at exhaustion {exhaustion:0.0}.");
+                RecordTelemetry($"Blocked {telemetryLabel}: Crisis band at {exhaustion:0.0} for {kingdom.Name}.");
+                return true;
+            }
+
+            // Legacy threshold path
+            float threshold = NoWarThreshold;
+            if (exhaustion < threshold)
+                return false;
+
+            if (EnableDebugLogs)
+                Debug.Print($"[Byzantium1071][Diplomacy] Blocked {route} for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
+            RecordTelemetry($"Blocked {telemetryLabel}: exhaustion {exhaustion:0.0} >= {threshold:0.0} for {kingdom.Name}.");
+            return true;
         }
 
         internal static void RecordTelemetry(string reason)
@@ -408,45 +457,42 @@ namespace Byzantium1071.Campaign.Patches
             if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(kingdom))
                 return true;
 
-            B1071_ManpowerBehavior? behavior = B1071_ManpowerBehavior.Instance;
-            if (behavior != null && behavior.IsKingdomPairUnderTruce(kingdom, declareWarDecision.FactionToDeclareWarOn, out float truceDaysLeft))
-            {
-                if (!B1071_ExhaustionDiplomacyHelpers.IsTruceEnforcementEnabled)
-                    return true;
-
-                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
-                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: truce active for {truceDaysLeft:0.0} more days.");
-                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: truce {truceDaysLeft:0.0}d for {kingdom.Name}.");
-                return false;
-            }
-
-            if (!B1071_ExhaustionDiplomacyHelpers.TryGetExhaustion(kingdom, out float exhaustion))
-                return true;
-
-            // WP5: Use band-based blocking (Crisis only) when bands enabled.
-            if (B1071_ExhaustionDiplomacyHelpers.UsePressureBands)
-            {
-                DiplomacyPressureBand band = B1071_ExhaustionDiplomacyHelpers.GetBand(kingdom);
-                if (band != DiplomacyPressureBand.Crisis)
-                    return true; // Allow war decisions in Low/Rising bands
-
-                if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
-                    Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name}: Crisis band at exhaustion {exhaustion:0.0}.");
-                B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: Crisis band at {exhaustion:0.0} for {kingdom.Name}.");
-                return false;
-            }
-
-            // Legacy threshold path
-            float threshold = B1071_ExhaustionDiplomacyHelpers.NoWarThreshold;
-            if (exhaustion < threshold)
-                return true;
-
-            if (B1071_ExhaustionDiplomacyHelpers.EnableDebugLogs)
-                Debug.Print($"[Byzantium1071][Diplomacy] Blocked DeclareWarDecision for {kingdom.Name} due to exhaustion {exhaustion:0.0} >= {threshold:0.0}.");
-            B1071_ExhaustionDiplomacyHelpers.RecordTelemetry($"Blocked AddDecision DeclareWar: exhaustion {exhaustion:0.0} >= {threshold:0.0} for {kingdom.Name}.");
-            return false;
+            return !B1071_ExhaustionDiplomacyHelpers.IsNewWarBlocked(
+                kingdom, declareWarDecision.FactionToDeclareWarOn, "DeclareWarDecision", "AddDecision DeclareWar");
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] BlockWarDecisionPatch error: {ex}"); return true; }
+        }
+    }
+
+    /// <summary>
+    /// An ally's call to war puts the called kingdom at war without its own council voting: the
+    /// calling kingdom decides, and <c>StartCallToWarAgreement</c> declares the war through
+    /// <c>DeclareWarAction.ApplyByCallToWarAgreement</c>. The calling council's vote, a new
+    /// alliance pulling the ally into existing wars, and the player's own call-to-war offers all
+    /// end in this method, so the called kingdom's truce and Crisis rules are applied here.
+    /// Skipping it also skips the call-to-war payment and the alliance extension.
+    /// </summary>
+    [HarmonyPatch(typeof(AllianceCampaignBehavior), nameof(AllianceCampaignBehavior.StartCallToWarAgreement))]
+    public static class B1071_BlockCallToWarAtHighExhaustionPatch
+    {
+        static bool Prefix(Kingdom callingKingdom, Kingdom calledKingdom, Kingdom kingdomToCallToWarAgainst)
+        {
+            try
+            {
+                if (callingKingdom == null || calledKingdom == null || kingdomToCallToWarAgainst == null)
+                    return true;
+
+                // A call the player's kingdom makes or answers is the player's own decision, and
+                // is exempt exactly as its war votes are.
+                if (B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(calledKingdom)
+                    || B1071_ExhaustionDiplomacyHelpers.IsPlayerInfluencedContext(callingKingdom))
+                    return true;
+
+                return !B1071_ExhaustionDiplomacyHelpers.IsNewWarBlocked(
+                    calledKingdom, kingdomToCallToWarAgainst,
+                    $"call to war against {kingdomToCallToWarAgainst.Name}", "CallToWar");
+            }
+            catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] BlockCallToWarPatch error: {ex}"); return true; }
         }
     }
 

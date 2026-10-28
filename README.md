@@ -8,10 +8,11 @@ Campaign++ introduces a full **manpower economy** and connects recruitment, warf
 
 ## At a glance
 
-- **Current version:** 1.0.4.0
-- **Target game:** Bannerlord v1.5.3 beta (installed target)
-- **Warsails (NavalDLC):** v1.3.3 verified compatible (optional — not required)
+- **Current version:** 1.0.5.0
+- **Target game:** Bannerlord v1.5.6 beta (installed target)
+- **Warsails (NavalDLC):** v1.3.6 verified compatible (optional — not required)
 - **Module ID:** `Byzantium1071`
+- **Languages:** English, Simplified Chinese, French, German, Korean
 
 ---
 
@@ -47,7 +48,7 @@ Campaign++ exposes a **stable public API** for third-party submods. If you're bu
 
 ## Automated tests
 
-The repository includes a fast .NET 8 suite for pure campaign math, module data, localization, and settings contracts, plus .NET Framework game-backed migration tests when Bannerlord is installed at the configured game path. These tests exercise shared code only; they do not alter module behavior or game data.
+The repository includes a fast .NET 8 suite for pure campaign math, module data, localization, and settings contracts, plus .NET Framework game-backed tests (patch binding, settings migration, save round trips) when Bannerlord is installed at the configured game path. These tests exercise shared code only; they do not alter module behavior or game data.
 
 Run all checks headlessly, or select a feature (Python 3.10+):
 
@@ -92,7 +93,7 @@ dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debu
 - **Delayed recovery** imposes post-war regen penalties with decay
 - **War exhaustion** accumulates per kingdom and affects regen + diplomacy
 - **Pressure bands** (Low/Rising/Crisis) with hysteresis
-- **Forced peace** + **truce enforcement** for cooldowned war cycles
+- **Forced peace** + **truce enforcement** for cooldowned war cycles; a truce or the Crisis band also blocks an ally's call to war
 
 ### Combat and economy realism
 - **Combat realism**: elite survivability preset (0–3) for autoresolve damage and wound-vs-kill outcomes
@@ -100,7 +101,7 @@ dotnet test Tests\Byzantium1071.GameTests\Byzantium1071.GameTests.csproj -c Debu
 - **Garrison wage discount** with historical rationale
 
 ### Province/economy layers
-- **Slave economy** (capture, enslavement, market behavior, labor effects, decay, caps/manumission)
+- **Slave economy** (capture, enslavement, market behavior, labor effects, decay, caps/manumission, shared prisoner capacity, escort speed and food upkeep for carried slaves)
 - **Minor faction economy** (Frontier Revenue stipends)
 - **Provincial governance** (governance strain penalties)
 - **Frontier devastation** (persistent raid damage and slow recovery)
@@ -126,7 +127,7 @@ Default hotkey: `M` (configurable in MCM).
 Includes tabs for:
 
 - Current, Nearby, Castles, Towns, Villages
-- Factions, Armies, Wars, Rebellion
+- Factions, Armies, Wars, Casualties, Rebellion
 - Prisoners, Clans, Characters, Search
 
 Search supports heroes, settlements, armies, clans, kingdoms, and market data.
@@ -178,7 +179,7 @@ Includes a dedicated **Quick Settings** tab exposing major system toggles in gro
 Campaign++ includes a runtime compatibility system that:
 
 - scans Harmony overlap risk by method,
-- checks model replacements at campaign load,
+- checks model replacements at campaign load, including mod models that skip the game's own calculation,
 - groups and reports results in a startup popup and full MCM tab.
 
 Known tested in project docs: Economy Overhaul, Cavalry Logistics Overhaul.
@@ -201,9 +202,11 @@ Known tested in project docs: Economy Overhaul, Cavalry Logistics Overhaul.
 - `Campaign/Behaviors` - campaign systems, state machines, daily/event loops
 - `Campaign/Patches` - Harmony patches for model/action interception
 - `Campaign/Settings` - MCM settings and settings migration profiles
-- `UI` + `GUI/Prefabs` - overlay and runtime UI resources
+- `Campaign/Math` - pure campaign math shared by behaviors, patches and tests
+- `Campaign/UI` + `_Module/GUI` - overlay and runtime UI code, prefabs and brushes
 - `_Module/ModuleData` - Bannerlord module data (items, strings, language packs)
 - `Docs` - release notes and technical documentation maintained in-repo
+- `Tests` - fast and game-backed test projects plus the headless `modtest.py` runner
 
 ---
 
@@ -214,6 +217,8 @@ Primary references:
 - `Docs/Byzantium1071modexplanation.md`
 - `Docs/PlayerGuide.md`
 - `Docs/CHANGELOG.md`
+- `Docs/SUBMOD_API.md`
+- `Docs/HEADLESS_TESTING.md`
 
 ---
 

@@ -80,6 +80,43 @@ namespace Byzantium1071.Campaign
             }
         }
 
+        // Bands are stored as their enum value. A value this build does not define is
+        // dropped, so that kingdom is re-evaluated from Low like a save made before bands
+        // were stored.
+        internal static StringMapSaveData<int> FlattenPressureBands(
+            IReadOnlyDictionary<string, DiplomacyPressureBand> bands)
+        {
+            var keys = new List<string>();
+            var values = new List<int>();
+            foreach (var kvp in bands)
+            {
+                keys.Add(kvp.Key);
+                values.Add((int)kvp.Value);
+            }
+
+            return new StringMapSaveData<int>(keys, values);
+        }
+
+        internal static void ReplacePressureBands(
+            IDictionary<string, DiplomacyPressureBand> destination,
+            IReadOnlyList<string>? keys,
+            IReadOnlyList<int>? values)
+        {
+            keys ??= Array.Empty<string>();
+            values ??= Array.Empty<int>();
+
+            destination.Clear();
+            int rowCount = Math.Min(keys.Count, values.Count);
+            for (int index = 0; index < rowCount; index++)
+            {
+                string key = keys[index];
+                if (!string.IsNullOrEmpty(key) && Enum.IsDefined(typeof(DiplomacyPressureBand), values[index]))
+                {
+                    destination[key] = (DiplomacyPressureBand)values[index];
+                }
+            }
+        }
+
         internal static RecoveryPenaltySaveData FlattenRecoveryPenalties(
             IReadOnlyDictionary<string, float> baseValues,
             IReadOnlyDictionary<string, float> startDays,

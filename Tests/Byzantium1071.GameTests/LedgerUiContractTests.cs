@@ -2,7 +2,10 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Xml;
 using System.Xml.Linq;
+using Bannerlord.UIExtenderEx.Attributes;
+using Bannerlord.UIExtenderEx.Prefabs;
 using Byzantium1071.Campaign.UI;
 using TaleWorlds.TwoDimension;
 using Xunit;
@@ -236,6 +239,75 @@ namespace Byzantium1071.GameTests
                 Assert.Equal(0, paginate.Invoke(null, new object[] { 0, 9 }));
             }
             finally { page.SetValue(null, oldPage); count.SetValue(null, oldCount); tab.SetValue(null, oldTab); }
+        }
+
+        // Shaped like SandBox/GUI/Prefabs/Map/MapBar.xml: the map bar ListPanel and the info
+        // bar are siblings under one Children node.
+        private const string MapBarPrefab =
+            "<Prefab><Window><Widget><Children>" +
+            "<ListPanel Id=\"MapBar\"><Children /></ListPanel>" +
+            "<MapInfoBarWidget Id=\"InfoBarWidget\" />" +
+            "</Children></Widget></Window></Prefab>";
+
+        private static XmlDocument LoadPrefab(string xml)
+        {
+            var document = new XmlDocument();
+            document.LoadXml(xml);
+            return document;
+        }
+
+        private static XmlNodeList Panels(XmlDocument document) =>
+            document.SelectNodes("//Widget[@IsVisible='@B1071PanelVisible']")!;
+
+        // UIExtenderEx looks movies up by bare file name, so "Map/MapBar" never matched.
+        [Fact]
+        public void PanelPatchIsOneDocumentPatchOnTheBareMapBarMovie()
+        {
+            PrefabExtensionAttribute extension = Assert.Single(typeof(B1071_MapBarPanelPrefabExtension)
+                .GetCustomAttributes(typeof(PrefabExtensionAttribute), inherit: false)
+                .Cast<PrefabExtensionAttribute>());
+            Assert.Equal("MapBar", extension.Movie);
+            Assert.True(typeof(CustomPatch<XmlDocument>).IsAssignableFrom(typeof(B1071_MapBarPanelPrefabExtension)));
+        }
+
+        // Both anchors exist in the same prefab, and every processing pass starts from the
+        // pristine XML. The old one-shot guard inserted the panel on the first pass only, so
+        // the prefab UIExtenderEx 3.x actually showed had an empty widget where the ledger was.
+        [Fact]
+        public void PanelGoesAfterTheMapBarListOnceOnEveryPass()
+        {
+            var patch = new B1071_MapBarPanelPrefabExtension();
+            XmlDocument first = LoadPrefab(MapBarPrefab);
+            XmlDocument second = LoadPrefab(MapBarPrefab);
+
+            patch.Apply(first);
+            patch.Apply(second);
+
+            XmlNode panel = Assert.Single(Panels(first).Cast<XmlNode>());
+            Assert.Equal("MapBar", panel.PreviousSibling?.Attributes?["Id"]?.Value);
+            Assert.Equal(first.OuterXml, second.OuterXml);
+        }
+
+        [Fact]
+        public void PanelFallsBackToTheInfoBarWithoutTheMapBarList()
+        {
+            XmlDocument document = LoadPrefab(MapBarPrefab.Replace("<ListPanel Id=\"MapBar\"><Children /></ListPanel>", ""));
+
+            new B1071_MapBarPanelPrefabExtension().Apply(document);
+
+            XmlNode panel = Assert.Single(Panels(document).Cast<XmlNode>());
+            Assert.Equal("InfoBarWidget", panel.PreviousSibling?.Attributes?["Id"]?.Value);
+        }
+
+        [Fact]
+        public void PrefabWithoutEitherAnchorIsLeftAlone()
+        {
+            const string prefab = "<Prefab><Window><Widget /></Window></Prefab>";
+            XmlDocument document = LoadPrefab(prefab);
+
+            new B1071_MapBarPanelPrefabExtension().Apply(document);
+
+            Assert.Equal(LoadPrefab(prefab).OuterXml, document.OuterXml);
         }
     }
 }

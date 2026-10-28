@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Bannerlord.UIExtenderEx.Attributes;
 using Bannerlord.UIExtenderEx.Prefabs2;
@@ -16,6 +17,8 @@ namespace Byzantium1071.Campaign.UI
     {
         private const float DevastationMarkerThreshold = 50f;
 
+        private static bool _failureLogged;
+
         private readonly BasicTooltipViewModel _tooltip;
         private bool _devastationMarkerVisible;
         private int _cachedDevastationVersion = int.MinValue;
@@ -29,10 +32,20 @@ namespace Byzantium1071.Campaign.UI
             _tooltip = new BasicTooltipViewModel(BuildTooltipProperties);
         }
 
+        // Runs for every nameplate on every map frame, so it is guarded for the same reason as
+        // the hover: an exception here would escape into the nameplate update every frame.
         public override void OnRefresh()
         {
             base.OnRefresh();
-            RefreshDevastationMarker();
+
+            try
+            {
+                RefreshDevastationMarker();
+            }
+            catch (Exception ex)
+            {
+                LogFirstFailure("devastation marker", ex);
+            }
         }
 
         public override void OnFinalize()
@@ -48,13 +61,29 @@ namespace Byzantium1071.Campaign.UI
             private set => SetField(ref _devastationMarkerVisible, value, nameof(B1071DevastationMarkerVisible));
         }
 
+        /// <summary>
+        /// Gauntlet calls this through ViewModel.ExecuteCommand, whose InvokeWithLog logs and
+        /// rethrows, and GauntletView.OnCommand does not catch either, so neither stops an
+        /// exception from here. The tooltip rows are built inside ExecuteBeginHint and
+        /// bind to game members TaleWorlds has changed before: by v1.5.6 the TooltipProperty
+        /// constructor had gained a parameter, so a build compiled against an earlier game
+        /// references one that no longer exists and gets MissingMethodException. Caught here, a failure costs this
+        /// hover's tooltip, not the campaign.
+        /// </summary>
         [DataSourceMethod]
         public void ExecuteB1071NameplateHoverBegin()
         {
             if (!Settings.EnableSettlementNameplateTooltips)
                 return;
 
-            _tooltip.ExecuteBeginHint();
+            try
+            {
+                _tooltip.ExecuteBeginHint();
+            }
+            catch (Exception ex)
+            {
+                LogFirstFailure("hover tooltip", ex);
+            }
         }
 
         [DataSourceMethod]
@@ -112,6 +141,17 @@ namespace Byzantium1071.Campaign.UI
         /// </summary>
         private List<TooltipProperty> BuildTooltipProperties() =>
             B1071_SettlementTooltipContent.Build(ViewModel?.Settlement);
+
+        // One line per launch: both guarded paths can fail on every frame or every hover, and
+        // the first stack trace is the one that names the missing game member.
+        private static void LogFirstFailure(string surface, Exception ex)
+        {
+            if (_failureLogged)
+                return;
+
+            _failureLogged = true;
+            Debug.Print($"[Byzantium1071][SettlementNameplate] {surface} failed: {ex}");
+        }
     }
 
     [PrefabExtension("SettlementNameplateItemSmall", "descendant::ButtonWidget[@Id='SettlementNameplateCapsuleWidget']")]

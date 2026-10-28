@@ -134,5 +134,50 @@ namespace Byzantium1071.Tests
                 Assert.Equal(entry.Value, loaded[entry.Key]);
             }
         }
+
+        [Fact]
+        public void PressureBandsRoundTripAndKeepHysteresisAcrossLoad()
+        {
+            var settings = new FakeSettings
+            {
+                PressureBandRisingStart = 35f,
+                PressureBandCrisisStart = 85f,
+                PressureBandHysteresis = 5f
+            };
+            StringMapSaveData<int> saved = B1071_ManpowerSaveMath.FlattenPressureBands(
+                new Dictionary<string, DiplomacyPressureBand>
+                {
+                    ["empire"] = DiplomacyPressureBand.Crisis,
+                    ["vlandia"] = DiplomacyPressureBand.Rising
+                });
+            var loaded = new Dictionary<string, DiplomacyPressureBand> { ["stale"] = DiplomacyPressureBand.Low };
+
+            B1071_ManpowerSaveMath.ReplacePressureBands(loaded, saved.Keys, saved.Values);
+
+            Assert.Equal(2, loaded.Count);
+            Assert.Equal(DiplomacyPressureBand.Crisis, loaded["empire"]);
+            Assert.Equal(DiplomacyPressureBand.Rising, loaded["vlandia"]);
+            // Inside the hysteresis margin the restored band holds; re-evaluating from Low would not.
+            Assert.Equal(DiplomacyPressureBand.Crisis,
+                B1071_ExhaustionMath.EvaluatePressureBand(82f, loaded["empire"], settings));
+            Assert.Equal(DiplomacyPressureBand.Rising,
+                B1071_ExhaustionMath.EvaluatePressureBand(82f, DiplomacyPressureBand.Low, settings));
+        }
+
+        [Fact]
+        public void PressureBandsDropUndefinedValuesAndLoadEmptyFromOlderSaves()
+        {
+            var loaded = new Dictionary<string, DiplomacyPressureBand>();
+
+            B1071_ManpowerSaveMath.ReplacePressureBands(loaded, new[] { "empire", "", "nord" }, new[] { 7, 2, 1 });
+
+            KeyValuePair<string, DiplomacyPressureBand> entry = Assert.Single(loaded);
+            Assert.Equal("nord", entry.Key);
+            Assert.Equal(DiplomacyPressureBand.Rising, entry.Value);
+
+            B1071_ManpowerSaveMath.ReplacePressureBands(loaded, null, null);
+
+            Assert.Empty(loaded);
+        }
     }
 }

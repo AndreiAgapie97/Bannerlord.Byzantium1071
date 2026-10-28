@@ -124,7 +124,7 @@ namespace Byzantium1071.GameTests
             // manager happens to have loaded.
             Assert.Equal("b1071_revenue_taper", ((TextObject)label.GetValue(null)!).GetID());
 
-            foreach (string language in new[] { "", "French", "German", "Chinese" })
+            foreach (string language in new[] { "", "French", "German", "Chinese", "Korean" })
             {
                 string path = Path.Combine(
                     RepositoryRoot(), "_Module", "ModuleData", "Languages", language,

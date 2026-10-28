@@ -139,10 +139,13 @@ namespace Byzantium1071.Campaign.Behaviors
         /// <summary>
         /// If a third-party mod (e.g. EconomyOverhaul) replaces the food model with a class
         /// that does NOT inherit from DefaultSettlementFoodModel, our static Harmony patches on
-        /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange become dead code.
+        /// DefaultSettlementFoodModel.CalculateTownFoodStocksChange become dead code. So do
+        /// they when the replacement does inherit from it but overrides that method without
+        /// calling base: Harmony patches the method body, not the virtual slot.
         ///
-        /// This method detects that situation at runtime and applies the same Postfix methods
-        /// (DevastationFoodPatch + SlaveFoodPatch) directly to the actual food model.
+        /// This method detects either situation at runtime and applies the same Postfix methods
+        /// (DevastationFoodPatch + SlaveFoodPatch) directly to the method the game actually runs:
+        /// the replacement's own method, or the override that skips the original.
         /// </summary>
         private static void ApplyDynamicFoodPatchIfNeeded()
         {
@@ -154,17 +157,29 @@ namespace Byzantium1071.Campaign.Behaviors
                 if (foodModel == null) return;
 
                 Type modelType = foodModel.GetType();
+                MethodInfo? targetMethod;
 
                 if (typeof(DefaultSettlementFoodModel).IsAssignableFrom(modelType))
                 {
-                    // Model inherits from Default → static [HarmonyPatch] works → nothing to do.
-                    return;
+                    // Model inherits from Default → the static [HarmonyPatch] runs unless an
+                    // override on the way down skips the original, and then that override is
+                    // the method to patch. Patching it as well when it calls base would apply
+                    // both postfixes twice, so a chain that reaches the original returns here.
+                    MethodInfo? original = typeof(DefaultSettlementFoodModel).GetMethod(
+                        "CalculateTownFoodStocksChange",
+                        BindingFlags.Instance | BindingFlags.Public);
+                    targetMethod = original == null
+                        ? null
+                        : B1071_CompatibilityChecker.FindOverrideSkippingOriginal(modelType, original);
+                    if (targetMethod == null) return;
                 }
-
-                // Non-default food model detected (e.g. BLM_TownProductionModel from EconomyOverhaul).
-                MethodInfo? targetMethod = modelType.GetMethod(
-                    "CalculateTownFoodStocksChange",
-                    BindingFlags.Instance | BindingFlags.Public);
+                else
+                {
+                    // Non-default food model detected (e.g. BLM_TownProductionModel from EconomyOverhaul).
+                    targetMethod = modelType.GetMethod(
+                        "CalculateTownFoodStocksChange",
+                        BindingFlags.Instance | BindingFlags.Public);
+                }
 
                 if (targetMethod == null)
                 {
@@ -195,7 +210,7 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 _dynamicFoodPatchApplied = true;
-                Debug.Print($"[Byzantium1071] Non-default food model detected ({modelType.Name}), applied {applied} dynamic compat food patches");
+                Debug.Print($"[Byzantium1071] Food model {modelType.Name} does not run the default food calculation; applied {applied} dynamic compat food patches to {targetMethod.DeclaringType?.Name}.{targetMethod.Name}");
                 Byzantium1071.Campaign.B1071_SessionAudit.RecordCompatFoodPatches(applied);
             }
             catch (Exception ex)

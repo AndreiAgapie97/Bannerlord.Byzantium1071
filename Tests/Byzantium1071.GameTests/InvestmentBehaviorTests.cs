@@ -108,7 +108,7 @@ namespace Byzantium1071.GameTests
             Assert.Equal(0f, Bonus(behavior, place, village));
             var saved = new Store(false);
             behavior.SyncData(saved);
-            Assert.Equal(2, saved.Values.Count);
+            Assert.Equal(3, saved.Values.Count);
             Assert.All(saved.Values.Values, map => Assert.Empty(map));
         }
 

@@ -22,6 +22,29 @@ namespace Byzantium1071.Tests
             yield return new object[] { "French", LanguageFile("French") };
             yield return new object[] { "German", LanguageFile("German") };
             yield return new object[] { "Chinese", LanguageFile("Chinese") };
+            yield return new object[] { "Korean", LanguageFile("Korean") };
+        }
+
+        // Bannerlord reads a module's translations only through the language_data.xml files
+        // under ModuleData/Languages, under their LanguageData id, which must be the game's own
+        // name for the language. The <tag> inside a strings file is never read. Every
+        // translation once shipped without these files and was never loaded.
+        // LanguageLoadingTests in the game suite runs the real loader.
+        [Theory]
+        [InlineData("French", "Français")]
+        [InlineData("German", "Deutsch")]
+        [InlineData("Chinese", "简体中文")]
+        [InlineData("Korean", "한국어")]
+        public void TranslationIsRegisteredUnderTheGameLanguageId(string language, string gameLanguageId)
+        {
+            XElement root = XDocument.Load(
+                RepositoryPaths.FromRoot("_Module", "ModuleData", "Languages", language, "language_data.xml")).Root!;
+
+            Assert.Equal("LanguageData", root.Name.LocalName);
+            Assert.Equal(gameLanguageId, (string?)root.Attribute("id"));
+            Assert.Contains(
+                $"{language}/std_module_strings_xml.xml",
+                root.Elements("LanguageFile").Select(file => (string?)file.Attribute("xml_path")));
         }
 
         [Fact]
@@ -120,6 +143,7 @@ namespace Byzantium1071.Tests
             AssertLanguageFileConvention(LanguageFile("French"), hasBom: false, "<?xml version='1.0' encoding='utf-8'?>");
             AssertLanguageFileConvention(LanguageFile("German"), hasBom: false, "<?xml version='1.0' encoding='utf-8'?>");
             AssertLanguageFileConvention(LanguageFile("Chinese"), hasBom: true, "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+            AssertLanguageFileConvention(LanguageFile("Korean"), hasBom: true, "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         }
 
         private static void AssertLanguageFileConvention(string path, bool hasBom, string xmlDeclaration)

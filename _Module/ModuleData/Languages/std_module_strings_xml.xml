@@ -150,6 +150,7 @@
     <string id="b1071_compat_model_hint_handled" text="{MODEL}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed." />
     <string id="b1071_compat_model_hint_subclass" text="{MODEL}: Another mod has modified this system (as an extension of the original). Campaign++ features here should still work, but check in-game if something feels off." />
     <string id="b1071_compat_model_hint_replaced" text="{MODEL}: Another mod has fully replaced this system. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off." />
+    <string id="b1071_compat_model_hint_skips_original" text="{MODEL}: Another mod has changed this system and skips the game's own calculation. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off." />
     <string id="b1071_compat_risk_warning" text="REVIEW" />
     <string id="b1071_compat_risk_caution" text="STACKING" />
     <string id="b1071_compat_risk_safe" text="COMPATIBLE" />

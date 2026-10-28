@@ -24,23 +24,29 @@ All Campaign++ system behaviors expose a static `Instance` property for read-onl
 **Access:** `B1071_ManpowerBehavior.Instance`
 
 **Public read-only methods:**
-- `GetManpowerPool(Settlement settlement, out int current, out int maxDaily, out int maxTotal)` — retrieve the settlement's manpower state
-- `GetWarExhaustion(string kingdomStringId)` → `float` — retrieve current exhaustion for a kingdom
-- `IsMultiFrontCrisis(Kingdom kingdom)` → `bool` — check if a kingdom meets multi-front crisis conditions
-- `CanRecruitCountForPlayer(Settlement settlement, MobileParty party, CharacterObject troop, int amount, out int available, out int costPer, out Settlement? pool)` → `bool` — query whether manpower availability permits recruitment
+- `GetManpowerPool(Settlement? settlement, out int cur, out int max, out Settlement pool)` — returns nothing; fills the current and maximum manpower of the pool the settlement draws from. A village resolves to its bound town or castle, which is returned in `pool`. A settlement with no pool (null, or a village with no bound settlement) yields `cur = 0`, `max = 1` and a null `pool`
+- `GetManpowerRatio(Settlement settlement)` → `float` — `cur / max` of the same pool, clamped to 0–1; `1` when `max` is not positive
+- `GetManpowerUiLine(Settlement settlement)` → `string` — the pool as display text, `"Manpower: {cur}/{max}"`
+- `GetWarExhaustion(string? kingdomId)` → `float` — current exhaustion for a kingdom by `StringId`; `0` for a null, empty or untracked id
+- `GetPressureBand(string? kingdomId)` → `DiplomacyPressureBand` (`Low`, `Rising`, `Crisis`; namespace `Byzantium1071.Campaign`) — the kingdom's diplomacy pressure band. With `EnableDiplomacyPressureBands` off it is derived from exhaustion by the legacy thresholds instead of the stored band. `Low` for a null or empty id
+- `IsKingdomPairUnderTruce(Kingdom? kingdom, IFaction? otherFaction, out float daysRemaining)` → `bool` — whether Campaign++ holds a truce between the two kingdoms. Not strictly read-only: an expired entry it finds is removed
 
-**Intended use:** Submods can query manpower state and war exhaustion to make AI decisions, detect crisis conditions, or adjust recruitment logic
+**Public mutating methods:**
+- `RegisterKingdomPairTruce(IFaction? faction1, IFaction? faction2)` — starts a `ForcedPeaceTruceDays` truce between two kingdoms (a no-op unless both are `Kingdom` and the setting is above zero). With `EnableTruceEnforcement` on, Campaign++ already calls it after every peace, and while the truce runs its war-declaration and ally call-to-war gates refuse new wars between the pair
+
+**Intended use:** Submods can query manpower state, war exhaustion, pressure bands and truces to make AI decisions or adjust recruitment logic
 
 **Off-limits:**
-- Direct mutation of `_manpowerPools`, `_warExhaustion`, `_casualtiesByPair` dicts (use settings/behavior provided methods)
-- Private helper methods like `ApplyWarEffectsToKingdom`, `TrackWallVaultTrustAndPraseodymium`
+- Direct mutation of `_manpowerByPoolId`, `_warExhaustion`, `_casualtiesByPair`, `_truceExpiryByPair`, `_pressureBandByKingdom` dicts (internal state)
+- `IsMultiFrontCrisis`, `CanRecruitCountForPlayer`, `ConsumeManpowerPublic` and the other `internal` members — never public, despite earlier editions of this document listing the first two
 
 **Example:**
 ```csharp
 var behavior = B1071_ManpowerBehavior.Instance;
-if (behavior != null && behavior.GetManpowerPool(mySettlement, out int cur, out _, out _))
+if (behavior != null)
 {
-    if (cur < 100 && behavior.GetWarExhaustion(mySettlement.OwnerClan.Kingdom.StringId) > 50f)
+    behavior.GetManpowerPool(mySettlement, out int cur, out _, out _);
+    if (cur < 100 && behavior.GetWarExhaustion(mySettlement.OwnerClan?.Kingdom?.StringId) > 50f)
     {
         // Settlement is in crisis: low manpower + high exhaustion
     }
@@ -55,19 +61,31 @@ if (behavior != null && behavior.GetManpowerPool(mySettlement, out int cur, out 
 **Access:** `B1071_CastleRecruitmentBehavior.Instance`
 
 **Public read-only methods:**
-- `GetRecruitablePrisoners(Settlement castle)` → `List<(CharacterObject troop, int count, int days_held, int gold_cost)>` — return only the count backed by native conformity; legacy `days_held` is zero after migration
-- `GetPendingPrisoners(Settlement castle)` → `List<(CharacterObject Troop, int Count, int DaysHeld, int DaysRequired)>` — only the remaining unready count; both legacy day fields are zero
+- `GetRecruitablePrisoners(Settlement castle)` → `List<(CharacterObject Troop, int Count, int DaysHeld, int GoldCost)>` — return only the count backed by native conformity; the legacy `DaysHeld` field is always zero
+- `GetPendingPrisoners(Settlement castle)` → `List<(CharacterObject Troop, int Count, int DaysHeld, int DaysRequired)>` — only the remaining unready count; both legacy day fields are always zero
 - `GetPrisonerConformity(Settlement castle, CharacterObject troop)` → `(int Points, int Required)` — capped native conformity total and the active model requirement per recruit. To display progress toward the next prisoner, use `Points % Required` when `Required > 0`
 - `IsReadyForRecruitment(string castleStringId, CharacterObject troop)` → `bool` — at least one prisoner has enough conformity
 - `GetDaysHeld(...)` and `GetRequiredDaysForTier(...)` retain their signatures for compatibility; the former is zero after session migration and the latter is an old-save migration setting, not a current ETA
-- `GetElitePoolCount(Settlement castle, CharacterObject troop)` → `int` — retrieve elite pool stock for one troop at a castle
+- `GetElitePoolTroops(Settlement castle)` → `List<(CharacterObject Troop, int Count, int GoldCost)>` — the elite pool stock at a castle, one entry per troop with a positive count
+- `GetElitePoolTotal(Settlement castle)` → `int` — total elite troops in that castle's pool
+- `GetGoldCostForTier(int tier)` → `int` — base gold price per recruit for a tier, before clan discounts and waivers
+- `GetPlayerEffectivePrisonerCost(Settlement castle, CharacterObject troop)` → `int` — what the player would pay for the next prisoner of that troop, after the depositor and clan waivers
+- `GetCultureEliteTroops(CultureObject culture)` → `List<CharacterObject>` — the T4–T6 troops of a culture's basic and elite trees plus extra volunteer trees found on same-culture settlements; cached per session, so do not modify the returned list
+- `CanPlayerAccessCastle(Settlement castle)` → `bool` *(static)* — whether the player clan passes the castle-recruitment access rule, the same check AI lords use
 - `IsLowTierEnslavementAvailable(Settlement castle)` → `bool` — whether low-tier prisoners held at this castle can be processed at all: the Slave Economy is enabled **and** the castle's faction owns a town to sell to. Deliberately does not test the current slave price, which is a temporary condition. Returns `false` for a null settlement. *(v1.0.2.4)*
+
+**Public mutating methods:**
+- `TryRecruitPrisoner(Settlement castle, CharacterObject troop)` → `bool` — moves one ready prisoner into the player's party, charging the player any fee owed to the depositor and castle owner. Costs no manpower
+- `TryRecruitElite(Settlement castle, CharacterObject troop)` → `bool` — moves one elite from the castle pool into the player's party; the player pays half price at his own clan's castle. Checks and draws manpower when `CastleRecruitDrainsManpower` is on
+
+Both act for the main party only, register the recruit with the service clock, and return `false` before touching any roster or gold when the troop is unavailable, the player is short of gold, or (elites) manpower is short.
 
 **Intended use:** Query castle recruitment state for overlay/reporting, prison processing logic, or allied settlement analysis
 
 **Off-limits:**
 - Prison roster mutation (use Bannerlord's prisoner actions)
-- `_elitePool`, `_prisonerDaysHeld`, `_conformityRemainders`, `_conformityCursors`, `_depositorTracking` dicts (internal state)
+- `_elitePool`, `_prisonerDaysHeld`, `_conformityRemainders`, `_conformityCursors`, `_depositorTracking`, `_enslavementXpTracking` dicts (internal state)
+- `RecordDeposit`, `RecordEnslavementXpDeposit` — public only so `B1071_CastlePrisonerDepositPatch` can reach them. Deposit records decide who is paid when those prisoners are recruited, so recording a deposit that did not happen misroutes fees
 - `AutoEnslaveLowTierPrisoners`, `DrainStrandedLowTierPrisoners`, `RegenerateElitePool` (called from daily tick)
 
 **Example:**
@@ -193,11 +211,12 @@ if (behavior != null && B1071_DemobilizationBehavior.TryGetPlayerRegisterAccess(
 **Access:** `B1071_SlaveEconomyBehavior.Instance`
 
 **Public read-only methods:**
-- `GetSlaveProductionRate(Settlement town)` → `float` — retrieve effective daily slave production (from market and garrison labor)
+- `GetSlaveCountForTown(Town town)` → `int` — the number of Slave goods in the town's market roster, the stock that drives the slave-labor construction bonus; `0` for a null town or when the Slave item is not loaded
 
 **Intended use:** Analyze settlement labor capacity, economic output, or AI decision-making
 
 **Off-limits:**
+- `GetSlaveCount`, `RemoveCarriedSlave`, `ApplySharedCaptiveEscapes` (`internal` — slave transport and escape handling)
 - Town/garrison labor allocation logic (internal)
 - Slave market pricing (use town market APIs directly)
 
@@ -209,9 +228,43 @@ if (behavior != null && B1071_DemobilizationBehavior.TryGetPlayerRegisterAccess(
 **Access:** `B1071_GovernanceBehavior.Instance`
 
 **Public read-only methods:**
-- None currently exposed; limited submod use case
+- `GetStrain(Settlement settlement)` → `float` — the settlement's governance strain, from 0 up to the `GovernanceStrainCap` setting; `0` for null or untracked
+- `GetStrainForTown(Town town)` → `float` — the same for a town's settlement
 
-**Intended use:** Observe governance-related campaign events; do not depend on current state access
+**Public mutating methods:**
+- `ReduceStrain(Settlement settlement, float amount)` — lowers strain by `amount`, never below zero; a non-positive amount is a no-op. Campaign++ calls it from governance stabilization
+
+**Intended use:** Display governance strain, or relieve it from your own mechanic through `ReduceStrain`
+
+**Off-limits:**
+- `_strainBySettlement` (internal state)
+
+---
+
+### B1071_GovernanceStabilizationBehavior
+
+**Location:** `Byzantium1071.Campaign.Behaviors`  
+**Access:** `B1071_GovernanceStabilizationBehavior.Instance`
+
+**Public read-only methods:**
+- `GetActiveLoyaltyBonus(Town town)` → `float`, `GetActiveSecurityBonus(Town town)` → `float`, `GetActiveStrainDecayBonus(Settlement settlement)` → `float` — the bonus from the settlement's active stabilization, or `0` when none is running or `EnableGovernanceStabilization` is off
+
+**Off-limits:**
+- `_daysRemaining`, `_loyaltyBonus`, `_securityBonus`, `_strainDecayBonus`, `_heroLastStabilizationDay` (internal state)
+
+---
+
+### B1071_DevastationBehavior
+
+**Location:** `Byzantium1071.Campaign.Behaviors`  
+**Access:** `B1071_DevastationBehavior.Instance`
+
+**Public read-only methods:**
+- `GetDevastation(Village village)` → `float` — the village's devastation, 0–100; `0` for null or untracked
+- `GetAverageBoundVillageDevastation(Town town)` → `float` — mean devastation over the town's bound villages; `0` when it has none
+
+**Off-limits:**
+- `_devastationByVillage` (internal state)
 
 ---
 
@@ -237,7 +290,7 @@ if (behavior != null && B1071_DemobilizationBehavior.TryGetPlayerRegisterAccess(
 **Intended use:** Inspect Campaign++ tracking for overlays, reports, or compatibility decisions. `RegisterRescuedClan` is for integrations that deliberately create a fully initialized independent clan; it is not a general-purpose “rescue this clan” operation.
 
 **Off-limits:**
-- `_rescuedClans` and `_alreadyRescued` (persistent state and session guard)
+- `_rescuedClans` and `B1071_ClanSurvivalPatch._alreadyRescued` (persistent state and session guard)
 - `ScanAndRescueHomelessRebelClans`, `NormalizeRebelClan`, `IsRebelClanOrigin`, `UnregisterRescuedClan`, and `StopTracking` (private/internal lifecycle methods)
 - Treating `IsTracked(clan)` as proof that a dead or leaderless clan should be kept alive
 
@@ -270,7 +323,7 @@ if (behavior != null && behavior.IsTracked(clan))
 **Intended use:** Add investment display/tooltip info, query growth bonuses for tooltips
 
 **Off-limits:**
-- `_investDaysRemaining`, `_investHearthBonus` dicts
+- `_investDaysRemaining`, `_investHearthBonus` (village), `_investProsperityBonus` (town) dicts
 - `ApplyInvestment`, `OnSettlementEntered` (lifecycle)
 
 ---
@@ -280,14 +333,17 @@ if (behavior != null && behavior.IsTracked(clan))
 ### B1071_McmSettings
 
 **Location:** `Byzantium1071.Campaign.Settings`  
-**Access:** `B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults`
+**Access:** `B1071_McmSettings.Instance` — may be null, so check it. Campaign++'s own `B1071_McmSettings.Defaults` fallback is `internal`, so a submod supplies its own fallback.
 
 All mod settings are public properties on this singleton. **Read directly; never mutate.**
 
 ```csharp
-var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-bool castleRecruitmentEnabled = settings.EnableCastleRecruitment;
-int manpowerMultiplier = settings.ManpowerPoolMultiplier;
+var settings = B1071_McmSettings.Instance;
+if (settings != null)
+{
+    bool castleRecruitmentEnabled = settings.EnableCastleRecruitment;
+    int manpowerCostPerTroop = settings.BaseManpowerCostPerTroop;
+}
 ```
 
 **Safe operations:**
@@ -322,12 +378,14 @@ public members — it re-weights native AI scores and is not a supported extensi
 
 | Property | Retired in | Read this instead |
 |---|---|---|
-| `CastleRecruitT4Days` / `CastleRecruitT5Days` / `CastleRecruitT6Days` | Unreleased | Migration-only exception: used once to interpret old timers. Query `GetPrisonerConformity` for current progress. |
+| `CastleRecruitT4Days` / `CastleRecruitT5Days` / `CastleRecruitT6Days` | 1.0.5.0 | Migration-only exception: used once to interpret old timers. Query `GetPrisonerConformity` for current progress. |
 | `TiersPerExtraCost` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
 | `CostMultiplierPercent` | 1.0.1.x | flat `BaseManpowerCostPerTroop` |
 | `EnableTierSurvivability` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
 | `EnableTierArmorSimulation` | 1.0.2.5 | `EliteSurvivabilityPreset` (0–3) |
 | `EnableSettlementManpowerTooltips` | 1.0.3.3 | `EnableSettlementNameplateTooltips` |
+| `SlaveConstructionBonusDays` | 0.1.7.4 | nothing — the slave-labor construction bonus follows market stock daily (`GetSlaveCountForTown`) |
+| `EnableExperimentalHoverFallback` | 0.1.5.1 or earlier | nothing — never read |
 
 `EliteSurvivabilityPreset` drives both autoresolve tier systems at once — damage reduction and the wound-vs-kill bonus. `0` disables both; `1` (default) through `3` scale them together. The curve itself lives in `B1071_CombatRealismTuning`, which is `internal` — read the preset, not the tables.
 
@@ -340,14 +398,14 @@ Subscribe to Bannerlord's standard `CampaignEvents` and Campaign++'s behaviors t
 **Safe to subscribe:**
 ```csharp
 CampaignEvents.DailyTickEvent.AddNonSerializedListener(myBehavior, OnDailyTick);
-CampaignEvents.OnSettlementOwnerChanged.AddNonSerializedListener(myBehavior, OnOwnerChanged);
+CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(myBehavior, OnOwnerChanged);
 ```
 
 **Campaign++ internal event subscriptions (for reference):**
 - `OnSessionLaunchedEvent` → behavior initialization
 - `DailyTickEvent`, `DailyTickSettlementEvent` → system updates
 - `OnPrisonerDonatedToSettlementEvent` → castle recruitment tracking
-- `SettlementEntered` → investment AI, compatibility checks
+- `SettlementEntered` → investment, governance stabilization, demobilization, slave economy, manpower and telemetry behaviors
 - All events registered as `NonSerializedListener` (do not persist across saves)
 
 ---
@@ -365,12 +423,33 @@ Campaign++ uses Harmony to patch vanilla Bannerlord classes. If your submod also
 ### Fragile Patch Targets (Private/internal)
 
 Campaign++ patches these private methods. Document your dependency version:
-- `RecruitmentCampaignBehavior.ApplyInternal` (v1.4.8 verified, no nameof)
-- `RecruitmentVM.OnDone` / `RefreshScreen` / `RefreshPartyProperties` (v1.4.8 verified)
-- `DefaultClanFinanceModel.CalculateClanIncomeInternal` (v1.4.8 verified)
-- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` (v1.4.8 verified)
-- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` (v1.4.8 verified)
-- Several private DefaultSettlementGarrisonModel overloads
+- `RecruitmentCampaignBehavior.ApplyInternal` (v1.5.6 verified, no nameof)
+- `RecruitmentVM.OnDone` / `RefreshScreen` / `RefreshPartyProperties` (v1.5.6 verified)
+- `DefaultClanFinanceModel.CalculateClanIncomeInternal` (v1.5.6 verified)
+- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` (v1.5.6 verified)
+- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` (v1.5.6 verified)
+- `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange(Town)` — prefix and postfix that charge manpower for garrison auto-recruits. Campaign++'s `DefaultSettlementGarrisonModel` patch is on the public `GetMaximumDailyAutoRecruitmentCount(Town, bool)`
+- `PrisonerReleaseCampaignBehavior.HourlyPartyTick` — prefix; see below
+
+`RecruitmentVM.RefreshScreen` became public in game v1.3.15 but is still bound by string name. Campaign++ checks at launch that each of the other targets above actually received its patch, along with four public ones: `AllianceCampaignBehavior.StartCallToWarAgreement`, `DefaultClanFinanceModel.CalculateTownIncomeFromTariffs` and `CalculateVillageIncome`, and `DefaultSettlementTaxModel.CalculateTownTax` (`VerifyCriticalPatches` in `SubModule.cs`).
+
+### Where Campaign++ skips the original
+
+These prefixes can return `false`, which skips the vanilla method. A submod patching the same target should use a postfix, or check `__runOriginal`:
+
+- `RecruitmentCampaignBehavior.ApplyInternal`, `RecruitVolunteerVM.ExecuteRecruit`, `RecruitmentVM.ExecuteRecruitAll`, `RecruitmentVM.OnDone` — recruitment refused for lack of manpower
+- `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` — castle prisoners kept instead of sold
+- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` — prisoner donation influence
+- `DestroyClanAction.Apply`, `DestroyClanAction.ApplyByClanLeaderDeath` — a clan rescued by Clan Survival is not destroyed
+- `Kingdom.AddDecision` — a kingdom's war-declaration proposal against another kingdom refused under the war block below; other decisions pass
+- `AllianceCampaignBehavior.StartCallToWarAgreement` — an ally's call to war refused under the same war block, applied to the called kingdom. Skipping it also skips the call-to-war payment and the alliance extension
+
+Both exempt the player's kingdom (for a call to war, as caller or called) unless `DiplomacyEnforcePlayerParity` is on.
+
+The war block refuses a new war while the pair holds a Campaign++ truce (with `EnableTruceEnforcement` on), or while the kingdom is in the `Crisis` band — at or above the legacy no-war exhaustion threshold when `EnableDiplomacyPressureBands` is off.
+- `PrisonerReleaseCampaignBehavior.HourlyPartyTick` — whenever a party carries Slave goods, Campaign++ skips the vanilla tick and rolls escapes itself, over prisoners and slaves together against the shared capacity
+
+Slave goods a mobile party carries take up prisoner room through postfixes on `PartyBase.PrisonerSizeLimit` (the result is the capacity left after slaves) and `PrisonerSizeLimitExplainer`, `PartyScreenLogic.RightPartyPrisonersSizeLimit` and `PartyVM.IsMainPrisonersLimitWarningEnabled`. They also slow the party and eat food through postfixes on `DefaultPartySpeedCalculatingModel.CalculateBaseSpeed` and `DefaultMobilePartyFoodConsumptionModel.CalculateDailyBaseFoodConsumptionf`. A submod reading these values sees Campaign++'s adjusted figure.
 
 **If you patch private methods, pin to the Bannerlord version via `Campaign++/SubModule.xml` compatibility tag and re-test after each game update.** Note that Harmony binds prefix/postfix parameters by **name**, so a game update that renames a parameter will compile cleanly and then throw at patch time — verify parameter names, not just signatures.
 
@@ -387,14 +466,14 @@ If your submod patches any of these models, patch the `Default*` type rather tha
 [HarmonyPatch(typeof(DefaultSettlementGarrisonModel), nameof(DefaultSettlementGarrisonModel.GetMaximumDailyAutoRecruitmentCount))]
 public static class MyGarrisonPatch
 {
-    static void Postfix(ref int __result)
+    static void Postfix(ref ExplainedNumber __result)
     {
-        __result = Math.Min(__result, myCustomLimit);  // further restrict, never re-enable
+        __result.LimitMax(myCustomLimit, new TextObject("My limit"));  // further restrict, never re-enable
     }
 }
 
 // ✗ AVOID: Prefix blocks vanilla entirely  
-[HarmonyPatch(typeof(DefaultVolunteerModel), nameof(DefaultVolunteerModel.GetDailyVolunteerProductionBase))]
+[HarmonyPatch(typeof(DefaultVolunteerModel), nameof(DefaultVolunteerModel.GetDailyVolunteerProductionProbability))]
 public static class MyVolunteerPatch
 {
     static bool Prefix()
@@ -415,7 +494,7 @@ var harmony = new Harmony("com.yourname.yourmod");
 
 ## Models (Read-Only Calculations)
 
-Campaign++ does not expose custom models. All calculations are embedded in behavior daily-tick or recruitment-path logic.
+Campaign++ exposes no model API. It registers one model of its own through `AddModel`, `B1071_ManpowerMilitiaModel` (a `DefaultSettlementMilitiaModel` subclass overriding `CalculateMilitiaChange`); everything else is Harmony patches on the vanilla `Default*` models or behavior daily-tick and recruitment-path logic.
 
 **If you need to override settlement/party calculations:**
 1. Use `AddModel` in your behavior's `OnGameStart`
@@ -426,7 +505,8 @@ Campaign++ does not expose custom models. All calculations are embedded in behav
 ```csharp
 public class MyManpowerModel : DefaultSettlementGarrisonModel
 {
-    public override int GetDailyWageAmount(Settlement settlement) => /* custom */;
+    // Call base to keep Campaign++'s manpower cap: its postfix is on this base method.
+    public override ExplainedNumber GetMaximumDailyAutoRecruitmentCount(Town town, bool includeDescriptions) => /* custom */;
 }
 
 private void OnGameStart(CampaignGameStarter starter)
@@ -453,7 +533,7 @@ public override void SyncData(IDataStore dataStore)
 **Unsafe pattern:**
 ```csharp
 // DON'T do this — internal state may reorganize
-var campaignState = B1071_ManpowerBehavior.Instance._manpowerPools;
+var campaignState = B1071_ManpowerBehavior.Instance._manpowerByPoolId;
 ```
 
 ### Late-Install Safety
@@ -489,6 +569,7 @@ using Byzantium1071.Campaign.Behaviors;
 using Byzantium1071.Campaign.Settings;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.Settlements;
 
 namespace MyPopulationMod.Campaign
 {
@@ -515,8 +596,8 @@ namespace MyPopulationMod.Campaign
             mpBehavior.GetManpowerPool(settlement, out int curManpower, out _, out _);
 
             // Only boost hearth growth if manpower is healthy
-            var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
-            if (curManpower > settings.ManpowerPoolMultiplier * 50)
+            var settings = B1071_McmSettings.Instance;
+            if (settings != null && curManpower > settings.BaseManpowerCostPerTroop * 50)
             {
                 settlement.Village.Hearth += 0.5f;  // custom growth bonus
             }
@@ -564,4 +645,4 @@ namespace MyPopulationMod.Campaign
 
 ---
 
-**Last updated:** v1.0.2.7 (August 2026)
+**Last updated:** v1.0.5.0 (October 2026)

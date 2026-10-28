@@ -1,7 +1,7 @@
 # Byzantium 1071 — Complete Mod Explanation
 
-**Version:** 1.0.4.0
-**Target Game:** Mount & Blade II: Bannerlord v1.5.3 beta (installed target; Warsails/NavalDLC v1.3.3 verified)<br>
+**Version:** 1.0.5.0
+**Target Game:** Mount & Blade II: Bannerlord v1.5.6 beta (installed target; Warsails/NavalDLC v1.3.6 verified)<br>
 **Mod ID:** `Byzantium1071`
 
 ---
@@ -55,7 +55,11 @@ The mod is designed to be **fully symmetric**: the same rules that limit *your* 
 
 Everything is configurable via the Mod Configuration Menu (MCM). If a feature is not to your taste, almost every system can be individually toggled.
 
-Localization uses Bannerlord's standard keyed `TextObject` workflow (`{=key}` + `SetTextVariable`) backed by language dictionaries in `_Module/ModuleData/Languages/` (English, Simplified Chinese, French, and German), so text follows the player's selected game language.
+Localization uses Bannerlord's standard keyed `TextObject` workflow (`{=key}` + `SetTextVariable`) backed by language dictionaries in `_Module/ModuleData/Languages/` (English, Simplified Chinese, French, German, and Korean), so text follows the player's selected game language.
+
+The game finds those dictionaries only through registration files. `LocalizedTextManager.LoadLocalizationXmls` searches each module's `ModuleData/Languages` for `language_data.xml`, and each one adds its `LanguageFile` paths to the language named by its `LanguageData` id. `French/`, `German/`, `Chinese/` and `Korean/` each carry one, with the id Native uses (`Français`, `Deutsch`, `简体中文`, `한국어`). The `<tag language="...">` inside a strings file is never read, so a correct tag proves nothing. A module id that matches no Native language would create a language with no ISO codes, which the game never offers. The files set `id` only. Setting `name` makes `LanguageData.Deserialize` replace the language's text processor, with null when `text_processor` is missing. English has no registration file: `LoadLanguage` skips the strings of `English` entirely, and the inline `{=key}` fallbacks are the English text. Until the registration files were added, no translation had ever loaded. `LanguageLoadingTests` now runs the real loader and reads a string back in each language.
+
+The Korean pack follows Native's Korean conventions. Korean particles change with the last sound of the word before them, and Native's `한국어` has no text processor to choose one, so after a placeholder that holds a name the pack writes both forms, as TaleWorlds' own translators do (`{SETTLEMENT}이(가)`, `{TROOP}을(를)`). `{PLURAL}` is dropped, which `TranslationPlaceholdersMatchEnglish` already allows for any placeholder ending in `PLURAL`. Romanian, Ukrainian and Belarusian are not Native languages: Harmony, ButterLib, UIExtenderEx and MCM define them in their own `language_data.xml` files, with ISO codes, so a pack registered under those ids would load as well.
 
 ---
 
@@ -389,7 +393,7 @@ AI lord parties currently at a non-hostile castle (same-faction or neutral) auto
 
 - Lords recruit up to their party size limit (no daily cap)
 - **Same-clan lords recruit elite-pool troops for 50% gold cost** — lords whose clan matches the castle's `OwnerClan` pay half price as a recruitment expense, including when the recruiter owns the castle. The payment leaves circulation rather than returning to the household
-- **Cross-clan lords pay gold** routed to the castle owner via `GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, settlement.Owner, cost)`
+- **Cross-clan lords pay gold** routed to the castle owner through `PayEliteRecruitment(party.LeaderHero, settlement.Owner, isSameClan, totalCost)`, the same helper the player path uses
 - **Per-unit processing (v0.1.7.1):** AI prisoner recruitment processes one unit at a time, peeking the current depositor and checking affordability before each recruit. This ensures correct depositor attribution when a troop type has mixed depositors in the FIFO queue
 - **Treasury reserve (v1.0.2.9):** every gold decision on this path runs through `GetAiBufferedAffordableCount(gold, costPerUnit, maxUnits)`, which allows a batch of `n` only while `gold > n x costPerUnit x CastleAiGoldBufferMultiplier` (default **3**). It is `CanAiAfford` generalised from one hero's fee to a batch, so what a lord keeps back grows with the wage bill he is taking on instead of sitting at a flat floor. The elite pool and the prisoner loop share it. Set the multiplier to 1 for the old spend-to-the-last-coin behaviour.
 - Elite recruitment drains manpower (if `CastleRecruitDrainsManpower` is enabled, default: yes). **Since v1.0.2.9 the AI reads the same two manpower values the player does:** the affordability gate is `GetRecruitCostForParty`, which carries the culture discount, and the charge is `GetManpowerChargePerTroop`, which does not. Previously the AI used the flat base cost for both, so a lord recruiting at a castle of his own culture was gated harder than the player standing beside him
@@ -480,7 +484,7 @@ The castle recruitment system uses a **consignment model** for prisoner income. 
 Two vanilla code paths would otherwise destroy prisoners before the castle recruitment system can use them:
 
 **Patch 1: Daily tick blocked** (`B1071_CastlePrisonerRetentionPatch`)
-The vanilla `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` sells ~10% of settlement prisoners daily at AI castles. This is **blocked** when castle recruitment is enabled. Without this patch, T4+ prisoners would vanish before completing their training period.
+The vanilla `PartiesSellPrisonerCampaignBehavior.DailyTickSettlement` sells ~10% of settlement prisoners daily at AI castles. This is **blocked** when castle recruitment is enabled. Without this patch, T4+ prisoners would vanish before earning their conformity.
 
 **Patch 2: Settlement entry redirected** (`B1071_CastlePrisonerDepositPatch`)
 The vanilla `OnSettlementEntered` handler fires when any non-player, friendly party enters a fortification. It collects ALL non-hero regular prisoners from the party and calls `SellPrisonersAction.ApplyForSelectedPrisoners`. Critical discovery: that action ONLY removes prisoners from the party's roster and pays gold — it **never adds them to the settlement's prison roster**. The prisoners simply vanish.
@@ -492,19 +496,20 @@ Our Harmony Prefix intercepts this for **both castles and towns** (v0.1.7.8):
 
 **Castle branch:** Non-hero regular prisoners are moved from the party's prison roster directly into the castle's prison roster (free deposit — lords deliver prisoners as duty, no gold paid). A **prison capacity check** enforces the vanilla `PrisonerSizeLimit` — when the castle prison is full, excess prisoners are not deposited and fall through to vanilla sell behavior at the next town. **When slave economy is disabled**, T1–T3 prisoners are skipped entirely (they have no processing pipeline at castles without auto-enslavement — the retention patch would trap them forever). They stay with the lord and vanilla sells them for ransom. Depositor tracking is recorded for the consignment income model. After the prefix, the party's roster contains only heroes (+ overflow/skipped regulars); vanilla's handler runs and handles what remains.
 
-T1–3 prisoners deposited this way will be auto-enslaved on the next daily tick (requires slave economy ON). T4+ prisoners begin their conversion day-count immediately.
+T1–3 prisoners deposited this way will be auto-enslaved on the next daily tick (requires slave economy ON). T4+ prisoners are moved with `TransferCastlePrisoners`, so they keep the conformity they already carried, and join the castle's shared conformity rotation on its next daily tick (see Source 2).
 
 **Town branch (v0.1.7.8 — race condition fix):** Non-hero prisoners at or below `CastlePrisonerAutoEnslaveTierMax` (default T3) are converted to `b1071_slave` trade goods and added directly to the town's market `ItemRoster`. The town **buys** each slave at the current market price — gold is deducted from `Town.Gold` and paid to the AI lord via `GiveGoldAction.ApplyForSettlementToCharacter`. If the town runs out of gold mid-batch, remaining T1–T3 prisoners stay with the lord for vanilla to sell/ransom. T4+ prisoners are left for vanilla normally. This branch was added to fix a critical race condition: vanilla's `OnSettlementEntered` handler registered before our `SlaveEconomyBehavior.OnSettlementEntered` (MbEvent fires FIFO), so vanilla would vaporize ALL prisoners before our mod could enslave them. Moving enslavement into the Harmony Prefix guarantees it runs first.
 
 ### Daily Tick Order
 
-The castle daily tick runs 5 steps in sequence:
+The castle daily tick (`OnDailyTickSettlement`) runs 6 steps in sequence:
 
 1. **AutoEnslave** — T1-T3 prisoners → slave market
-2. **AdvancePrisonerConformity** — Share the castle budget among unfinished prisoner types
-3. **RegenerateElitePool** — Add culture troops from manpower
-4. **AiAutoRecruit** — AI lords take from elite pool + ready prisoners
-5. **GarrisonAbsorbPrisoners** — Garrison absorbs ready prisoners (1/day)
+2. **DrainStrandedLowTierPrisoners** — vanilla-rate sale of T1–T3 prisoners, only when enslavement is unavailable at that castle (see the stranded-prisoner safety net above)
+3. **AdvancePrisonerConformity** — Share the castle budget among unfinished prisoner types
+4. **RegenerateElitePool** — Add culture troops from manpower
+5. **AiAutoRecruit** — AI lords take from elite pool + ready prisoners
+6. **GarrisonAbsorbPrisoners** — Garrison absorbs ready prisoners (1/day)
 
 ### Persistence
 
@@ -514,6 +519,7 @@ All castle recruitment data is saved with the campaign:
 - `_conformityRemainders` / `_conformityCursors`: per-castle fractional budget and rotation, saved in parallel lists
 - `_prisonerDaysHeld`: legacy day counters consumed once on session launch
 - `_elitePool`: per-castle per-troop stock counts (culture elite pool)
+- `_depositorTracking`: per-castle per-troop FIFO of depositor hero + count for the consignment economy
 - `_enslavementXpTracking`: per-castle per-troop FIFO of original depositor hero + party for delayed Roguery XP attribution
 
 The mod dictionaries are flattened into parallel lists for `SyncData` serialization. Native roster XP is saved by the game. Empty prisoner entries lose their points, and stale depositor tracking is cleaned when prisoners are recruited or removed.
@@ -527,7 +533,7 @@ The mod dictionaries are flattened into parallel lists for `SyncData` serializat
 | `CastleRecruitT4Days` / `T5Days` / `T6Days` | 10 / 21 / 35 | Legacy group: old-save timer migration only; no effect on ongoing conformity |
 | `CastleRecruitGoldT4` / `T5` / `T6` | 1200 / 2500 / 5000 | Gold cost per recruit by tier |
 | `CastleElitePoolMax` | 20 | Maximum elite troops per castle |
-| `CastleEliteRegenMin` / `RegenMax` | 1 / 3 | Daily regen range (scales with prosperity) |
+| `CastleEliteRegenMin` / `RegenMax` | 1 / 2 | Daily regen range (scales with prosperity) |
 | `CastleEliteManpowerCost` | 1 | Manpower cost per elite troop regenerated |
 | `CastleRecruitDrainsManpower` | true | Whether elite recruitment drains manpower |
 | `CastleEliteAiRecruits` | true | Whether AI lords can recruit from castles |
@@ -543,8 +549,6 @@ The mod dictionaries are flattened into parallel lists for `SyncData` serializat
 - Previously, the UI checked raw gold cost without waivers, graying out buttons even when recruitment was free.
 
 **FIFO depositor tracking fix:** RecordDeposit now always appends new entries instead of consolidating same-hero entries. This preserves strict FIFO ordering when the same lord deposits the same troop type at the same castle with interleaved deposits from other lords. Prevents over-crediting earlier depositors when processing stops midway (e.g., town runs out of gold).
-
-**Removed CastleEliteAiMaxPerDay MCM setting:** This legacy setting was never used in code — AI lords were already uncapped, recruiting up to their party limit. Setting removed from MCM entirely.
 
 ---
 
@@ -604,7 +608,7 @@ Soldiers the system first sees through reconciliation rather than a recruitment 
 
 **Register shape.** `_veteranRegister` is `settlementId → troopId → List<VeteranEntry>`, where each entry carries `{ DischargeDay, Count, OriginClanId, EmployerClanId }`. Batching by discharge day and provenance rather than storing one entry per man keeps the structure small while still supporting per-batch ageing and FIFO removal. `FromPlayer` remains only to interpret pre-1.0.3.4 blank-employer saves for the player; new records use employer identity.
 
-**Settling (v1.0.2.8).** A batch is not hireable until `today - DischargeDay >= DemobilizationVeteranSettlingDays` (default **7**). Without it a term of service was optional: `SendVeteranHome` stamps `DischargeDay = today` and nothing gated hireability on elapsed days, so a soldier released this morning was recallable this afternoon for the price of a bounty. `IsHireable(entry, claim, today)` is the single gate — `entry.Count > 0 && Matches(entry, claim) && IsSettled(entry, today)` — and both `CountVeterans` and `RemoveVeteransFromRegister` take a `today` argument so the player path and the AI path cannot diverge. The value is clamped to `retentionDays - 1`: the two settings pull against each other, and unclamped a settling period at or above retention would age every batch off before it became hireable. Cancellation returns men with `DischargeDay = today - VeteranSettlingDays()`, already rested, because they had finished the rest once before the order went out.
+**Settling (v1.0.2.8).** A batch is not hireable until `today - DischargeDay >= DemobilizationVeteranSettlingDays` (default **7**). Without it a term of service was optional: `SendVeteranHome` stamps `DischargeDay = today` and nothing gated hireability on elapsed days, so a soldier released this morning was recallable this afternoon for the price of a bounty. `IsHireable(entry, access, employerClanId, today)` is the single gate — `entry.Count > 0 && Matches(entry, access, employerClanId) && IsSettled(entry, today)` — and both `CountVeterans` and `RemoveVeteransFromRegister` take a `today` argument so the player path and the AI path cannot diverge. The value is clamped to `retentionDays - 1`: the two settings pull against each other, and unclamped a settling period at or above retention would age every batch off before it became hireable. Cancellation returns men with `DischargeDay = today - VeteranSettlingDays()`, already rested, because they had finished the rest once before the order went out.
 
 **Decay.** `CleanupVeteranRegister(today)` runs once per daily tick and drops any batch older than `DemobilizationVeteranRetentionDays` (default 84 — one campaign year). It is also called defensively from `GetVeteransForUi` and `TryRecallVeterans` so the UI can never offer a man who has already aged off. Empty troop lists and empty settlements are pruned as they empty, so the dictionary does not grow without bound over a long campaign.
 
@@ -632,18 +636,18 @@ Then it charges the bounty via `GiveGoldAction` with a `null` recipient — the 
 
 **Why the ladder default moved from kingdom to clan (v1.0.2.8).** At 1 the player could walk into any allied town and hire the men every other lord of his realm had discharged there — which, once a campaign has run a while, is most of the veterans on the map, available for a gold bounty and with no relationship to whether he had ever recruited or trained one of them. The register reads as a personal ledger and behaved as a kingdom-wide labour pool. Clan only keeps another lord's countrymen with his own clan. Profile migration **v23** moves an existing config from 1 to 2 **only if it is still on 1**; 0 and 2 are deliberate choices and are left alone. Since v1.0.3.4 this ladder matters only when the cross-clan option is enabled; the new option deliberately defaults off without a migration so existing profiles are protected too.
 
-**Your own men are always yours, outside war (v1.0.2.7).** The access ladder alone produced the worst bug in the feature. `DemobilizationVeteranRecallAccess` defaults to 1, `VeteranMenuCondition` returned `false` when the check failed, and returning `false` from a menu condition *hides the option*. So a soldier recruited at a castle outside the player's realm — the converted-prisoner path recruits from exactly such castles — marched home on discharge, was written correctly to that castle's register, and then sat behind a door the player could not see. From the player's chair he had disappeared forever, which is the precise complaint the whole return model was built to answer. The origin was never wrong; the door was.
+**Your own men are always yours, outside war (v1.0.2.7).** The access ladder alone produced the worst bug in the feature. `DemobilizationVeteranRecallAccess` defaulted to 1 at the time, `VeteranMenuCondition` returned `false` when the check failed, and returning `false` from a menu condition *hides the option*. So a soldier recruited at a castle outside the player's realm — the converted-prisoner path recruits from exactly such castles — marched home on discharge, was written correctly to that castle's register, and then sat behind a door the player could not see. From the player's chair he had disappeared forever, which is the precise complaint the whole return model was built to answer. The origin was never wrong; the door was.
 
-`TryGetPlayerRegisterAccess(settlement, out bool ownMenOnly)` replaces the single yes/no with three outcomes:
+`TryGetPlayerRegisterAccess(settlement, out bool ownMenOnly)` replaces the single yes/no with the three `VeteranAccess` states `ResolveVeteranAccess` returns — `Denied`, `OwnEmployerOnly` and `All` — reached as follows:
 
 - **War with the owner** → `false`. The register is closed and the menu option stays hidden. A hostile town does not advertise its reserves.
 - **Cross-clan recruitment off** → `true`, `ownMenOnly == true`. The player may collect only batches whose current employer is the player clan.
 - **Cross-clan recruitment on and ladder satisfied** → `true`, `ownMenOnly == false`. The full register.
 - **Anything else short of war** → `true`, `ownMenOnly == true`. The player may collect batches whose current employer is the player clan, and nobody else's. Pre-1.0.3.4 blank employers use `FromPlayer` only for this compatibility case.
 
-Every read and every consume path takes the flag, not just the display: `GetVeteranCountAt(settlement, ownMenOnly)` for the headcount in the menu label, `GetVeteransForUi` for the rows, and `RemoveVeteransFromRegister(..., ownMenOnly)` for the draw — without the last one a recall on foreign ground would count the player's men and then quietly pocket the local lord's. On foreign ground the option is also hidden when the player has no men waiting, since an empty stranger's register would otherwise put a dead entry on every friendly settlement menu on the map.
+Every read and every consume path takes the access result, not just the display: `GetVeteranCountAt(settlement, ownMenOnly)` for the headcount in the menu label, `GetVeteransForUi` for the rows, and `RemoveVeteransFromRegister(..., access, employerClanId, today)` for the draw — without the last one a recall on foreign ground would count the player's men and then quietly pocket the local lord's. On foreign ground the option is also hidden when the player has no men waiting, since an empty stranger's register would otherwise put a dead entry on every friendly settlement menu on the map.
 
-This does not loosen the v1.0.2.6 foreign-recruitment balance. By default another lord's countrymen are unavailable to every other clan. Enabling cross-clan recruitment deliberately restores the ladder for both player and AI; what never changes is that a setting cannot confiscate the player's own soldiers outside war.
+This does not loosen the v1.0.2.6 foreign-recruitment balance. By default another lord's countrymen are unavailable to every other clan. Enabling cross-clan recruitment deliberately restores the ladder for both player and AI; what never changes is that, outside war, no setting closes the player's own soldiers to him.
 
 **Persistence.** The eleven provenance and pending-batch keys added in v1.0.3.4 are `b1071_demob_originClanIds`, `b1071_demob_employerClanIds`, `b1071_demob_reserveOriginClanIds`, `b1071_demob_reserveEmployerClanIds`, `b1071_demob_reserveSourcePartyIds`, `b1071_demob_vetOriginClanIds`, `b1071_demob_vetEmployerClanIds`, `b1071_demob_pendBatchesPerOrder`, `b1071_demob_pendBatchOriginClanIds`, `b1071_demob_pendBatchEmployerClanIds`, and `b1071_demob_pendBatchCounts`. Reserves are keyed `employerClanId → troopId`; their old global rows have no safe employer and are discarded on load rather than restored to a different clan. Pending batches are flattened only after their header and each header stores the number actually written, while raw-header indices stop a corrupt header from shifting a later order's batches. The legacy `extendedFlags` bool lists are still written for extension compatibility.
 
@@ -692,7 +696,7 @@ Leftover budget carries from phase one into phase two, so a courier that lands m
 
 **Passive by design.** Nothing sends a lord looking for a register. No new pathing, no detours, no teleported men. The parity is in the rules he obeys when he happens to be standing somewhere, not in a new appetite. Giving the AI a courier system of its own would mean modelling a hundred simultaneous marches to targets that themselves move every day — the cost is real and the player would never see the difference, because he cannot watch another lord's reinforcements walk.
 
-**He gets no own-men exception.** `TryAiHireVeterans` calls the plain `CanFactionAccessVeteranRegister(clan.MapFaction, clan, settlement)` and draws only `VeteranClaim.ExceptPlayer`. The player's discharged men are never on offer to anyone, at any access setting, anywhere. The register records whose men are his precisely so that this is answerable.
+**He follows the same resolver as the player.** `TryAiHireVeterans` calls `ResolveVeteranAccess(clan.MapFaction, clan, settlement)`, the method behind `TryGetPlayerRegisterAccess`, and counts with `CountVeterans(settlementId, troopId, access, clan.StringId, today)`. With cross-clan recruitment off he can take only batches whose `EmployerClanId` is his own clan, so the player's discharged men are never on offer to him. With it on and the ladder satisfied, `Matches` returns true for every batch, the player's included — that is the setting's stated meaning for both sides. A blank legacy employer is matched only by the player (`IsPlayerEmployer(employerClanId) && entry.FromPlayer`), so no AI clan can claim one. The register records whose men are whose precisely so that this is answerable.
 
 **The player's own clan is excluded outright** (`if (clan == Clan.PlayerClan) return;`). A companion's party quietly draining a register the player is saving for himself is the opposite of helpful, and his own lords' discharges already count as his men.
 
@@ -718,19 +722,19 @@ The veteran register screen follows the same idiom for the same reason. Its **1 
 
 The popup carries one exemption: a row at `RemainingDays <= 0` bypasses `_lastPopupDay` entirely. Under a pure interval the popup that fires on the lead day silences the one that would fire on the day the men actually walk, which is the only warning that still leaves the player time to buy an extension. The scrolling message stays on the plain interval, so the exemption costs at most one extra inquiry per departure day.
 
-**Early release (v1.0.2.7).** `TryDischargeCohort(partyId, troopId, cohortIndex, requested)` ends a term at a moment the player chooses instead of one the clock chooses. It resolves the entry, trims `requested` to the entry's count, calls `RemoveTroopsFromRoster`, and then hands off to the same `SendVeteranHome` a completed term uses — so the home resolution, the per-man `DemobilizationManpowerReturnPercent` roll, the manpower credit and the register entry are byte-for-byte the same code path. There is deliberately no separate early-discharge accounting to keep in sync with the normal one.
+**Early release (v1.0.2.7).** `TryDischargeCohort(partyId, troopId, homeId, joinDay, extensionCount, requested)` ends a term at a moment the player chooses instead of one the clock chooses. It resolves the row's records through `CollectGroupIndices`, trims `requested` to their combined count, calls `RemoveTroopsFromRoster`, and then hands each consumed record to the same `SendVeteranHome` a completed term uses — one call per record, so no batch inherits the first man's origin or employer — so the home resolution, the per-man `DemobilizationManpowerReturnPercent` roll, the manpower credit and the register entry are byte-for-byte the same code path. There is deliberately no separate early-discharge accounting to keep in sync with the normal one.
 
 Three properties are deliberate:
 
 - **Free.** No gold, no manpower penalty. Recruit-then-release is already manpower-neutral by construction, and every recall costs gold, so there is nothing to farm by cycling men through the register. Pricing it would only tax the player for tidying his own army.
-- **Exempt from the daily departure caps.** `DemobilizationMaxDeparturesPerDay` and the per-troop-type percentage exist to stop a party bleeding a squad a day behind the player's back. This is his own decision; throttling it would only make him click the same button again tomorrow.
+- **Exempt from the daily departure caps.** `DemobilizationMaxDailyDepartures` and the per-troop-type percentage exist to stop a party bleeding a squad a day behind the player's back. This is his own decision; throttling it would only make him click the same button again tomorrow.
 - **Refused during a `MapEvent` or `SiegeEvent`.** Pulling men out of a roster while a battle is resolving is the same class of mid-action state change that corrupts a party elsewhere in the codebase. The player is told to disengage first rather than being silently ignored.
 
 Main party only — the guard compares `GetPartyId(MobileParty.MainParty)` against the passed `partyId`. AI parties have no reason to want it, and letting a submodule discharge someone else's army through this entry point would bypass the caps that keep AI attrition legible.
 
-The Troop Service screen exposes it as **1** and **All** buttons per row, alongside a new **Count** column — a release button on a row whose size the player cannot see is a trap, and recall creates multi-man entries routinely. `CohortView` gained `ReturnsHome` so the button hint can tell the truth about where the men go when `EnableDemobilizationVeteranReturn` is off: they simply leave, and their manpower is lost.
+The Troop Service screen exposes it as each row's **Send Home** button, on the click / Shift+click / Ctrl+click convention described above, alongside a **Count** column — a release button on a row whose size the player cannot see is a trap, and recall creates multi-man entries routinely. `CohortView` gained `ReturnsHome` so the button hint can tell the truth about where the men go when `EnableDemobilizationVeteranReturn` is off: they simply leave, and their manpower is lost.
 
-**All** asks for confirmation above `ConfirmReleaseThreshold` (10 men) and stays a single click below it. The asymmetry is the point: the action is cheap to undo only in principle — buying the men back costs the re-enlistment bounty and the settlement's manpower a second time, and only works while they are still on the register — so the prompt is priced to the size of the mistake rather than shown every time.
+A release of more than `ConfirmReleaseThreshold` (10 men) asks for confirmation; anything at or below it stays a single click. The asymmetry is the point: the action is cheap to undo only in principle — buying the men back costs the re-enlistment bounty and the settlement's manpower a second time, and only works while they are still on the register — so the prompt is priced to the size of the mistake rather than shown every time.
 
 `SendVeteranHome` gained an `out int arrived`. It always rolled survival per man, but previously returned only the `Settlement`, so `TryDischargeCohort` had no way to know how many actually made it and reported everyone who marched off. At the default `DemobilizationManpowerReturnPercent` of 100 the two numbers are identical; below it they are not, and the release message now quotes the arrivals. `RetireOverdueCohorts` discards the value deliberately — its message says the men "set off home", which stays true either way.
 
@@ -758,6 +762,8 @@ The pool can only decrease from siege (not increase). Delayed recovery and war e
 
 ### Battle casualties
 After every field battle and outside-the-walls siege skirmish, each party's casualty count (dead + wounded) is multiplied by `BattleCasualtyDrainMultiplier` and drained from that party's home settlement pool. Village-related raid map events are excluded.
+
+**The same multiplier gates battle exhaustion, and at the default it is off.** `OnMapEventEnded` returns when `BattleCasualtyDrainMultiplier` is 0 — its default since v0.1.7.9 — before it reaches `AccumulateBattleExhaustion`, so at defaults battles drain no manpower and add no war exhaustion either. That is a defect: nothing ties the two together on purpose. It is left in place for v1.0.5.0 because the settings profile v7 retune of the Crisis line and daily decay (v0.1.9.0, §12) was tuned on campaigns where battle exhaustion was already off, so turning it back on changes how long wars last and needs a test campaign first.
 
 ### Conquest
 When a settlement changes hands across kingdom lines:
@@ -795,13 +801,13 @@ Effect: Even after a war ends, previously raided settlements continue to regener
 ## 12. War Exhaustion
 
 Each kingdom maintains a **war exhaustion** value (0 to configurable max, default 100). It rises from:
-- Battles: each casualty (dead + wounded) × `BattleExhaustionPerCasualty`
+- Battles: each casualty (dead + wounded) × `BattleExhaustionPerCasualty`, only against a kingdom party and only while `BattleCasualtyDrainMultiplier` is above 0 — so none at defaults (see §10, Battle casualties)
 - Raid events: `RaidExhaustionGain` per completed raid on the kingdom's villages
 - Siege events (defender): `SiegeExhaustionDefender` per settlement sacked
 - Siege events (attacker): `SiegeExhaustionAttacker` per siege victory
 - Settlement conquest: `ConquestExhaustionGain` per settlement lost
 
-Exhaustion decays daily by `ExhaustionDailyDecay` (default: 0.65). War exhaustion additionally penalizes pool regen: a heavily exhausted kingdom regenerates its manpower slower (by up to 90% penalty, floored at 10% of normal).
+Exhaustion decays daily by `ExhaustionDailyDecay` (default: 1.0). War exhaustion additionally penalizes pool regen: a heavily exhausted kingdom regenerates its manpower slower (by up to 90% penalty, floored at 10% of normal).
 
 ### Historically-calibrated tuning (v0.1.8.2)
 
@@ -811,6 +817,8 @@ The exhaustion and diplomacy settings were retuned using mathematical modeling a
 - **Band thresholds (Rising=35, Crisis=65)**: Rising requires ~70 days of moderate war; Crisis requires ~130 days (~1.5 years). Only genuinely protracted wars escalate to Crisis.
 - **Forced peace at 80**: ~43 days from Crisis entry to forced peace (~5 months in-game), matching historical political pressure timelines.
 - **Multi-war reduction 5/war**: Each additional war front reduces the forced-peace threshold (80→75→70). Multi-front wars collapse faster.
+
+**Retune in settings profile v7 (v0.1.9.0).** Two of those values did not survive play. At 0.65/day kingdoms stayed in Crisis for 50+ days, and a Crisis line at 65 left 7 of 9 kingdoms locked out of declaring war (the reasons recorded in the v7 migration block). The current defaults are therefore `ExhaustionDailyDecay` **1.0** (100→0 in 100 days) and `PressureBandCrisisStart` **85**, with Rising still at 35 and `PressureBandHysteresis` 5. `DiplomacyForcedPeaceThreshold` stays at 80, reduced by `DiplomacyForcedPeaceThresholdReductionPerMajorWar` (5) for each major war from the `DiplomacyMajorWarPressureStartCount`-th (2) on. With pressure bands on, forced peace requires both the Crisis band and exhaustion at or above that threshold (`TryApplyForcedPeaceAtCrisis`); with bands off, the threshold alone decides.
 
 ---
 
@@ -826,6 +834,11 @@ When voting on peace proposals, exhaustion boosts peace support. Higher exhausti
 
 ### Kingdom-level war declaration block
 Before AI kingdoms even add a `DeclareWarDecision` to their election queue, the mod can block it entirely (in the Crisis band or above the legacy threshold).
+
+### Ally calls to war
+Alliances give Bannerlord a second route into war that no council of the kingdom going to war votes on. When a kingdom declares war, or forms an alliance while already at war, its ruler votes on a `ProposeCallToWarAgreementDecision`. On a yes, `AllianceCampaignBehavior.StartCallToWarAgreement` pays the ally and declares the war for it through `DeclareWarAction.ApplyByCallToWarAgreement`. `B1071_BlockCallToWarAtHighExhaustionPatch` prefixes that method and skips it when the **called** kingdom may not start a new war with the target: a truce between them, or the Crisis band (the legacy threshold when bands are off). It is the one method every route ends in: the AI council vote, a new alliance's calls, the player's offers, and the player kingdom's own answer to a call. Skipping it also skips the payment and the alliance extension. The calling kingdom's own exhaustion plays no part, since it is already at war with the target.
+
+Both blocks use one helper, `B1071_ExhaustionDiplomacyHelpers.IsNewWarBlocked`, so a council war vote and an ally's call follow the same rule. A call the player's kingdom makes or answers is exempt unless `DiplomacyEnforcePlayerParity` is on, as its war votes are. The truce counts only while `EnableTruceEnforcement` is on; a truce left on record from before the setting was switched off neither blocks nor skips the exhaustion check.
 
 ### Multi-war pressure
 If a kingdom is already fighting multiple major wars, each additional war beyond the configured threshold adds extra peace bias, simulating strategic overextension.
@@ -844,6 +857,8 @@ To add realistic **hysteresis** (delayed response with memory), the diplomacy pr
 
 Bands use hysteresis: transitioning **up** (Low→Rising→Crisis) is immediate when thresholds are crossed. Transitioning **down** requires exhaustion to fall `hysteresis` points below the threshold — preventing rapid oscillation when a kingdom hovers near a boundary.
 
+**Save/load.** Each kingdom's band is saved next to its exhaustion, as `B1071_PressureBand_Ids` / `B1071_PressureBand_Values` (the enum stored as an int). It has to be: the band *is* the hysteresis memory, and an exhaustion value alone cannot tell a kingdom falling through 82 from one rising to it. Rebuilding every band from Low on load, which saves did before this was stored, dropped any kingdom inside the hysteresis margin one band — a Crisis kingdom at 80–85 (defaults) loaded as Rising, losing its war-declaration block, its forced-peace eligibility and the shorter troop service of a kingdom in crisis. On load `SyncData` restores the saved bands through `B1071_ManpowerSaveMath.ReplacePressureBands` and immediately re-evaluates every kingdom with exhaustion from its restored band, so a changed threshold still applies from tick 0. A save without the keys restores no bands and is re-evaluated from Low, as before; an undefined value is dropped the same way.
+
 Bands enabled/disabled via MCM. Legacy mode uses raw numeric thresholds without hysteresis.
 
 ---
@@ -853,9 +868,9 @@ Bands enabled/disabled via MCM. Legacy mode uses raw numeric thresholds without 
 When a kingdom reaches Crisis level exhaustion and other conditions are met, the mod can **forcibly trigger a peace** via `MakePeaceAction.ApplyByKingdomDecision`:
 
 Conditions checked each day:
-1. Kingdom is in Crisis band (or above legacy threshold)
+1. Kingdom is in the Crisis band and at or above the forced-peace threshold (§12); with bands off, the threshold alone
 2. Cooldown period since last forced peace has elapsed
-3. Kingdom has more active wars than the `ForcedPeaceMaxActiveWars` minimum
+3. Kingdom has more active wars than the `DiplomacyForcedPeaceMaxActiveWars` minimum
 4. Each candidate war has been ongoing for at least `MinWarDurationDaysBeforeForcedPeace`
 5. Optional: skip if enemy is currently besieging one of the kingdom's core settlements
 6. Skip if the kingdom is actively besieging the candidate faction's settlements (v0.1.8.10) — don't waste siege progress by suing for peace mid-operation
@@ -906,6 +921,7 @@ After any peace is made (via kingdom decision or forced peace), both kingdoms en
 - AI cannot add new `DeclareWarDecision` against the former enemy
 - If they try, it is blocked at `Kingdom.AddDecision` level
 - Support scores for war declarations are hard-set against the war outcome
+- An ally cannot call either kingdom into a war against the other; the call is skipped at `AllianceCampaignBehavior.StartCallToWarAgreement` (see §13, Ally calls to war)
 
 The truce is registered via **three mechanisms** for belt-and-suspenders reliability:
 1. Harmony Postfix on `MakePeaceAction.Apply`
@@ -1078,6 +1094,7 @@ All 14 tabs use a 5-column layout. Click any column header to sort; click again 
 - Armies cache rebuild on daily tick
 - All list operations use scratch lists to avoid GC allocation per frame
 - Tab labels are resolved once during initialization and cached (eliminates ~26 TextObject allocations per 2-second sync cycle)
+- Rows are updated in place on the tabs that refresh every 2 seconds (Nearby, Wars, Characters), and on Castles, Towns, Villages and Factions, which share Nearby's `PopulateRows`. `BeginLedgerRows` / `PutLedgerRow` / `EndLedgerRows` hand new values to the row VM already in each slot through `B1071_LedgerRowVM.Update`, whose setters notify only cells that changed, and trim leftover rows at the end. Before this, `Clear()` plus a new VM per row made Gauntlet destroy and recreate every row widget (about 20 each, up to 22 rows) on each refresh even when nothing changed. A slot holding one of Current's detail or diagnostics rows is replaced rather than reused, because `Update` does not reset that layout. Current and the remaining tabs still clear and rebuild, which they do only when their data or the selected settlement changes
 
 ### Visual Polish
 
@@ -1112,6 +1129,14 @@ Rebellion outlook describes the existing estimate without implying a scheduled r
 
 Letter hotkeys (M, N, K) are suppressed while the Search tab is active to prevent search query input from triggering the toggle.
 
+### Map bar injection
+
+The compact ledger is inserted into the `MapBar` prefab by `B1071_MapBarPanelPrefabExtension`, a `CustomPatch<XmlDocument>`. `Apply` looks for `PrimaryAnchor` (`ListPanel[@Id='MapBar']`) and, only if it is absent, `FallbackAnchor` (`MapInfoBarWidget[@Id='InfoBarWidget']`), then inserts `B1071_MapBarPanelLayout.Text` as the next sibling of that anchor. With neither anchor it logs one line and leaves the prefab alone. The panel's visibility and contents come from `B1071_MapBarVMMixin`, registered with `handleDerived` so it also reaches War Sails' `NavalMapBarVM`.
+
+It is a single document patch because both anchors exist in the same prefab. Two insert patches, one per anchor, would each add the panel. The old design used exactly that pair, with a static one-shot `B1071_PanelInjectionGuard` in their content getters to stop the second insertion. That relied on the prefab being processed once per session. UIExtenderEx re-runs every registered patch each time it processes a prefab, each pass starting from the pristine XML, and 3.x processes `MapBar` more than once, including when it builds the compiled prefab for its cache. The first pass spent the guard, and every later pass, including the one the screen used, inserted an empty widget. The M key still toggled `_isVisible` and `B1071PanelVisible`, but bound them to a panel that was not there. `Apply` reads no state, so every pass produces the same prefab. This is the rule the nameplate marker patches follow (§19A).
+
+The movie is registered as `"MapBar"` only. `WidgetPrefabPatch.ProcessMovie` looks movies up by `Path.GetFileNameWithoutExtension`, so the `"Map/MapBar"` registrations the old patches also carried never matched. The explicit `null` XPath in the attribute only selects the two-argument `PrefabExtensionAttribute` constructor. A single argument is ambiguous with the obsolete three-argument overload, and UIExtenderEx hands a document patch the whole document regardless. UIExtenderEx's compiled-prefab fingerprint includes the patched prefab text, so a build that changes the patch output invalidates the cached `MapBar` without anyone deleting `CompiledPrefabs.zip`.
+
 ---
 
 ## 19A. Settlement Intelligence Tooltips
@@ -1123,6 +1148,8 @@ Both surfaces take their rows from `B1071_SettlementTooltipContent.Build`. They 
 ### Tooltip data
 
 The mixin creates one `BasicTooltipViewModel` per nameplate. Its callback calls the shared builder only when the hover begins, so the map does not scan every settlement to keep tooltip text current.
+
+Both mixin entry points catch their own exceptions. `ExecuteB1071NameplateHoverBegin` wraps `ExecuteBeginHint`, where the rows are built, and `OnRefresh` wraps `RefreshDevastationMarker`, which runs for every nameplate on every map frame. Gauntlet reaches the hover through `ViewModel.ExecuteCommand`, and its `InvokeWithLog` logs and rethrows, and `GauntletView.OnCommand` catches nothing either. Without the catch, a failure in the rows very likely ends the campaign; that was traced through the code, not observed in-game. The case that prompted it is binary rather than logical: by v1.5.6 the `TooltipProperty` constructor had gained a parameter, so a build compiled against an earlier game — v1.0.4.0 was built against the 15 September 2026 game files — references a constructor that no longer exists. Caught, a failure costs that hover's tooltip or that frame's marker. `LogFirstFailure` prints the first exception once per launch, because both paths would otherwise repeat it on every hover or frame, and the first stack trace is the one that names the missing member. `NameplateCallbackCatchesItsOwnFailures` pins both catch clauses.
 
 - Towns call `B1071_ManpowerBehavior.GetManpowerPool` for current/max values and use `GetDailyRegen` for the effective daily recovery. They also query `B1071_DevastationBehavior.GetAverageBoundVillageDevastation`.
 - Castles show current/max and average devastation. The recovery row is omitted rather than printing `GetDailyRegen`, because the daily tick converts that raw request into `localTrickle + supplyTransfer`, clamps the transfer to the supply town's available pool, and has a separate cut-off branch.
@@ -1145,9 +1172,9 @@ The settlement arrives as `args[0]` and is taken with a type-pattern test rather
 
 The rows are preceded by vanilla's own section break — an empty spacer row at height `-1`, a header row whose value is a single space, then a `RundownSeperator` — which is the same three-row idiom vanilla uses between Owner, Information, and Defenders. The header text is the literal `{=!}Campaign++`: `{=!}` is the marker vanilla uses for text no language pack translates, and the mod's name is identical in every pack, so this deliberately carries no `b1071_` text ID for translators to chase.
 
-The section is inserted above the trailing spacer rather than appended, so it reads as the last block of settlement data instead of sitting below **Hold 'Alt' for more info.** and the parley hint. The wrapper runs after the inner refresher has built the list, but nothing obliges it to add at the end: `TooltipPropertyList` is an `MBBindingList<TooltipProperty>`, whose `InsertItem` override raises `ItemAdded` with the index, so an insert notifies the bound widget exactly as an append does.
+The section is inserted above the footer spacer rather than appended, so it reads as the last block of settlement data instead of sitting below **Hold 'Alt' for more info.** and the parley hint. The wrapper runs after the inner refresher has built the list, but nothing obliges it to add at the end: `TooltipPropertyList` is an `MBBindingList<TooltipProperty>`, whose `InsertItem` override raises `ItemAdded` with the index, so an insert notifies the bound widget exactly as an append does.
 
-`FindFooterIndex` finds the insertion point by row shape rather than by text. Vanilla closes `RefreshSettlementTooltip` with `AddProperty(string.Empty, string.Empty, -1)` and then adds the **Hold 'Alt'** hint and the parley hint, each with an empty definition but a non-empty value. A row with an empty definition, an empty value and a negative `TextHeight` is therefore the spacer and nothing else. The scan runs backwards because vanilla uses the same spacer between sections, and only the last one is the footer. Finding the hint by its localised text was the alternative and is what kept the section at the bottom before: it fails in every language the mod does not ship. If the footer is ever restructured away the scan finds nothing and returns the end of the list, which is where the section used to go — a worse position, not a broken one.
+`FindFooterIndex` finds the insertion point by row shape rather than by text. Vanilla closes `RefreshSettlementTooltip` with `AddTooltipHintProperties`, which adds a spacer — `AddProperty(string.Empty, string.Empty, -1)` — followed by the **Hold 'Alt'** hint and the parley hint, each with an empty definition, a non-empty value and a negative `TextHeight`. In v1.5.6 that block is added only when at least one hint applies; in the 15 September 2026 build the spacer was unconditional. An extended tooltip (Alt held) with no parley option has no footer at all, and neither does a settlement whose information is hidden; the list then ends in vanilla data. The scan therefore walks back from the end over hint-shaped rows only. The first other row is the footer if it has the spacer's shape — empty definition, empty value, negative `TextHeight` — and any other row means there is no footer, so the section goes at the end of the list, below the last vanilla block. Taking the last spacer anywhere in the list, which was the rule while vanilla added the spacer unconditionally, would instead pick a section break between vanilla blocks and split them — in the extended tooltip, the section landed between the last troop or prisoner list and its troop-type breakdown, because `AddPartyTroopProperties` opens that breakdown with the same spacer. A spacer that closes the list with no hint after it still counts as the footer, so the older layout keeps working. Finding the hint by its localised text was the alternative and is what kept the section at the bottom before: it fails in every language the mod does not ship.
 
 The first settlement tooltip built after installing logs one line through `LogFirstOutcome` naming what the wrapper did: rows inserted and where, the toggle switched off, no settlement in the arguments, or nothing for the builder to report. A section that fails to appear looks identical from the outside in all of those cases, and the try/catch around the rows only speaks when something throws — which is precisely how the retired postfix stayed invisible.
 
@@ -1167,42 +1194,44 @@ No new save keys, persistent scene objects, map artwork, settlement-menu propert
 
 ## 20. Configuration
 
-All settings are in the Mod Configuration Menu. Key groups:
+All settings are in the Mod Configuration Menu: 361 `[SettingProperty…]` properties on `B1071_McmSettings`, in 31 groups. Key groups:
 
 | Group | Key Settings |
 |-------|-------------|
 | Pool Sizes | Base max for town/castle/other; tiny pool testing mode |
 | Pool Scaling | Prosperity normalizer, min/max prosperity scale, hearth multiplier |
-| Regen | Per-type daily regen %, soft cap, stress floor, hard cap, min daily, castle min daily, castle supply chain toggle |
+| Regen | Per-type daily regen %, soft cap, stress floor, hard cap, min daily, castle min daily, castle supply chain toggle; depleted emergency regen toggle, threshold %, bonus at zero |
 | Regen Modifiers | Security/food/loyalty/siege/governor scales |
-| Depleted Emergency Regen | Enable toggle, threshold %, bonus at zero |
 | Recruitment Cost | Base cost per troop, culture discount, village volunteer tier max, town volunteer tier max |
-| Castle Recruitment | Enable/disable; prisoner tier threshold; T4/T5/T6 days and gold costs; elite pool max, regen range, manpower cost; AI recruit toggle |
+| Castle Recruitment | Enable/disable; prisoner tier threshold; gold costs per tier; elite pool max, regen range, manpower cost; AI recruit toggle and treasury reserve; holding fee |
+| Troop Service / Troop Service - Custom Days | Enable, intensity preset, hotkey, warnings, extensions, departure caps, seasonal/crisis thresholds; per-tier Custom service days (§9A) |
 | Troop Service - Veterans | Veterans return home; manpower returned on discharge; recall gold per tier; retention days; scatter on raid or conquest; allow cross-clan veteran recruitment (default off); recall access when cross-clan recruitment is on (0=any non-hostile, 1=kingdom, 2=clan only, default 2); allow recall from a distance; register hotkey enable and key (F8/F10/F11/F12); courier speed; veteran march speed; AI lords hire veterans |
 | Combat Realism | Elite survivability preset (0–3, default 1 — sets autoresolve damage reduction and wound-vs-kill bonus together) |
-| Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 80); garrison discount toggle |
+| Army Economics | Hire & upgrade cost preset (0–3); daily wage preset (0–3); garrison wage % of field (default 80); garrison discount toggle; block recruiting in enemy realms; foreign recruit cost preset (0–3) |
 | Overlay | Hotkey (M/N/K/F9-F12), panel position, default tab, rows per page |
-| War Effects | Enable/disable; raid/battle/siege/conquest drain %; conquest retain % |
-| Dynamic Conquest Protection | Enable toggle; depleted retain %, depleted threshold % |
+| War Effects | Enable/disable; raid/battle/siege/conquest drain %; conquest retain %; dynamic conquest protection toggle, depleted retain %, depleted threshold % |
 | Delayed Recovery | Recovery days and penalty % for raid/siege/conquest; depleted penalty reduction |
 | Bounded Stochasticity | Enable variance; volunteer variance %; recovery variance % |
 | Immersion Modifiers | Seasonal regen; peace dividend; culture discount; governor bonus |
 | Alerts & Militia | Manpower alert thresholds; militia-manpower link min/max scales |
 | War Exhaustion | Enable/disable; decay rate; per-event gain values; regen penalty divisor |
-| Diplomacy | War/peace support scaling, pressure bands, cooldowns, truces, early-war voting pressure, and multi-front crisis relief |
+| Diplomacy (War Exhaustion) | War/peace support scaling, pressure bands, cooldowns, truces, early-war voting pressure, and multi-front crisis relief |
 | Developer Tools | Debug message toggles, AI logging, telemetry display, verbose mod log, settings profile version |
-| Tooltips | Settlement manpower tooltip enable/disable |
-| Village Investment | Enable/disable; 3-tier costs, durations, hearth/relation/influence/power bonuses; power cap; cross-clan relation; AI toggle |
-| Town Investment | Enable/disable; 3-tier costs, durations, prosperity/relation/influence/power bonuses; power cap; cross-clan relation; AI toggle |
+| Tooltips | Settlement tooltips enable/disable (`EnableSettlementNameplateTooltips`, §19A) |
+| Village Investment | Enable/disable; 3-tier costs, durations, hearth/relation/influence/power bonuses; power cap; cross-clan relation; AI settings |
+| Town Investment | Enable/disable; 3-tier costs, durations, prosperity/relation/influence/power bonuses; power cap; cross-clan relation; AI settings |
+| Slave Economy, Minor Faction Economy, Provincial Governance, Frontier Devastation | See §26–§29 |
+| Clan Survival, AI Recovery, Settlement Revenue | See §32, §33, §34 |
+| Legacy | Retired settings kept so older configs deserialize. The only reads left are one-time migrations: the profile migration reads `EnableTierSurvivability` / `EnableTierArmorSimulation`, and the castle save migration reads the old T4/T5/T6 wait days |
 
 ### Quick Settings Tab (v0.2.6.0)
 
-A separate MCM tab (**Campaign++ - Quick Settings**) mirrors all 28 system master toggles in 5 groups:
+A separate MCM tab (**Campaign++ - Quick Settings**) mirrors 29 system master controls in 5 groups — 28 toggles plus the Elite Survivability preset:
 
 | Group | Toggles |
 |-------|---------|
 | Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace at Crisis, Truce Enforcement, Delayed Recovery, Militia Link |
-| Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
+| Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount, Settlement Revenue Taper |
 | Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), AI Lords Seek Campaign++ Recruits, Clan Survival, Troop Service |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
 | Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay (M key), Manpower Alerts |
@@ -1218,10 +1247,10 @@ All entries use `ProxyRef<T>` wrappers around `B1071_McmSettings.Instance` — c
 | File | Role |
 |------|------|
 | `SubModule.cs` | Entry point; Harmony setup; UIExtenderEx; overlay tick; Quick Settings + Compatibility tab registration |
-| `B1071_ManpowerBehavior.cs` | ~2600 lines; all gameplay logic: pools, regen, recruitment, war events, exhaustion, diplomacy, truces |
+| `B1071_ManpowerBehavior.cs` | Core manpower logic: pools, regen, recruitment consumption, war events, exhaustion, pressure bands, forced peace, truces |
 | `B1071_ManpowerMilitiaModel.cs` | Overrides vanilla militia growth model with manpower-ratio scale |
 | `B1071_ManpowerVolunteerPatch.cs` | Harmony Postfix on `GetDailyVolunteerProductionProbability` — manpower-gated volunteer production (replaced AddModel for EO compat) |
-| `B1071_CastleRecruitmentBehavior.cs` | ~1776 lines; castle recruitment: elite pool + prisoner conversion + AI recruitment + garrison absorption + consignment income + hostile depositor forfeit |
+| `B1071_CastleRecruitmentBehavior.cs` | Castle recruitment: elite pool + prisoner conformity + AI recruitment + garrison absorption + consignment income + hostile depositor forfeit |
 | `B1071_CastleRecruitmentScreen.cs` | Gauntlet screen wrapper for the castle recruitment UI |
 | `B1071_CastleRecruitmentVM.cs` | ViewModel for the castle recruitment screen (3-list layout: elite, ready, pending) |
 | `B1071_CastleRecruitTroopVM.cs` | ViewModel for a single troop entry in the castle recruitment UI |
@@ -1229,7 +1258,7 @@ All entries use `ProxyRef<T>` wrappers around `B1071_McmSettings.Instance` — c
 | `B1071_CastlePrisonerDepositPatch.cs` | Harmony Prefix on `OnSettlementEntered`; castle branch deposits prisoners into prison (with capacity check); town branch enslaves T1–T3 into slave goods (race condition fix v0.1.7.8) |
 | `B1071_PrisonerDonationInfluencePatch.cs` | Harmony Prefix on `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement`; blocks influence when donating party's faction ≠ settlement's faction (v0.1.8.8) |
 | `B1071_SlaveEconomyBehavior.cs` | Slave economy: acquisition, market bonuses, decay, game menus; `OnSettlementEntered` transfers slave goods only (prisoner enslavement moved to Prefix in v0.1.7.8) |
-| `B1071_SlaveFoodPatch.cs` | Harmony Postfix — slave food consumption ("Slave Upkeep" in food tooltip) |
+| `B1071_SlaveFoodPatch.cs` | Harmony Postfix — settlement slave food consumption, market plus stash ("Slave Upkeep" in food tooltip) |
 | `B1071_SlaveConstructionPatch.cs` | Harmony Postfix — slave construction bonus ("Slave Labor" in construction tooltip) |
 | `B1071_SlaveProsperityPatch.cs` | Harmony Postfix — slave prosperity bonus ("Slave Labor" in prosperity tooltip) |
 | `B1071_GovernanceBehavior.cs` | Provincial governance strain tracking and decay |
@@ -1253,12 +1282,48 @@ All entries use `ProxyRef<T>` wrappers around `B1071_McmSettings.Instance` — c
 | `B1071_TierArmorSimulationPatch.cs` | Harmony Postfix on `SimulateHit` for tier armor damage reduction |
 | `B1071_ArmyEconomicsPatch.cs` | Harmony Postfixes on `GetTroopRecruitmentCost` and `GetCharacterWage` for tier-exponential costs |
 | `B1071_FatalityPatch.cs` | Harmony Postfix on `GetSurvivalChance` for tier survivability |
-| `B1071_ExhaustionDiplomacyPatch.cs` | 5 Harmony patches for war/peace decisions + truce registration |
+| `B1071_ExhaustionDiplomacyPatch.cs` | 6 Harmony patches for war/peace decisions, ally calls to war + truce registration |
 | `B1071_VerboseLog.cs` | Static helper class — centralized `[Byzantium1071][Subsystem] message` logging to rgl_log |
-| `B1071_McmSettings.cs` | MCM settings definitions (~200+ settings) + version-gated settings migration system |
-| `B1071_OverlayController.cs` | ~3700 lines; all overlay tab logic, caching, pagination, sorting, search, 5-column layout |
-| `B1071_MapBarPanelUIExtender.cs` | UIExtenderEx prefab injection + ViewModel Mixin (5 column TextWidgets) |
+| `B1071_McmSettings.cs` | MCM settings definitions (361 settings in 31 groups) + version-gated settings migration system |
+| `B1071_OverlayController.cs` | All overlay tab logic, caching, pagination, sorting, search, 5-column layout |
+| `B1071_MapBarPanelUIExtender.cs` | `B1071_MapBarPanelPrefabExtension` (MapBar document patch) + `B1071_MapBarVMMixin` (5 column TextWidgets) |
 | `B1071_LedgerRowVM.cs` | ViewModel for a single 5-column overlay row |
+| `B1071_LedgerColumns.cs` | Per-tab column widths and alignment within the 1152-unit row |
+| `B1071_LedgerSearchState.cs` | Search draft vs. submitted query and category filter |
+| `B1071_FullScreenLedger.cs`, `B1071_FullScreenLedgerLayout.cs` | Full-screen ledger layer and its prefab, sharing the compact table's MapBarVM bindings |
+| `B1071_HotkeyGuard.cs` | Shared check that limits panel hotkeys to the campaign map |
+| `B1071_SettlementNameplateUIExtender.cs` | `B1071_SettlementNameplateVMMixin` + nameplate hover and devastation-marker prefab patches (§19A) |
+| `B1071_SettlementTooltipContent.cs` | Shared row builder for both settlement tooltip surfaces |
+| `B1071_SettlementTooltipRefresher.cs` | Wraps the registered `Settlement` tooltip refresher to add the Campaign++ section |
+| `B1071_DemobilizationScreen.cs`, `B1071_DemobilizationVM.cs`, `B1071_DemobilizationCohortVM.cs` | Troop Service screen (F9 by default) |
+| `B1071_VeteranRecallScreen.cs`, `B1071_VeteranRecallVM.cs`, `B1071_VeteranRecallTroopVM.cs`, `B1071_VeteranRecallTransitVM.cs` | Veteran register / remote recall screen (F8 by default), including in-transit orders |
+| `B1071_SlaveConversionScreen.cs`, `B1071_SlaveConversionVM.cs`, `B1071_SlaveConversionTroopVM.cs` | Optional prisoner selection screen for enslavement |
+| `B1071_DemobilizationBehavior.cs` | Troop Service: per-man service records, extensions, discharge, veteran register, recall (§9A) |
+| `B1071_GovernanceStabilizationBehavior.cs` | Provincial Stabilization: funded strain reduction and temporary loyalty/security recovery |
+| `B1071_ClanSurvivalBehavior.cs` | Clan Survival tracking, rebel normalization and leftover-company cleanup (§32) |
+| `B1071_ClanSurvivalPatch.cs` | Prefix/Postfix pairs on `DestroyClanAction.Apply` / `ApplyByClanLeaderDeath`; Postfix on `Kingdom.DeactivateKingdom` |
+| `B1071_AiRecoveryBehavior.cs` | AI recovery routing (§33) |
+| `B1071_AiRecoveryRecruitmentQuote.cs` | `B1071_AiRecoveryBudget` and quote types; also compiled into the fast test suite |
+| `B1071_CompatibilityBehavior.cs` | Runs the model scan and the second Harmony scan at session launch; shows the compatibility popup |
+| `B1071_CompatibilityChecker.cs`, `B1071_CompatibilityFluentSettings.cs` | Compatibility scanner and MCM tab (§32, Mod Compatibility System) |
+| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab |
+| `IB1071Settings.cs` | Settings interface implemented by `B1071_McmSettings`; lets the fast suite run the math against test settings |
+| `B1071_TelemetryBehavior.cs` | Daily AI telemetry digest and the settlement daily-tick hang probe (§22) |
+| `B1071_TelemetryCounters.cs`, `B1071_TelemetryCsvLog.cs` | Per-day telemetry counters; one CSV row per campaign day |
+| `B1071_SessionAudit.cs`, `B1071_SessionFileLog.cs` | Per-session counters and summary; the session log file in the module's `Logs` folder |
+| `B1071_Random.cs`, `B1071_TestHooks.cs` | `MBRandom`-backed `IB1071Random`; test overrides for settings and randomness |
+| `B1071_CastleAccessPatch.cs` | Postfixes on `DefaultSettlementAccessModel.CanMainHeroEnterSettlement` / `CanMainHeroEnterLordsHall` relaxing castle access for castle recruitment |
+| `B1071_CastlePrisonerWithdrawalPatch.cs` | Postfixes on `PartyScreenLogic.IsTroopTransferable` / `ValidateCommand` guarding dungeon withdrawals with unpaid recruitment fees |
+| `B1071_CombatRealismTuning.cs` | Elite survivability preset curves shared by the armor and fatality patches (§17) |
+| `B1071_TroopPowerValuationPatch.cs` | Postfix on `DefaultMilitaryPowerModel.GetDefaultTroopPower` (§17) |
+| `B1071_ProsperityPenaltyCapPatch.cs` | Prefix on `CalculateProsperityChange` resetting the combined governance/devastation prosperity penalty cap |
+| `B1071_RecruitmentTierGateHelper.cs` | Volunteer tier gate, board sanitizer and war gate shared by the recruitment patches |
+| `B1071_SettlementRevenueTuningPatch.cs` | Town tariff, village income and town tax taper (§34) |
+| `B1071_SlavePricePatch.cs` | Postfix on `DefaultTradeItemPriceFactorModel.GetBasePriceFactor` — slave price curve |
+| `B1071_SlaveTransportPatch.cs` | Party slave food, shared prisoner capacity, party-screen capacity and warning, escort speed, shared escapes (§26) |
+| `Campaign/Math/*.cs` | Game-free calculations (no TaleWorlds references), compiled into the net8.0 fast suite as well as the mod |
+
+Two test projects sit beside the mod. `Tests/Byzantium1071.Tests` (net8.0) needs no game: it compiles `Campaign/Math`, `IB1071Settings.cs` and `B1071_AiRecoveryRecruitmentQuote.cs` directly. `Tests/Byzantium1071.GameTests` (net472) runs against the installed Bannerlord. `Tests/modtest.py` runs either suite, or a named scenario (`castle-prisoners`, `slave-transport`, `manpower`, `revenue`, `service`, …) with `--days` and `--seed`, without launching the game, and writes `report.md`, `report.json` and TRX results into a fresh run folder under `TestResults/headless`. `Docs/HEADLESS_TESTING.md` maps which checks exist and what still needs an in-game run.
 
 ### Key design principles
 
@@ -1289,8 +1354,11 @@ When enabled, the following is logged:
 | **AI recruitment** | Manpower gate blocks (when verbose OR `LogAiManpowerConsumption` is ON) |
 | **Clan Survival** | Rescue attempts, commits and aborts; eligibility skips; rebel normalization; kingdom detach; war cleanup; tracking start/stop; destruction-pipeline diagnostics — logged to both rgl_log and session file |
 | **AI telemetry** | One digest per campaign day per subsystem — troop power, AI recovery routing, settlement visits, demobilization extensions — plus a CSV row; also emitted when `TelemetryDebugLogs` alone is on (see below) |
+| **Settlement daily tick** | One `DailyTickSettlement: <name> day=<n>` line per settlement per day, session file only — see below |
 
 All logging is centralized through the `B1071_VerboseLog` static helper class with format `[Byzantium1071][Subsystem] message`. ClanSurvival events additionally write to the session file log via `B1071_SessionFileLog.WriteTagged` for post-session analysis.
+
+**The settlement daily-tick hang probe.** `B1071_TelemetryBehavior.OnDailyTickSettlementForensics` listens to `DailyTickSettlementEvent` and writes one session-file line naming the settlement as its daily work runs. If the settlement pass ever stalls, the last line in the session file names the settlement it stopped on, or the one before it if the stall is in a listener registered ahead of this one. It writes through `B1071_SessionFileLog.WriteTagged` directly, so it stays out of `rgl_log`, and it is not counted against the telemetry handler fuse, so it keeps writing after the rest of the telemetry behavior has disabled itself. It is gated on `EnableVerboseModLog` alone, not on `TelemetryDebugLogs`. **Why gated at all:** the event fires for every settlement, villages included, and each line opens, appends and closes the file. A measured session wrote about 540 lines per in-game day, roughly 0.1 s of file writes per day and most of a 9 MB session log. That is too much for every player to pay in order to catch a rare hang, so reproducing one needs the verbose log switched on.
 
 ### Daily AI telemetry (v1.0.3.8)
 
@@ -1323,10 +1391,12 @@ invert the measurement. The pair runs beside the existing counters rather than s
 so days logged before v1.0.3.9 stay comparable.
 
 **The rejection histogram, and why the eligible count needs it.** `RecoveryDigest` reports how many party-hours *entered* a recovery pass. That figure is unreadable alone: a low number means either that few lords need help or that the eligibility filter is rejecting the ones who do, and those call for opposite fixes. So `OnAiHourlyTick` resolves `GetBlockReasons` once and reuses it — `IsPartyEligible` is exactly `IsEligible(GetBlockReasons(party))`, so nothing extra is computed — and a rejected party is passed to `RecordBlockedWeakParty`. That helper counts the rejection only if the lord was **below `B1071_AiRecoveryMath.ShouldStart`'s 60% line**: a healthy lord being turned away is not a missed recovery, and counting those would bury the signal under every full-strength party on the map. It also drops
-any party that was never a candidate at all: caravans, villagers, militia and bandits come
-through the same hook and fail on `InvalidLeader` and `ExcludedPartyType` every hour of every
-day, and in the first run carrying this histogram they were 86% of every rejection recorded,
-holding the top two buckets between them. Each of the fourteen `B1071_AiRecoveryBlockReason` flags gets its own bucket, indexed by bit position; the advisory `UrgentFood` flag keeps its column but no longer fills it, since it stopped rejecting anyone in v1.0.3.9 — the `recoveryFoodShort` counter recorded beside `recoveryEligible` is where that share is now read; `B1071_TelemetryMath.BlockReasonNames` is the only thing tying a bucket to its flag, so its order is load-bearing and `BlockReasonNamesMatchTheFlagOrder` fails if the enum ever gains a member out of order. One rejection sets every flag that applied, so the buckets **sum to more than the party-hour total** — a lord can be in an army *and* on a protected objective, and both gates are worth seeing. `BlockDigest` prints the dominant reason first and omits buckets that never fired.
+any party that was never a candidate at all. Caravans, villagers, militia and bandits come
+through the same hook every hour of every day, and in the first run carrying this histogram
+they were 86% of every rejection recorded, holding the `InvalidLeader` and `ExcludedPartyType`
+buckets at the top between them. They no longer reach the histogram: `OnAiHourlyTick` turns
+them away on `IsExcludedPartyType` before `GetBlockReasons` runs (see below), and the filter
+here still drops a lord party that is inactive or has lost its leader or clan. Each of the fourteen `B1071_AiRecoveryBlockReason` flags gets its own bucket, indexed by bit position; the advisory `UrgentFood` flag keeps its column but no longer fills it, since it stopped rejecting anyone in v1.0.3.9 — the `recoveryFoodShort` counter recorded beside `recoveryEligible` is where that share is now read; `B1071_TelemetryMath.BlockReasonNames` is the only thing tying a bucket to its flag, so its order is load-bearing and `BlockReasonNamesMatchTheFlagOrder` fails if the enum ever gains a member out of order. One rejection sets every flag that applied, so the buckets **sum to more than the party-hour total** — a lord can be in an army *and* on a protected objective, and both gates are worth seeing. `BlockDigest` prints the dominant reason first and omits buckets that never fired.
 
 **Why the volunteer board is counted three ways.** `recoveryZeroQuote` says a settlement supplied nothing; it never says why. A board can come back empty because it is empty, because the lord is over his wage limit, or because he is under vanilla's recruiting money floor — and the last of those is a rule Campaign++ *mirrors* rather than owns, which makes it the one most able to drift from the game without any other figure moving. The v1.0.3.9 floor shifted `recoveryZeroQuote` by under a point in its first campaign, equally consistent with "almost never fires" and with "fires constantly on settlements whose quote stays positive on veterans and castle stock". So `QuoteNotableVolunteers` now counts `volQuotes` at the line where structural gates end and affordability begins, and `volWageBlock` and `volGoldBlock` at the two returns below it. The wage limit is bucketed separately because vanilla tests it first: folded together, the gold share would be measured against a denominator containing lords who never reached the gold test. Both money clauses — the personal floor and the clan-purse-with-generosity clause — share `volGoldBlock`, because they are one vanilla decision written as two tests and splitting them would imply a distinction `CheckRecruiting` does not make.
 
@@ -1348,9 +1418,9 @@ Version-gated hard migration with notification:
 
 - `SettingsProfileVersion` (integer property in Developer Tools) tracks the user's current settings version
 - `MigrateToLatestProfile()` checks if `SettingsProfileVersion < LATEST_PROFILE_VERSION` and applies all missing migration blocks
-- On first mod load after update, rebalanced settings are force-overwritten to new defaults
-- Non-rebalanced settings (pool sizes, slave economy, castle recruitment, toggles, etc.) are preserved
-- A green in-game notification confirms: *"Campaign++ v0.1.8.2: Balance settings updated to new defaults."*
+- On first mod load after update, the settings each missing block names are force-overwritten to new defaults
+- Settings no missing block names are preserved
+- A green in-game notification confirms: *"Campaign++ updated some balance settings to new defaults. Review them in MCM if needed."*
 - Migration is logged to `rgl_log` for diagnostics
 - Future rebalances simply bump `LATEST_PROFILE_VERSION` and add a new migration block
 
@@ -1358,7 +1428,7 @@ Version-gated hard migration with notification:
 
 ## 24. Compatibility
 
-**Game version:** targeted at the installed Bannerlord **v1.5.3 beta** (and Warsails/NavalDLC **v1.3.3**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
+**Game version:** targeted at the installed Bannerlord **v1.5.6 beta** (and Warsails/NavalDLC **v1.3.6**). API and prefab references were re-resolved against the installed binaries; manual nameplate smoke testing remains a separate acceptance step.
 
 **Required dependencies** (must load before this mod):
 - `Bannerlord.Harmony` ≥ v2.4.2
@@ -1391,9 +1461,9 @@ Diplomacy adds its own war exhaustion system and peace proposal pipeline. Five c
 
 **No overlapping patch targets:** Diplomacy patches `KingdomDecisionProposalBehavior.ConsiderPeace` (Prefix) and `MakePeaceKingdomDecision.ApplyChosenOutcome` (Prefix). B1071 patches `MakePeaceKingdomDecision.DetermineSupport` (Postfix). These are different methods — no conflict.
 
-### Warsails (NavalDLC) Interaction Map (v1.3.3)
+### Warsails (NavalDLC) Interaction Map (v1.3.6)
 
-Warsails registers roughly seventy campaign models of its own, ten of which sit on systems Campaign++ patches:
+Warsails registers roughly seventy campaign models of its own, thirteen of which sit on systems Campaign++ patches:
 
 | Model | Warsails replacement | Campaign++ still applies? |
 |---|---|---|
@@ -1407,6 +1477,9 @@ Warsails registers roughly seventy campaign models of its own, ten of which sit 
 | `PartyHealingModel` | `NavalDLCPartyHealingModel` | **Yes** |
 | `ClanFinanceModel` | `NavalDLCClanFinanceModel` | **Yes** |
 | `BuildingConstructionModel` | `NavalDLCBuildingConstructionModel` | **Yes** |
+| `MobilePartyFoodConsumptionModel` | `NavalDLCMobilePartyFoodConsumptionModel` | **Yes** |
+| `PartySpeedModel` | `NavalDLCPartySpeedCalculationModel` | **Yes** on land; at sea it computes its own speed, which the slave escort patch does not touch |
+| `MilitaryPowerModel` | `NavalDLCMilitaryPowerModel` | **Yes** |
 
 These derive from the abstract base rather than the vanilla `Default*` type, which would normally bypass our patches. They do not: each is a **thin decorator** that forwards through `((MBGameModel<T>)this).BaseModel.Method(...)`, so execution still reaches the `Default*` implementation where Campaign++'s Harmony patches are attached.
 
@@ -1419,13 +1492,15 @@ Models Warsails does **not** replace (still plain vanilla `Default*`): `Settleme
 **Patches that touch private methods** (fragile on game updates):
 - `RecruitmentCampaignBehavior.ApplyInternal` — private, string name
 - `RecruitmentVM.OnDone` — private, string name
-- `RecruitmentVM.RefreshScreen` — private, string name
+- `RecruitmentVM.RefreshScreen` — public since game v1.3.15, still targeted by string name
 - `RecruitmentVM.RefreshPartyProperties` — private, string name
 - `DefaultClanFinanceModel.CalculateClanIncomeInternal` — private, string name
 - `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` — private, string name
 - `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` — private, string name
+- `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange` — private, string name
+- `PrisonerReleaseCampaignBehavior.HourlyPartyTick` — private, string name
 
-If Bannerlord renames any of these methods, the corresponding patch will silently not apply. `VerifyCriticalPatches()` runs after patching at startup and logs any target that failed to attach, so this surfaces at launch rather than mid-campaign. Patches on public methods use `nameof()` and have compile-time safety.
+If Bannerlord renames any of these methods, the corresponding patch will silently not apply. `VerifyCriticalPatches()` runs after patching at startup and logs any listed target that failed to attach, so this surfaces at launch rather than mid-campaign. Its list holds every private target above except `RecruitmentVM.RefreshScreen`, plus four public targets whose patches bind parameters by name: the three revenue taper methods (§34) and `AllianceCampaignBehavior.StartCallToWarAgreement` (§13). Patches on public methods use `nameof()` and have compile-time safety for the method name, but not for parameter names.
 
 ### Game Version Verification
 
@@ -1436,7 +1511,7 @@ The checklist per update:
 1. Release build against the new game DLLs.
 2. Resolve all `[HarmonyPatch]` targets — signature match, overload ambiguity, and parameter names.
 3. Resolve all reflection paths (`Clan.IsMinorFaction` / `IsRebelClan`, `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation`, `ItemObject.ItemCategory` and its backing field, `MapEvent.IsRaid` / `MapEventSettlement` / `EventType`, the `CampaignTime` members, `ModuleHelper.GetModules`).
-4. Confirm the MapBar UIExtender XPath anchors still exist in `SandBox/GUI/Prefabs/Map/MapBar.xml`.
+4. Confirm the MapBar ledger anchors (`B1071_MapBarPanelPrefabExtension.PrimaryAnchor` / `FallbackAnchor`) still exist in `SandBox/GUI/Prefabs/Map/MapBar.xml`.
 5. Confirm the `town` / `castle` / `village` game menu IDs are unchanged.
 6. Confirm Gauntlet vertical-stack layout direction has not flipped again (see the v1.4.5 fix).
 7. Check whether any newly shipped first-party model replaces a patched `Default*` type, and whether it delegates via `BaseModel`.
@@ -1449,9 +1524,11 @@ The checklist per update:
 
 **v1.5.3 / Warsails v1.3.3 result:** no breaking changes. All 39 `[HarmonyPatch]` targets and 11 reflection paths resolved with unchanged signatures and unchanged parameter names. The target count grew from 34 because the sweep manifest had drifted behind the code: the three settlement-revenue taper targets (`CalculateTownIncomeFromTariffs`, `CalculateVillageIncome`, `CalculateTownTax`), `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange` and `DefaultMilitaryPowerModel.GetDefaultTroopPower` were in the source but not the manifest, and all five were verified present and name-identical in the v1.5.3 binaries before being added. `RevenueSmoothenFraction()` still returns `5f`, and the tariff and village originals still debit `TradeTaxAccumulated` from the untampered pool inside the method body, so the revenue taper's payout-only scaling remains sound. The ten Warsails decorators that override a patched method all still forward through `base.BaseModel`; the four undecorated models remain undecorated (105 first-party `*Model` subclasses seen); the ship-vs-ship `SimulateHit` overload still leaves the pinned nine-type troop array unambiguous. The `town` / `castle` / `village` / `castle_dungeon` menu IDs were confirmed statically in decompiled `AddGameMenu` calls — the first update where step 5's ID check did not need a running campaign. Build against the v1.5.3 assemblies reports no `BHA0001`; the fast suite (573 tests) and the game-backed suite (201 tests) both pass. **Step 6 was not re-run** — visual, needs the game on screen. No code changes were required. v1.5.3 is still a Steam `beta`-branch install (`BetaKey: beta` in the app manifest), so the "beta" in the target-game string is still accurate.
 
-**Lesson for future updates:** a patch pinned by an explicit `argumentTypes` array fails *silently* when the game inserts a parameter, and `VerifyCriticalPatches` will not catch it because that list only covers private methods resolved by string name. Build with the BUTR Harmony Analyzer enabled and treat any `BHA0001` warning as a release blocker — it caught this one at compile time.
+**v1.5.6 / Warsails v1.3.6 result:** one breaking change, in code first released in v1.0.5.0. `MobileParty.HasPerk(PerkObject, out ..., bool checkSecondaryRole)` is gone; only `HasPerk(PerkObject, bool checkSecondaryRole = false)` remains. `B1071_SlaveSharedEscapePatch` called the removed overload for Athletics Stamina, so the build failed with CS1744. It now calls the remaining overload, which is the call native `ApplyEscapeChanceToExceededPrisoners` makes in 1.5.6; the base 10% chance, the Stamina factor and the Valor trait effect are unchanged. The released v1.0.4.0 never contained that call, and its source still compiles against v1.5.6 — but **its shipped binary is not compatible**. The `TooltipProperty(string, string, int, bool, TooltipPropertyFlags)` constructor gained a sixth optional parameter (`traitLevels`), so recompiled source binds the new overload while the old binary still references the removed five-parameter one. Every `B1071_SettlementTooltipContent.Build` call therefore throws `MissingMethodException`. On the vanilla settlement tooltip `B1071_SettlementTooltipRefresher.Refresh` catches it and the Campaign++ section is simply missing. On the nameplate hover path nothing catches it: `BasicTooltipViewModel.ExecuteBeginHint` → `ViewModel.ExecuteCommand` → `InvokeWithLog` logs and rethrows, so hovering a settlement nameplate with the default `EnableSettlementNameplateTooltips = true` very likely crashes the game (not confirmed in-game). This was found by resolving every game member reference in the v1.0.4.0 DLL with Mono.Cecil: 684 references, one unresolved on v1.5.6 and none on the old game build used as a control. The current source has zero unresolved references out of 737. **Lesson: a recompile proves source compatibility, not binary compatibility.** Check the shipped DLL's references too. Instead of resolving targets by reflection, this sweep applied all 54 `[HarmonyPatch]` classes to the installed assemblies through `harmony.CreateClassProcessor(type).Patch()` — the call `PatchAssemblySafely` makes — and all 55 target methods attached. That also proves prefix and postfix parameter names still bind. The reflection paths `Clan.IsMinorFaction` / `IsRebelClan`, `RebellionsCampaignBehavior._rebelClansAndDaysPassedAfterCreation`, `ItemObject.ItemCategory` and `MapEvent.IsRaid` / `MapEventSettlement` / `EventType` all resolve. `RevenueSmoothenFraction()` still returns `5f`, and the tariff and village originals still debit `TradeTaxAccumulated` inside the method body. The native prisoner escort curve `GetSizeModifierPrisoner` is unchanged, so `B1071_SlaveMath.EscortFactor` still mirrors it. `SandBox/GUI/Prefabs/Map/MapBar.xml` was not touched by this update, and both of its anchors plus the capsule and `TopSideIcons` anchors in all three settlement nameplate prefabs are present. The `town` / `castle` / `village` / `castle_dungeon` menus are still registered by `AddGameMenu`. The twelve Warsails decorators that override a patched method all still forward it through `BaseModel`. The interaction map had drifted to the first nine of them: `NavalDLCMobilePartyFoodConsumptionModel`, `NavalDLCPartySpeedCalculationModel` and `NavalDLCMilitaryPowerModel` are now listed. The four undecorated models remain undecorated. The patched and mirrored method bodies were also diffed against the 15 September game build kept in `obj/revenue-release-1.0.4.0`. 116 decompiled files changed, mostly a perk API refactor (`HasPerk` lost its `out` owner, and `PerkHelper` moved `BattleEnvironment` to a trailing optional parameter). Among the patched methods, only `GetSurvivalChance`, `GetTotalWage`, `GetTroopRecruitmentCost` and `ApplyEscapeChanceToExceededPrisoners` changed, and only by that refactor. **One behaviour change needed a fix:** `RefreshSettlementTooltip`, and the War Sails copy that replaces it, now add the trailing spacer only through `AddTooltipHintProperties`, and only when there is an extend-info or parley hint. With the tooltip extended, or with settlement information hidden and no parley, there was no footer spacer, so `FindFooterIndex` took an earlier section spacer and placed the Campaign++ section mid-tooltip. It now accepts a spacer only when nothing but hint rows follow it, and otherwise inserts at the end. The nameplate hover and marker callbacks also gained their own catch, so a binary break like the `TooltipProperty` one costs a tooltip rather than the campaign. The first in-game launch on 1.5.6 found the compact ledger missing: M toggled it, but no panel appeared. That was not a game change. UIExtenderEx 3.0.3 processes `MapBar` more than once, and the old one-shot injection guard emptied every pass after the first (see §19, Map bar injection). Build reports no `BHA0001`; the fast suite (607 tests) and the game-backed suite (362 tests) both pass. **Step 6 was not re-run** — visual, needs the game on screen. v1.5.6 is still a Steam `beta`-branch install (`BetaKey: beta`).
 
-**Save compatibility**: All mod state is stored in campaign saves. Loading a save from a version of the mod without certain features (e.g., an older save without war exhaustion data) will gracefully default to empty dictionaries and zero values. Upgrading from 0.1.5.x to 0.1.6.0 requires no new campaign.
+**Lesson for future updates:** a patch pinned by an explicit `argumentTypes` array fails *silently* when the game inserts a parameter, and `VerifyCriticalPatches` will not catch it because the `SimulateHit` overload is not on that list, which names private string-resolved targets and four public ones. Build with the BUTR Harmony Analyzer enabled and treat any `BHA0001` warning as a release blocker — it caught this one at compile time.
+
+**Save compatibility**: All mod state is stored in campaign saves. Loading a save from a version of the mod without certain features (e.g., an older save without war exhaustion data) will gracefully default to empty dictionaries and zero values.
 
 ---
 
@@ -1611,7 +1688,7 @@ Historically, enslaved labourers received subsistence rations comparable to garr
 - **Capacity warning:** `B1071_SlavePrisonerWarningPatch` augments the native `PartyVM.IsMainPrisonersLimitWarningEnabled` setter when slaves alone exceed total capacity. Otherwise the clamped zero ordinary-prisoner limit compared with zero ordinary prisoners cannot warn. It applies only to the player's right-hand party when prisoners are relevant, preserves native warnings, and uses the setter to notify Gauntlet of the corrected value. The recursive setter call stops immediately once the flag is true. The native setter has no game-dependent static initialization (verified against 1.5.3); tests bind the patch before a campaign exists and verify the notification value and warning clearing.
 - **Land speed:** `B1071_SlaveEscortSpeedPatch` adds only the difference between the native escort curves for prisoners plus slaves and prisoners alone: `(10 + men) / (10 + men + captives)`, raised to `0.33`, minus one. Counts include attached parties, matching the native escort aggregation. Caravans never reach these terms, since their slave count is zero. Existing cargo weight stays intact. The native overcapacity contribution is read from the same capacity getter used by vanilla, then replaced with a single combined captive/capacity ratio using the current model. As in vanilla, the overcapacity ratio is per leading party, while the regular escort term includes attached parties. Native speed floors remain; sea speed is untouched.
 - **Overcapacity escapes:** `B1071_SlaveSharedEscapePatch` replaces private `PrisonerReleaseCampaignBehavior.HourlyPartyTick` only while the enabled system has carried slaves. The number of hourly attempts is combined captives minus total capacity. Each successful chance samples slaves and regular prisoners uniformly by headcount, falling back to heroes only when neither remains; the player hero is excluded. Base chance is native 10%, modified by Athletics Stamina and the leader's Valor trait. Map events, sieges, garrisons and militia retain their native exclusions. Caravans, whose slave count is zero, fall through to the native pass over ordinary prisoners only. Slave goods are removed through the item roster; regular prisoners through the troop roster; heroes through `EndCaptivityAction`. No slave-only stock is immune, and no ordinary-prisoner-only escape penalty is introduced. Partial failures never run a second native escape pass.
-- **Compatibility:** Private target and native formula verified against Bannerlord 1.5.3; registered in launch verification and game-backed patch-binding tests. The installed War Sails decorators forward party food and land speed through their base models. Slave goods, prices, save formats, market-only decay/manumission and FIFO castle consignment are unchanged. Disabling Slave Economy restores native capacity, food and speed behavior.
+- **Compatibility:** Private target and native formula verified against Bannerlord 1.5.6; registered in launch verification and game-backed patch-binding tests. The installed War Sails decorators forward party food and land speed through their base models. Slave goods, prices, save formats, market-only decay/manumission and FIFO castle consignment are unchanged. Disabling Slave Economy restores native capacity, food and speed behavior.
 
 ### Slave attrition (new in 0.1.6.0)
 
@@ -1676,7 +1753,7 @@ Same-faction lords can actively stabilize strained towns and castles. The action
 | Placate Local Elites | 4,000g | -20 strain | +1.0 loyalty/day, +0.7 security/day for 7 days |
 | Grant Amnesty | 9,000g | -35 strain | +1.5 loyalty/day, +1.0 security/day for 10 days |
 
-Each tier also adds extra governance strain decay while active. Duration doubles as cooldown. AI lords use the same rules when strain is high and they can afford the action safely.
+Each tier also adds extra governance strain decay while active. Duration doubles as cooldown. AI lords use the same rules when strain is high and they can afford the action safely. Each AI lord also waits `GovernanceStabilizationAiHeroCooldownDays` (default 7) between stabilizations anywhere; the last day per hero is saved as `b1071_govStabHeroLastDay`, so a reload does not clear the wait.
 
 ### MCM settings (Provincial Governance group)
 
@@ -1742,9 +1819,9 @@ Lords (player and AI) can invest gold at any non-hostile, non-looted village thr
 
 | Tier | Cost | Duration | Hearth/day | Relation | Influence | Power |
 |------|------|----------|-----------|----------|-----------|-------|
-| Modest | 2,000d | 20 days | +0.3 | +3 | +0.5 | +5 |
-| Generous | 5,000d | 30 days | +0.6 | +6 | +1.0 | +10 |
-| Grand | 12,000d | 45 days | +1.0 | +10 | +2.0 | +20 |
+| Modest | 2,000d | 20 days | +0.3 | +3 | +2.5 | +5 |
+| Generous | 5,000d | 30 days | +0.6 | +6 | +5.0 | +10 |
+| Grand | 12,000d | 45 days | +1.0 | +10 | +10.0 | +20 |
 
 - **Hearth bonus** lasts for the full investment duration, visible in the hearth tooltip as "Patronage" (Harmony postfix).
 - **Relation** is applied immediately to all village notables.
@@ -1756,11 +1833,18 @@ Lords (player and AI) can invest gold at any non-hostile, non-looted village thr
 
 ### AI behavior
 
-AI lords invest when entering their own faction's villages, picking the highest affordable tier with a conservative gold gate (`hero.Gold > cost × 3`). This prevents AI gold starvation while ensuring meaningful economic participation.
+AI lords invest when entering a Normal-state village of their own faction, subject to:
+- Gold safety multiplier (`VillageInvestAiGoldMultiplier`, default ×5): a tier is affordable only when `hero.Gold` exceeds its cost × the multiplier
+- Random chance gate (`VillageInvestAiChance`, default 40%)
+- Random tier selection from affordable tiers (`VillageInvestAiRandomTier`, default on; off picks the highest)
+- Per-hero cooldown (`VillageInvestAiHeroCooldownDays`, default 3 days between any village investment)
+- Hearth ceiling (`VillageInvestAiHearthCeiling`, default 600 — skip villages at or above it)
+
+This prevents AI gold starvation while ensuring meaningful economic participation.
 
 ### Save/load and mod removal safety
 
-State is persisted as two dictionaries (`_investDaysRemaining`, `_investHearthBonus`) via `SyncData`, keyed by `{settlementId}_{heroId}`. Mid-campaign install is safe (empty dictionaries). Mod removal is safe: only accumulated hearth persists (within normal range), and relation/influence/power changes are vanilla-native.
+State is persisted as two dictionaries (`_investDaysRemaining`, `_investHearthBonus`) via `SyncData`, keyed by `{settlementId}_{heroId}`, plus the AI per-hero cooldown `_heroLastInvestDay` (`b1071_villageInvestHeroLastDay`, keyed by hero ID, default 3 days) so a reload does not let every AI lord invest again at its next visit. Mid-campaign install is safe (empty dictionaries). Mod removal is safe: only accumulated hearth persists (within normal range), and relation/influence/power changes are vanilla-native.
 
 ### MCM settings (Village Investment group)
 
@@ -1771,11 +1855,17 @@ State is persisted as two dictionaries (`_investDaysRemaining`, `_investHearthBo
 | Modest/Generous/Grand duration | 20/30/45 | Days of hearth bonus (and cooldown) |
 | Modest/Generous/Grand hearth | 0.3/0.6/1.0 | Daily hearth growth bonus |
 | Modest/Generous/Grand relation | 3/6/10 | Notable relation gain |
-| Modest/Generous/Grand influence | 0.5/1.0/2.0 | Influence gain (same kingdom only) |
+| Modest/Generous/Grand influence | 2.5/5.0/10.0 | Influence gain (same kingdom only) |
 | Modest/Generous/Grand power | 5/10/20 | Notable power gain |
 | Power cap | 200 | Maximum notable power from investment |
 | Cross-clan relation | 2 | Relation with owner clan leader |
 | AI enabled | On | Whether AI lords invest |
+| AI gold multiplier | 5 | AI must have gold > cost × this |
+| AI chance | 40% | Chance per eligible village visit |
+| AI random tier | On | Random vs. always-highest tier |
+| AI hero cooldown | 3 days | Min days between any two village investments |
+| AI hearth ceiling | 600 | Skip villages at or above this hearth |
+| Notify player | On | Show message when AI invests in your villages |
 
 ---
 
@@ -1791,9 +1881,9 @@ Lords (player and AI) can invest gold at any non-hostile, non-besieged town thro
 
 | Tier | Cost | Duration | Prosperity/day | Relation | Influence | Power |
 |------|------|----------|---------------|----------|-----------|-------|
-| Modest | 5,000d | 20 days | +0.5 | +3 | +2.0 | +5 |
-| Generous | 15,000d | 40 days | +1.0 | +6 | +5.0 | +10 |
-| Grand | 40,000d | 60 days | +2.0 | +10 | +10.0 | +20 |
+| Modest | 5,000d | 20 days | +0.5 | +3 | +10.0 | +5 |
+| Generous | 15,000d | 40 days | +1.0 | +6 | +25.0 | +10 |
+| Grand | 40,000d | 60 days | +2.0 | +10 | +50.0 | +20 |
 
 - **Prosperity bonus** lasts for the full investment duration, visible in the prosperity tooltip as "Civic Patronage" (Harmony postfix on `CalculateProsperityChange`).
 - **Relation** is applied immediately to all town notables.
@@ -1811,9 +1901,9 @@ Lords (player and AI) can invest gold at any non-hostile, non-besieged town thro
 | Target stat | Hearth | Prosperity |
 | Cost range | 2,000–12,000d | 5,000–40,000d |
 | Duration range | 20–45 days | 20–60 days |
-| Influence range | 0.5–2.0 | 2.0–10.0 |
+| Influence range | 2.5–10.0 | 10.0–50.0 |
 | Siege restriction | N/A (villages) | Blocked during siege |
-| AI gold multiplier | ×15 | ×15 |
+| AI gold multiplier | ×5 | ×15 |
 | Tooltip label | "Patronage" | "Civic Patronage" |
 | Notification color | Green | Blue |
 
@@ -1829,12 +1919,12 @@ AI lords invest when entering their own faction's towns, subject to:
 
 ### Save/load and mod removal safety
 
-State is persisted as two dictionaries (`_investDaysRemaining`, `_investProsperityBonus`) via `SyncData`, keyed by `{settlementId}_{heroId}`. Mid-campaign install is safe (empty dictionaries). Mod removal is safe: only accumulated prosperity persists (within normal range), and relation/influence/power changes are vanilla-native.
+State is persisted as two dictionaries (`_investDaysRemaining`, `_investProsperityBonus`) via `SyncData`, keyed by `{settlementId}_{heroId}`, plus the AI per-hero cooldown `_heroLastInvestDay` (`b1071_townInvestHeroLastDay`, keyed by hero ID) so a reload does not let every AI lord invest again at its next visit. Mid-campaign install is safe (empty dictionaries). Mod removal is safe: only accumulated prosperity persists (within normal range), and relation/influence/power changes are vanilla-native.
 
 ### Verbose logging
 
 All investment events are logged to rgl_log when verbose logging is enabled:
-- `[TownInvestment] Player invested tier 3 (40000d) at Epicrotea — prosperity +2/day for 60d, relation +10, power +20, influence +10.0.`
+- `[TownInvestment] Player invested tier 3 (40000d) at Epicrotea - prosperity +2/day for 60d, relation +10, power +20, influence +50.`
 - `[TownInvestment] Investment expired: key=town_ES1_lord_1_3 at Epicrotea.`
 - `[TownInvestment] Prosperity bonus for Epicrotea: +3.00/day from 2 active patron(s).` (logged once per day from the daily tick — not on every model query)
 
@@ -1847,7 +1937,7 @@ All investment events are logged to rgl_log when verbose logging is enabled:
 | Modest/Generous/Grand duration | 20/40/60 | Days of prosperity bonus (and cooldown) |
 | Modest/Generous/Grand prosperity | 0.5/1.0/2.0 | Daily prosperity growth bonus |
 | Modest/Generous/Grand relation | 3/6/10 | Notable relation gain |
-| Modest/Generous/Grand influence | 2.0/5.0/10.0 | Influence gain (same kingdom only) |
+| Modest/Generous/Grand influence | 10.0/25.0/50.0 | Influence gain (same kingdom only) |
 | Modest/Generous/Grand power | 5/10/20 | Notable power gain |
 | Power cap | 200 | Maximum notable power from investment |
 | Cross-clan relation | 2 | Relation with owner clan leader |
@@ -1999,6 +2089,8 @@ By clearing `IsRebelClan` before the first `DailyTickClan`, vanilla's "kill all 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Enable clan survival | On | Enables new rescues. Existing tracked clans continue safe maintenance until they join a kingdom or reach vanilla leader-death destruction |
+| Rescue crushed rebel clans (`RescueRebelClans`) | Off | Opt-in rebel-clan rescue and normalization (see Rebel Clan Rescue above) |
+| Clean up leftover rebel mercenary companies (`PurgeLeftoverRebelClans`) | Off | Asks for confirmation, then removes leftover rescued rebel companies a few per day |
 | Grace period (days) | 30 | Currently unused and reserved for a possible future auto-placement flow. Changing it has no effect. |
 | Culture match weight | 2.0 | Currently unused and reserved for possible future placement scoring. Changing it has no effect. |
 
@@ -2028,14 +2120,15 @@ First scan triggered by `OnBeforeInitialModuleScreenSetAsRoot`, after all Harmon
 
 ### Stage 2 — Model scan (campaign load)
 
-Triggered by `OnGameLoaded` / `OnNewGameCreated` via `B1071_CompatibilityBehavior`. Checks whether other mods have replaced the game model classes that Campaign++ patches:
+Triggered by `OnSessionLaunched` in `B1071_CompatibilityBehavior`, which resets and runs `RunModelChecks` and then re-runs the Harmony scan. Checks whether other mods have replaced, or cut off, the game model classes that Campaign++ patches. `ModelChecks` lists seven: Town Food System (`DefaultSettlementFoodModel`), Village Volunteers (`DefaultVolunteerModel`), Town Prosperity, Town Loyalty, Town Security, Building Construction and Clan Finances. For each one, the active model's runtime type is compared against the expected default type:
 
-- Food / volunteer production / militia / prosperity / other campaign models
-- For each model, the actual runtime type is compared against the expected type
-- `IsDynamicallyHandled = true` if Campaign++'s Harmony patches target the base class and fire via `base()` automatically (no action needed)
-- `IsSubclassOfExpected = true` if the replacement extends the expected type (patches typically still fire)
-- `IsNativeAssembly = true` if the replacement comes from a first-party assembly (`TaleWorlds*`, `SandBox*`, `NavalDLC*`, `BirthAndDeath*`, etc.) — these generate no warning regardless of type mismatch. This covers the Naval DLC's thin decorator models which replace vanilla systems but delegate all logic back through `BaseModel`.
-- Otherwise, `Risk = Warning` and the relevant feature may be inactive
+- **Expected type or a subclass of it.** Harmony patches the method body on the default type, not the virtual slot, so a subclass reaches a Campaign++ patch only through overrides that call `base`. `FindMethodsSkippingOriginal` takes every method Campaign++ owns a Harmony patch on that is declared on the expected type or its bases, and asks `FindOverrideSkippingOriginal` whether the active type reaches it. That walks the override chain from the most derived implementation upward. Each override must contain a non-virtual `call` to the next implementation up, which is what `base.Method(...)` compiles to, or it is the override that cuts the chain. `CallingBaseIntoAnOverrideThatSkipsIsStillReported` pins the case where the outermost override calls `base` into one that does not. If nothing cuts, there is no issue. If something does, a `SkipsOriginal` issue is recorded, with `Risk = Warning`, or `Safe` when the check is dynamically handled.
+- **First-party assembly** (`IsNativeAssembly`: `TaleWorlds*`, `SandBox*`, `NavalDLC*`, `BirthAndDeath*`, and the rest). A different hierarchy generates no issue; this covers the Naval DLC's decorator models, which delegate through `BaseModel`. A first-party subclass that skips the original is printed to the log rather than recorded, because every player-facing string says another mod did it. The game-version sweep is where a TaleWorlds change of that kind gets caught.
+- **Different hierarchy from another mod.** `Risk = Warning`, or `Safe` when the check is dynamically handled.
+
+`IsDynamicallyHandled` means code exists that re-patches the model the game actually runs. Only the food check has it: `B1071_DevastationBehavior.ApplyDynamicFoodPatchIfNeeded` applies `B1071_DevastationFoodPatch` and `B1071_SlaveFoodPatch` postfixes to a different-hierarchy model's `CalculateTownFoodStocksChange`. For a subclass it patches the override that `FindOverrideSkippingOriginal` returns. When the chain reaches the original it patches nothing, because the static patch already runs and a second postfix would double the effect. Village Volunteers used to claim it too, but nothing re-patches a replacement `VolunteerModel`, so the status read "auto-patched" while `B1071_ManpowerVolunteerPatch` did not run. `OnlyTheFoodModelClaimsARuntimeWorkaround` pins the flag.
+
+The override test is static IL inspection (`PatchProcessor.ReadMethodBody`), so it has two known limits. An override that reaches the original only through a helper method is reported as skipping it, which errs towards a false warning, never a false all-clear. An override whose body cannot be read is assumed to call `base` and is logged. Coverage is the seven models above; the other default models Campaign++ patches, such as `DefaultPartyWageModel`, are not scanned.
 
 Results stored in `_modelIssues`. Model check state is cleared and re-run each campaign session.
 
@@ -2088,7 +2181,7 @@ Currently filtered identifiers: `taleworlds`, `butterlib`, `butlib`, `.mcm`, `mo
 | `B1071_CompatibilityChecker.cs` | Core scanner, risk scoring, text helpers, popup builder |
 | `B1071_CompatibilityFluentSettings.cs` | MCM tab builder, clipboard helper |
 | `B1071_CompatibilityBehavior.cs` | CampaignBehaviorBase bridge for model scan |
-| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 28 ProxyRef-backed system toggles in 5 groups |
+| `B1071_QuickSettingsFluentSettings.cs` | Quick Settings MCM tab builder — 29 ProxyRef-backed system controls in 5 groups |
 
 ---
 
@@ -2205,6 +2298,10 @@ board** — so no coin, no slot, and no point of manpower is counted twice:
 **Which gold that floor is tested against is a real decision, and the first cut got it wrong.** It is the leader's live gold, not `B1071_AiRecoveryBudget.Gold`. The budget is spent down in Campaign++ arrival order — veterans, then castle elites, then volunteers — which is the right accounting for *how many men the purse stretches to*, and the wrong accounting for *whether vanilla will begin at all*. Vanilla hires the board from `OnBeforeSettlementEntered`, at the instant the party crosses the gate, whereas every Campaign++ transfer happens on a later hourly tick once the lord is already inside; the gold the game weighs against this floor is therefore the gold he rode in with. Testing the drained budget instead under-quoted every settlement holding both a veteran register entry and a board, and inflated `volGoldBlock` with lords who were never refused anything. Per-recruit affordability below still spends the shared budget, which is the constraint that budget exists to enforce.
 
 **Quoting six slots per notable costs six times the model calls**, and this quoter runs per candidate settlement, per recovering lord, every campaign hour. `GetCharacterWage`, `GetTroopRecruitmentCost` — which builds an `ExplainedNumber` on every call — `GetRecruitCostForParty` and `GetManpowerChargePerTroop` are resolved once per troop into a `VolunteerCost` held in a small dictionary allocated per `QuoteNotableVolunteers` call, then reused across notables and slots; boards repeat heavily, because every notable of a culture offers largely the same basic tree. The cache is keyed by troop alone, which is only sound because it does not outlive the call: leader, settlement and party are fixed within one, and the four figures depend on nothing else. A static cache reused across calls would be keyed by too little and would be wrong the first time a second lord quoted the same town.
+
+**The wage bill is read once per pass, not once per settlement.** `MobileParty.IsWageLimitExceeded()` and `GetAvailableWageBudget()` both go through `TotalWage`, which runs `PartyWageModel.GetTotalWage` over the whole roster on every call, and the volunteer quoter needs both for every town and village it prices. Read inside `QuoteNotableVolunteers`, that was two roster walks per candidate; telemetry from two campaigns logged about 3,800 and 10,900 settlement quotes per in-game day, peaking at 17,000. `OnAiHourlyTick` now reads both once, after `RecruitAtCurrentSettlement` (which may already have added men), and passes them through `QuoteSettlement` to `QuoteNotableVolunteers`. Nothing in the candidate loop changes the roster, so every settlement in it sees the same wage bill either way. The current-settlement quote reads its own pair just before quoting, since it runs before that recruit.
+
+**Non-lord parties leave before any of this.** `AiHourlyTickEvent` fires for every party on the map, and caravans, villagers, militia, garrisons, patrols and bandits far outnumber lords. They used to pay for the runtime sweep, `GetBlockReasons` — including `IsFleeing()` and `GetNumDaysForFoodToLast()` — and `ClearPartyState` before being turned away on `ExcludedPartyType`. They now leave on `IsExcludedPartyType`, a handful of flag reads, as the first check after the null guard. The same helper still sets `ExcludedPartyType` in `GetBlockReasons`, so the two cannot disagree on the list. Skipping `ClearPartyState` for them is safe because party type comes from the party component and never changes, so such a party never holds an intent, proposal or reservation. The runtime sweep now runs once per lord party-hour instead of once per party-hour.
 
 `B1071_AiRecoveryMath.AffordableUnits` applies the gold-buffer multiplier and leaves the lord at
 least one coin, so a quote can never bankrupt a party that acts on it.
@@ -2648,6 +2745,5 @@ All three targets are public overrides named with nameof(). They are also regist
 VerifyCriticalPatches and the matching CriticalTargets test list. Tariff binding tests verify
 both the observation prefix and the payout postfix.
 
-The release snapshot with the enabled preset and profile v28 migration passed 578 fast
-tests and 219 game-backed tests. Migration coverage checks the one-time preset, unrelated
+Migration coverage checks the one-time preset, unrelated
 setting preservation and subsequent player customization. In-game validation remains outstanding.

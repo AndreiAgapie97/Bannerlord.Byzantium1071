@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <base>
   <tags>
-    <tag language="Chinese" />
+    <tag language="简体中文" />
   </tags>
   <strings>
     <string id="b1071_demob_age" text="服役天数" />
@@ -33,7 +33,7 @@
     <string id="b1071_mcm_g_demob_custom" text="部队服役 - 自定义天数" />
     <string id="b1071_mcm_t_3e91c7ab04" text="城堡断供每日恢复" />
     <string id="b1071_mcm_t_demob_enable" text="启用部队复员" />
-    <string id="b1071_mcm_h_5c2df08b16" text="当城堡所属势力在任何地方都不拥有城镇时，该城堡每日自行恢复的兵源——即完全由城堡组成的独立国家，通常是刚刚宣布独立的玩家，或是被打到只剩城堡的王国。这样的城堡没有城镇可供轮调守军，若无此项便只能停在普通城堡的细流下限上，永远无法重建。拥有城镇的王国不会走这条路径，因此不受影响。势力一旦夺得城镇，便立刻恢复正常的补给链。默认：4。" />
+    <string id="b1071_mcm_h_5c2df08b16" text="当城堡所属势力在任何地方都不拥有城镇时，该城堡每日自行恢复的兵源——即完全由城堡组成的独立国家，通常是刚刚宣布独立的玩家，或是被打到只剩城堡的王国。这样的城堡没有城镇可供轮调驻军，若无此项便只能停在普通城堡的细流下限上，永远无法重建。拥有城镇的王国不会走这条路径，因此不受影响。势力一旦夺得城镇，便立刻恢复正常的补给链。默认：4。" />
     <string id="b1071_mcm_h_demob_enable" text="总开关。野战部队服役可配置的 Bannerlord 天数后会逐渐离队。适用于玩家和 AI 野战队伍。默认：关闭。" />
     <string id="b1071_mcm_t_demob_preset" text="强度预设" />
     <string id="b1071_mcm_h_demob_preset" text="0=轻度，1=中等，2=严苛，3=自定义。阈值使用 Bannerlord 天数；游戏内一年约 84 天。默认：中等。" />
@@ -83,22 +83,22 @@
     <string id="b1071_ui_ok" text="确定" />
     <string id="b1071_cr_consignment_ai" text="来自{CASTLE}的寄押收益：+{GOLD}g（你的 {COUNT} 名俘虏被 AI 领主招募，你分得 {SHARE}%）。" />
     <string id="b1071_cr_consignment_enslave" text="来自{CASTLE}的寄押收益：+{GOLD}g（{COUNT} 名俘虏在{TOWN}被贩为奴隶，你分得 {SHARE}%）。" />
-    <string id="b1071_cr_consignment_garrison" text="来自{CASTLE}的寄押收益：+{GOLD}g（{COUNT} 名俘虏被编入守军，你分得 {SHARE}%）。" />
+    <string id="b1071_cr_consignment_garrison" text="来自{CASTLE}的寄押收益：+{GOLD}g（{COUNT} 名俘虏被编入驻军，你分得 {SHARE}%）。" />
     <string id="b1071_cr_deposit_label" text="寄押俘虏（可寄押 {COUNT} 名，看押费 {FEE}%）" />
     <string id="b1071_cr_deposited_msg" text="已在{CASTLE}寄押 {COUNT} 名俘虏。你将获得处置收入的 {SHARE}%（看押费：{FEE}%）。" />
-    <string id="b1071_cr_deposited_own" text="已在{CASTLE}存放{COUNT}名囚犯。低阶将自动奴役；精英保留待转化。" />
-    <string id="b1071_cr_owner_enslave" text="{CASTLE}奴役了{COUNT}名囚犯 — 卖至{TOWN}，国库收入 +{GOLD}{COIN}。" />
-    <string id="b1071_cr_ai_deposit_arrived" text="{PARTY}在{CASTLE}存放了{COUNT}名囚犯。" />
-    <string id="b1071_cr_town_broke" text="{CASTLE}：{STUCK}名低阶囚犯等待奴役 — {TOWN}金币耗尽。明日将重新尝试。" />
+    <string id="b1071_cr_deposited_own" text="已在{CASTLE}寄押{COUNT}名俘虏。低阶将自动奴役；精英保留待转化。" />
+    <string id="b1071_cr_owner_enslave" text="{CASTLE}奴役了{COUNT}名俘虏 — 卖至{TOWN}，国库收入 +{GOLD}{COIN}。" />
+    <string id="b1071_cr_ai_deposit_arrived" text="{PARTY}在{CASTLE}寄押了{COUNT}名俘虏。" />
+    <string id="b1071_cr_town_broke" text="{CASTLE}：{STUCK}名低阶俘虏等待奴役 — {TOWN}金币耗尽。明日将重新尝试。" />
     <string id="b1071_cr_rebuild_no_campaign" text="请先载入战役，再重建 Campaign++ 招募来源。" />
     <string id="b1071_cr_rebuild_done" text="招募来源已重建：扫描 {SETTLEMENTS} 个定居点，规范化 {CHANGED} 个志愿兵面板，刷新 {CULTURES} 个文化缓存。" />
-    <string id="b1071_mcm_t_7d1f6fd4d0" text="奴役囚犯授予流氓习气经验" />
-    <string id="b1071_mcm_h_7d1f6fd4d0" text="启用后，奴役囚犯将按 Bannerlord 原版出售囚犯公式授予流氓习气经验。城镇即时奴役使用原生队伍钩子；若延迟的城堡处理时队伍已不存在，则回退给原始存放者。默认：开启。" />
+    <string id="b1071_mcm_t_7d1f6fd4d0" text="奴役俘虏授予流氓习气经验" />
+    <string id="b1071_mcm_h_7d1f6fd4d0" text="启用后，奴役俘虏将按 Bannerlord 原版出售俘虏公式授予流氓习气经验。城镇即时奴役使用原生队伍钩子；若延迟的城堡处理时队伍已不存在，则回退给原始寄押人。默认：开启。" />
     <string id="b1071_mcm_t_5e69a58b2a" text="奴役流氓习气经验倍率" />
-    <string id="b1071_mcm_h_5e69a58b2a" text="调整奴役囚犯时获得的、与原版等效的流氓习气经验。1.0 = 与出售囚犯相同；0 = 禁用经验，但不影响其余奴役系统。默认：1.0。" />
+    <string id="b1071_mcm_h_5e69a58b2a" text="调整奴役俘虏时获得的、与原版等效的流氓习气经验。1.0 = 与出售俘虏相同；0 = 禁用经验，但不影响其余奴役系统。默认：1.0。" />
     <string id="b1071_cr_elite_header" text="精锐部队（文化兵池）" />
     <string id="b1071_cr_manpower_block" text="兵源：无法招募{TROOP}——{POOL}需要 {COST}，仅剩 {LEFT}。" />
-      <string id="b1071_cr_tier_block" text="志愿兵等级上限：{SETTLEMENT} 属于{TYPE}，这里只提供最高至 T{CAP} 的志愿兵。{TROOP} 为 T{TIER}。" />
+      <string id="b1071_cr_tier_block" text="志愿兵兵阶上限：{SETTLEMENT} 属于{TYPE}，这里只提供最高至 T{CAP} 的志愿兵。{TROOP} 为 T{TIER}。" />
       <string id="b1071_recruit_type_town" text="城镇" />
       <string id="b1071_recruit_type_village" text="村庄" />
     <string id="b1071_cr_no_elite" text="暂无可招募的精锐部队。兵池每日从城堡兵源中恢复。" />
@@ -115,7 +115,7 @@
     <string id="b1071_cr_recruit_none" text="招募部队（暂无）" />
     <string id="b1071_cr_recruit_pending" text="招募部队（{PENDING} 名训练中）" />
     <string id="b1071_cr_tip_no_prisoners" text="你没有可寄押的俘虏。" />
-    <string id="b1071_cr_tip_none" text="暂无可用的部队或俘虏。精锐部队每日从城堡的兵源池中恢复。" />
+    <string id="b1071_cr_tip_none" text="暂无可用的部队或俘虏。精锐部队每日从城堡的兵池中恢复。" />
     <string id="b1071_cr_tip_prison_full" text="该城堡的地牢已满。" />
     <string id="b1071_cr_title" text="城堡招募" />
     <string id="b1071_cr_status_elite" text="精锐" />
@@ -123,9 +123,9 @@
     <string id="b1071_cr_status_ready" text="可招募" />
     <string id="b1071_cr_status_ready_free" text="可招募（免费）" />
     <string id="b1071_cr_status_days_remaining" text="剩余 {DAYS} 天" />
-    <string id="b1071_cr_hint_recruit_sameclan" text="招募 1 名{TROOP}（同氏族——五折：{COST} 金币）" />
+    <string id="b1071_cr_hint_recruit_sameclan" text="招募 1 名{TROOP}（同家族——五折：{COST} 金币）" />
     <string id="b1071_cr_hint_recruit_for_gold" text="花费 {COST} 金币招募 1 名{TROOP}" />
-    <string id="b1071_cr_hint_recruit_clan_waiver" text="招募 1 名{TROOP}（氏族豁免——免费）" />
+    <string id="b1071_cr_hint_recruit_clan_waiver" text="招募 1 名{TROOP}（家族豁免——免费）" />
     <string id="b1071_cr_hint_not_enough_gold" text="金币不足（需要 {COST}）" />
     <string id="b1071_cr_hint_not_ready" text="尚未就绪——{STATUS}" />
     <string id="b1071_compat_copied" text="[Campaign++] 兼容性报告已复制到剪贴板。" />
@@ -150,6 +150,7 @@
     <string id="b1071_compat_model_hint_handled" text="{MODEL}：另一个模组替换了此系统，但 Campaign++ 已检测到并自动做了补偿。无需处理。" />
     <string id="b1071_compat_model_hint_subclass" text="{MODEL}：另一个模组修改了此系统（以原系统的扩展形式）。Campaign++ 在这方面的功能应该仍能正常运作，但若在游戏中感觉不对劲，请留意此处。" />
     <string id="b1071_compat_model_hint_replaced" text="{MODEL}：另一个模组已完全替换此系统。Campaign++ 中影响{MODEL_LOWER}的部分功能可能未生效。若在游戏中感觉不对劲，请留意此处。" />
+    <string id="b1071_compat_model_hint_skips_original" text="{MODEL}：另一个模组修改了此系统，并跳过了游戏自身的计算。Campaign++ 中影响{MODEL_LOWER}的部分功能可能未生效。若在游戏中感觉不对劲，请留意此处。" />
     <string id="b1071_compat_risk_warning" text="需查看" />
     <string id="b1071_compat_risk_caution" text="效果叠加" />
     <string id="b1071_compat_risk_safe" text="兼容" />
@@ -206,7 +207,7 @@
     <string id="b1071_qs_group_province" text="行省与治理" />
     <string id="b1071_qs_group_immersion" text="沉浸感与调整" />
     <string id="b1071_qs_name_war_effects" text="战争影响" />
-    <string id="b1071_qs_hint_war_effects" text="战斗伤亡和攻城善后会消耗定居点的兵源池。洗劫则会榨干其所属定居点。" />
+    <string id="b1071_qs_hint_war_effects" text="战斗伤亡和攻城善后会消耗定居点的兵池。洗劫则会榨干其所属定居点。" />
     <string id="b1071_qs_name_war_exhaustion" text="战争疲惫" />
     <string id="b1071_qs_hint_war_exhaustion" text="王国会因战斗、洗劫和攻城累积战争疲惫。疲惫过高会拖慢恢复，并促使 AI 倾向议和。" />
     <string id="b1071_qs_name_diplomacy_pressure" text="外交压力" />
@@ -220,13 +221,13 @@
     <string id="b1071_qs_name_slave_economy" text="奴隶经济" />
     <string id="b1071_qs_hint_slave_economy" text="洗劫村庄以获取奴隶，并在城镇市场出售。奴隶可提升城镇繁荣度与建造。" />
     <string id="b1071_qs_name_village_investment" text="村庄投资" />
-    <string id="b1071_qs_hint_village_investment" text="在友好村庄花费金钱，以换取炉灶增长、名流好感、影响力和势力。" />
+    <string id="b1071_qs_hint_village_investment" text="在友好村庄花费金币，以换取户数增长、要人关系、影响力和权望。" />
     <string id="b1071_qs_name_town_investment" text="城镇投资" />
-    <string id="b1071_qs_hint_town_investment" text="在友好城镇花费金钱，以换取繁荣度增长、名流好感、影响力和势力。" />
-    <string id="b1071_qs_name_minor_faction" text="小型势力经济" />
-    <string id="b1071_qs_hint_minor_faction" text="非匪帮类的小势力获得每日补贴，以免破产。" />
-    <string id="b1071_qs_name_garrison_wage" text="守军军饷折扣" />
-    <string id="b1071_qs_hint_garrison_wage" text="守军部队的军饷按野战军饷的一定比例计算（默认 80%）。" />
+    <string id="b1071_qs_hint_town_investment" text="在友好城镇花费金币，以换取繁荣度增长、要人关系、影响力和权望。" />
+    <string id="b1071_qs_name_minor_faction" text="小阵营经济" />
+    <string id="b1071_qs_hint_minor_faction" text="非匪帮类的小阵营获得每日补贴，以免破产。" />
+    <string id="b1071_qs_name_garrison_wage" text="驻军军饷折扣" />
+    <string id="b1071_qs_hint_garrison_wage" text="驻军部队的军饷按野战军饷的一定比例计算（默认 80%）。" />
     <string id="b1071_qs_name_castle_recruitment" text="城堡招募" />
     <string id="b1071_qs_hint_castle_recruitment" text="城堡以兵源产出精锐部队，并关押 4 阶及以上俘虏以待转化。" />
     <string id="b1071_qs_name_castle_access" text="开放城堡出入" />
@@ -238,7 +239,7 @@
     <string id="b1071_qs_name_governance" text="治理压力" />
     <string id="b1071_qs_hint_governance" text="战争、攻城、洗劫和征服会给定居点带来压力。压力过高会降低忠诚、治安和繁荣度；安抚措施有助于恢复。" />
     <string id="b1071_qs_name_devastation" text="边境残破" />
-    <string id="b1071_qs_hint_devastation" text="洗劫会造成持续存在的炉灶、繁荣度、治安和粮食惩罚，且消退缓慢。" />
+    <string id="b1071_qs_hint_devastation" text="洗劫会造成持续存在的户数、繁荣度、治安和粮食惩罚，且消退缓慢。" />
     <string id="b1071_qs_name_castle_supply" text="城堡补给链" />
     <string id="b1071_qs_hint_castle_supply" text="城堡在本地细流之上的恢复量由最近的同势力城镇输送，而非凭空产生。" />
     <string id="b1071_qs_name_seasonal" text="季节恢复" />
@@ -276,21 +277,21 @@
     <string id="b1071_yes_days" text="{DAYS} 天" />
     <string id="b1071_none" text="无" />
     <string id="b1071_qs_name_governance_stabilization" text="行省安抚" />
-    <string id="b1071_qs_hint_governance_stabilization" text="在压力沉重的城镇和城堡花费金钱，以降低治理压力并换取一段时间的忠诚/治安恢复。" />
+    <string id="b1071_qs_hint_governance_stabilization" text="在压力沉重的城镇和城堡花费金币，以降低治理压力并换取一段时间的忠诚/治安恢复。" />
     <string id="b1071_mcm_t_govstab_enable" text="启用行省安抚" />
-    <string id="b1071_mcm_h_govstab_enable" text="允许领主在同势力的城镇和城堡花费金钱，以降低治理压力并换取一段时间的忠诚/治安恢复。默认：开启。" />
+    <string id="b1071_mcm_h_govstab_enable" text="允许领主在同势力的城镇和城堡花费金币，以降低治理压力并换取一段时间的忠诚/治安恢复。默认：开启。" />
     <string id="b1071_mcm_t_govstab_notify" text="AI 安抚时通知玩家" />
     <string id="b1071_mcm_h_govstab_notify" text="当 AI 领主出资安抚玩家名下的定居点时显示消息。默认：开启。" />
     <string id="b1071_mcm_t_govstab_ai_enable" text="AI 使用行省安抚" />
-    <string id="b1071_mcm_h_govstab_ai_enable" text="允许 AI 领主在治理压力较高且金钱充足时出资安抚。默认：开启。" />
+    <string id="b1071_mcm_h_govstab_ai_enable" text="允许 AI 领主在治理压力较高且金币充足时出资安抚。默认：开启。" />
     <string id="b1071_mcm_t_govstab_ai_threshold" text="AI 压力阈值" />
     <string id="b1071_mcm_h_govstab_ai_threshold" text="AI 领主开始考虑出资安抚所需的最低治理压力。默认：25。" />
-    <string id="b1071_mcm_t_govstab_ai_gold_mult" text="AI 金钱安全倍数" />
-    <string id="b1071_mcm_h_govstab_ai_gold_mult" text="AI 领主只有在金钱超过该档次费用乘以此值时才会采用该档次。默认：10。" />
+    <string id="b1071_mcm_t_govstab_ai_gold_mult" text="AI 金币安全倍数" />
+    <string id="b1071_mcm_h_govstab_ai_gold_mult" text="AI 领主只有在金币超过该档次费用乘以此值时才会采用该档次。默认：10。" />
     <string id="b1071_mcm_t_govstab_ai_cooldown" text="AI 英雄冷却天数" />
     <string id="b1071_mcm_h_govstab_ai_cooldown" text="同一名 AI 领主两次安抚行动之间的最少天数。默认：7。" />
     <string id="b1071_mcm_t_govstab_cost_donative" text="紧急赈济花费" />
-    <string id="b1071_mcm_h_govstab_cost_donative" text="低档安抚行动的金钱花费。默认：1500。" />
+    <string id="b1071_mcm_h_govstab_cost_donative" text="低档安抚行动的金币花费。默认：1500。" />
     <string id="b1071_mcm_t_govstab_duration_donative" text="紧急赈济持续时间" />
     <string id="b1071_mcm_h_govstab_duration_donative" text="“紧急赈济”带来的忠诚/治安恢复天数。持续时间同时作为冷却时间。默认：5。" />
     <string id="b1071_mcm_t_govstab_strain_donative" text="紧急赈济压力削减" />
@@ -302,7 +303,7 @@
     <string id="b1071_mcm_t_govstab_decay_donative" text="紧急赈济额外消退" />
     <string id="b1071_mcm_h_govstab_decay_donative" text="“紧急赈济”生效期间额外的每日治理压力消退量。默认：0.2。" />
     <string id="b1071_mcm_t_govstab_cost_elites" text="安抚地方豪族花费" />
-    <string id="b1071_mcm_h_govstab_cost_elites" text="中档安抚行动的金钱花费。默认：4000。" />
+    <string id="b1071_mcm_h_govstab_cost_elites" text="中档安抚行动的金币花费。默认：4000。" />
     <string id="b1071_mcm_t_govstab_duration_elites" text="安抚地方豪族持续时间" />
     <string id="b1071_mcm_h_govstab_duration_elites" text="“安抚地方豪族”带来的忠诚/治安恢复天数。持续时间同时作为冷却时间。默认：7。" />
     <string id="b1071_mcm_t_govstab_strain_elites" text="安抚地方豪族压力削减" />
@@ -314,7 +315,7 @@
     <string id="b1071_mcm_t_govstab_decay_elites" text="安抚地方豪族额外消退" />
     <string id="b1071_mcm_h_govstab_decay_elites" text="“安抚地方豪族”生效期间额外的每日治理压力消退量。默认：0.4。" />
     <string id="b1071_mcm_t_govstab_cost_amnesty" text="颁布大赦花费" />
-    <string id="b1071_mcm_h_govstab_cost_amnesty" text="高档安抚行动的金钱花费。默认：9000。" />
+    <string id="b1071_mcm_h_govstab_cost_amnesty" text="高档安抚行动的金币花费。默认：9000。" />
     <string id="b1071_mcm_t_govstab_duration_amnesty" text="颁布大赦持续时间" />
     <string id="b1071_mcm_h_govstab_duration_amnesty" text="“颁布大赦”带来的忠诚/治安恢复天数。持续时间同时作为冷却时间。默认：10。" />
     <string id="b1071_mcm_t_govstab_strain_amnesty" text="颁布大赦压力削减" />
@@ -327,7 +328,7 @@
     <string id="b1071_mcm_h_govstab_decay_amnesty" text="“颁布大赦”生效期间额外的每日治理压力消退量。默认：0.7。" />
     <string id="b1071_item_slaves" text="奴隶" />
     <string id="b1071_itemcat_slaves" text="奴隶{@Plural}奴隶{\@}" />
-    <string id="b1071_lbl_garrison_discount" text="B1071 守军折扣" />
+    <string id="b1071_lbl_garrison_discount" text="B1071 驻军折扣" />
     <string id="b1071_lbl_norm_occ" text="B1071 占领正常化" />
     <string id="b1071_lbl_tier_armor" text="B1071 兵阶护甲" />
     <string id="b1071_lbl_foreign_hire" text="B1071 境外招募" />
@@ -335,22 +336,22 @@
     <string id="B1071_Militia" text="兵源供应" />
     <string id="b1071_mod_name" text="Campaign++" />
     <string id="b1071_mp_active" text="[Byzantium1071] 兵源系统已启用。" />
-    <string id="b1071_mp_dbg_conquest" text="[B1071] 征服 {SETTLEMENT}（{DETAIL}）：{OLD_OWNER}（{OLD_KINGDOM}）->{NEW_OWNER}（{NEW_KINGDOM}），兵力池 {CUR}->{NEW}（保留 {RETAIN}）。" />
-    <string id="b1071_mp_dbg_consume" text="[兵力:{CONTEXT}] {TROOP} x{AMOUNT}（阶级 {TIER}）@ {WHERE} | 单位消耗={COST_PER} 可招募={ALLOWED} 已移除={REMOVED} | 兵力池 {BEFORE}->{AFTER}/{MAX}" />
+    <string id="b1071_mp_dbg_conquest" text="[B1071] 征服 {SETTLEMENT}（{DETAIL}）：{OLD_OWNER}（{OLD_KINGDOM}）->{NEW_OWNER}（{NEW_KINGDOM}），兵池 {CUR}->{NEW}（保留 {RETAIN}）。" />
+    <string id="b1071_mp_dbg_consume" text="[兵源:{CONTEXT}] {TROOP} x{AMOUNT}（兵阶 {TIER}）@ {WHERE} | 单位消耗={COST_PER} 可招募={ALLOWED} 已移除={REMOVED} | 兵池 {BEFORE}->{AFTER}/{MAX}" />
     <string id="b1071_mp_debug_pool" text="[兵源] {WHERE}：{CUR}/{MAX}" />
     <string id="b1071_mp_dbg_internal_owner_change" text="[B1071] {SETTLEMENT} 发生内部领主变更（{DETAIL}）：{OLD_OWNER}->{NEW_OWNER}（王国：{OLD_KINGDOM}->{NEW_KINGDOM}）。不触发征服效果。" />
-    <string id="b1071_mp_dbg_raid_drain" text="[B1071] 袭扰 {VILLAGE}：{POOL} 兵力池 -{DRAIN}（{CUR}->{NEW}）。" />
+    <string id="b1071_mp_dbg_raid_drain" text="[B1071] 袭扰 {VILLAGE}：{POOL} 兵池 -{DRAIN}（{CUR}->{NEW}）。" />
     <string id="b1071_mp_dbg_recovery_penalty" text="[B1071] {POOL} 的恢复惩罚：{PENALTY}%，持续至 {EXPIRY}（约 {DAYS} 天，原因：{REASON}）。" />
-    <string id="b1071_mp_dbg_siege_aftermath" text="[B1071] 围攻后果（{TYPE}）于 {SETTLEMENT}：兵力池设为 {APPLIED}（保留 {RETAIN}，由 {NEWVAL} 限制）。" />
-    <string id="b1071_mp_critical_alert" text="{POOL} 兵力危急（{PCT}% - {CUR}/{MAX}）" />
-    <string id="b1071_mp_not_enough_allowed" text="{POOL} 兵力不足。可招募 {ALLOWED}/{REQUESTED}。" />
+    <string id="b1071_mp_dbg_siege_aftermath" text="[B1071] 围攻后果（{TYPE}）于 {SETTLEMENT}：兵池设为 {APPLIED}（保留 {RETAIN}，由 {NEWVAL} 限制）。" />
+    <string id="b1071_mp_critical_alert" text="{POOL} 兵源危急（{PCT}% - {CUR}/{MAX}）" />
+    <string id="b1071_mp_not_enough_allowed" text="{POOL} 兵源不足。可招募 {ALLOWED}/{REQUESTED}。" />
     <string id="b1071_mp_raid_cap" text="[B1071] 洗劫{VILLAGE}：已达每日洗劫上限，不再流失兵源。" />
     <string id="b1071_mp_raid_not_completed" text="[B1071] {VILLAGE}的洗劫未完成：不流失兵源。" />
-    <string id="b1071_ui_mp_confirm_block" text="兵力：无法确认——{POOL} 为 {TROOP} 需要 {NEEDED}，仅剩 {LEFT}。" />
-    <string id="b1071_ui_mp_recruit_all_block" text="兵力：“全部招募”被阻止——{POOL} 为 {TROOP} 需要 {NEEDED}，仅剩 {LEFT}。" />
-      <string id="b1071_ui_tier_confirm_block" text="志愿兵等级上限：无法确认——{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
-      <string id="b1071_ui_tier_donehint" text="志愿兵等级上限：{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
-      <string id="b1071_ui_tier_recruit_all_block" text="志愿兵等级上限：“全部招募”被阻止——{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
+    <string id="b1071_ui_mp_confirm_block" text="兵源：无法确认——{POOL} 为 {TROOP} 需要 {NEEDED}，仅剩 {LEFT}。" />
+    <string id="b1071_ui_mp_recruit_all_block" text="兵源：“全部招募”被阻止——{POOL} 为 {TROOP} 需要 {NEEDED}，仅剩 {LEFT}。" />
+      <string id="b1071_ui_tier_confirm_block" text="志愿兵兵阶上限：无法确认——{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
+      <string id="b1071_ui_tier_donehint" text="志愿兵兵阶上限：{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
+      <string id="b1071_ui_tier_recruit_all_block" text="志愿兵兵阶上限：“全部招募”被阻止——{SETTLEMENT} 属于{TYPE}；{TROOP} 为 T{TIER}，上限为 T{CAP}。" />
     <string id="b1071_ui_rebel_notice" text="Campaign++ 不再保住被镇压的叛乱。本次战役中仍有 {COUNT} 个早先遗留下来的雇佣兵团，它们将被保持原样。若需清理，可在模组设置的“家族存续”中开启这项可选功能。" />
     <string id="b1071_ui_rebel_purge" text="Campaign++ 已清理完遗留的叛军雇佣兵团（共解散 {COUNT} 个）。现在可以在模组设置中关闭该清理功能了。" />
     <string id="b1071_ui_rebel_purge_confirm" text="Campaign++ 在本次战役中找到了 {COUNT} 个由被镇压的叛乱遗留下来的雇佣兵团。移除操作无法撤销，请先备份存档。它们会每天解散若干个，而不是一次性全部解散，以免你的战役一夜之间被清空。要移除它们吗？" />
@@ -379,10 +380,10 @@
     <string id="b1071_slave_escape" text="由于部队超出共享俘虏容量，{COUNT}名奴隶逃跑了。" />
     <string id="b1071_slave_labor" text="奴隶劳力" />
     <string id="b1071_slave_manumit_msg" text="{SETTLEMENT}：释放了 {FREED} 名奴隶（上限 {CAP}）。城镇兵池 +{FREED}。" />
-    <string id="b1071_slave_raid_msg" text="+{COUNT} 名奴隶（{HEARTHS} 炉灶 / {DIV} = {COUNT}）。" />
+    <string id="b1071_slave_raid_msg" text="+{COUNT} 名奴隶（{HEARTHS} 户 / {DIV} = {COUNT}）。" />
     <string id="b1071_slave_skipped_note" text="，保留 {SKIPPED} 名 {TIER} 阶及以上" />
     <string id="b1071_slaves_cat" text="奴隶" />
-    <string id="b1071_tab_armies" text="军队" />
+    <string id="b1071_tab_armies" text="军团" />
     <string id="b1071_tab_castles" text="城堡" />
     <string id="b1071_tab_characters" text="人物" />
     <string id="b1071_tab_clans" text="家族" />
@@ -395,15 +396,15 @@
     <string id="b1071_tab_towns" text="城镇" />
     <string id="b1071_tab_villages" text="村庄" />
     <string id="b1071_tab_wars" text="战争" />
-    <string id="b1071_ti_ai_note" text="{LORD}对{TOWN}进行了一笔{TIER}。" />
-    <string id="b1071_ti_body" text="公共庇护 — {TOWN}&#10;&#10;繁荣度：{PROSP}   |   名流：{NOTABLES}   |   领主：{OWNER}&#10;&#10;选择一档投资。档次越高花费越大，但繁荣度增长、名流好感、影响力与势力的加成也越强。&#10;&#10;投资的持续时间同时也是冷却时间——当前庇护到期前无法再次投资。" />
+    <string id="b1071_ti_ai_note" text="{LORD}对{TOWN}进行了一笔{TIER}投资。" />
+    <string id="b1071_ti_body" text="公共庇护 — {TOWN}&#10;&#10;繁荣度：{PROSP}   |   要人：{NOTABLES}   |   领主：{OWNER}&#10;&#10;选择一档投资。档次越高花费越大，但繁荣度增长、要人关系、影响力与权望的加成也越强。&#10;&#10;投资的持续时间同时也是冷却时间——当前庇护到期前无法再次投资。" />
     <string id="b1071_ti_civic" text="公共庇护" />
     <string id="b1071_ti_enter" text="投资城镇" />
     <string id="b1071_ti_enter_active" text="投资城镇  （进行中——剩余 {DAYS} 天）" />
     <string id="b1071_ti_enter_need" text="投资城镇  （需要 {COST}第纳尔）" />
-    <string id="b1071_ti_player_msg" text="对{TOWN}进行{TIER}：-{COST}第纳尔，{DAYS} 天内每日 +{PROS} 繁荣度" />
+    <string id="b1071_ti_player_msg" text="对{TOWN}进行{TIER}投资：-{COST}第纳尔，{DAYS} 天内每日 +{PROS} 繁荣度" />
     <string id="b1071_ti_plus_influence" text="，+{INF} 影响力" />
-    <string id="b1071_ti_plus_relation" text="，+{REL} 好感" />
+    <string id="b1071_ti_plus_relation" text="，+{REL} 关系" />
     <string id="b1071_ti_tier_generous" text="慷慨庇护" />
     <string id="b1071_ti_tier_grand" text="大额投资" />
     <string id="b1071_ti_tier_modest" text="小额馈赠" />
@@ -421,7 +422,7 @@
     <string id="b1071_ui_close" text="X" />
     <string id="b1071_ui_count" text="数量" />
     <string id="b1071_ui_gold" text="金币：" />
-    <string id="b1071_ui_gold_cost" text="金钱花费" />
+    <string id="b1071_ui_gold_cost" text="金币花费" />
     <string id="b1071_ui_leave" text="离开" />
     <string id="b1071_ui_manpower" text="兵源：" />
     <string id="b1071_ui_mp_donehint" text="兵源：{POOL}招募{TROOP}需要 {NEEDED}，但只剩 {LEFT}。" />
@@ -432,15 +433,15 @@
     <string id="b1071_ui_troop" text="兵种" />
     <string id="b1071_ui_unknown" text="未知" />
     <string id="b1071_ui_na" text="无" />
-    <string id="b1071_vi_ai_note" text="{LORD}对{VILLAGE}进行了一笔{TIER}。" />
-    <string id="b1071_vi_body" text="村庄庇护 — {VILLAGE}&#10;&#10;炉灶：{HEARTH}   |   名流：{NOTABLES}   |   领主：{OWNER}&#10;&#10;选择一档投资。档次越高花费越大，但炉灶增长、名流好感、影响力与势力的加成也越强。&#10;&#10;投资的持续时间同时也是冷却时间——当前庇护到期前无法再次投资。" />
+    <string id="b1071_vi_ai_note" text="{LORD}对{VILLAGE}进行了一笔{TIER}投资。" />
+    <string id="b1071_vi_body" text="村庄庇护 — {VILLAGE}&#10;&#10;户数：{HEARTH}   |   要人：{NOTABLES}   |   领主：{OWNER}&#10;&#10;选择一档投资。档次越高花费越大，但户数增长、要人关系、影响力与权望的加成也越强。&#10;&#10;投资的持续时间同时也是冷却时间——当前庇护到期前无法再次投资。" />
     <string id="b1071_vi_enter" text="投资村庄" />
     <string id="b1071_vi_enter_active" text="投资村庄  （进行中——剩余 {DAYS} 天）" />
     <string id="b1071_vi_enter_need" text="投资村庄  （需要 {COST}第纳尔）" />
     <string id="b1071_vi_patronage" text="庇护" />
-    <string id="b1071_vi_player_msg" text="对{VILLAGE}进行{TIER}：-{COST}第纳尔，{DAYS} 天内每日 +{HEARTH} 炉灶" />
+    <string id="b1071_vi_player_msg" text="对{VILLAGE}进行{TIER}投资：-{COST}第纳尔，{DAYS} 天内每日 +{HEARTH} 户数" />
     <string id="b1071_vi_plus_influence" text="，+{INF} 影响力" />
-    <string id="b1071_vi_plus_relation" text="，+{REL} 好感" />
+    <string id="b1071_vi_plus_relation" text="，+{REL} 关系" />
     <string id="b1071_vi_tier_generous" text="慷慨庇护" />
     <string id="b1071_vi_tier_grand" text="大额投资" />
     <string id="b1071_vi_tier_modest" text="小额馈赠" />
@@ -465,7 +466,7 @@
     <string id="b1071_mcm_g_874e6c48a5" text="兵池缩放" />
     <string id="b1071_mcm_g_a6a3fdff6f" text="战争影响" />
     <string id="b1071_mcm_g_ad34418d5d" text="有界随机" />
-    <string id="b1071_mcm_g_b39b70fe83" text="小型势力经济" />
+    <string id="b1071_mcm_g_b39b70fe83" text="小阵营经济" />
     <string id="b1071_mcm_g_bac0aa28ca" text="家族存续" />
     <string id="b1071_mcm_g_c30a4b4773" text="边境残破" />
     <string id="b1071_mcm_g_d7fe51f7ee" text="沉浸感调整" />
@@ -478,24 +479,24 @@
     <string id="b1071_mcm_h_018c2990f0" text="不与正在围攻你名下城镇/城堡的敌人强制议和。" />
     <string id="b1071_mcm_h_027d8a0996" text="为存档/配置兼容而保留的旧版设置。当前的信息面板界面不再使用。" />
     <string id="b1071_mcm_h_032b2ade51" text="每座城堡每日恢复的精锐部队上限（繁荣度满值时）。实际数量随繁荣度线性变化。默认：2。" />
-    <string id="b1071_mcm_h_03fd97c1a6" text="洗劫村庄会积累持续存在的残破度（0-100），并缓慢消退。残破的村庄炉灶增长下降，其所属城镇/城堡也会受到繁荣度、粮食和治安惩罚。" />
+    <string id="b1071_mcm_h_03fd97c1a6" text="洗劫村庄会积累持续存在的残破度（0-100），并缓慢消退。残破的村庄户数增长下降，其所属城镇/城堡也会受到繁荣度、粮食和治安惩罚。" />
     <string id="b1071_mcm_h_0553e33580" text="在“当前账目”页签中加入紧凑的检测数据行，用于平衡与调试。" />
     <string id="b1071_mcm_h_05edab757c" text="每日恢复兵源的绝对下限（城镇及兜底值）。" />
     <string id="b1071_mcm_h_0898044ab8" text="在战役地图上启用独立的 Campaign++ 信息面板。" />
     <string id="b1071_mcm_h_09a161266e" text="同一名 AI 领主两次投资之间的最少游戏天数（跨所有村庄）。避免其沿途对每个村庄地毯式投资。设为 0 则关闭。默认：3。" />
     <string id="b1071_mcm_h_0a2e5891f0" text="启用后，AI 会在所有负担得起的档次中随机选择，而不总是选最高档。默认：开启。" />
     <string id="b1071_mcm_h_0a6c3b2038" text="兵池为 0% 时每日追加的固定兵源上限。随兵池接近枯竭阈值线性降至 0。例如 2 = 兵池 0% 时每日 +2，7.5% 时 +1，15% 时 +0。默认：2。" />
-    <string id="b1071_mcm_h_0c2dad9845" text="招募 6 阶及以上俘虏的金钱花费。默认：5000。" />
+    <string id="b1071_mcm_h_0c2dad9845" text="招募 6 阶及以上俘虏的金币花费。默认：5000。" />
     <string id="b1071_mcm_h_0d54aab5c3" text="城镇每日恢复量的下限，按最大兵池的百分比计（繁荣度为 0 时）。" />
     <string id="b1071_mcm_h_0df00598bc" text="记录结构化的 WP1 遥测事件（恢复快照、外交理由、停战/强制议和更新）。" />
-    <string id="b1071_mcm_h_0e9a090b7c" text="小额投资的金钱花费。档次最小，加成也按比例减少。默认：2000。" />
+    <string id="b1071_mcm_h_0e9a090b7c" text="小额投资的金币花费。档次最小，加成也按比例减少。默认：2000。" />
     <string id="b1071_mcm_h_0f079f126d" text="大额城镇投资获得的影响力（仅当该城镇属于你的王国时）。默认：50。" />
     <string id="b1071_mcm_h_0faf392cd0" text="从软上限起点到兵池满值之间，恢复速度放缓的强度。设为 0 则不放缓。" />
-    <string id="b1071_mcm_h_1257dd959e" text="大额投资对每位村庄名流增加的好感度。默认：10。" />
+    <string id="b1071_mcm_h_1257dd959e" text="大额投资对每位村庄要人增加的关系值。默认：10。" />
     <string id="b1071_mcm_h_1306d0d841" text="部队军饷按兵阶指数递增。0=原版 | 1=轻微（3 阶 +20%，4 阶 +40%，5 阶 +70%，6 阶 +100%） | 2=中等（3 阶 +50%，4 阶 +100%，5 阶 +160%，6 阶 +250%） | 3=严重（3 阶 +70%，4 阶 +150%，5 阶 +250%，6 阶 +400%）。英雄/伙伴及商队护卫不受影响。对 AI 与玩家一视同仁。默认：3。" />
     <string id="b1071_mcm_h_135ecd103e" text="每座城堡每日恢复的精锐部队下限（繁荣度为 0 时）。默认：1。" />
     <string id="b1071_mcm_h_144e546603" text="城堡专用的恢复下限。代表所属村庄的农兵与城堡内少量平民。这份细流是自给的（不从城镇抽取）。默认：1。" />
-    <string id="b1071_mcm_h_14cc7f2c2a" text="小额投资对每位城镇名流增加的势力。默认：5。" />
+    <string id="b1071_mcm_h_14cc7f2c2a" text="小额投资对每位城镇要人增加的权望。默认：5。" />
     <string id="b1071_mcm_h_1617c104c4" text="当兵池低于某一阈值时，会追加一份固定恢复量，且与充盈度成反比（越空恢复越快）。用以模拟王室对边境有限的投入——历史上残破的行省往往需要数十年才能恢复。" />
     <string id="b1071_mcm_h_17185a822b" text="恢复量乘以（1 - 战争疲惫/除数）。数值越高惩罚越轻。例如 200 表示 100 点疲惫会使恢复减半。" />
     <string id="b1071_mcm_h_178311e876" text="定居点平均兵源充盈度低于此值时开始产生议和压力。例如 40 = 平均兵池低于 40% 时开始施压。" />
@@ -503,21 +504,21 @@
     <string id="b1071_mcm_h_195a5e5291" text="村庄处于正常状态时，残破度每日消退量。被劫掠/遭洗劫期间冻结。默认：0.5（单次洗劫需 50 天才能完全恢复）。" />
     <string id="b1071_mcm_h_195f70e560" text="每日恢复量的最大随机浮动。例如 8 表示在计算值上下浮动 ±8%。" />
     <string id="b1071_mcm_h_199bdb1fc0" text="延迟恢复惩罚的叠加上限。" />
-    <string id="b1071_mcm_h_1bda097a56" text="小额投资对每位城镇名流增加的好感度。默认：3。" />
+    <string id="b1071_mcm_h_1bda097a56" text="小额投资对每位城镇要人增加的关系值。默认：3。" />
     <string id="b1071_mcm_h_1d661266c0" text="保留的旧版设置。当前的提示信息逻辑不再使用。" />
     <string id="b1071_mcm_h_1e5bd1e5ec" text="治安为 0 时的恢复倍率。例如 80 = 治安不佳的定居点按 80% 恢复。" />
-    <string id="b1071_mcm_h_1f5d7c0e26" text="一次性清理，会摧毁家族——请先备份存档。默认关闭。若你想在正在进行的战役中清除被镇压的叛乱遗留下来的雇佣兵团，请打开此项。游戏会在下一个战役日请你确认，并显示在你的存档中找到了多少个——在你同意之前不会摧毁任何东西。随后它们会每天解散若干个，而不是一次性全部解散，以免你的战役一夜之间被清空，完成时也会通知你。它只会移除源自叛乱、被本模组变为雇佣兵团、没有领地且当前未被任何王国雇佣的家族。加齐曼、贾瓦尔等原版小势力绝不会被触及，拥有定居点的家族同样不会。" />
+    <string id="b1071_mcm_h_1f5d7c0e26" text="一次性清理，会摧毁家族——请先备份存档。默认关闭。若你想在正在进行的战役中清除被镇压的叛乱遗留下来的雇佣兵团，请打开此项。游戏会在下一个战役日请你确认，并显示在你的存档中找到了多少个——在你同意之前不会摧毁任何东西。随后它们会每天解散若干个，而不是一次性全部解散，以免你的战役一夜之间被清空，完成时也会通知你。它只会移除源自叛乱、被本模组变为雇佣兵团、没有领地且当前未被任何王国雇佣的家族。加齐曼、贾瓦尔等原版小阵营绝不会被触及，拥有定居点的家族同样不会。" />
     <string id="b1071_mcm_h_2133bd3ab2" text="王国处于“上升”压力区间时，每点对应的议和支持偏移。" />
-    <string id="b1071_mcm_h_21aee6a595" text="每点村庄炉灶 × 此值 = 最大兵池的固定加成。例如 0.10 表示 1000 炉灶的村庄增加 100 点最大兵源。" />
+    <string id="b1071_mcm_h_21aee6a595" text="每点村庄户数 × 此值 = 最大兵池的固定加成。例如 0.10 表示 1000 户数的村庄增加 100 点最大兵源。" />
     <string id="b1071_mcm_h_223a8f48ff" text="粮食充足时的恢复倍率。例如 100 = 正常恢复速度。" />
-    <string id="b1071_mcm_h_224d10e499" text="慷慨投资的炉灶加成持续天数，同时也作为冷却时间。默认：30。" />
+    <string id="b1071_mcm_h_224d10e499" text="慷慨投资的户数加成持续天数，同时也作为冷却时间。默认：30。" />
     <string id="b1071_mcm_h_227046f19d" text="小兵池缩放后的兵池下限。" />
     <string id="b1071_mcm_h_240832abdc" text="被围攻期间，恢复量乘以此百分比。" />
     <string id="b1071_mcm_h_2447492b04" text="在游戏界面中显示玩家操作相关的奴隶经济与兵源消息。正常游戏时建议关闭。" />
     <string id="b1071_mcm_h_24a34913b8" text="每损失一名战斗人员增加的战争疲惫。" />
     <string id="b1071_mcm_h_24c88a4fff" text="围攻造成的恢复惩罚持续时间。" />
     <string id="b1071_mcm_h_252273c0d1" text="所属村庄平均残破度为 100 时，对其城镇/城堡每日施加的治安惩罚。默认：1.5。" />
-    <string id="b1071_mcm_h_25ebdb5741" text="城镇的基础兵源池（未计入经济缩放）。" />
+    <string id="b1071_mcm_h_25ebdb5741" text="城镇的基础兵池（未计入经济缩放）。" />
     <string id="b1071_mcm_h_26252463e6" text="招募同文化部队时的兵源花费百分比。75 = 部队只消耗正常兵源的 75%（打 25% 折扣）。" />
     <string id="b1071_mcm_h_26939354d2" text="总开关。启用城堡俘虏自动处理（T1-T3在最近的城镇市场转为奴隶；更高阶俘虏逐步获得城堡共享的服从度，总督统御可提高获取速度）及城堡招募菜单。" />
     <string id="b1071_mcm_h_2860da12d7" text="忠诚为 0 时的恢复倍率。例如 50 = 民心离散会使恢复减半。" />
@@ -530,16 +531,16 @@
     <string id="b1071_mcm_h_2ea055b805" text="战争疲惫达到或超过此值时，AI 王国不得发动新的战争。" />
     <string id="b1071_mcm_h_2f283ad2f0" text="为志愿兵产出和受挫后的恢复加入小幅有界随机。让战役少些一成不变，又不会大起大落。" />
     <string id="b1071_mcm_h_2fbb35aab0" text="小额城镇投资的持续天数，同时也作为冷却时间。默认：20。" />
-    <string id="b1071_mcm_h_2fd7a46334" text="慷慨投资带来的每日炉灶增长加成。默认：0.6。" />
+    <string id="b1071_mcm_h_2fd7a46334" text="慷慨投资带来的每日户数增长加成。默认：0.6。" />
     <string id="b1071_mcm_h_327da3bcb4" text="当王国定居点的平均兵源低于阈值时，AI 家族会额外支持议和（与战争疲惫无关）。" />
     <string id="b1071_mcm_h_3322cd490c" text="慷慨城镇投资的持续天数，同时也作为冷却时间。默认：40。" />
     <string id="b1071_mcm_h_33ec8d74f9" text="俘获敌方贵族（领主/女领主）会给对方王国额外增加战争疲惫。" />
-    <string id="b1071_mcm_h_34207cd11c" text="招募 4 阶俘虏的金钱花费。沿用兵阶指数递增的理念：精锐部队倒戈代价高昂。默认：1200。" />
+    <string id="b1071_mcm_h_34207cd11c" text="招募 4 阶俘虏的金币花费。沿用兵阶指数递增的理念：精锐部队倒戈代价高昂。默认：1200。" />
     <string id="b1071_mcm_h_347278d092" text="忠诚满值时的恢复倍率。例如 100 = 民心归附时按正常速度恢复。" />
     <string id="b1071_mcm_h_34918fd17b" text="兵源接近满值时，恢复速度逐渐放缓，而非保持线性。" />
     <string id="b1071_mcm_h_3574df9fb7" text="总开关：将模组的全部活动（兵源、奴隶、外交、补丁）记入霸主的 rgl_log 文件。涵盖其他所有调试开关。会影响性能——正常游戏时请关闭。" />
     <string id="b1071_mcm_h_37467179fe" text="攻城战结束后，防守王国增加的战争疲惫。" />
-    <string id="b1071_mcm_h_3748411212" text="慷慨投资对每位城镇名流增加的好感度。默认：6。" />
+    <string id="b1071_mcm_h_3748411212" text="慷慨投资对每位城镇要人增加的关系值。默认：6。" />
     <string id="b1071_mcm_h_38b327e9b4" text="同一兵池在一天内因村庄被洗劫而流失的兵源上限（占最大兵池的百分比）。" />
     <string id="b1071_mcm_h_3ad968ac32" text="[旧版 — 未使用] 原先用于设定贩奴后一次性建造加成的持续时间。v3 起改为随市场变化的持续每日加成。仅为存档兼容而保留。" />
     <string id="b1071_mcm_h_3bbd39e2a1" text="征服造成的恢复惩罚持续时间。" />
@@ -548,25 +549,25 @@
     <string id="b1071_mcm_h_3f887810a5" text="战争疲惫每日向 0 消退的量。" />
     <string id="b1071_mcm_h_42ba018519" text="兵池低于枯竭阈值时的保留百分比。会依充盈度在此值与 ConquestPoolRetainPercent 之间线性变化。默认：85。" />
     <string id="b1071_mcm_h_4560cc4881" text="超出压力起始战争数后，每多一场战争额外增加的议和支持偏移。" />
-    <string id="b1071_mcm_h_45f4d61ea9" text="小额投资对每位村庄名流增加的好感度。默认：3。" />
+    <string id="b1071_mcm_h_45f4d61ea9" text="小额投资对每位村庄要人增加的关系值。默认：3。" />
     <string id="b1071_mcm_h_461324d854" text="战争疲惫达到或超过此值时，AI 会强烈倾向于议和。" />
     <string id="b1071_mcm_h_47b6467374" text="在战役地图上按下所选按键即可显示/隐藏信息面板。" />
     <string id="b1071_mcm_h_4abeac5152" text="兵池充盈度低于此值时，恢复惩罚减半。默认：25。" />
     <string id="b1071_mcm_h_4b83dd87b8" text="兵池达到最大缩放所需的繁荣度。城镇通常为 2000-8000+，城堡为 500-3500。" />
     <string id="b1071_mcm_h_4db22db8e2" text="所属村庄平均残破度为 100 时，对其城镇/城堡每日施加的繁荣度惩罚。默认：2.0。" />
     <string id="b1071_mcm_h_4e294753dd" text="记录强制议和与宣战限制判定的详细理由。" />
-    <string id="b1071_mcm_h_4e8aece026" text="总开关。启用村庄投资（庇护）系统——在村庄花费金钱以换取炉灶增长、名流好感、影响力和名流势力。AI 领主也会投资自己的村庄。默认：开启。" />
+    <string id="b1071_mcm_h_4e8aece026" text="总开关。启用村庄投资（庇护）系统——在村庄花费金币以换取户数增长、要人关系、影响力和要人权望。AI 领主也会投资自己的村庄。默认：开启。" />
     <string id="b1071_mcm_h_4ed533a03f" text="区间模式下对议和决策支持度施加的总加成上限。取代原先生硬的 +200 覆盖值。" />
     <string id="b1071_mcm_h_54fe9937da" text="[旧版 — 未使用] 此设置已不再生效。改由“战斗写实”中的精锐生存力预设统一设定减伤与存活加成，以免两者重复叠加。仅为存档兼容而保留。" />
-    <string id="b1071_mcm_h_5582afc84b" text="取消进入城堡领主大厅所需的家族等级贿赂（约 800 第纳尔），并允许在与领主好感略为负值时进入中立城堡。敌对城堡及因犯罪导致的限制不受影响。游戏前期寄押俘虏与招募需要此项。默认：开启。" />
+    <string id="b1071_mcm_h_5582afc84b" text="取消进入城堡领主大厅所需的家族等级贿赂（约 800 第纳尔），并允许在与领主关系略为负值时进入中立城堡。敌对城堡及因犯罪导致的限制不受影响。游戏前期寄押俘虏与招募需要此项。默认：开启。" />
     <string id="b1071_mcm_h_5807af4ea7" text="洗劫造成的恢复惩罚持续时间。" />
     <string id="b1071_mcm_h_5921a54d23" text="总督的管理技能提升恢复速度，统御技能提升最大兵池。" />
     <string id="b1071_mcm_h_597ebd8ce7" text="领地易主后施加的基础恢复惩罚。" />
-    <string id="b1071_mcm_h_59fa404ca0" text="AI 不会投资炉灶达到或超过此值的村庄，从而把庇护集中在最需要的贫困村庄。设为 0 则关闭（可投资任意村庄）。默认：600。" />
-    <string id="b1071_mcm_h_5a4c7e2b8d" text="在你的国家并不拥有的定居点招募时的金钱溢价——你是在与当地领主抬价争人。0=关闭 | 1=1.5 倍 | 2=2 倍 | 3=3 倍。该倍率作用于游戏的基础雇佣价，并与雇佣及升级费用预设加算叠加，因此在默认预设下，普通村庄新兵在境外的花费约为两倍，而精锐部队约贵四分之一。兵源花费不变：兵源属于该定居点，额外收取兵源只会惩罚你招募的那个定居点。仅当你的家族既无王国又无领地时豁免，因此游戏前期不受影响——一旦你效忠某个王国，其领土便是你的国家，其他所有国家都算境外，无论有无领地。对 AI 与玩家一视同仁。默认：2。" />
+    <string id="b1071_mcm_h_59fa404ca0" text="AI 不会投资户数达到或超过此值的村庄，从而把庇护集中在最需要的贫困村庄。设为 0 则关闭（可投资任意村庄）。默认：600。" />
+    <string id="b1071_mcm_h_5a4c7e2b8d" text="在你的国家并不拥有的定居点招募时的金币溢价——你是在与当地领主抬价争人。0=关闭 | 1=1.5 倍 | 2=2 倍 | 3=3 倍。该倍率作用于游戏的基础雇佣价，并与雇佣及升级费用预设加算叠加，因此在默认预设下，普通村庄新兵在境外的花费约为两倍，而精锐部队约贵四分之一。兵源花费不变：兵源属于该定居点，额外收取兵源只会惩罚你招募的那个定居点。仅当你的家族既无王国又无领地时豁免，因此游戏前期不受影响——一旦你效忠某个王国，其领土便是你的国家，其他所有国家都算境外，无论有无领地。对 AI 与玩家一视同仁。默认：2。" />
     <string id="b1071_mcm_h_5b6d82c72e" text="城镇每点繁荣度可容纳的奴隶数量上限。超出的奴隶会每日获释并转为兵源。例如取 0.02 时：繁荣度 3000 的城镇可容纳 60 名奴隶，繁荣度 5000 则为 100 名。设为 0 则取消上限。默认：0.02。" />
     <string id="b1071_mcm_h_5c9008c96e" text="统一的贩奴兵阶上限（玩家与 AI 一致）。等于或低于此兵阶的俘虏可被贩为奴隶：(1) 玩家在城镇选择“贩卖俘虏”，(2) AI 在城镇自动贩奴，(3) 城堡自动送往最近的市场。高于此兵阶的俘虏必须押往城堡转化为可招募部队，或用于赎金。默认：3（1-3 阶贩为奴隶，4 阶及以上可招募）。" />
-    <string id="b1071_mcm_h_5f1a43fa3a" text="投资其他家族的城镇时，与该城镇所有者家族首领增加的好感度。默认：2。" />
+    <string id="b1071_mcm_h_5f1a43fa3a" text="投资其他家族的城镇时，与该城镇所有者家族首领增加的关系值。默认：2。" />
     <string id="b1071_mcm_h_609f90a07a" text="大额城镇投资带来的每日繁荣度增长加成。默认：2.0。" />
     <string id="b1071_mcm_h_61ca3b3220" text="平均兵源为 0% 时追加的议和支持加成上限。随兵源接近阈值线性降至 0。默认：100。" />
     <string id="b1071_mcm_h_6232e0decd" text="村庄一次劫掠事件完成时增加的残破度。消退窗口内的两次洗劫会叠加。默认：25。" />
@@ -576,52 +577,52 @@
     <string id="b1071_mcm_h_6794267e25" text="城镇每日恢复量的上限，按最大兵池的百分比计（繁荣度满值时）。" />
     <string id="b1071_mcm_h_689a90d3cf" text="王国可累积的战争疲惫上限。" />
     <string id="b1071_mcm_h_690a92479b" text="启用后，AI 领主队伍造访本势力的城堡时会同时从精锐兵池和转化的俘虏中招募，并按人头付费（与玩家相同）。没有每日上限——领主会一直招到队伍上限。默认：开启。" />
-    <string id="b1071_mcm_h_6912a82175" text="小额投资对每位村庄名流增加的势力。势力越高，志愿兵兵阶越高。默认：5。" />
+    <string id="b1071_mcm_h_6912a82175" text="小额投资对每位村庄要人增加的权望。权望越高，志愿兵兵阶越高。默认：5。" />
     <string id="b1071_mcm_h_695ffbe967" text="奴隶人口每日减少的百分比（死亡、逃亡、获释）。若不衰减，奴隶人口将无止境增长。取 1% 时：100 名奴隶每日减少 1 名；取 2% 时每日减少 2 名。由此形成流入必须与衰减相抵的平衡。设为 0 则关闭。默认：1.0。" />
     <string id="b1071_mcm_h_6a63d6fa8c" text="治安满值时的恢复倍率。例如 120 = 治安良好的定居点按 120% 恢复。" />
     <string id="b1071_mcm_h_6c599f6b5e" text="志愿兵产出概率的最大随机浮动。例如 10 表示在基础值上下浮动 ±10%。" />
     <string id="b1071_mcm_h_6c749ac497" text="每个残破度为 100 的村庄造成的每日粮食惩罚，按所属村庄累加。例如 3 个残破度 50 的村庄 = 3 × 0.5 × 1.5 = 每日损失 2.25 粮食。默认：1.5。" />
     <string id="b1071_mcm_h_6d68aece7c" text="同一王国两次自动议和之间的最少天数。" />
-    <string id="b1071_mcm_h_6e3d6b6390" text="大额投资带来的每日炉灶增长加成。默认：1.0。" />
+    <string id="b1071_mcm_h_6e3d6b6390" text="大额投资带来的每日户数增长加成。默认：1.0。" />
     <string id="b1071_mcm_h_6e6bea98d1" text="管理技能除以此值，再除以 100，即为额外恢复百分比。例如取 100000 时，200 点管理可增加 0.002 的恢复百分比（每日相当于兵池的 0.2%）。" />
-    <string id="b1071_mcm_h_6e9c83a214" text="小额投资带来的每日炉灶增长加成。在村庄提示中显示为“庇护”。默认：0.3。" />
+    <string id="b1071_mcm_h_6e9c83a214" text="小额投资带来的每日户数增长加成。在村庄提示中显示为“庇护”。默认：0.3。" />
     <string id="b1071_mcm_h_6f2b8d5a37" text="当城堡所属势力在任何地方都不拥有城镇时，该城堡会改从自己所属的村庄征集本应向补给城镇索取的兵源的这一百分比。取 100 时，城堡保留全部请求量，包括在无城镇可依时本会白白损失的紧急恢复加成。此项与断供状态下的每日恢复下限取其高者叠加。默认：100。" />
     <string id="b1071_mcm_h_6fff08965f" text="兵源为 100% 时的民兵增长倍率。" />
     <string id="b1071_mcm_h_701e8b031f" text="定居点易主时保留的当前兵池百分比（兵池满值时）。若启用了动态征服保护，兵池越枯竭保留比例越高。" />
     <string id="b1071_mcm_h_711f8c66da" text="王国处于和平状态时的恢复倍率。例如 125 = 加成 25%。" />
-    <string id="b1071_mcm_h_78ed283563" text="大额投资对每位村庄名流增加的势力。默认：20。" />
-    <string id="b1071_mcm_h_79029fed66" text="洗劫期间，每达到此数量的村庄炉灶，每次劫掠事件增加 1 名奴隶（节奏与洗劫日志中出现谷物/陶土相同）。例如 300 = 300 炉灶的村庄每次事件产出 1 名奴隶，600 炉灶则为 2 名。低于此门槛的村庄每次事件产出 0 名奴隶。默认：300（依史实平衡）。" />
-    <string id="b1071_mcm_h_797670870d" text="启用后，从城堡招募俘虏同样会消耗该城堡的兵源池（费用公式与普通招募相同）。由此形成双重门槛：金钱加兵源。默认：开启。" />
-    <string id="b1071_mcm_h_79aa44b7de" text="缩放市场中奴隶为城镇带来的所有每日加成（兵源、繁荣度、建造）。数值越高奴隶越有效。贩奴所得金钱仍按 items.xml 中的正常交易价计算。默认：1.5。" />
+    <string id="b1071_mcm_h_78ed283563" text="大额投资对每位村庄要人增加的权望。默认：20。" />
+    <string id="b1071_mcm_h_79029fed66" text="洗劫期间，每达到此数量的村庄户数，每次劫掠事件增加 1 名奴隶（节奏与洗劫日志中出现谷物/陶土相同）。例如 300 = 300 户数的村庄每次事件产出 1 名奴隶，600 户数则为 2 名。低于此门槛的村庄每次事件产出 0 名奴隶。默认：300（依史实平衡）。" />
+    <string id="b1071_mcm_h_797670870d" text="启用后，从城堡招募俘虏同样会消耗该城堡的兵池（费用公式与普通招募相同）。由此形成双重门槛：金币加兵源。默认：开启。" />
+    <string id="b1071_mcm_h_79aa44b7de" text="缩放市场中奴隶为城镇带来的所有每日加成（兵源、繁荣度、建造）。数值越高奴隶越有效。贩奴所得金币仍按 items.xml 中的正常交易价计算。默认：1.5。" />
     <string id="b1071_mcm_h_7b689b45f6" text="所属村庄被彻底洗劫完成时，当前兵池流失的百分比。" />
     <string id="b1071_mcm_h_7bd40a9ca1" text="每多打一场大战，强制议和所需的战争疲惫阈值下降的幅度。" />
     <string id="b1071_mcm_h_7e2c5e03bf" text="定居点易主时，失地王国增加的战争疲惫。" />
     <string id="b1071_mcm_h_7f1364e2e4" text="冬季的恢复倍率。例如 75 = 按 75% 的速度恢复。" />
     <string id="b1071_mcm_h_814090cdae" text="只有当进行中的战争超过此数量时，才会触发强制议和。" />
-    <string id="b1071_mcm_h_848f031442" text="城堡的基础兵源池（未计入经济缩放）。" />
-    <string id="b1071_mcm_h_84904d0932" text="投资其他家族的村庄时，与该村庄所有者家族首领增加的好感度。由此开辟一条外交投资路径。默认：2。" />
-    <string id="b1071_mcm_h_856a2b5f99" text="大额投资的炉灶加成持续天数，同时也作为冷却时间。默认：45。" />
+    <string id="b1071_mcm_h_848f031442" text="城堡的基础兵池（未计入经济缩放）。" />
+    <string id="b1071_mcm_h_84904d0932" text="投资其他家族的村庄时，与该村庄所有者家族首领增加的关系值。由此开辟一条外交投资路径。默认：2。" />
+    <string id="b1071_mcm_h_856a2b5f99" text="大额投资的户数加成持续天数，同时也作为冷却时间。默认：45。" />
     <string id="b1071_mcm_h_8671ad36bf" text="两个王国议和之后，在此天数内不得再次宣战。仅在启用停战约束时生效。" />
     <string id="b1071_mcm_h_88f5ff1208" text="每名奴隶每天提供的建造进度（与原版每日速率 ~130-180 同一量级）。在建造提示中显示为“奴隶劳力 +XX”。按默认效率（1.5×）：0.5 × 1.5 = 0.75/名。例如 100 名奴隶 = 每日 75 点进度（受上限限制）。默认：0.5。" />
     <string id="b1071_mcm_h_894831a9bf" text="攻城战结束后施加的基础恢复惩罚。" />
     <string id="b1071_mcm_h_8a9832e2bb" text="繁荣度满值时的兵池百分比。例如 100 = 兴盛的定居点拥有基础兵池的 100%。" />
-    <string id="b1071_mcm_h_8b83bc3e79" text="慷慨投资对每位城镇名流增加的势力。默认：10。" />
+    <string id="b1071_mcm_h_8b83bc3e79" text="慷慨投资对每位城镇要人增加的权望。默认：10。" />
     <string id="b1071_mcm_h_8c1640482e" text="软上限开始放缓的兵池充盈度。例如 0.75 表示充盈度达到 75% 时开始放缓。" />
     <string id="b1071_mcm_h_8c178760ed" text="小额城镇投资获得的影响力（仅当该城镇属于你的王国时）。默认：10。" />
     <string id="b1071_mcm_h_8c3f6b0d74" text="关闭（默认）：被镇压的叛乱就此终结，与原版完全一致——城镇归还原主，叛军领主随之消失。开启：叛军家族会作为雇佣兵团存续下来，以便领取边境收入。除非你确实想要这个效果，否则请保持关闭。每一次被镇压的叛乱都会永久留下一个雇佣兵团，既无上限也无出路，长时间的战役会因此累积出几十个。此开关只影响叛军家族——被灭王国的贵族家族无论如何都会被保住。" />
     <string id="b1071_mcm_h_8c81642f23" text="招募一名 1 阶新兵的基础兵源花费。" />
-    <string id="b1071_mcm_h_8cc407e3bb" text="小额城镇投资的金钱花费。默认：5000。" />
-    <string id="b1071_mcm_h_8d83d2815d" text="启用后，城堡在本地细流下限之上的恢复量将由最近的同势力城镇输送（而非凭空产生）。若补给城镇兵源枯竭，城堡便会挨饿。历史上，城堡守军由将军从城镇轮调而来。关闭则回到城堡各自独立恢复的旧有行为。" />
-    <string id="b1071_mcm_h_8ef8ae9d41" text="数值越高，村庄炉灶总量对恢复的影响越小。" />
+    <string id="b1071_mcm_h_8cc407e3bb" text="小额城镇投资的金币花费。默认：5000。" />
+    <string id="b1071_mcm_h_8d83d2815d" text="启用后，城堡在本地细流下限之上的恢复量将由最近的同势力城镇输送（而非凭空产生）。若补给城镇兵源枯竭，城堡便会挨饿。历史上，城堡驻军由将军从城镇轮调而来。关闭则回到城堡各自独立恢复的旧有行为。" />
+    <string id="b1071_mcm_h_8ef8ae9d41" text="数值越高，村庄户数总量对恢复的影响越小。" />
     <string id="b1071_mcm_h_8f1443b071" text="启用后，玩家王国将与 AI 遵循同样的停战/禁战外交限制。" />
-    <string id="b1071_mcm_h_91c0056873" text="通过投资可达到的名流势力上限。若名流势力已达到或超过此值，则跳过投资的势力加成。避免志愿兵兵阶高得离谱。默认：200。" />
-    <string id="b1071_mcm_h_931c412f86" text="总开关。启用城镇投资（公共庇护）系统——在非敌对城镇花费金钱以换取每日繁荣度加成、名流好感、影响力和名流势力。AI 领主也会投资自己的城镇。默认：开启。" />
+    <string id="b1071_mcm_h_91c0056873" text="通过投资可达到的要人权望上限。若要人权望已达到或超过此值，则跳过投资的权望加成。避免志愿兵兵阶高得离谱。默认：200。" />
+    <string id="b1071_mcm_h_931c412f86" text="总开关。启用城镇投资（公共庇护）系统——在非敌对城镇花费金币以换取每日繁荣度加成、要人关系、影响力和要人权望。AI 领主也会投资自己的城镇。默认：开启。" />
     <string id="b1071_mcm_h_936c4cc5a4" text="繁荣度为 0 时的兵池百分比。例如 30 = 残破的定居点只有基础兵池的 30%。" />
     <string id="b1071_mcm_h_953c597a7f" text="治理压力达到上限时的每日繁荣度惩罚。默认：1.0。" />
     <string id="b1071_mcm_h_96e954acef" text="0=M，1=N，2=K，3=F9，4=F10，5=F11，6=F12。默认：0（M）。" />
     <string id="b1071_mcm_h_96fcca8a85" text="奴隶劳力每天能提供的最高建造加成。一般城镇的原版每日建造约为 130-180。默认：150（在默认设置下 200 名奴隶即可顶满上限——峰值时约等于建造速度翻倍）。" />
     <string id="b1071_mcm_h_9710c9677c" text="非城镇、非城堡类定居点的每日恢复百分比。" />
-    <string id="b1071_mcm_h_97d3107072" text="大额城镇投资的金钱花费。档次最高，加成最强、持续最久。默认：40000。" />
+    <string id="b1071_mcm_h_97d3107072" text="大额城镇投资的金币花费。档次最高，加成最强、持续最久。默认：40000。" />
     <string id="b1071_mcm_h_9a06e7e9d0" text="当你的定居点兵源低于阈值时显示警告。" />
     <string id="b1071_mcm_h_9a09a59097" text="启用后，AI 会在所有负担得起的档次中随机选择，而不总是选最高档。变化更自然——富有的领主不会永远只选大额投资。默认：开启。" />
     <string id="b1071_mcm_h_9bc260b917" text="高阶部队阵亡比低阶消耗更多兵源（老兵更难补充）。1 阶×1.0，2 阶×1.1，3 阶×1.25，4 阶×1.5，5 阶×1.75，6 阶×2.0。" />
@@ -630,51 +631,51 @@
     <string id="b1071_mcm_h_9e3d1d7cc2" text="非城镇、非城堡类定居点的兜底兵池大小。" />
     <string id="b1071_mcm_h_a122e143ec" text="记录上次应用的平衡配置方案。请勿手动更改——更新时模组会自动迁移。" />
     <string id="b1071_mcm_h_a12501eade" text="大额投资获得的影响力（仅当该村庄属于你的王国时）。默认：10。" />
-    <string id="b1071_mcm_h_a25f48c2d5" text="慷慨投资的金钱花费。中间档次，加成较为均衡。默认：5000。" />
-    <string id="b1071_mcm_h_a2b3c4d501" text="从城堡多元化兵源池中招募2级士兵的金币费用。仅在启用多元化兵源池时生效。默认：150。" />
+    <string id="b1071_mcm_h_a25f48c2d5" text="慷慨投资的金币花费。中间档次，加成较为均衡。默认：5000。" />
+    <string id="b1071_mcm_h_a2b3c4d501" text="从城堡多元化兵池中招募2 阶士兵的金币费用。仅在启用多元化兵池时生效。默认：150。" />
     <string id="b1071_mcm_h_a3c2806b96" text="AI 领主进入符合条件的城镇后实际投资的概率百分比。默认：30。" />
     <string id="b1071_mcm_h_a45f13eae8" text="大额城镇投资的持续天数，同时也作为冷却时间。默认：60。" />
     <string id="b1071_mcm_h_a4d717ad4f" text="同一名 AI 领主两次城镇投资之间的最少游戏天数。避免其沿途对每座城镇地毯式投资。设为 0 则关闭。默认：5。" />
     <string id="b1071_mcm_h_a5d4a7f7a2" text="每点战争疲惫对宣战决策支持度施加的惩罚。" />
-    <string id="b1071_mcm_h_a707cf84b3" text="选择“宽大处理”后保留的最大兵池百分比。" />
-    <string id="b1071_mcm_h_a76b9720dc" text="小额投资的炉灶加成持续天数，同时也作为冷却时间——到期前不得再次投资。默认：20。" />
+    <string id="b1071_mcm_h_a707cf84b3" text="选择“宽恕”后保留的最大兵池百分比。" />
+    <string id="b1071_mcm_h_a76b9720dc" text="小额投资的户数加成持续天数，同时也作为冷却时间——到期前不得再次投资。默认：20。" />
     <string id="b1071_mcm_h_a90f680bc3" text="启用后，AI 领主造访本势力的城镇时会进行投资。档次费用与加成效果均与玩家相同。默认：开启。" />
-    <string id="b1071_mcm_h_a947183ed6" text="慷慨城镇投资的金钱花费。默认：15000。" />
+    <string id="b1071_mcm_h_a947183ed6" text="慷慨城镇投资的金币花费。默认：15000。" />
     <string id="b1071_mcm_h_aba304d75f" text="慷慨城镇投资获得的影响力（仅当该城镇属于你的王国时）。默认：25。" />
     <string id="b1071_mcm_h_ad2cde5ab4" text="回落至较低区间前，需低于区间阈值的缓冲量。避免在两档之间频繁来回跳动。" />
     <string id="b1071_mcm_h_ad9b011697" text="启用后，AI 领主造访本势力的村庄时会进行投资（前提是负担得起）。档次费用与加成效果均与玩家相同。默认：开启。" />
     <string id="b1071_mcm_h_adb939cb85" text="城镇市场、定居点仓库及需要食物的部队中，每名奴隶每天消耗的食物。仓库中的奴隶消耗定居点粮食，但不提供劳力加成。保留原版部队食物豁免规则。设为0.05时，100名奴隶每天消耗5份食物。设为0可关闭食物消耗。默认：0.05。" />
     <string id="b1071_mcm_h_adbcaeef5e" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
     <string id="b1071_mcm_h_b00260dc2c" text="当 AI 领主投资你名下的村庄时显示消息。让你看到庇护系统在你的领地上运作。默认：开启。" />
-    <string id="b1071_mcm_h_b13ff83c9c" text="大额投资的金钱花费。档次最高，加成最强、持续最久。默认：12000。" />
+    <string id="b1071_mcm_h_b13ff83c9c" text="大额投资的金币花费。档次最高，加成最强、持续最久。默认：12000。" />
     <string id="b1071_mcm_h_b170010cab" text="春夏提升恢复速度，冬季则施加惩罚。" />
     <string id="b1071_mcm_h_b2d942d050" text="兵池百分比低于此值时显示危机警报。" />
     <string id="b1071_mcm_h_b378426501" text="若启用小兵池，则 兵池 = max(小兵池下限, 兵池 / 除数)。" />
-    <string id="b1071_mcm_h_b3c4d5e602" text="从城堡多元化兵源池中招募3级士兵的金币费用。仅在启用多元化兵源池时生效。默认：400。" />
+    <string id="b1071_mcm_h_b3c4d5e602" text="从城堡多元化兵池中招募3 阶士兵的金币费用。仅在启用多元化兵池时生效。默认：400。" />
     <string id="b1071_mcm_h_b406de84cb" text="慷慨城镇投资带来的每日繁荣度增长加成。默认：1.0。" />
     <string id="b1071_mcm_h_b41e07e2b2" text="目前未使用。为未来可能加入的家族自动安置流程保留。当前版本中更改此设置不会产生任何效果。为兼容旧配置而保留。默认：30。" />
     <string id="b1071_mcm_h_b58ccac776" text="每日恢复量的硬上限，按最大兵池的百分比计。例如 2.0 表示兵池为 3000 的城镇每日最多恢复 60（约 50 天回满）。" />
-    <string id="b1071_mcm_h_b5c09f9d63" text="大额投资对每位城镇名流增加的好感度。默认：10。" />
+    <string id="b1071_mcm_h_b5c09f9d63" text="大额投资对每位城镇要人增加的关系值。默认：10。" />
     <string id="b1071_mcm_h_b68162ad3f" text="城堡同时可持有的文化精锐部队（4-6 阶）数量上限。该兵池每日从城堡兵源中恢复。默认：20。" />
     <string id="b1071_mcm_h_b886264e27" text="城堡每日恢复量的下限，按最大兵池的百分比计（繁荣度为 0 时）。" />
     <string id="b1071_mcm_h_bc6ded176f" text="兵池充盈度低于此值时启动动态征服保护。默认：25。" />
     <string id="b1071_mcm_h_bd88202b9e" text="村庄遭洗劫时，防守王国增加的战争疲惫。" />
-    <string id="b1071_mcm_h_bf3252de8a" text="炉灶贡献可带来的额外恢复百分比上限。" />
+    <string id="b1071_mcm_h_bf3252de8a" text="户数贡献可带来的额外恢复百分比上限。" />
     <string id="b1071_mcm_h_bfe8e7545f" text="每恢复一名精锐部队从城堡兵池中扣除的兵源。数值越高，兵源匮乏地区的精锐恢复越慢。默认：1。" />
     <string id="b1071_mcm_h_c12c656b6c" text="粮食储量达到此值时，粮食修正达到最大。通常为 20-40。" />
     <string id="b1071_mcm_h_c31a7c497b" text="王国进入“危机”区间所需的战争疲惫值（禁止宣战，议和压力极大）。默认：85。" />
-    <string id="b1071_mcm_h_c3dadc496c" text="选择“劫掠”后保留的最大兵池百分比。" />
-    <string id="b1071_mcm_h_c4e1a056bd" text="守军队伍的军饷总额，按同样部队在野战队伍中所需费用的百分比计。80 = 守军只付 80%（打 20% 折扣）。100 = 不打折。默认：80。" />
+    <string id="b1071_mcm_h_c3dadc496c" text="选择“掠夺”后保留的最大兵池百分比。" />
+    <string id="b1071_mcm_h_c4e1a056bd" text="驻军队伍的军饷总额，按同样部队在野战队伍中所需费用的百分比计。80 = 驻军只付 80%（打 20% 折扣）。100 = 不打折。默认：80。" />
     <string id="b1071_mcm_h_c5e730055f" text="按下方的除数整体缩小所有兵池。" />
     <string id="b1071_mcm_h_c6dedb0344" text="新救援的总开关。关闭后，Campaign++ 不再救援新的家族，但会继续维护已获救的家族，直到其加入王国，或在族长死亡后由原版游戏将其销毁。默认：开启。" />
     <string id="b1071_mcm_h_c7d953daef" text="每损失一名战斗人员，从该队伍的归属兵池中扣除此值 × 1 的兵源。" />
     <string id="b1071_mcm_h_c80a8ee7a4" text="兵池低于枯竭阈值时，恢复惩罚的效力减半。避免惩罚把本已残破、无可再罚的定居点彻底压垮。" />
-    <string id="b1071_mcm_h_c8401bec75" text="AI 只有在金钱超过该档次费用乘以此值时才会投资。城镇费用更高，故此值也更高（例如 15 表示领主需有 600,000 第纳尔才会选大额投资）。默认：15。" />
+    <string id="b1071_mcm_h_c8401bec75" text="AI 只有在金币超过该档次费用乘以此值时才会投资。城镇费用更高，故此值也更高（例如 15 表示领主需有 600,000 第纳尔才会选大额投资）。默认：15。" />
     <string id="b1071_mcm_h_c94d349fda" text="在同文化的定居点招募消耗更少兵源。" />
     <string id="b1071_mcm_h_c9e3a77db5" text="战争、洗劫、攻城和征服会在定居点累积治理压力。压力过高会降低忠诚、治安和繁荣度——用以体现长期冲突的行政代价。" />
     <string id="b1071_mcm_h_caa2e78237" text="按王国记录来自战斗、洗劫和攻城的战争疲惫。疲惫过高会降低恢复速度。" />
     <string id="b1071_mcm_h_cb45a13cfa" text="兵池充盈度低于此值时启动紧急恢复。例如 15 = 兵池低于 15% 时启动。默认：15。" />
-    <string id="b1071_mcm_h_cc2ccba57e" text="选择“摧毁”后保留的最大兵池百分比。" />
+    <string id="b1071_mcm_h_cc2ccba57e" text="选择“毁坏”后保留的最大兵池百分比。" />
     <string id="b1071_mcm_h_cc5a5907b4" text="将 AI 的兵源消耗区间记入霸主日志。" />
     <string id="b1071_mcm_h_cd690629c1" text="信息面板根面板距屏幕顶端的垂直偏移。若游戏菜单遮挡了页签行，请调高此值。" />
     <string id="b1071_mcm_h_ce0768a787" text="AI 不会投资繁荣度达到或超过此值的城镇，从而把庇护集中在较不繁荣的城镇。设为 0 则关闭。默认：5000。" />
@@ -691,8 +692,8 @@
     <string id="b1071_mcm_h_d6f193ca5c" text="不论繁荣度如何的奴隶数量下限。即便繁荣度很低的城镇，也至少可容纳这么多奴隶才开始释放。默认：10。" />
     <string id="b1071_mcm_h_d7f430128a" text="议和之后，在下方设定的停战期内禁止两个王国再次宣战。若你在使用 AI Influence 或其他自行控制宣战时机的模组，请关闭此项。" />
     <string id="b1071_mcm_h_d8a7641342" text="统御技能 / 此值，即为最大兵池的倍率加成。例如 500 表示 200 点统御可使上限 +40%。" />
-    <string id="b1071_mcm_h_d8ddfd5d47" text="AI 只有在金钱超过该档次费用乘以此值时才会投资。数值越高，AI 花钱越保守（例如 5 表示领主需有 60,000 第纳尔才会选大额投资）。默认：5。" />
-    <string id="b1071_mcm_h_da702b4ddd" text="向非匪帮类的小势力发放每日“边境收入”补贴，以免它们在兵阶指数递增的军饷下破产。雇佣兵家族获得的补贴少于无从属势力（因为佣兵另有合约收入）。" />
+    <string id="b1071_mcm_h_d8ddfd5d47" text="AI 只有在金币超过该档次费用乘以此值时才会投资。数值越高，AI 花钱越保守（例如 5 表示领主需有 60,000 第纳尔才会选大额投资）。默认：5。" />
+    <string id="b1071_mcm_h_da702b4ddd" text="向非匪帮类的小阵营发放每日“边境收入”补贴，以免它们在兵阶指数递增的军饷下破产。雇佣兵家族获得的补贴少于无从属阵营（因为佣兵另有合约收入）。" />
     <string id="b1071_mcm_h_daa36c235a" text="若战争疲惫高到危急，AI 王国会在每个冷却周期内自动结束一场战争。若你在使用 AI Influence 或其他自行管理强制议和逻辑的模组，请关闭此项。" />
     <string id="b1071_mcm_h_db628d773f" text="王国处于“低”压力区间时，每点对应的议和支持偏移。" />
     <string id="b1071_mcm_h_dcd4a0a12f" text="处置其他家族寄押的俘虏（贩为奴隶或被招募）时，城堡所有者收取的佣金。余款归寄押的领主。例如：一笔 1,200 第纳尔的招募收取 30% 看押费 → 所有者得 360，寄押者得 840。默认：30。" />
@@ -701,43 +702,43 @@
     <string id="b1071_mcm_h_ddd08bc714" text="小额城镇投资带来的每日繁荣度增长加成。在城镇提示中显示为“公共庇护”。默认：0.5。" />
     <string id="b1071_mcm_h_de483c5153" text="控制奴隶价格随存量下跌的陡峭程度。价格系数 = 衰减率 ^ 存量，下限为 0.1（基准价 300 时，底价为 30 第纳尔）。数值越低跌得越陡。取默认值 0.98 时：存量 10 约 245，存量 30 约 164，存量 50 约 109，存量 80 约 60。取 0.96 时：存量 30 约 88，存量 50 约 39（触底）。默认：0.98。" />
     <string id="b1071_mcm_h_df9b5fe7fe" text="当前事件流程下，玩家招募消耗兵源的一致性有赖于此项。除非确实在排查兼容性问题，否则请保持开启。" />
-      <string id="b1071_mcm_h_town_vol_tier_max" text="城镇志愿兵面板可招募的最高部队等级。城堡精英招募不受影响；该限制仅作用于原版志愿兵招募。" />
-      <string id="b1071_mcm_h_village_vol_tier_max" text="村庄志愿兵面板可招募的最高部队等级。仅按来源聚落类型判定；兵力消耗仍来自绑定的城镇或城堡兵力池。" />
+      <string id="b1071_mcm_h_town_vol_tier_max" text="城镇志愿兵面板可招募的最高兵阶。城堡精英招募不受影响；该限制仅作用于原版志愿兵招募。" />
+      <string id="b1071_mcm_h_village_vol_tier_max" text="村庄志愿兵面板可招募的最高兵阶。仅按来源聚落类型判定；兵源消耗仍来自绑定的城镇或城堡兵池。" />
     <string id="b1071_mcm_h_dfbdd67eaa" text="信息面板根面板距屏幕左缘的水平偏移。" />
     <string id="b1071_mcm_h_e1a2720769" text="[旧版 — 未使用] 此设置已不再生效。改由“战斗写实”中的精锐生存力预设统一设定减伤与存活加成，以免两者重复叠加。仅为存档兼容而保留。" />
-    <string id="b1071_mcm_h_e55ef8ccea" text="大额投资对每位城镇名流增加的势力。默认：20。" />
+    <string id="b1071_mcm_h_e55ef8ccea" text="大额投资对每位城镇要人增加的权望。默认：20。" />
     <string id="b1071_mcm_h_e5ffddeee0" text="目前未使用。为未来可能加入的家族文化匹配安置评分保留。当前版本中更改此设置不会产生任何效果。为兼容旧配置而保留。默认：2.0。" />
     <string id="b1071_mcm_h_e66eeb63a3" text="小额投资获得的影响力（仅当该村庄属于你的王国时）。默认：2.5。" />
     <string id="b1071_mcm_h_e6b821a5cd" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
-    <string id="b1071_mcm_h_e85b2eeed7" text="守军队伍的军饷低于野战部队。这符合史实：守军士兵的军饷往往较低，但另有住所与口粮补贴。在原版特长和建筑折扣之上叠加生效。" />
-    <string id="b1071_mcm_h_ec969a4c7a" text="慷慨投资对每位村庄名流增加的好感度。默认：6。" />
+    <string id="b1071_mcm_h_e85b2eeed7" text="驻军队伍的军饷低于野战部队。这符合史实：驻军士兵的军饷往往较低，但另有住所与口粮补贴。在原版特长和建筑折扣之上叠加生效。" />
+    <string id="b1071_mcm_h_ec969a4c7a" text="慷慨投资对每位村庄要人增加的关系值。默认：6。" />
     <string id="b1071_mcm_h_ed62e6a96f" text="攻城战结束后，进攻王国增加的战争疲惫。" />
     <string id="b1071_mcm_h_ed699503e0" text="缩放兵源枯竭对战争疲惫增长的放大程度。取 1.0 时，平均兵源为 0% 的王国每次事件获得 2 倍疲惫；兵源 50% 时为 1.5 倍。设为 0 则关闭。" />
     <string id="b1071_mcm_h_ef3ca5597c" text="治理压力达到上限时的每日忠诚惩罚。自压力为 0 起线性变化。默认：3.0。" />
     <string id="b1071_mcm_h_f08918416e" text="慷慨投资获得的影响力（仅当该村庄属于你的王国时）。默认：5。" />
-    <string id="b1071_mcm_h_f0da9b0ffe" text="慷慨投资对每位村庄名流增加的势力。默认：10。" />
-    <string id="b1071_mcm_h_f125f53327" text="战争疲惫直接影响 AI 王国的战和决策（DetermineSupport 补丁）。若你在使用 AI Influence 等专门的 AI 外交模组，请关闭此项，以免战争疲劳重复叠加。" />
-    <string id="b1071_mcm_h_f1a941999e" text="招募金钱与升级金钱按兵阶指数递增。0=原版 | 1=轻微（1-6 阶 +0/+15/+35/+65/+100/+150%） | 2=中等（+10/+30/+75/+150/+250/+400%） | 3=严重（+25/+75/+175/+350/+600/+1000%）。升级费用会自动随雇佣价级联变化（不会重复叠加）。对 AI 与玩家一视同仁。商队护卫/雇佣兵/暴徒的雇佣溢价会被拉平，与同阶的普通士兵一致。" />
-    <string id="b1071_mcm_h_f209421fdf" text="0=当前，1=附近，2=城堡，3=城镇，4=村庄，5=势力，6=军队，7=战争，8=叛乱，9=俘虏，10=家族，11=人物，12=搜索。" />
-    <string id="b1071_mcm_h_f30fdd300a" text="残破度为 100 时，直接施加于该村庄的每日炉灶增长惩罚。默认：2.0。" />
-    <string id="b1071_mcm_h_f3f8c898fa" text="当前处于雇佣合约中的小势力，按家族等级计的每日收入。低于无从属势力，因为它们另有雇主王国支付的合约收入。默认：250。" />
+    <string id="b1071_mcm_h_f0da9b0ffe" text="慷慨投资对每位村庄要人增加的权望。默认：10。" />
+    <string id="b1071_mcm_h_f125f53327" text="战争疲惫直接影响 AI 王国的战和决策（DetermineSupport 补丁）。若你在使用 AI Influence 等专门的 AI 外交模组，请关闭此项，以免战争疲惫重复叠加。" />
+    <string id="b1071_mcm_h_f1a941999e" text="招募金币与升级金币按兵阶指数递增。0=原版 | 1=轻微（1-6 阶 +0/+15/+35/+65/+100/+150%） | 2=中等（+10/+30/+75/+150/+250/+400%） | 3=严重（+25/+75/+175/+350/+600/+1000%）。升级费用会自动随雇佣价级联变化（不会重复叠加）。对 AI 与玩家一视同仁。商队护卫/雇佣兵/暴徒的雇佣溢价会被拉平，与同阶的普通士兵一致。" />
+    <string id="b1071_mcm_h_f209421fdf" text="0=当前，1=附近，2=城堡，3=城镇，4=村庄，5=势力，6=军团，7=战争，8=叛乱，9=俘虏，10=家族，11=人物，12=搜索。" />
+    <string id="b1071_mcm_h_f30fdd300a" text="残破度为 100 时，直接施加于该村庄的每日户数增长惩罚。默认：2.0。" />
+    <string id="b1071_mcm_h_f3f8c898fa" text="当前处于雇佣合约中的小阵营，按家族等级计的每日收入。低于无从属阵营，因为它们另有雇主王国支付的合约收入。默认：250。" />
     <string id="b1071_mcm_h_f6c1c42513" text="总开关。启用：(1) 洗劫村庄获取奴隶，(2) 在城镇菜单中“贩卖俘虏”，(3) 城镇平民市场有奴隶商品时的每日城镇加成。" />
     <string id="b1071_mcm_h_f6d04613d7" text="仅用于旧存档迁移。首次加载时将旧俘虏等待时间转换为服从度，不影响当前招募速度。" />
-    <string id="b1071_mcm_h_f786952c1d" text="通过城镇投资可达到的名流势力上限。若名流势力已达到或超过此值，则跳过投资的势力加成。默认：200。" />
-    <string id="b1071_mcm_h_f7c27f4ab3" text="招募 5 阶俘虏的金钱花费。默认：2500。" />
+    <string id="b1071_mcm_h_f786952c1d" text="通过城镇投资可达到的要人权望上限。若要人权望已达到或超过此值，则跳过投资的权望加成。默认：200。" />
+    <string id="b1071_mcm_h_f7c27f4ab3" text="招募 5 阶俘虏的金币花费。默认：2500。" />
     <string id="b1071_mcm_h_f7e2549a92" text="当王国定居点的平均兵源枯竭时，战争疲惫的增长会被放大。体现出这样的反馈循环：兵池见底时，损失的痛感更为剧烈。" />
     <string id="b1071_mcm_h_f83ad71f92" text="当 AI 领主投资你名下的城镇时显示消息。默认：开启。" />
     <string id="b1071_mcm_h_fa1ea63b89" text="治理压力与残破腹地两项合计的每日繁荣度惩罚下限。避免两套系统叠加时定居点陷入无法挽回的死亡螺旋。默认：-8.0。" />
-    <string id="b1071_mcm_h_fa9bb5beb0" text="未处于任何雇佣合约中的小势力，按家族等级计的每日收入。高于雇佣兵补贴，因为它们没有雇主贴补。默认：400。" />
+    <string id="b1071_mcm_h_fa9bb5beb0" text="未处于任何雇佣合约中的小阵营，按家族等级计的每日收入。高于雇佣兵补贴，因为它们没有雇主贴补。默认：400。" />
     <string id="b1071_mcm_h_fdddba79d9" text="每名奴隶每天提供的繁荣度（在繁荣度提示中显示为“奴隶劳力”）。按默认效率（1.5×）：0.0067 × 1.5 ≈ 0.01/名。例如 100 名奴隶 → 每日约 +1 繁荣度。默认：0.0067。" />
     <string id="b1071_mcm_h_ff8b7b8002" text="在洗劫/攻城/征服事件后施加临时的恢复惩罚，并随时间消退。" />
-    <string id="b1071_mcm_h_ff96994b56" text="[旧版 — 未使用] 此设置已不再生效。改由“提示”组中的“启用定居点提示”控制战役地图上的定居点提示和破坏度图标。仅为存档兼容而保留。" />
-    <string id="b1071_mcm_h_nameplate_tooltips" text="在战役地图上悬停定居点时，在名称牌提示和完整的定居点提示中显示兵源和破坏度，并用红色图标标记破坏严重的定居点。" />
+    <string id="b1071_mcm_h_ff96994b56" text="[旧版 — 未使用] 此设置已不再生效。改由“提示”组中的“启用定居点提示”控制战役地图上的定居点提示和残破度图标。仅为存档兼容而保留。" />
+    <string id="b1071_mcm_h_nameplate_tooltips" text="在战役地图上悬停定居点时，在名称牌提示和完整的定居点提示中显示兵源和残破度，并用红色图标标记残破严重的定居点。" />
     <string id="b1071_mcm_h_ffe4431637" text="叠加各项压力惩罚后，每日恢复量占最大兵池的百分比下限。" />
     <string id="b1071_mcm_t_00b53638d4" text="每点议和支持加成" />
     <string id="b1071_mcm_t_0227ae84b9" text="雇佣兵每级补贴（第纳尔/天）" />
-    <string id="b1071_mcm_t_02d5165b74" text="炉灶归一化系数" />
-    <string id="b1071_mcm_t_04ca6fac7d" text="小额投资好感加成" />
+    <string id="b1071_mcm_t_02d5165b74" text="户数归一化系数" />
+    <string id="b1071_mcm_t_04ca6fac7d" text="小额投资关系加成" />
     <string id="b1071_mcm_t_0571c47e15" text="AI 英雄冷却（天）" />
     <string id="b1071_mcm_t_05f30d5d66" text="显示兵池标识（旧版）" />
     <string id="b1071_mcm_t_079a9c37e5" text="治安恢复上限 %" />
@@ -761,9 +762,9 @@
     <string id="b1071_mcm_t_1ab8b237ca" text="其他定居点最大兵源" />
     <string id="b1071_mcm_t_1f6f98db53" text="恢复惩罚上限 %" />
     <string id="b1071_mcm_t_22c56db061" text="启用城镇投资" />
-    <string id="b1071_mcm_t_2443dcece8" text="守军军饷占野战 %" />
+    <string id="b1071_mcm_t_2443dcece8" text="驻军军饷占野战 %" />
     <string id="b1071_mcm_t_24551006f0" text="和平红利恢复 %" />
-    <string id="b1071_mcm_t_24e0e77468" text="AI 炉灶上限" />
+    <string id="b1071_mcm_t_24e0e77468" text="AI 户数上限" />
     <string id="b1071_mcm_t_2507cf8802" text="慷慨投资花费" />
     <string id="b1071_mcm_t_25c6c1ebe1" text="在“当前”页签显示检测数据" />
     <string id="b1071_mcm_t_262a11be2f" text="大额投资每日繁荣度加成" />
@@ -773,7 +774,7 @@
     <string id="b1071_mcm_t_28f61ff98c" text="启用实验性地图悬停兜底（旧版）" />
     <string id="b1071_mcm_t_28f7f149d6" text="[旧版] 建造加成持续时间（天）" />
     <string id="b1071_mcm_t_2b08d5ee3a" text="0% 时的枯竭恢复加成" />
-    <string id="b1071_mcm_t_2b22513037" text="每名奴隶对应炉灶数（洗劫）" />
+    <string id="b1071_mcm_t_2b22513037" text="每名奴隶对应户数（洗劫）" />
     <string id="b1071_mcm_t_2b34b50117" text="压力满值时的治安惩罚上限" />
     <string id="b1071_mcm_t_2dd7c36498" text="文化契合权重" />
     <string id="b1071_mcm_t_2e953ae0a0" text="议和支持加成上限" />
@@ -784,8 +785,8 @@
     <string id="b1071_mcm_t_6e2a8f4b93" text="清理遗留的叛军雇佣兵团" />
     <string id="b1071_mcm_t_7d3a9c4e18" text="城堡村庄征集 %" />
     <string id="b1071_mcm_t_9c4e2a7b51" text="禁止在敌国境内招募" />
-      <string id="b1071_mcm_t_town_vol_tier_max" text="城镇志愿兵等级上限" />
-      <string id="b1071_mcm_t_village_vol_tier_max" text="村庄志愿兵等级上限" />
+      <string id="b1071_mcm_t_town_vol_tier_max" text="城镇志愿兵兵阶上限" />
+      <string id="b1071_mcm_t_village_vol_tier_max" text="村庄志愿兵兵阶上限" />
     <string id="b1071_mcm_t_333ebd3f63" text="每次洗劫的残破度" />
     <string id="b1071_mcm_t_334b3b9871" text="启用村庄投资" />
     <string id="b1071_mcm_t_33dc1f57bd" text="粮食恢复上限 %" />
@@ -795,7 +796,7 @@
     <string id="b1071_mcm_t_35dbc459b5" text="粮食恢复下限 %" />
     <string id="b1071_mcm_t_36c35ecdc1" text="启用遥测调试日志" />
     <string id="b1071_mcm_t_3a8a2610f7" text="自动贩奴兵阶上限" />
-    <string id="b1071_mcm_t_3b187bb881" text="小额投资每日炉灶加成" />
+    <string id="b1071_mcm_t_3b187bb881" text="小额投资每日户数加成" />
     <string id="b1071_mcm_t_3d3839675a" text="精锐恢复兵源花费" />
     <string id="b1071_mcm_t_3f48d9a16f" text="城堡看押费 %" />
     <string id="b1071_mcm_t_403ad38693" text="繁荣度最低缩放 %" />
@@ -808,11 +809,11 @@
     <string id="b1071_mcm_t_462413e577" text="小额投资每日繁荣度加成" />
     <string id="b1071_mcm_t_46a692c30e" text="城堡恢复下限 %" />
     <string id="b1071_mcm_t_46ca60a1ea" text="记录 AI 兵源消耗" />
-    <string id="b1071_mcm_t_472ffe7942" text="炉灶惩罚上限（每村）" />
+    <string id="b1071_mcm_t_472ffe7942" text="户数惩罚上限（每村）" />
     <string id="b1071_mcm_t_494eb521fc" text="小额投资持续时间（天）" />
     <string id="b1071_mcm_t_4a04f07333" text="每场大战额外议和倾向" />
     <string id="b1071_mcm_t_4b9e1f7a25" text="精锐生存力预设" />
-    <string id="b1071_mcm_t_4be2b0417a" text="5 阶招募金钱花费" />
+    <string id="b1071_mcm_t_4be2b0417a" text="5 阶招募金币花费" />
     <string id="b1071_mcm_t_4c7d821a43" text="奴隶数量下限" />
     <string id="b1071_mcm_t_4f19f2d927" text="启用停战约束" />
     <string id="b1071_mcm_t_506fc29e2e" text="大额投资花费" />
@@ -828,16 +829,16 @@
     <string id="b1071_mcm_t_5bd2214ca4" text="城镇最大兵源" />
     <string id="b1071_mcm_t_5c1505e977" text="启用恢复软上限" />
     <string id="b1071_mcm_t_5cfb5dd866" text="启用边境残破" />
-    <string id="b1071_mcm_t_6167980909" text="名流势力上限" />
+    <string id="b1071_mcm_t_6167980909" text="要人权望上限" />
     <string id="b1071_mcm_t_62895ca392" text="开放城堡出入（游戏前期）" />
     <string id="b1071_mcm_t_64645f566a" text="攻城疲惫（防守方）" />
     <string id="b1071_mcm_t_6555ffe583" text="启用快捷键开关" />
-    <string id="b1071_mcm_t_65a39833e0" text="AI 金钱安全倍数" />
+    <string id="b1071_mcm_t_65a39833e0" text="AI 金币安全倍数" />
     <string id="b1071_mcm_t_66058d06ad" text="繁荣度惩罚上限（所属城镇）" />
     <string id="b1071_mcm_t_66419f08dc" text="征服兵池保留 %" />
     <string id="b1071_mcm_t_6728a5b42a" text="议和压力阈值" />
     <string id="b1071_mcm_t_6b4928cc6d" text="快捷键（0-6）" />
-    <string id="b1071_mcm_t_6bb762576a" text="炉灶加成上限 %" />
+    <string id="b1071_mcm_t_6bb762576a" text="户数加成上限 %" />
     <string id="b1071_mcm_t_6c51d7cddf" text="危机时启用强制议和" />
     <string id="b1071_mcm_t_6e9d852a3c" text="每名阵亡者的战斗疲惫" />
     <string id="b1071_mcm_t_7186800480" text="玩家一视同仁" />
@@ -851,7 +852,7 @@
     <string id="b1071_mcm_t_7981ec30da" text="危机区间起点" />
     <string id="b1071_mcm_t_7b1d5f8991" text="每点宣战支持惩罚" />
     <string id="b1071_mcm_t_7b2ae89092" text="围攻恢复倍率 %" />
-    <string id="b1071_mcm_t_7b53a2a11a" text="攻城劫掠保留 %" />
+    <string id="b1071_mcm_t_7b53a2a11a" text="攻城掠夺保留 %" />
     <string id="b1071_mcm_t_7bd13609c8" text="治安加成上限 %" />
     <string id="b1071_mcm_t_7c3e73056d" text="AI 城镇投资" />
     <string id="b1071_mcm_t_7e7bd75b71" text="强制议和前最短战争天数" />
@@ -861,7 +862,7 @@
     <string id="b1071_mcm_t_81cbe070ea" text="宣战支持惩罚上限" />
     <string id="b1071_mcm_t_81e6a5ec72" text="每日恢复下限" />
     <string id="b1071_mcm_t_830629701e" text="每日消退" />
-    <string id="b1071_mcm_t_83760a2182" text="炉灶倍率" />
+    <string id="b1071_mcm_t_83760a2182" text="户数倍率" />
     <string id="b1071_mcm_t_84057ad838" text="压力满值时的繁荣度惩罚上限" />
     <string id="b1071_mcm_t_858f16f4b9" text="总督统御兵池除数" />
     <string id="b1071_mcm_t_85cb75e37c" text="最大疲惫分值" />
@@ -879,19 +880,19 @@
     <string id="b1071_mcm_t_9313e7c659" text="城堡每日恢复下限" />
     <string id="b1071_mcm_t_9314ade9c2" text="大额投资持续时间（天）" />
     <string id="b1071_mcm_t_9364507e22" text="兵源外交压力强度" />
-    <string id="b1071_mcm_t_950bb85407" text="启用小势力收入补贴" />
+    <string id="b1071_mcm_t_950bb85407" text="启用小阵营收入补贴" />
     <string id="b1071_mcm_t_95b0692672" text="文化费用 %" />
     <string id="b1071_mcm_t_9756c85392" text="小额投资花费" />
-    <string id="b1071_mcm_t_9aa639407c" text="攻城宽大保留 %" />
-    <string id="b1071_mcm_t_9b391ff669" text="跨家族好感加成" />
+    <string id="b1071_mcm_t_9aa639407c" text="攻城宽恕保留 %" />
+    <string id="b1071_mcm_t_9b391ff669" text="跨家族关系加成" />
     <string id="b1071_mcm_t_9c2eafe6c2" text="启用外交调试日志" />
     <string id="b1071_mcm_t_9c30340076" text="总督管理恢复除数" />
-    <string id="b1071_mcm_t_9e446c836a" text="小额投资势力加成" />
+    <string id="b1071_mcm_t_9e446c836a" text="小额投资权望加成" />
     <string id="b1071_mcm_t_9e88be7901" text="禁止宣战阈值" />
     <string id="b1071_mcm_t_9f315112a8" text="议和倾向（低区间）" />
     <string id="b1071_mcm_t_a04dd62ba7" text="账目默认页签（0-12）" />
     <string id="b1071_mcm_t_a052e9fa87" text="恢复惩罚除数" />
-    <string id="b1071_mcm_t_a2b3c4d501" text="2级招募金币费用（多元化兵源池）" />
+    <string id="b1071_mcm_t_a2b3c4d501" text="2 阶招募金币费用（多元化兵池）" />
     <string id="b1071_mcm_t_a323f17518" text="启用奴隶经济" />
     <string id="b1071_mcm_t_a37290a213" text="每日恢复上限（占兵池 %）" />
     <string id="b1071_mcm_t_a6a089949c" text="[旧版] 启用定居点兵源提示" />
@@ -903,9 +904,9 @@
     <string id="b1071_mcm_t_a9c0f01a99" text="警报阈值 %" />
     <string id="b1071_mcm_t_ab323edceb" text="软上限强度" />
     <string id="b1071_mcm_t_ac29f05777" text="繁荣度最高缩放 %" />
-    <string id="b1071_mcm_t_ac67678bec" text="启用守军军饷折扣" />
+    <string id="b1071_mcm_t_ac67678bec" text="启用驻军军饷折扣" />
     <string id="b1071_mcm_t_acf0cc8b7b" text="恢复枯竭阈值 %" />
-    <string id="b1071_mcm_t_ad875bbbf1" text="慷慨投资势力加成" />
+    <string id="b1071_mcm_t_ad875bbbf1" text="慷慨投资权望加成" />
     <string id="b1071_mcm_t_adda36db0f" text="其他定居点恢复 %" />
     <string id="b1071_mcm_t_ae56c925c7" text="信息面板左偏移（像素）" />
     <string id="b1071_mcm_t_afac8de41d" text="每点繁荣度奴隶上限" />
@@ -915,14 +916,14 @@
     <string id="b1071_mcm_t_b30e9966cb" text="枯竭阈值 %" />
     <string id="b1071_mcm_t_b324e36f0f" text="启用季节恢复" />
     <string id="b1071_mcm_t_b36bdd7507" text="雇佣与升级费用预设" />
-    <string id="b1071_mcm_t_b3c4d5e602" text="3级招募金币费用（多元化兵源池）" />
+    <string id="b1071_mcm_t_b3c4d5e602" text="3 阶招募金币费用（多元化兵池）" />
     <string id="b1071_mcm_t_b418b27d7b" text="合计繁荣度惩罚上限" />
     <string id="b1071_mcm_t_b496502413" text="征服枯竭保留 %" />
-    <string id="b1071_mcm_t_b63e6d84dc" text="大额投资每日炉灶加成" />
+    <string id="b1071_mcm_t_b63e6d84dc" text="大额投资每日户数加成" />
     <string id="b1071_mcm_t_b65353e8df" text="压力上限" />
-    <string id="b1071_mcm_t_b782030066" text="慷慨投资每日炉灶加成" />
+    <string id="b1071_mcm_t_b782030066" text="慷慨投资每日户数加成" />
     <string id="b1071_mcm_t_b811d0a952" text="使用小兵池进行测试" />
-    <string id="b1071_mcm_t_bcb2514534" text="大额投资好感加成" />
+    <string id="b1071_mcm_t_bcb2514534" text="大额投资关系加成" />
     <string id="b1071_mcm_t_bea3703fd9" text="城堡恢复上限 %" />
     <string id="b1071_mcm_t_bf735341f9" text="每名奴隶每日繁荣度" />
     <string id="b1071_mcm_t_bf7e85e8ac" text="无从属每级补贴（第纳尔/天）" />
@@ -938,12 +939,12 @@
     <string id="b1071_mcm_t_cdaad00e82" text="启用按兵阶加权的阵亡流失" />
     <string id="b1071_mcm_t_cfb114a657" text="软上限起点比例" />
     <string id="b1071_mcm_t_d12ea29baa" text="4 阶招募等待（天）" />
-    <string id="b1071_mcm_t_d1a68860bf" text="6 阶及以上招募金钱花费" />
+    <string id="b1071_mcm_t_d1a68860bf" text="6 阶及以上招募金币花费" />
     <string id="b1071_mcm_t_d2267d06a9" text="显示定居点名称（旧版）" />
     <string id="b1071_mcm_t_d4930f0014" text="大战压力起始数量" />
     <string id="b1071_mcm_t_d74548c067" text="大额投资影响力加成" />
     <string id="b1071_mcm_t_d80a433159" text="建造加成上限（进度/天）" />
-    <string id="b1071_mcm_t_d8c28d3d5b" text="慷慨投资好感加成" />
+    <string id="b1071_mcm_t_d8c28d3d5b" text="慷慨投资关系加成" />
     <string id="b1071_mcm_t_daeb06377b" text="AI 村庄投资" />
     <string id="b1071_mcm_t_dba1bed6ad" text="启用民兵与兵源联动" />
     <string id="b1071_mcm_t_dd53dd11fb" text="信息面板顶部偏移（像素）" />
@@ -957,10 +958,10 @@
     <string id="b1071_mcm_t_ebad6bd7be" text="提示刷新（毫秒）（旧版）" />
     <string id="b1071_mcm_t_ebe451ab15" text="启用战争影响" />
     <string id="b1071_mcm_t_ebfb4c1b63" text="奴隶效能倍率" />
-    <string id="b1071_mcm_t_ec59978b74" text="4 阶招募金钱花费" />
+    <string id="b1071_mcm_t_ec59978b74" text="4 阶招募金币花费" />
     <string id="b1071_mcm_t_ecaba1be4a" text="启用外交压力" />
     <string id="b1071_mcm_t_ecf600bf07" text="攻城恢复天数" />
-    <string id="b1071_mcm_t_ecfae14356" text="攻城摧毁保留 %" />
+    <string id="b1071_mcm_t_ecfae14356" text="攻城毁坏保留 %" />
     <string id="b1071_mcm_t_ed856ce644" text="压力满值时的忠诚惩罚上限" />
     <string id="b1071_mcm_t_edef9d0046" text="兵源外交阈值 %" />
     <string id="b1071_mcm_t_f1cc63afd5" text="每座城堡精锐兵池上限" />
@@ -969,7 +970,7 @@
     <string id="b1071_mcm_t_f69ee0bff4" text="每日残破度消退" />
     <string id="b1071_mcm_t_f6c68bc2d6" text="强制议和最大战争数" />
     <string id="b1071_mcm_t_f6f0c3c0d2" text="治安恢复下限 %" />
-    <string id="b1071_mcm_t_f756638832" text="大额投资势力加成" />
+    <string id="b1071_mcm_t_f756638832" text="大额投资权望加成" />
     <string id="b1071_mcm_t_fa86f80031" text="俘获贵族疲惫增加" />
     <string id="b1071_mcm_t_fc99ee9c3a" text="显示玩家调试消息" />
     <string id="b1071_mcm_t_fd751aece2" text="强制议和停战天数" />
@@ -1005,8 +1006,8 @@
     <string id="b1071_overlay_diag_regen_dbg" text="恢复调试" />
     <string id="b1071_overlay_party" text="队伍" />
     <string id="b1071_overlay_status_prisoner_at" text="俘虏 @ {LOCATION}" />
-    <string id="b1071_overlay_army" text="军队" />
-    <string id="b1071_overlay_status_army" text="军队：{NAME}" />
+    <string id="b1071_overlay_army" text="军团" />
+    <string id="b1071_overlay_status_army" text="军团：{NAME}" />
     <string id="b1071_overlay_status_at" text="位于{NAME}" />
     <string id="b1071_overlay_status_near" text="靠近{NAME}" />
     <string id="b1071_overlay_status_unknown" text="位置未知" />
@@ -1016,7 +1017,7 @@
     <string id="b1071_overlay_col_details" text="详情" />
     <string id="b1071_overlay_col_distance" text="距离" />
     <string id="b1071_overlay_search_prompt" text="请输入查询内容（例如：安德罗尼库斯、谷物）" />
-    <string id="b1071_overlay_search_scope" text="英雄、定居点、军队、市场价格" />
+    <string id="b1071_overlay_search_scope" text="英雄、定居点、军团、市场价格" />
     <string id="b1071_overlay_totals_results" text="结果" />
     <string id="b1071_overlay_totals_query" text="查询" />
     <string id="b1071_overlay_wanderer" text="流浪者" />
@@ -1025,10 +1026,10 @@
     <string id="b1071_overlay_independent" text="独立" />
     <string id="b1071_overlay_neutral" text="中立" />
     <string id="b1071_overlay_detail_mp" text="兵源 {VALUE}（{PCT}%）" />
-    <string id="b1071_overlay_type_army" text="军队" />
+    <string id="b1071_overlay_type_army" text="军团" />
     <string id="b1071_overlay_detail_cmd" text="统帅：{NAME}（{SIZE}）" />
     <string id="b1071_overlay_type_clan" text="家族" />
-    <string id="b1071_overlay_detail_clan" text="领地 {FIEFS} • 金钱 {GOLD} • 好感 {REL}" />
+    <string id="b1071_overlay_detail_clan" text="领地 {FIEFS} • 金币 {GOLD} • 关系 {REL}" />
     <string id="b1071_overlay_type_kingdom" text="王国" />
     <string id="b1071_overlay_ruler" text="君主：{NAME}" />
     <string id="b1071_overlay_detail_wars" text="战争 {COUNT} • 疲惫 {EXH}" />
@@ -1075,7 +1076,7 @@
     <string id="b1071_overlay_empty_villages" text="村庄账目&#10;未找到任何条目。" />
     <string id="b1071_overlay_title_villages" text="村庄账目  （{COUNT} 条）" />
     <string id="b1071_overlay_col_village" text="村庄" />
-    <string id="b1071_overlay_col_hearth" text="炉灶" />
+    <string id="b1071_overlay_col_hearth" text="户数" />
     <string id="b1071_overlay_col_faction" text="势力" />
     <string id="b1071_overlay_col_bound_to" text="所属" />
     <string id="b1071_overlay_empty_factions" text="势力账目&#10;未找到任何条目。" />
@@ -1110,9 +1111,9 @@
     <string id="b1071_overlay_truce_days_left" text="剩余 {DAYS} 天" />
     <string id="b1071_overlay_truce" text="停战" />
     <string id="b1071_overlay_truces_header" text="── 停战 ──" />
-    <string id="b1071_overlay_empty_armies" text="军队账目&#10;未找到任何条目。" />
-    <string id="b1071_overlay_title_armies" text="军队账目  （{COUNT} 条）" />
-    <string id="b1071_overlay_col_power" text="势力值" />
+    <string id="b1071_overlay_empty_armies" text="军团账目&#10;未找到任何条目。" />
+    <string id="b1071_overlay_title_armies" text="军团账目  （{COUNT} 条）" />
+    <string id="b1071_overlay_col_power" text="军力" />
     <string id="b1071_overlay_col_troops" text="部队" />
     <string id="b1071_overlay_sort_default" text="排序 ↓" />
     <string id="b1071_overlay_empty_with_title" text="{TITLE}&#10;未找到任何条目。" />
@@ -1137,7 +1138,7 @@
     <string id="b1071_overlay_exhaustion_tag_tired" text="疲" />
     <string id="b1071_overlay_exhaustion_tag_exhausted" text="竭" />
     <string id="b1071_compat_method_calculatetownfoodstockschange" text="城镇粮食供应" />
-    <string id="b1071_compat_method_calculatehearthchange" text="村庄炉灶增长" />
+    <string id="b1071_compat_method_calculatehearthchange" text="村庄户数增长" />
     <string id="b1071_compat_method_calculateprosperitychange" text="城镇繁荣度" />
     <string id="b1071_compat_method_calculatesecuritychange" text="城镇治安" />
     <string id="b1071_compat_method_calculateloyaltychange" text="城镇忠诚" />
@@ -1153,7 +1154,7 @@
     <string id="b1071_compat_method_applyinternal" text="招募执行" />
     <string id="b1071_compat_method_getsurvivalchance" text="士兵存活概率" />
     <string id="b1071_compat_method_simulatehit" text="战斗命中模拟" />
-    <string id="b1071_compat_method_calculateclanincomeinternal" text="氏族每日收入" />
+    <string id="b1071_compat_method_calculateclanincomeinternal" text="家族每日收入" />
     <string id="b1071_compat_effect_calculatetownfoodstockschange" text="两个模组都会改变你的城镇每天拥有多少粮食。" />
     <string id="b1071_compat_effect_calculatehearthchange" text="两个模组都会影响村庄成长或衰退的快慢。" />
     <string id="b1071_compat_effect_calculateprosperitychange" text="两个模组都会影响城镇每日的繁荣度。" />
@@ -1165,28 +1166,28 @@
     <string id="b1071_compat_effect_getcharacterwage" text="两个模组都会改变你每天为每名士兵支付的军饷。" />
     <string id="b1071_compat_effect_gettotalwage" text="两个模组都会改变你军队的军饷总额。" />
     <string id="b1071_compat_effect_gettrooprecruitmentcost" text="两个模组都会改变招募士兵的费用。" />
-    <string id="b1071_compat_effect_determinesupport" text="两个模组都会影响 AI 氏族何时决定开战或求和。" />
+    <string id="b1071_compat_effect_determinesupport" text="两个模组都会影响 AI 家族何时决定开战或求和。" />
     <string id="b1071_compat_effect_getdailyvolunteerproductionprobability" text="两个模组都会影响村庄产出志愿兵的频率。" />
     <string id="b1071_compat_effect_getmaximumdailyautorecruitmentcount" text="两个模组都会影响每天可自动招募的士兵数量。" />
     <string id="b1071_compat_effect_applyinternal" text="两个模组都会介入新兵的处理流程。" />
     <string id="b1071_compat_effect_getsurvivalchance" text="两个模组都会影响士兵在战斗中存活的概率。" />
     <string id="b1071_compat_effect_simulatehit" text="两个模组都会影响战斗命中判定的内部计算。" />
-    <string id="b1071_compat_effect_calculateclanincomeinternal" text="两个模组都会影响氏族每天的收入。" />
+    <string id="b1071_compat_effect_calculateclanincomeinternal" text="两个模组都会影响家族每天的收入。" />
     <!-- v0.2.7.0: New overlay column headers, labels, and statuses -->
     <string id="b1071_overlay_col_culture" text="文化" />
     <string id="b1071_overlay_col_duration" text="持续时间" />
-    <string id="b1071_overlay_col_garrison" text="守军" />
+    <string id="b1071_overlay_col_garrison" text="驻军" />
     <string id="b1071_overlay_col_leader" text="首领" />
     <string id="b1071_overlay_col_lord" text="领主" />
     <string id="b1071_overlay_col_parties" text="队伍" />
-    <string id="b1071_overlay_col_relation" text="好感" />
+    <string id="b1071_overlay_col_relation" text="关系" />
     <string id="b1071_overlay_col_ruler" text="君主" />
     <string id="b1071_overlay_col_status" text="状态" />
     <string id="b1071_overlay_col_territory" text="领土" />
     <string id="b1071_overlay_col_treasury" text="国库" />
-    <string id="b1071_overlay_all_native" text="全部原版" />
+    <string id="b1071_overlay_all_native" text="全部本土" />
     <string id="b1071_overlay_mismatch" text="不符" />
-    <string id="b1071_overlay_native" text="原版" />
+    <string id="b1071_overlay_native" text="本土" />
     <string id="b1071_overlay_oldest_war" text="最久：{DAYS}天" />
     <string id="b1071_overlay_status_active" text="活动中" />
     <string id="b1071_overlay_status_noble" text="贵族" />
@@ -1203,11 +1204,11 @@
     <string id="b1071_mcm_h_earlywar_pen" text="战争开始时施加的最大和平投票支持惩罚。会在最小战争天数期限内线性衰减至零。阻止议会在最短持续时间之前投票和平。启用玩家对等时，玩家和AI同等适用。" />
     <!-- v0.2.7.2: Multi-front war relief MCM -->
     <string id="b1071_mcm_t_mfwr_enable" text="启用多线战争缓解" />
-    <string id="b1071_mcm_h_mfwr_enable" text="当一个王国同时陷入高战争疲劳、兵源枯竭且身陷多场战争的系统性危机时，强制和议与议会和平投票所要求的最短战争天数会从常规值降至紧急值。必须同时满足全部条件。" />
+    <string id="b1071_mcm_h_mfwr_enable" text="当一个王国同时陷入高战争疲惫、兵源枯竭且身陷多场战争的系统性危机时，强制和议与议会和平投票所要求的最短战争天数会从常规值降至紧急值。必须同时满足全部条件。" />
     <string id="b1071_mcm_t_mfwr_mindays" text="紧急最短战争天数" />
     <string id="b1071_mcm_h_mfwr_mindays" text="当多线危机条件满足时使用的较低最短战争时长（天）。即使在紧急状态下，短于此时长的战争仍会受到保护。" />
     <string id="b1071_mcm_t_mfwr_mp" text="紧急兵源阈值 %" />
-    <string id="b1071_mcm_h_mfwr_mp" text="当王国聚落平均兵源填充率低于或等于此值时，可触发紧急绕过。例如 25 表示兵源池平均仅剩 25% 或更低时生效。" />
+    <string id="b1071_mcm_h_mfwr_mp" text="当王国聚落平均兵源填充率低于或等于此值时，可触发紧急绕过。例如 25 表示兵池平均仅剩 25% 或更低时生效。" />
     <string id="b1071_mcm_t_mfwr_wars" text="紧急战争数量阈值" />
     <string id="b1071_mcm_h_mfwr_wars" text="触发多线战争缓解所需的最低王国级战争数量。" />
     <string id="b1071_tab_casualties" text="伤亡" />
@@ -1221,23 +1222,23 @@
     <string id="b1071_overlay_totals_bloodiest" text="最血腥：{PAIR}" />
     <string id="b1071_overlay_total_entries_cas" text="战争：{COUNT}" />
     <!-- v0.2.8: Slave conversion selection UI -->
-    <string id="b1071_sc_title" text="选择要奴役的囚犯（T1-{MAXTIER}）" />
+    <string id="b1071_sc_title" text="选择要奴役的俘虏（T1-{MAXTIER}）" />
     <string id="b1071_sc_total" text="总数" />
     <string id="b1071_sc_selected" text="已选" />
     <string id="b1071_sc_confirm" text="奴役已选" />
     <string id="b1071_sc_select_all" text="全选" />
     <string id="b1071_sc_deselect_all" text="全不选" />
-    <string id="b1071_sc_total_selected" text="已选择 {COUNT} 名囚犯" />
+    <string id="b1071_sc_total_selected" text="已选择 {COUNT} 名俘虏" />
     <string id="b1071_sc_open_fail" text="奴役选择界面打开失败：{ERR}" />
     <string id="b1071_sc_no_screen" text="奴役选择：没有活动界面。" />
     <string id="b1071_cr_elite_header_div" text="城堡征召兵" />
     <!-- v0.2.8: MCM new settings -->
     <string id="b1071_mcm_t_8c3e9a1b01" text="启用奴役选择界面" />
-    <string id="b1071_mcm_h_8c3e9a1b01" text="启用后，城镇的“奴役囚犯”选项会打开选择界面，让你选择要转化的囚犯。禁用时，所有符合条件的囚犯会批量转化。默认：开启。" />
-    <string id="b1071_mcm_t_a1d5f3b201" text="招募访问限制" />
+    <string id="b1071_mcm_h_8c3e9a1b01" text="启用后，城镇的“奴役俘虏”选项会打开选择界面，让你选择要转化的俘虏。禁用时，所有符合条件的俘虏会批量转化。默认：开启。" />
+    <string id="b1071_mcm_t_a1d5f3b201" text="招募权限限制" />
     <string id="b1071_mcm_h_a1d5f3b201" text="控制谁能从城堡招募。0 = 开放，1 = 仅王国，2 = 所有者家族 + 统治者家族。玩家和AI使用同样规则。默认：1。" />
     <string id="b1071_mcm_t_b2e6f4c302" text="启用多样化城堡兵池" />
-    <string id="b1071_mcm_h_b2e6f4c302" text="启用后，城堡会生成T2-T6混合部队，而不是只生成T4-T6精英。默认：开启。" />
+    <string id="b1071_mcm_h_b2e6f4c302" text="启用后，城堡会生成T2-T6的混合兵阶部队，而不是只生成T4-T6精英。这符合中世纪的实际情况：职业士兵只占军队的20-30%，其余都是征召兵。默认：开启。" />
     <string id="b1071_mcm_t_c3f7a5d403" text="兵池T2征召兵百分比" />
     <string id="b1071_mcm_h_c3f7a5d403" text="每日城堡兵池再生分配给T2基础征召兵的百分比。四项百分比建议合计为100。默认：45。" />
     <string id="b1071_mcm_t_d4a8b6e504" text="兵池T2贵族百分比" />
@@ -1256,11 +1257,11 @@
     <string id="b1071_mcm_h_dafebce110" text="每级城墙提供的兵池容量加成，仅在动态模式中使用。例如：数值3且2级城墙增加6名容量。默认：3。" />
     <!-- v0.2.8: Readable-ID aliases for castle recruitment and slave conversion MCM settings -->
     <string id="b1071_mcm_t_sc_enable" text="启用奴役选择界面" />
-    <string id="b1071_mcm_h_sc_enable" text="启用后，城镇的奴役囚犯选项会打开选择界面，让你选择要转化的囚犯。禁用时，所有符合条件的囚犯会批量转化。默认：开启。" />
-    <string id="b1071_mcm_t_cr_access" text="招募访问限制" />
+    <string id="b1071_mcm_h_sc_enable" text="启用后，城镇的奴役俘虏选项会打开选择界面，让你选择要转化的俘虏。禁用时，所有符合条件的俘虏会批量转化。默认：开启。" />
+    <string id="b1071_mcm_t_cr_access" text="城堡招募权限等级" />
     <string id="b1071_mcm_h_cr_access" text="控制谁能从城堡招募。0 = 开放，1 = 仅王国，2 = 所有者家族 + 统治者家族。玩家和AI使用同样规则。默认：1。" />
     <string id="b1071_mcm_t_cr_t2levy" text="兵池T2征召兵百分比" />
-    <string id="b1071_mcm_h_cr_t2levy" text="每日城堡兵池再生分配给T2基础征召兵的百分比。四项百分比建议合计为100。默认：45。" />
+    <string id="b1071_mcm_h_cr_t2levy" text="每日城堡兵池再生分配给T2基础征召兵的百分比。默认：45。" />
     <string id="b1071_mcm_t_cr_t2noble" text="兵池T2贵族兵百分比" />
     <string id="b1071_mcm_h_cr_t2noble" text="每日城堡兵池再生分配给T2贵族（精英树）部队的百分比。默认：35。" />
     <string id="b1071_mcm_t_cr_t3t4" text="兵池T3-T4百分比" />
@@ -1272,9 +1273,9 @@
     <string id="b1071_mcm_t_cr_dyncap_base" text="动态兵池基础上限" />
     <string id="b1071_mcm_h_cr_dyncap_base" text="无论繁荣度如何都保留的最低兵池容量，仅在动态模式中使用。默认：5。" />
     <string id="b1071_mcm_t_cr_dyncap_prosp" text="动态兵池繁荣度缩放" />
-    <string id="b1071_mcm_h_cr_dyncap_prosp" text="每点繁荣度提供的兵池容量加成，仅在动态模式中使用。例如：0.005在1500繁荣度时增加7名容量。默认：0.005。" />
+    <string id="b1071_mcm_h_cr_dyncap_prosp" text="每点繁荣度提供的兵池容量加成。例如：0.005 配合 2000 繁荣度 = +10 容量。默认：0.005。" />
     <string id="b1071_mcm_t_cr_dyncap_wall" text="动态兵池城墙等级加成" />
-    <string id="b1071_mcm_h_cr_dyncap_wall" text="每级城墙提供的兵池容量加成，仅在动态模式中使用。例如：数值3且2级城墙增加6名容量。默认：3。" />
+    <string id="b1071_mcm_h_cr_dyncap_wall" text="每级城墙提供的兵池容量加成。例如：每级 3 × 3 级城墙 = +9 容量。默认：3。" />
     <!-- v1.0.2.9：城堡招募 AI 对等 -->
     <string id="b1071_mcm_t_cr_ai_buffer" text="AI 招募金库缓冲" />
     <string id="b1071_mcm_h_cr_ai_buffer" text="只有当 AI 领主的金币高于整批采购费用乘以此倍率时，他才会从城堡精锐兵池或已转化的俸虏中招募，这样招募就不会让他无力支付现有部队的军饱。数值越高，他保留的储备越多，购买昂贵兵种越少。设为 1 则允许他花光最后一枚金币，与此前一致。与部队服役缓冲相互独立。默认：3。" />
@@ -1306,20 +1307,20 @@
     <string id="b1071_demob_released_partial" text="已让 {COUNT} 名{TROOP}退役。其中 {ARRIVED} 人抵达{HOME}，可从当地的老兵名册重新征召；其余人未能返乡。" />
     <string id="b1071_demob_retired_home" text="{COUNT} 名士兵服役期满，已启程返乡。首批：{TROOP}，前往{HOME}。你可以从定居点的老兵名册重新征召老兵。" />
     <string id="b1071_mcm_g_demob_vets" text="部队服役 - 老兵" />
-    <string id="b1071_mcm_h_demob_ai_recall" text="AI 领主进入存有其有权征调的老兵的定居点时，会当场雇用他们，支付与你相同的金钱与兵源。他绝不会为此绕道。默认值：开启。" />
+    <string id="b1071_mcm_h_demob_ai_recall" text="AI 领主进入存有其有权征调的老兵的定居点时，会当场雇用他们，支付与你相同的金币与兵源。他绝不会为此绕道。默认值：开启。" />
     <string id="b1071_mcm_h_demob_courier" text="召回令一天可传送的地图距离。设为 120 时，骑手每天大约走完一个地区的宽度。数值越高命令送达越快。默认值：120。" />
     <string id="b1071_mcm_h_demob_march" text="被召回的老兵前来会合时一天可行进的地图距离。他们朝你所在之处前进，每天重新计算。默认值：60。" />
     <string id="b1071_mcm_h_demob_max_extends" text="同一名士兵的服役期最多可延长几次。第一次之后，每次延长的花费比上一次高 50%。默认值：3。" />
     <string id="b1071_mcm_h_demob_notify_interval" text="两次部队服役警告消息或弹窗之间的最少天数。设为 1 表示每天提示，与以往相同。默认值：3。" />
     <string id="b1071_mcm_h_demob_recall_hotkey" text="0=F8，1=F10，2=F11，3=F12。默认值：F8。" />
     <string id="b1071_mcm_h_demob_recall_hotkey_enable" text="允许在战役地图上打开全图老兵名册。默认值：开启。" />
-    <string id="b1071_mcm_h_demob_remote" text="允许向地图上任意定居点发出召回令，无需亲自前往。命令需要时间送达，随后这些人会朝你所在之处行军。金钱与兵源在命令发出时扣除。关闭后必须亲临定居点。默认值：开启。" />
+    <string id="b1071_mcm_h_demob_remote" text="允许向地图上任意定居点发出召回令，无需亲自前往。命令需要时间送达，随后这些人会朝你所在之处行军。金币与兵源在命令发出时扣除。关闭后必须亲临定居点。默认值：开启。" />
     <string id="b1071_mcm_h_demob_vet_access" text="启用跨家族老兵招募时，谁可以从定居点召回由其他家族雇用的老兵。0 = 开放（任何未与拥有者开战的领主）。1 = 仅限王国（须与拥有者同属一个王国）。2 = 仅限家族（仅限拥有该定居点的家族）。玩家与 AI 适用相同规则。任何未与拥有者交战的家族始终可召回最后雇主是自己家族的老兵。默认值：2。" />
     <string id="b1071_mcm_h_demob_vet_cross_clan" text="关闭时，每个家族只能召回最后雇主为本家族的老兵；这会同等保护玩家和 AI 的老兵。开启时，召回权限限制决定谁可以招募由其他家族雇用的老兵。战争始终会关闭名册。默认值：关闭。" />
     <string id="b1071_mcm_h_demob_vet_enable" text="士兵服役期满后，会步行返回招募他的定居点，归还兵源并列入该定居点的老兵名册。关闭此项后，退役士兵会像以前一样直接消失。默认值：开启。" />
     <string id="b1071_mcm_h_demob_vet_gold" text="每召回一名老兵支付的重征赏金，并按其兵阶倍增。设为 40 时，5 阶老兵需 200 金币。召回同样会像普通招募那样消耗定居点的兵源。默认值：40。" />
     <string id="b1071_mcm_h_demob_vet_manpower" text="退役士兵所占兵源有多少比例返还其家乡定居点。100 表示每一名熬过服役期的士兵都可再次被征召。若希望战争长久地消耗乡野人口，可调低此值。默认值：100。" />
-    <string id="b1071_mcm_h_demob_vet_retention" text="退役士兵在彻底安家之前，还能被召回多少个 Bannerlord 日。无论如何，其兵源都会留在兵源池中。游戏中的一年约为 84 天。默认值：84。" />
+    <string id="b1071_mcm_h_demob_vet_retention" text="退役士兵在彻底安家之前，还能被召回多少个 Bannerlord 日。无论如何，其兵源都会留在兵池中。游戏中的一年约为 84 天。默认值：84。" />
     <string id="b1071_mcm_h_demob_vet_scatter" text="定居点遭劫掠或易主于他国时，其老兵名册损失的百分比。家乡被洗劫时，老兵会四散而去。设为 0 则不再流散。默认值：50。" />
     <string id="b1071_mcm_h_demob_vet_settle" text="退役士兵在家中休整多少个 Bannerlord 日之后才会再次应召。在此之前他虽在名册上，但谁也无法雇用他，你和 AI 领主都不行。设为 0 则可在放人当天就把他召回。默认值：7。" />
     <string id="b1071_mcm_t_demob_ai_recall" text="AI 领主雇用老兵" />
@@ -1371,7 +1372,7 @@
     <string id="b1071_recall_no_screen" text="老兵名册：没有活动界面。" />
     <string id="b1071_recall_none" text="此地没有老兵等待。服役期满的士兵会回到招募他们的定居点，并出现在其名册上。" />
     <string id="b1071_recall_none_map" text="你有权征调的名册上都没有老兵等待。服役期满的士兵会回到招募他们的定居点。" />
-    <string id="b1071_recall_notice_map" text="传令须先送到当地，随后这些人才会朝你所在之处行军。金钱与兵源在命令发出时即已扣除。" />
+    <string id="b1071_recall_notice_map" text="传令须先送到当地，随后这些人才会朝你所在之处行军。金币与兵源在命令发出时即已扣除。" />
     <string id="b1071_recall_notice_map_off" text="模组设置中已关闭远程召回，你必须亲自前往定居点才能召回当地老兵。" />
     <string id="b1071_recall_notice_own" text="此处不是你的国土，因此只有你亲自遣返的部下才会应召。" />
     <string id="b1071_recall_open_fail" text="老兵名册打开失败：{ERR}" />
@@ -1398,31 +1399,31 @@
     <string id="b1071_mcm_t_town_invest_duration_modest" text="小额投资持续时间（天）" />
     <string id="b1071_mcm_t_town_invest_duration_generous" text="慷慨投资持续时间（天）" />
     <string id="b1071_mcm_t_town_invest_duration_grand" text="大额投资持续时间（天）" />
-    <string id="b1071_mcm_t_town_invest_relation_modest" text="小额投资好感加成" />
-    <string id="b1071_mcm_t_town_invest_relation_generous" text="慷慨投资好感加成" />
-    <string id="b1071_mcm_t_town_invest_relation_grand" text="大额投资好感加成" />
+    <string id="b1071_mcm_t_town_invest_relation_modest" text="小额投资关系加成" />
+    <string id="b1071_mcm_t_town_invest_relation_generous" text="慷慨投资关系加成" />
+    <string id="b1071_mcm_t_town_invest_relation_grand" text="大额投资关系加成" />
     <string id="b1071_mcm_t_town_invest_influence_modest" text="小额投资影响力加成" />
     <string id="b1071_mcm_t_town_invest_influence_generous" text="慷慨投资影响力加成" />
     <string id="b1071_mcm_t_town_invest_influence_grand" text="大额投资影响力加成" />
-    <string id="b1071_mcm_t_town_invest_power_modest" text="小额投资势力加成" />
-    <string id="b1071_mcm_t_town_invest_power_generous" text="慷慨投资势力加成" />
-    <string id="b1071_mcm_t_town_invest_power_grand" text="大额投资势力加成" />
-    <string id="b1071_mcm_t_town_invest_power_cap" text="名流势力上限" />
-    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="跨家族好感加成" />
-    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="AI 金钱安全倍数" />
+    <string id="b1071_mcm_t_town_invest_power_modest" text="小额投资权望加成" />
+    <string id="b1071_mcm_t_town_invest_power_generous" text="慷慨投资权望加成" />
+    <string id="b1071_mcm_t_town_invest_power_grand" text="大额投资权望加成" />
+    <string id="b1071_mcm_t_town_invest_power_cap" text="要人权望上限" />
+    <string id="b1071_mcm_t_town_invest_cross_clan_relation" text="跨家族关系加成" />
+    <string id="b1071_mcm_t_town_invest_ai_gold_multiplier" text="AI 金币安全倍数" />
     <string id="b1071_mcm_t_town_invest_ai_chance" text="AI 投资概率（%）" />
     <string id="b1071_mcm_t_town_invest_ai_random_tier" text="AI 随机选择档次" />
     <string id="b1071_mcm_t_town_invest_ai_hero_cooldown" text="AI 英雄冷却（天）" />
     <string id="b1071_nameplate_manpower" text="兵源" />
     <string id="b1071_nameplate_regional_manpower" text="区域兵源（{POOL}）" />
     <string id="b1071_nameplate_daily_recovery" text="每日恢复" />
-    <string id="b1071_nameplate_devastation" text="破坏度" />
+    <string id="b1071_nameplate_devastation" text="残破度" />
     <string id="b1071_nameplate_full" text="已满" />
     <string id="b1071_garrison_manpower_limit" text="Campaign++ 兵源" />
     <string id="b1071_mcm_g_ai_recovery" text="AI 恢复" />
     <string id="b1071_mcm_g_settlement_revenue" text="定居点收入" />
     <string id="b1071_mcm_t_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
-    <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点，并重建至 80%。正在执行的军队、战斗、攻城、劫掠、防御、巡逻、撤退和紧急补给任务不受影响。默认：开启。" />
+    <string id="b1071_mcm_h_ai_recovery" text="队伍规模低于上限 60% 的 AI 领主，可能会优先前往拥有老兵、城堡部队或已转化俘虏的友方定居点，并重建至 80%。正在执行的军团、战斗、攻城、劫掠、防御、巡逻、撤退和紧急补给任务不受影响。默认：开启。" />
     <string id="b1071_mcm_t_ai_recovery_priority" text="恢复优先" />
     <string id="b1071_mcm_h_ai_recovery_priority" text="开启后，符合条件且兵力不足的领主会先前往 Campaign++ 招募点，再开始新任务。正在执行的命令不受影响。关闭后，增强的定居点评分将与 Bannerlord 的其他新命令正常竞争。默认：开启。" />
     <string id="b1071_mcm_t_ai_recovery_days" text="恢复意图天数" />
@@ -1439,13 +1440,13 @@
     <string id="b1071_mcm_h_settle_tariff_curve_town" text="曲线为1时，随着贸易增长，基于贸易的收入逐渐接近上限。数值越高，削减越少，并允许持续增长。技能专长和建筑可能影响最终收入。仅在强度低于100%时生效。默认：1.00。" />
     <string id="b1071_mcm_h_settle_tariff_strength_village" text="保留正常村庄收入的最大比例。超出阈值的部分受到额外削减。100关闭村庄收入递减。默认：90。" />
     <string id="b1071_mcm_h_settle_tariff_curve_village" text="曲线为1时，基于贸易的村庄收入逐渐接近上限。较高数值允许持续增长。村庄基准为每日2,500第纳尔。仅在强度低于100%时生效。默认：1.00。" />
-    <string id="b1071_mcm_h_settle_tax_strength" text="城市能保留其平时税收的最大份额。100 表示税收完全不变。税收是三条收入线中最大的一条，所以最值得优先调整——同时也是最安全的一条，因为与关税储备不同，它受繁荣度封顶，不会自行失控。设为 60 时，繁荣度 2,000 的城市约缴纳平时税收的 54%，6,000 的约 45%，20,000 的约 32%。繁荣度在 40 及以下的城市永远不会被调整。默认：100。" />
+    <string id="b1071_mcm_h_settle_tax_strength" text="城镇能保留其平时税收的最大份额。100 表示税收完全不变。税收是三条收入线中最大的一条，所以最值得优先调整——同时也是最安全的一条，因为与关税储备不同，它受繁荣度封顶，不会自行失控。设为 60 时，繁荣度 2,000 的城镇约缴纳平时税收的 54%，6,000 的约 45%，20,000 的约 32%。繁荣度在 40 及以下的城镇永远不会被调整。默认：100。" />
     <string id="b1071_mcm_h_settle_tax_curve" text="城镇税收递减的形状。数值较低时削减均匀分布于所有应税城镇；数值较高时小城镇不受影响，而在 4000 繁荣度基准附近急剧弯折。仅当强度低于 100 时生效。默认：2.00。" />
-    <string id="b1071_mcm_t_settle_tariff_knee_town" text="城市关税起始值（第纳尔/日）" />
+    <string id="b1071_mcm_t_settle_tariff_knee_town" text="城镇关税起始值（第纳尔/日）" />
     <string id="b1071_mcm_h_settle_tariff_knee_town" text="额外削减开始生效的每日贸易基数。阈值以内的部分仍按强度比例削减。贸易增长不会降低总收入。0表示从第一个第纳尔起应用曲线。默认：2,000。" />
     <string id="b1071_mcm_t_settle_tariff_knee_village" text="村庄关税起始值（第纳尔/日）" />
     <string id="b1071_mcm_h_settle_tariff_knee_village" text="额外村庄削减开始生效的每日贸易基数。阈值以内保留强度比例。贸易增长不会降低总收入。默认：500。" />
-    <string id="b1071_mcm_t_settle_tax_knee" text="城市税收起始值（繁荣度）" />
+    <string id="b1071_mcm_t_settle_tax_knee" text="城镇税收起始值（繁荣度）" />
     <string id="b1071_mcm_h_settle_tax_knee" text="设定额外税收递减的起点。阈值以内的部分保留强度份额，只有超出部分受到额外递减。此值加在固定的 40 繁荣度下限之上，实际阈值最高为 4,000 繁荣度。设为 0 时，超过固定下限即应用曲线。默认：0。" />
     <string id="b1071_qs_name_ai_recovery" text="AI 领主寻找 Campaign++ 新兵" />
     <string id="b1071_qs_name_settlement_revenue" text="定居点收入递减" />
@@ -1467,11 +1468,11 @@
     <string id="b1071_ledger_location" text="位置" />
     <string id="b1071_ledger_risk" text="风险 / 100" />
     <string id="b1071_ledger_search_prompt" text="输入名称或物品，然后按回车。" />
-    <string id="b1071_ledger_hint_power" text="军力：各兵种的阶级平方乘以人数之和。" />
+    <string id="b1071_ledger_hint_power" text="军力：各兵种的兵阶平方乘以人数之和。" />
     <string id="b1071_ledger_hint_conditions" text="依次为忠诚度、治安和每日粮食变化。" />
     <string id="b1071_ledger_hint_estimate" text="叛乱状态是游戏中的不安状态，并不代表已发生叛乱。天数是按当前趋势估算忠诚度降至25所需的时间；未下降表示预计不会降至该阈值。" />
     <string id="b1071_ledger_hint_clan" text="政治地位 / 财富等级 / 封地数量。" />
-    <string id="b1071_ledger_hint_fill" text="兵源池充满比例。向上箭头表示正在补充。" />
+    <string id="b1071_ledger_hint_fill" text="兵池充满比例。向上箭头表示正在补充。" />
     <string id="b1071_ledger_hint_sides" text="数值顺序与第一列的势力顺序一致。" />
     <string id="b1071_ledger_hint_distance" text="距你部队的距离。横线表示位置未知。" />
     <string id="b1071_ledger_hint_type" text="结果类型和当前状态。可使用上方按钮按类型筛选。" />
@@ -1486,20 +1487,20 @@
     <string id="b1071_ledger_outlook_cap" text="约999+天" />
     <string id="b1071_ledger_urgent_threshold" text="低忠诚度 / 30天内：{COUNT}" />
     <string id="b1071_ledger_avg_peace" text="平均和平倾向" />
-    <string id="b1071_ledger_avg_exhaustion" text="平均厌战：{VALUE}/100" />
+    <string id="b1071_ledger_avg_exhaustion" text="平均疲惫：{VALUE}/100" />
     <string id="b1071_ledger_wars_truces" text="战争：{WARS}  |  停战：{TRUCES}" />
     <string id="b1071_ledger_total_deaths" text="总阵亡人数" />
-    <string id="b1071_cr_depositors" text="交存者：" />
+    <string id="b1071_cr_depositors" text="寄押人：" />
     <string id="b1071_cr_depositor_count" text="{NAME}：{COUNT}人" />
-    <string id="b1071_cr_next_depositor" text="下一名俘虏的交存者：{NAME}" />
+    <string id="b1071_cr_next_depositor" text="下一名俘虏的寄押人：{NAME}" />
     <string id="b1071_cr_next_fee" text="下一次招募费用：{COST}" />
-    <string id="b1071_cr_fee_split" text="支付城堡领主：{OWNER}金币；支付交存者：{DEPOSITOR}金币。" />
-    <string id="b1071_cr_fee_rules" text="应付给你家族的份额予以免除。若没有符合条件的独立交存者，费用归城堡领主所有。" />
-    <string id="b1071_cr_fifo_note" text="按交存顺序招募。后续俘虏的招募费用可能不同。" />
+    <string id="b1071_cr_fee_split" text="支付城堡领主：{OWNER}金币；支付寄押人：{DEPOSITOR}金币。" />
+    <string id="b1071_cr_fee_rules" text="应付给你家族的份额予以免除。若没有符合条件的独立寄押人，费用归城堡领主所有。" />
+    <string id="b1071_cr_fifo_note" text="按寄押顺序招募。后续俘虏的招募费用可能不同。" />
     <string id="b1071_cr_pending_quote" text="此报价适用于该兵种的下一名新兵，包括已就绪的俘虏。等待中的俘虏需要更多服从度；后续招募的费用可能不同。" />
     <string id="b1071_cr_unaffordable_next" text="金币不足，无法招募下一名俘虏。" />
-    <string id="b1071_cr_depositor_unrecorded" text="未记录的交存者" />
-    <string id="b1071_cr_depositor_unknown" text="未知交存者" />
+    <string id="b1071_cr_depositor_unrecorded" text="未记录的寄押人" />
+    <string id="b1071_cr_depositor_unknown" text="未知寄押人" />
     <string id="b1071_cr_depositor_you" text="你" />
     <string id="b1071_cr_depositor_deceased" text="{NAME}（已故）" />
     <string id="b1071_cr_depositor_clan" text="{NAME}（你的家族）" />
@@ -1517,10 +1518,10 @@
     <string id="b1071_ledger_summary_others" text="其他" />
     <string id="b1071_ledger_compact" text="紧凑视图" />
     <string id="b1071_ledger_close" text="关闭" />
-    <string id="b1071_ledger_fullscreen_error" text="无法以全屏模式打开账簿：{ERROR}" />
+    <string id="b1071_ledger_fullscreen_error" text="无法以全屏模式打开账目：{ERROR}" />
   <string id="b1071_cr_conformity_points" text="{POINTS} / {REQUIRED} 点" />
-  <string id="b1071_cr_conformity_help" text="城堡每天提供240点服从度，总督每点统御额外提供1.2点。尚未全部就绪的兵种共享这些点数，不应用领队专长。每招募一名俘虏都会消耗该兵种所需的点数；等级越高，所需点数越多。" />
-  <string id="b1071_cr_all_type_depositors" text="交押者（该兵种的全部俘虏）：" />
+  <string id="b1071_cr_conformity_help" text="城堡每天提供240点服从度，总督每点统御额外提供1.2点。尚未全部就绪的兵种共享这些点数，不应用领队专长。每招募一名俘虏都会消耗该兵种所需的点数；兵阶越高，所需点数越多。" />
+  <string id="b1071_cr_all_type_depositors" text="寄押人（该兵种的全部俘虏）：" />
   <string id="b1071_cr_withdraw_consigned" text="此兵种包含仍需支付招募费用的俘虏。请通过城堡招募菜单招募并支付费用。" />
   <string id="b1071_cr_withdraw_rule" text="仍需支付招募费用的兵种必须留在地牢中。请通过此菜单招募。仍可撤回在当前地牢界面中刚存入的俘虏。" />
 </strings>

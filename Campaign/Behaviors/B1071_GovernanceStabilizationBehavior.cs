@@ -31,7 +31,7 @@ namespace Byzantium1071.Campaign.Behaviors
         private Dictionary<string, float> _securityBonus = new Dictionary<string, float>();
         private Dictionary<string, float> _strainDecayBonus = new Dictionary<string, float>();
 
-        private readonly Dictionary<string, float> _heroLastStabilizationDay = new Dictionary<string, float>();
+        private Dictionary<string, float> _heroLastStabilizationDay = new Dictionary<string, float>();
 
         public override void RegisterEvents()
         {
@@ -53,6 +53,9 @@ namespace Byzantium1071.Campaign.Behaviors
 
             dataStore.SyncData("b1071_govStabDecay", ref _strainDecayBonus);
             _strainDecayBonus ??= new Dictionary<string, float>();
+
+            dataStore.SyncData("b1071_govStabHeroLastDay", ref _heroLastStabilizationDay);
+            _heroLastStabilizationDay ??= new Dictionary<string, float>();
         }
 
         public float GetActiveLoyaltyBonus(Town town)

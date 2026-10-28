@@ -184,7 +184,6 @@ namespace Byzantium1071.Campaign.UI
         internal static void Reset()
         {
             B1071_FullScreenLedger.Close();
-            B1071_PanelInjectionGuard.Reset();
             _isVisible = true;
             _isExpanded = true;
             _panelModeActive = false;
@@ -2108,7 +2107,7 @@ namespace Byzantium1071.Campaign.UI
             _header5 = L("b1071_overlay_col_relation", "Relation");
             ApplySortIndicator(new[] { 4, 2, 3, 1, 5 });
 
-            _ledgerRows.Clear();
+            BeginLedgerRows();
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 CharacterLedgerRow row = rows[i];
@@ -2121,7 +2120,7 @@ namespace Byzantium1071.Campaign.UI
                 bool even = (i - startIndex) % 2 == 0;
 
                 string nameCell = (row.IsPlayerRelated ? "> " : "") + rank + ". " + TruncateForColumn(row.HeroName, 24, out string hint);
-                _ledgerRows.Add(new B1071_LedgerRowVM(
+                PutLedgerRow(
                     nameCell,
                     TruncateForColumn(row.ClanName, 18),
                     TruncateForColumn(row.NearestSettlementName, 18),
@@ -2129,8 +2128,9 @@ namespace Byzantium1071.Campaign.UI
                     row.IsPlayerRelated,
                     even,
                     FormatRelation(row.Relation),
-                    hintText: hint));
+                    hintText: hint);
             }
+            EndLedgerRows();
 
             int knownLocationCount = 0;
             foreach (CharacterLedgerRow row in rows)
@@ -2579,13 +2579,56 @@ namespace Byzantium1071.Campaign.UI
             }
         }
 
+        // Next slot PutLedgerRow writes to during an in-place rebuild. See BeginLedgerRows.
+        private static int _ledgerRowWriteIndex;
+
+        /// <summary>
+        /// Starts an in-place rebuild of _ledgerRows. Nearby, Wars and Characters rebuild
+        /// every 2 seconds whether or not anything changed, and Clear() plus new row VMs made
+        /// Gauntlet destroy and recreate every row widget (about 20 each, up to 22 rows) on
+        /// each refresh. PutLedgerRow instead hands the new values to the row already in that
+        /// slot, whose setters notify only the cells that actually changed. Call
+        /// EndLedgerRows afterwards to drop rows left over from a longer previous page.
+        /// </summary>
+        private static void BeginLedgerRows() => _ledgerRowWriteIndex = 0;
+
+        private static void PutLedgerRow(string c1, string c2, string c3, string c4,
+            bool highlight, bool even, string c5 = "", string hintText = "")
+        {
+            int index = _ledgerRowWriteIndex++;
+            if (index >= _ledgerRows.Count)
+            {
+                _ledgerRows.Add(new B1071_LedgerRowVM(c1, c2, c3, c4, highlight, even, c5, hintText: hintText));
+                return;
+            }
+
+            B1071_LedgerRowVM existing = _ledgerRows[index];
+
+            // Current's status and diagnostics rows have a different layout that Update does
+            // not reset, so a slot holding one gets a fresh table row instead.
+            if (existing.IsDetail || existing.BeginsDiagnostics)
+            {
+                _ledgerRows.RemoveAt(index);
+                _ledgerRows.Insert(index, new B1071_LedgerRowVM(c1, c2, c3, c4, highlight, even, c5, hintText: hintText));
+                return;
+            }
+
+            existing.Update(c1, c2, c3, c4, highlight, even, c5, hintText);
+        }
+
+        private static void EndLedgerRows()
+        {
+            while (_ledgerRows.Count > _ledgerRowWriteIndex)
+                _ledgerRows.RemoveAt(_ledgerRows.Count - 1);
+        }
+
         /// <summary>
         /// Populates _ledgerRows from a slice of LedgerRow data using a cell formatter delegate.
         /// </summary>
         private static void PopulateRows(int startIndex, int endIndex, List<LedgerRow> rows,
             string playerFaction, Func<LedgerRow, int, string, (string c1, string c2, string c3, string c4, string c5, string hint)> formatter)
         {
-            _ledgerRows.Clear();
+            BeginLedgerRows();
             // The row list stacks bottom to top, so append the page in reverse order.
             for (int i = endIndex - 1; i >= startIndex; i--)
             {
@@ -2596,8 +2639,9 @@ namespace Byzantium1071.Campaign.UI
                 bool even = (i - startIndex) % 2 == 0;
 
                 var (c1, c2, c3, c4, c5, hint) = formatter(row, rank, prefix);
-                _ledgerRows.Add(new B1071_LedgerRowVM(c1, c2, c3, c4, highlight, even, c5, hintText: hint));
+                PutLedgerRow(c1, c2, c3, c4, highlight, even, c5, hintText: hint);
             }
+            EndLedgerRows();
         }
 
         private static string FormatMp(int current, int maximum)
@@ -3460,7 +3504,7 @@ namespace Byzantium1071.Campaign.UI
                 truceOverflowEnd = Math.Min(activeTruces.Count, truceOverflowStart + pageSize);
             }
 
-            _ledgerRows.Clear();
+            BeginLedgerRows();
 
             if (_pageIndex == 0 && showTruceHeaderOnFirstPage)
             {
@@ -3471,22 +3515,22 @@ namespace Byzantium1071.Campaign.UI
                     string trucePair = nameA + " / " + nameB;
                     bool involvesPlayerTruce = string.Equals(nameA, playerKingdomName, StringComparison.Ordinal) ||
                                                string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
-                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                    PutLedgerRow(
                         (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
                         "-",
                         L("b1071_overlay_truce", "Truce"),
                         new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
                         involvesPlayerTruce,
-                        false));
+                        false);
                 }
 
-                _ledgerRows.Add(new B1071_LedgerRowVM(
+                PutLedgerRow(
                     L("b1071_overlay_truces_header", "\u2014 Truces \u2014"),
                     string.Empty,
                     string.Empty,
                     string.Empty,
                     false,
-                    false));
+                    false);
             }
             else if (!isWarPage && truceOverflowEnd > truceOverflowStart)
             {
@@ -3496,22 +3540,22 @@ namespace Byzantium1071.Campaign.UI
                     string trucePair = nameA + " / " + nameB;
                     bool involvesPlayerTruce = string.Equals(nameA, playerKingdomName, StringComparison.Ordinal) ||
                                                string.Equals(nameB, playerKingdomName, StringComparison.Ordinal);
-                    _ledgerRows.Add(new B1071_LedgerRowVM(
+                    PutLedgerRow(
                         (involvesPlayerTruce ? "> " : "") + TruncateForColumn(trucePair, 26),
                         "-",
                         L("b1071_overlay_truce", "Truce"),
                         new TextObject("{=b1071_overlay_truce_days_left}{DAYS}d left").SetTextVariable("DAYS", (int)daysLeft).ToString(),
                         involvesPlayerTruce,
-                        false));
+                        false);
                 }
 
-                _ledgerRows.Add(new B1071_LedgerRowVM(
+                PutLedgerRow(
                     L("b1071_overlay_truces_header", "\u2014 Truces \u2014"),
                     string.Empty,
                     string.Empty,
                     string.Empty,
                     false,
-                    false));
+                    false);
             }
 
             for (int i = warEnd - 1; i >= warStart; i--)
@@ -3524,7 +3568,7 @@ namespace Byzantium1071.Campaign.UI
                 bool even = (i - warStart) % 2 == 0;
 
                 string nameCell = prefix + rank + ". " + TruncateForColumn(row.PairName, 26, out string hint);
-                _ledgerRows.Add(new B1071_LedgerRowVM(
+                PutLedgerRow(
                     nameCell,
                     GetExhaustionLabel(row.ExhaustionA, row.SideAId) + " / " + GetExhaustionLabel(row.ExhaustionB, row.SideBId),
                     GetPeacePressureBand(row.PeacePressure),
@@ -3532,8 +3576,9 @@ namespace Byzantium1071.Campaign.UI
                     involvesPlayer,
                     even,
                     c5: FormatTerritoryCount(row.TerritoryA, row.TerritoryB),
-                    hintText: hint));
+                    hintText: hint);
             }
+            EndLedgerRows();
 
             int maxDuration = 0;
             foreach (WarsLedgerRow r in rows)

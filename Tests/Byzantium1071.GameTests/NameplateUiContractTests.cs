@@ -168,8 +168,8 @@ namespace Byzantium1071.GameTests
         // settlement data instead of sitting below "Hold 'Alt' for more info." and the parley
         // hint. The spacer is matched by row shape - empty definition, empty value, negative
         // TextHeight - because matching the hint's wording would only work in the languages the
-        // mod ships. Vanilla uses the same spacer between sections, so only the last one is the
-        // footer and the scan has to run backwards.
+        // mod ships. Vanilla uses the same spacer between sections, so only a spacer followed by
+        // nothing but hint rows is the footer, and the scan runs backwards over those hints.
         [Fact]
         public void SectionGoesInAboveTheTrailingSpacerNotBelowTheHoldAltHint()
         {
@@ -198,8 +198,77 @@ namespace Byzantium1071.GameTests
             Assert.Equal(1, FindFooterIndex(rows));
         }
 
+        // Both hints present - "Hold 'Alt'" and the parley hint - still leave the spacer above
+        // them as the footer.
+        [Fact]
+        public void FooterSpacerIsFoundAboveBothHintRows()
+        {
+            MBBindingList<TooltipProperty> rows = new()
+            {
+                new TooltipProperty("Owner", "Clan Elaches", 0),
+                new TooltipProperty(string.Empty, string.Empty, -1),
+                new TooltipProperty(string.Empty, "Hold 'Alt' for more info.", -1),
+                new TooltipProperty(string.Empty, "Press 'Ctrl' + 'Left Click' to parley.", -1)
+            };
+
+            Assert.Equal(1, FindFooterIndex(rows));
+        }
+
+        // In 1.5.6 vanilla adds the footer only through AddTooltipHintProperties, and only when
+        // a hint applies. With the tooltip extended and no parley option the list ends in data
+        // rows, and the last spacer is a section break between vanilla blocks. Taking it would
+        // split the troop list; the section has to go at the end instead.
+        [Fact]
+        public void ExtendedTooltipWithoutFooterPutsTheSectionAtTheEnd()
+        {
+            MBBindingList<TooltipProperty> rows = new()
+            {
+                new TooltipProperty("Owner", "Clan Elaches", 0),
+                new TooltipProperty(string.Empty, string.Empty, -1),
+                new TooltipProperty(string.Empty, string.Empty, 0, false,
+                    TooltipProperty.TooltipPropertyFlags.RundownSeperator),
+                new TooltipProperty("Troops", "425", 0),
+                new TooltipProperty("Imperial Legionary", "40", 0)
+            };
+
+            Assert.Equal(rows.Count, FindFooterIndex(rows));
+        }
+
+        // A spacer that closes the list with no hint after it is still the footer, which is the
+        // older layout, when vanilla added the spacer unconditionally.
+        [Fact]
+        public void SpacerClosingTheListIsTheFooter()
+        {
+            MBBindingList<TooltipProperty> rows = new()
+            {
+                new TooltipProperty("Owner", "Clan Elaches", 0),
+                new TooltipProperty(string.Empty, string.Empty, -1)
+            };
+
+            Assert.Equal(1, FindFooterIndex(rows));
+        }
+
+        // Gauntlet invokes these through ViewModel.ExecuteCommand and the nameplate update, and
+        // the game catches nothing on either path, so an exception in the rows or the marker
+        // would crash the campaign. A behavioural test would need a live SettlementNameplateVM;
+        // this pins that each callback keeps its own catch.
+        [Theory]
+        [InlineData(nameof(B1071_SettlementNameplateVMMixin.ExecuteB1071NameplateHoverBegin))]
+        [InlineData(nameof(B1071_SettlementNameplateVMMixin.OnRefresh))]
+        public void NameplateCallbackCatchesItsOwnFailures(string methodName)
+        {
+            MethodInfo? method = typeof(B1071_SettlementNameplateVMMixin).GetMethod(
+                methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+            Assert.NotNull(method);
+
+            Assert.Contains(
+                method!.GetMethodBody()!.ExceptionHandlingClauses,
+                clause => clause.Flags == ExceptionHandlingClauseOptions.Clause &&
+                    clause.CatchType == typeof(Exception));
+        }
+
         // FindFooterIndex is private - nothing outside the refresher has any business choosing
-        // the insertion point - but the choice is exactly what the two tests above pin.
+        // the insertion point - but the choice is exactly what the footer tests above pin.
         private static int FindFooterIndex(MBBindingList<TooltipProperty> properties)
         {
             MethodInfo? method = typeof(B1071_SettlementTooltipRefresher).GetMethod(

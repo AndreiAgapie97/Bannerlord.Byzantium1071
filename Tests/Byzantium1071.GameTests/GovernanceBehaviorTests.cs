@@ -91,7 +91,7 @@ namespace Byzantium1071.GameTests
                     }
                 }
                 var snapshot = Save(resumed, resumedAid);
-                Assert.Equal(5, snapshot.Count);
+                Assert.Equal(6, snapshot.Count);
                 foreach (var pair in Save(live, liveAid))
                     Assert.Equal(pair.Value.OrderBy(e => e.Key), snapshot[pair.Key].OrderBy(e => e.Key));
                 for (int i = 0; i < places.Length; i++)

@@ -80,6 +80,8 @@ namespace Byzantium1071.Campaign.Behaviors
         private List<string>? _cleanupKeysScratch;
         private List<string> _savedExhaustionIds = new();
         private List<float> _savedExhaustionValues = new();
+        private List<string> _savedPressureBandIds = new();
+        private List<int> _savedPressureBandValues = new();
         private List<string> _savedForcedPeaceCooldownIds = new();
         private List<float> _savedForcedPeaceCooldownDays = new();
         private List<string> _savedTruceKeys = new();
@@ -155,27 +157,42 @@ namespace Byzantium1071.Campaign.Behaviors
             // War Exhaustion save/load.
             _savedExhaustionIds ??= new List<string>();
             _savedExhaustionValues ??= new List<float>();
+            _savedPressureBandIds ??= new List<string>();
+            _savedPressureBandValues ??= new List<int>();
 
             if (!dataStore.IsLoading)
             {
                 StringMapSaveData<float> saved = B1071_ManpowerSaveMath.FlattenStringMap(_warExhaustion);
                 _savedExhaustionIds = saved.Keys;
                 _savedExhaustionValues = saved.Values;
+
+                StringMapSaveData<int> savedBands = B1071_ManpowerSaveMath.FlattenPressureBands(_pressureBandByKingdom);
+                _savedPressureBandIds = savedBands.Keys;
+                _savedPressureBandValues = savedBands.Values;
             }
 
             dataStore.SyncData("B1071_WarExhaustion_Ids", ref _savedExhaustionIds);
             dataStore.SyncData("B1071_WarExhaustion_Values", ref _savedExhaustionValues);
+            // The band carries hysteresis state the exhaustion value alone cannot rebuild:
+            // a kingdom inside the hysteresis margin stays in its higher band.
+            dataStore.SyncData("B1071_PressureBand_Ids", ref _savedPressureBandIds);
+            dataStore.SyncData("B1071_PressureBand_Values", ref _savedPressureBandValues);
 
             _savedExhaustionIds ??= new List<string>();
             _savedExhaustionValues ??= new List<float>();
+            _savedPressureBandIds ??= new List<string>();
+            _savedPressureBandValues ??= new List<int>();
 
             if (dataStore.IsLoading)
             {
                 B1071_ManpowerSaveMath.ReplaceStringMap(_warExhaustion, _savedExhaustionIds, _savedExhaustionValues);
 
-                // Re-evaluate pressure bands immediately so they're correct from tick 0,
-                // before any diplomacy decisions are evaluated post-load.
-                _pressureBandByKingdom.Clear();
+                // Restore the saved bands, then re-evaluate from them immediately so they're
+                // correct from tick 0, before any diplomacy decisions are evaluated post-load.
+                // Saves made before bands were stored restore none, so those kingdoms are
+                // re-evaluated from Low.
+                B1071_ManpowerSaveMath.ReplacePressureBands(
+                    _pressureBandByKingdom, _savedPressureBandIds, _savedPressureBandValues);
                 foreach (var kvp in _warExhaustion)
                 {
                     if (kvp.Value > 0f)
