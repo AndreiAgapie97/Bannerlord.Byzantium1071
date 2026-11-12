@@ -423,11 +423,11 @@ Campaign++ uses Harmony to patch vanilla Bannerlord classes. If your submod also
 ### Fragile Patch Targets (Private/internal)
 
 Campaign++ patches these private methods. Document your dependency version:
-- `RecruitmentCampaignBehavior.ApplyInternal` (v1.5.6 verified, no nameof)
-- `RecruitmentVM.OnDone` / `RefreshScreen` / `RefreshPartyProperties` (v1.5.6 verified)
-- `DefaultClanFinanceModel.CalculateClanIncomeInternal` (v1.5.6 verified)
-- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` (v1.5.6 verified)
-- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` (v1.5.6 verified)
+- `RecruitmentCampaignBehavior.ApplyInternal` (v1.5.7 verified, no nameof)
+- `RecruitmentVM.OnDone` / `RefreshScreen` / `RefreshPartyProperties` (v1.5.7 verified)
+- `DefaultClanFinanceModel.CalculateClanIncomeInternal` (v1.5.7 verified)
+- `PartiesSellPrisonerCampaignBehavior.OnSettlementEntered` / `DailyTickSettlement` (v1.5.7 verified)
+- `InfluenceGainCampaignBehavior.OnPrisonerDonatedToSettlement` (v1.5.7 verified)
 - `GarrisonRecruitmentCampaignBehavior.TickAutoRecruitmentGarrisonChange(Town)` — prefix and postfix that charge manpower for garrison auto-recruits. Campaign++'s `DefaultSettlementGarrisonModel` patch is on the public `GetMaximumDailyAutoRecruitmentCount(Town, bool)`
 - `PrisonerReleaseCampaignBehavior.HourlyPartyTick` — prefix; see below
 

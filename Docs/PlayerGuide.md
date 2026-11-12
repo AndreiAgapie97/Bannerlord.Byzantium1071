@@ -2,7 +2,7 @@
 
 *Version 1.0.5.0 — Everything you need to know, step by step.*
 
-**Game version:** Bannerlord **v1.5.6 beta** (installed target). The Warsails (NavalDLC) expansion **v1.3.6** is supported but not required — Campaign++ works with or without it.
+**Game version:** Bannerlord **v1.5.7** (installed target). The Warsails (NavalDLC) expansion **v1.3.7** is supported but not required — Campaign++ works with or without it.
 
 **Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
 
