@@ -46,6 +46,10 @@ namespace Byzantium1071.Campaign.UI
         public int TotalCount => _totalCount;
         public int SelectedCount => _selectedCount;
 
+        // Assigned before the row is bound; quantity changes keep its stripe.
+        [DataSourceProperty]
+        public bool IsAlternateRow { get; internal set; }
+
         // ── Commands ──────────────────────────────────────────────────────────────
 
         public void ExecuteIncrement()

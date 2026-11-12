@@ -1,8 +1,8 @@
 # Campaign++ — Player Guide
 
-*Version 1.0.2.4 — Everything you need to know, step by step.*
+*Version 1.0.5.0 — Everything you need to know, step by step.*
 
-**Game version:** Bannerlord **v1.4.8**. The Warsails (NavalDLC) expansion **v1.2.8** is supported but not required — Campaign++ works with or without it.
+**Game version:** Bannerlord **v1.5.7** (installed target). The Warsails (NavalDLC) expansion **v1.3.7** is supported but not required — Campaign++ works with or without it.
 
 **Before you start**, make sure all four required mods are installed and enabled *above* Campaign++ in your load order. Campaign++ will not load if any of them is missing, and a Bannerlord update can sometimes clear them out:
 
@@ -18,6 +18,7 @@
 1. [First Launch — What Happens Automatically](#1-first-launch--what-happens-automatically)
 2. [The Overlay Ledger (Press M)](#2-the-overlay-ledger-press-m)
 3. [Manpower — The Core Resource](#3-manpower--the-core-resource)
+3A. [Settlement Intelligence Tooltips](#3a-settlement-intelligence-tooltips)
 4. [Recruiting Volunteers (Villages & Towns)](#4-recruiting-volunteers-villages--towns)
 4A. [Troop Service & Demobilization](#4a-troop-service--demobilization)
 5. [Castle Recruitment — Elite Troops & Prisoners](#5-castle-recruitment--elite-troops--prisoners)
@@ -29,6 +30,7 @@
 11. [War Exhaustion & Diplomacy](#11-war-exhaustion--diplomacy)
 12. [Army Economics](#12-army-economics)
 13. [MCM Settings](#13-mcm-settings)
+13A. [Settlement Revenue Tuning](#13a-settlement-revenue-tuning)
 14. [Clan Survival](#14-clan-survival)
 15. [Mod Compatibility Report](#15-mod-compatibility-report)
 16. [Quick Reference Cheat Sheet](#16-quick-reference-cheat-sheet)
@@ -46,7 +48,7 @@ Once the mod is installed and you start a campaign, the following happens behind
 - **Garrison wages** are discounted to 80% of field rates automatically.
 - Non-bandit minor factions receive a "**Frontier Revenue**" stipend so they don't go bankrupt.
 - AI lords will automatically deposit prisoners at castles they visit.
-- UI/localized strings follow your game language automatically (**English + Simplified Chinese + French + German** included).
+- UI/localized strings follow your game language automatically (**English + Simplified Chinese + French + German + Korean** included).
 - If upgrading from a previous version, a **green notification** confirms that balance settings have been auto-migrated to the latest defaults. Your non-balance settings (pool sizes, toggles, etc.) are preserved.
 
 You don't need to press anything. Just start playing.
@@ -60,6 +62,8 @@ You don't need to press anything. Just start playing.
 | Action | What Happens |
 |--------|--------------|
 | **Press M** on the campaign map | Toggles the overlay on/off |
+| **Full Screen / Compact** | Switch between the larger ledger and the small overlay, keeping the current tab, sorting and submitted search |
+| **Close** | Close either size of ledger; Escape also closes full-screen mode |
 
 > The hotkey is configurable in MCM: M (default), N, K, F9, F10, F11, or F12.
 
@@ -77,25 +81,30 @@ Once the overlay is open, you'll see **tab buttons** along the top. Click any ta
 | 6 | **Factions** | Kingdom-level view — Faction \| Ruler \| Treasury \| Manpower \| Prosperity |
 | 7 | **Armies** | Active armies — power rating, troop count, kingdom exhaustion |
 | 8 | **Wars** | Active wars — exhaustion levels, peace pressure, territory counts (e.g., "9 vs 15") |
-| 9 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
-| 10 | **Prisoners** | Captured nobles — who captured them, where they're held |
-| 11 | **Clans** | Clan loyalty/instability within kingdoms |
-| 12 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
-| 13 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
-| 14 | **Casualties** | Cumulative battlefield deaths by kingdom pair since the feature became active — compare who has bled most across the campaign |
+| 9 | **Casualties** | Cumulative battlefield deaths by kingdom pair since the feature became active — compare who has bled most across the campaign |
+| 10 | **Rebellion** | Settlements at risk of revolt — risk score, loyalty, time-to-rebellion, culture mismatch |
+| 11 | **Prisoners** | Captured nobles — who captured them, where they're held |
+| 12 | **Clans** | Clan loyalty/instability within kingdoms |
+| 13 | **Characters** | All living characters — location, distance, relation symbol (♥ ▲ ● ▼ †) |
+| 14 | **Search** | Free-text search across settlements, heroes, clans, and **trade good / food prices** at every town |
 
 ### Overlay Controls
 
 | Control | What It Does |
 |---------|--------------|
 | **Click a column header** | Sorts the table by that column (click again to reverse) |
-| **◀ / ▶ arrows** | Page through rows (default 9 rows per page, adjustable in MCM) |
-| **← / → arrow keys** | Cycle between tabs (wraps around; disabled on Search tab to allow text editing) |
-| **Hover a truncated cell** | Shows full text in a tooltip |
-| **Type in Search tab** | Filters settlements, heroes, clans, and market prices by your search text. Try typing a trade good name (e.g., "Grain", "Slaves") to compare prices across all towns |
+| **◀ / ▶ arrows** | Page through rows. Compact mode defaults to 9 rows per page (adjustable in MCM); full-screen mode fits more rows to your screen and UI scale, typically 28, or 27 on Search. Unavailable arrows are dimmed; the footer shows your page and entry range. |
+| **← / → arrow keys** | Cycle through the visible tabs from left to right (wraps around; disabled on Search tab to allow text editing) |
+| **Hover a row or totals** | Shows all five values in full. Hover a column heading for its explanation. |
+| **Search, then Enter or Search button** | Submit a name or trade good (e.g., "Grain", "Slaves"). Editing the text keeps the previous results visible until you submit. |
+| **All / Heroes / Places / Armies / Markets / Other** | Narrow submitted results by category. Other includes clans and kingdoms. Clear resets the query and category. |
 | **Left-click a settlement on the map** | Updates the "Current" tab with that settlement's details |
 
-> **Visual cues:** Alternating rows have subtle zebra striping. Rows belonging to your faction are highlighted in gold.
+> **Visual cues:** Alternating rows have subtle zebra striping. Rows belonging to your faction are highlighted in gold. The active tab and sorted column also use gold text. Columns adapt to each ledger; numerical columns align to the right.
+
+Search results are a snapshot from the last submitted search or daily refresh. Submit again to refresh prices and positions immediately. Changing category, sorting, or paging keeps your submitted query. An empty category is distinguished from a search with no matches. The ledger keeps its existing width, position settings, and row density.
+
+Current shows the selected settlement first, followed by recovery information and any enabled diagnostics in separate, wider detail rows. Mixed totals have their own labeled summary line. Rebellion outlook distinguishes rebellious conditions, low loyalty, and an approximate time until loyalty falls to 25. It does not predict the day a revolt will happen; No decline means the current loyalty trend projects no crossing. Wars keep truces in a separate section; exhaustion and casualty values follow the faction order in the first column. Unknown character distances remain a dash, rather than zero.
 
 ---
 
@@ -112,7 +121,7 @@ Every town and castle has a **manpower pool**. This is the population available 
 | **Castle elite troop regeneration** | 1 MP per elite troop generated |
 | **Village raids (enemy)** | Drains 15% of bound settlement's pool |
 | **Sieges** | Sets pool to 10–70% of max depending on aftermath choice |
-| **Battles** | Each casualty drains 0.5 MP from their home pool |
+| **Battles** | None by default. Raise **Battle casualty drain multiplier** (MCM → War Effects) to make each casualty drain MP from their home pool |
 | **Settlement conquest** | Retains only 50% of the current pool |
 
 > **Tavern mercenaries are free of manpower.** Hiring mercenaries in a tavern costs no manpower and is never blocked by an empty pool — they are wandering soldiers, not local levies. (Before v1.0.2.4 they were gated, which made the hire silently do nothing once a town's pool ran dry.)
@@ -130,12 +139,24 @@ Pools regenerate **daily**, scaled by:
 - **Slaves in town market** (each slave adds construction/prosperity bonuses; excess above cap are manumitted into MP)
 - **Castle minimum floor** — castles always regen at least 1/day (peasant levies from bound villages)
 - **Castle supply chain** — castle regen above the local trickle floor (1/day) is **transferred from the nearest same-faction town**, not created from nothing. If the supply town is depleted, the castle starves. **Raiding a town starves its dependent castles.**
+- **Castles in a kingdom with no town** — if your kingdom owns no town anywhere, its castles are cut off from the supply chain. They raise men from their own villages instead, and recover **4 a day** rather than the 1 a day a supplied castle falls back on. That refills a typical castle in under two months instead of most of a year, which is what makes declaring independence with a single castle survivable. It goes back to normal the moment you take a town, and kingdoms that already hold towns are unaffected.
 - **Depleted emergency regen** — settlements below 15% fill get a bonus up to +2/day at 0%, scaling down to +0 at 15%. Devastated frontiers recover slowly — historically, post-Manzikert eastern Anatolia took decades.
 
 ### How to Check Manpower
 
 - **Press M** → go to the **Nearby**, **Castles**, or **Towns** tab to see MP values at a glance.
 - **Click any settlement on the map** → the **Current** tab shows a full breakdown of that settlement's manpower pool, regen rate, and all modifiers.
+
+## 3A. Settlement Intelligence Tooltips
+
+When **Enable settlement tooltips** is on in MCM → **Tooltips** (on by default), hover a visible town, castle, or village on the campaign map. The same lines appear in two places: the small nameplate tooltip, and a **Campaign++** section in the game's own full settlement panel, below the garrison and prisoner lines. When the game shows hints at the bottom, such as **Hold 'Alt' for more info.**, the section sits just above them; otherwise, for example while you hold Alt, it is the last block in the panel.
+
+- **Towns** show current/max manpower, daily recovery, and the average devastation of their bound villages.
+- **Castles** show current/max manpower and average bound-village devastation. A castle's recovery line is omitted because castles may draw their real recovery from a town whose pool can be depleted.
+- **Villages** show the shared regional pool with the name of the town or castle it belongs to, plus that village's exact devastation. Multiple villages bound to one settlement therefore show the same regional pool by design.
+- A small red marker appears above a nameplate when its relevant devastation reaches 50 or more. It is only a glance cue; hover the nameplate for the number.
+
+Both tooltips are live when opened, so recruitment, casualties, raids, recovery, and loading a save are reflected without waiting for a separate ledger refresh. Turning the setting off hides both tooltips and the marker.
 
 ### What Happens When Manpower Runs Out
 
@@ -169,12 +190,20 @@ Recruitment works exactly like vanilla, **but now it's gated by manpower and set
 - **Recruit All and Done are still checked too.** The button/path gates remain as a defensive fallback if another mod injects an over-cap troop into the screen.
 - **Castle recruitment is separate.** Castle elite recruitment is not affected by these volunteer-board caps.
 - **Matching culture gives a 25% manpower discount** (a recruit from a matching-culture settlement costs 0.75 MP instead of 1).
+- **You cannot recruit in a kingdom you are at war with.** Their villages give you nothing. Their towns and castles you could never enter anyway.
+- **Recruiting in another kingdom at peace costs extra gold** — you are outbidding the local lord. Roughly double for ordinary recruits by default, less for elite troops. The manpower cost is the same as anywhere else.
+- **Both rules only apply once you have a kingdom or a fief.** A clan with neither recruits anywhere, so the early game is untouched. Swear to a kingdom as a vassal or a mercenary and that kingdom becomes your realm — everywhere else is foreign, even before you are granted a fief.
+- **Enemy lords play by the same rules.**
 
 ---
 
 ## 4A. Troop Service & Demobilization
 
+Troop service is **off by default**. Turn on **Enable troop demobilization** in MCM → Troop Service, or **Troop Service** in Quick Settings.
+
 Field troops now have a service life. After enough Bannerlord days in the field, some soldiers finish their term and leave the party gradually instead of serving forever.
+
+They do not vanish. A soldier who finishes his term walks back to the settlement that raised him, adds his manpower to its pool, and waits there on that settlement's **veteran register** — where you can hire him back at the tier he reached.
 
 ### What Counts
 
@@ -185,19 +214,67 @@ Field troops now have a service life. After enough Bannerlord days in the field,
 ### How to Read It
 
 - Press the configured **Troop Service hotkey** on the campaign map (default: F9) to open the service screen.
-- The screen shows each tracked soldier, how long he has served, how many days remain, and the gold cost to extend him.
+- The screen shows one line per group of men, **Service Days**, days remaining, and the gold cost to extend each man. Service Days is the counter for the current term: extensions and promotion credits reduce it. It is neither biological age nor total lifetime service; hover its heading for the explanation.
+- Men of the same troop who came from the same place and joined on the same day share a line, so a line can hold one man or fifty. The **Men** column tells you how many.
+- **Click a button for one man, Shift+click for five, Ctrl+click for the whole line.** This works on both **Extend** and **Send Home**.
+- The **Status** column is coloured: green still serving, amber close to leaving, red overdue.
 - When soldiers are close to leaving, the game can show a daily warning message and, by default, a popup with an **Open Service** button when the earliest soldier reaches the 14-day warning lead or day 0.
 
 ### How to Manage It
 
-- Pay to extend a specific soldier if you need him for the next campaign season. Each soldier can only be extended once.
-- AI lord field parties can also pay for one-time extensions, using the same cost formula, if the lord has enough spare gold. Garrisons and militia never use this system.
+- Pay to extend a specific soldier if you need him for the next campaign season. Each soldier can be extended up to **3 times** by default, and every extension costs 50% more than the one before.
+- AI lord field parties extend their own men on the same rules and the same prices, if the lord has spare gold. Garrisons and militia never use this system.
 - Use the MCM preset to choose Light, Moderate, Harsh, or Custom service lengths.
-- One Bannerlord year is about 84 days, so a 45-day service term is a little over half a year in game time.
+- One Bannerlord year is about 84 days. Under the default Moderate preset a tier 1 recruit serves 42 days — half a year — and a tier 6 veteran serves 252 days, or three years.
 - Moving troops between field parties or briefly parking them outside the party no longer resets their service age; short transfers keep the original service record.
 - Newly recruited castle elites and converted prisoners start with age 0 when they join a field party.
 - Promoting a soldier gives him a small service grace period by default, reducing his service age by 5 days without resetting him to age 0.
-- The default balance is conservative: 14-day warnings, 15% daily troop-type departure cap, 10 maximum departures per party per day, and season/crisis pressure disabled unless you enable those realism toggles in MCM.
+- The default balance is conservative: warnings every 3 days, an 8% daily troop-type departure cap, 5 maximum departures per party per day, and season/crisis pressure disabled unless you enable those realism toggles in MCM.
+
+### Sending Soldiers Home Early
+
+You do not have to wait for a term to run out. When a war ends and you want to shrink your army, open **Troop service** from any settlement menu and use the **Send Home** button on any line. Click for one man, Shift+click for five, Ctrl+click for the whole line.
+
+- **It costs nothing.** The men go to the same home settlement, hand back the same manpower, and wait on the same veteran register as if they had served their full term. You can hire them back later at the tier they reached.
+- **Release as many as you like in a day.** The daily departure limits only apply to men leaving on their own; they never hold up a decision you made yourself.
+- **Not during a battle or siege.** Finish the fight first.
+- **It asks before it empties a big line.** Above ten men you get a yes-or-no first. Smaller numbers go on one click.
+- If you have lowered **Manpower returned %** in the settings, some men will not survive the road. The message tells you how many reached the register.
+- This is always better than dismissing troops in the ordinary party screen. Men dismissed that way are simply gone, and the manpower spent raising them is lost.
+
+### Calling Veterans Back
+
+1. **Enter any town, castle or village** you are not at war with. By default you may recall only batches last employed by your clan.
+2. In the settlement menu, look for **Veteran register (X at home)**. The number is how many discharged soldiers are waiting there. Away from your own realm it reads **(X of your men here)** instead — see below.
+3. **Click it** to open the register. Each line shows the troop, its tier, how many are at home, how many days before they disperse, and what each man costs.
+4. **Click Recall for one man, Shift+click for five, Ctrl+click for the whole line.** You pay the men a bounty in gold to take up arms again, and they cost the settlement's manpower exactly as fresh recruits would. The bounty is the same whether or not the settlement is yours — the money goes to the soldiers, not to its lord.
+5. A recalled veteran rejoins at the tier he was trained to, and his service term starts over from day one.
+
+### Calling Them From Across the Map
+
+You do not have to ride to every fief that owes you men.
+
+- Press the configured **Veteran register hotkey** on the campaign map (default: **F8**) to see every register you may draw from, all in one list. Each line names the settlement it belongs to.
+- **Recall works the same way from here**, but the men are not standing in front of you, so an **Arrives In** column tells you how long they will take.
+- **Nothing is instant.** A rider has to carry your order to the settlement first, and only then do the men set out. They march to wherever you are at the time, so they follow you if you move on.
+- **You pay when the order goes out**, not when the men turn up. Both the gold and the settlement's manpower are taken straight away.
+- **Orders on the road are listed under the register**, with where they came from and how far along they are. **Call Off** stands them down: the men go back on their register and the manpower is returned, but the gold is not.
+- **They wait if they cannot join.** If you are in a battle or your party is full when they catch up, they stay alongside and fall in as soon as there is room.
+- **A full party is counted honestly.** Men already on the road count against your party limit, so you cannot order in more than you can hold.
+- **Raids only catch the ones still at home.** Men whose orders have already reached them are on the road and out of reach.
+- **You can switch it off.** Turn off **Allow recall from a distance** in MCM and you must ride to the settlement in person, as before.
+
+Things worth knowing:
+
+- **A man rests before he will serve again.** For his first week at home — 7 days by default — he is on the register but nobody may hire him, you or an AI lord. The line shows him and tells you how many days are left. Set **Days at home before recall** to 0 in MCM if you would rather call a man back the day you released him.
+- **Veterans do not wait forever.** They drift back to civilian life about a year after discharge — 84 days by default.
+- **Raids and conquest scatter them.** If a settlement is raided, or changes kingdom, roughly half its register is lost.
+- **Veterans belong to their latest employer.** You can always collect batches last employed by your clan from any non-hostile settlement. If another lord re-enlists a veteran, that veteran belongs to the hiring clan for the next term; his original home is still remembered.
+- **Cross-clan recruitment is off by default.** With **Allow cross-clan veteran recruitment** off, no clan — player or AI — can recruit batches last employed by another clan. This protects your veterans and gives AI clans exactly the same protection.
+- **You can make the register market open by choice.** Turn on **Allow cross-clan veteran recruitment** and **Recall access restriction** decides who may hire other employers' veterans: only the owning clan, the owner's kingdom, or any non-hostile lord. War with the owner closes the register to everyone. On foreign ground the register shows only the batches your clan may take.
+- **AI lords use the same rules.** A lord who walks into a settlement hires only the batches he is entitled to, at the same price you would pay, and never detours to hunt for them. Turn off **AI lords hire veterans** in MCM if you would rather they did not.
+- **Recruit troops abroad and you can still get them back.** Prisoners you converted at a foreign castle, or elites you hired there, go home to that castle when their term ends. Walk back in while you are at peace and they are waiting for you.
+- **The whole feature can be switched off.** Turn off **Discharged soldiers return home** in MCM and discharged soldiers simply disperse, as they did before.
 
 ---
 
@@ -212,10 +289,12 @@ Castles now have their own recruitment system with **three sources of troops**.
 3. In the castle menu, look for: **🏰 Recruit troops (X available, Y pending)**
 4. **Click it** to open the castle recruitment screen.
 5. You'll see two types of troops:
-   - **Elite pool troops** — culture-matching troops generated daily from the castle's manpower. By default T4–T6; with **Diversified Pool** enabled, also includes T2 levy, T2 noble, and T3–T4 troops.
-   - **Converted prisoners** — T4+ prisoners that have finished their holding period.
+   - **Elite pool troops** — culture-matching troops generated daily from the castle's manpower. By default **Enable diversified castle pool** is on, so the pool mixes T2 levy, T2 noble, T3–T4 and T5+ troops; with it off, only T4–T6.
+   - **Converted prisoners** — prisoners above the enslavement tier cap with enough conformity to recruit.
 6. **Click individual troops to recruit them.** Each has a gold cost.
 7. **"Recruit All" buttons** — each section (Elite and Ready) has a "Recruit All" button that recruits all available troops of that type in one click.
+
+The recruitment window is taller and fits to your screen height. The levy, ready-prisoner and waiting-prisoner lists each have more space and scroll independently when needed. Whole rows fit above the bottom frame; the number visible depends on your UI scale.
 
 ### Troop Costs
 
@@ -239,22 +318,27 @@ Castles now have their own recruitment system with **three sources of troops**.
 | Both (your castle + your prisoner) | **Free** |
 | Otherwise | Full price |
 
-### Prisoner Holding Periods
+These rules are for converted prisoners. Elite pool troops cost your clan half price at a castle your clan owns, and that gold is spent rather than paid back to you.
 
-Prisoners don't convert instantly. They must be held:
-- **T4**: 10 days
-- **T5**: 21 days
-- **T6+**: 35 days
+### Gradual Prisoner Recruitment
 
-The menu shows pending prisoners with their progress. Check back later when they're ready.
+Each castle shares **240 conformity points per day**, plus **1.2 per point of its governor's Leadership**, between prisoner troop types that are not fully ready. No governor gives the base rate; party-leader perks do not apply. More prisoners do not increase the castle's budget.
+
+Each recruit needs the game's level-based conformity requirement: normally `(level + 6)² − 10`. Higher-level troops need more points. The castle distributes points in a fixed rotation, carries fractions into later days, and stops accumulating when everyone is ready. Recruiting a prisoner spends that prisoner's points. New arrivals increase the prisoner count without receiving a stack-wide ready flag.
+
+The menu can show the same troop type in both **Ready** and **Awaiting Recruitment**. Ready counts are the number you can actually recruit. The pending **Conformity** column shows points toward the next recruit, not a promised number of days. Pending ownership tooltips describe all prisoners of that type and quote the next recruit in deposit order. Player recruitment, AI recruitment, and garrison absorption all consume the same progress. Existing gold fees and clan waivers still apply.
+
+**Existing saves:** Prisoners already ready under the old timer remain ready. An unfinished timer becomes proportional progress toward one recruit; existing native conformity is retained if greater. This migration happens once. The old T4/T5/T6 wait settings remain under **Legacy** solely for interpreting old timers; they no longer set conversion speed.
+
+**Moving prisoners:** AI lords carry existing recruitment progress into the castle when depositing prisoners. A partial deposit keeps ready prisoners with the lord first. If any prisoners of a troop type still have recruitment fees owed, that type cannot be taken straight out of the dungeon: use **Castle Recruitment** to recruit them and settle the fees. This also applies to a type containing both your prisoners and another lord's prisoners. Types with no fees remain transferable, and you can still undo deposits made in the currently open dungeon screen.
 
 ### Neutral Castle Access
 
-By default, the mod **removes the vanilla bribe/clan-tier restriction** for entering neutral castles. You can walk right in and recruit. This can be turned off in MCM (`Open castle access`).
+By default, the mod **removes the vanilla bribe/clan-tier restriction** for entering neutral castles. You can walk right in and recruit. This can be turned off in MCM (`Open castle access (early game)`).
 
 ### Access Restriction (New)
 
-The `Castle recruitment access` MCM setting controls who can recruit from a castle:
+The `Recruitment access restriction` setting in MCM → Castle Recruitment controls who can recruit from a castle:
 
 | Value | Who Can Recruit |
 |-------|----------------|
@@ -263,6 +347,14 @@ The `Castle recruitment access` MCM setting controls who can recruit from a cast
 | 2 — Clan + ruler | Only lords in the castle owner's clan or the ruling clan of the owner's kingdom |
 
 This applies identically to **player and AI**. AI lords that fail the restriction check skip castle recruitment entirely.
+
+### AI Lords at Your Castles (New)
+
+AI lords recruit from castles on the same terms you do.
+
+- **They recruit as soon as they arrive.** Veterans are hired first, followed by castle elites and then converted prisoners. The daily castle check remains as a backup.
+- **Your clan pays half price for castle levy troops, including at your own castle.** This is a recruitment expense: the gold is spent, rather than paid back to you or another member of your clan. Visiting lords from other clans still pay full price to the castle owner.
+- **Lords keep money back for wages.** A lord will not empty his treasury on castle troops any more, so expect visiting lords to leave the expensive elites behind unless they are genuinely wealthy. `AI recruitment treasury buffer` in MCM controls how much they hold in reserve; set it to 1 for the old behaviour.
 
 ### Diversified Pool (New)
 
@@ -344,9 +436,9 @@ Invest gold in friendly villages to boost their hearth growth, improve relations
 
 | Tier | Cost | Duration | Hearth/day | Relation | Influence | Power |
 |------|------|----------|-----------|----------|-----------|-------|
-| Modest gift | 2,000d | 20 days | +0.3 | +3 per notable | +0.5 | +5 per notable |
-| Generous patronage | 5,000d | 30 days | +0.6 | +6 per notable | +1.0 | +10 per notable |
-| Grand investment | 12,000d | 45 days | +1.0 | +10 per notable | +2.0 | +20 per notable |
+| Modest gift | 2,000d | 20 days | +0.3 | +3 per notable | +2.5 | +5 per notable |
+| Generous patronage | 5,000d | 30 days | +0.6 | +6 per notable | +5.0 | +10 per notable |
+| Grand investment | 12,000d | 45 days | +1.0 | +10 per notable | +10.0 | +20 per notable |
 
 ### Key Rules
 
@@ -380,9 +472,9 @@ Invest gold in friendly towns to boost their prosperity growth, improve relation
 
 | Tier | Cost | Duration | Prosperity/day | Relation | Influence | Power |
 |------|------|----------|---------------|----------|-----------|-------|
-| Modest gift | 5,000d | 20 days | +0.5 | +3 per notable | +2.0 | +5 per notable |
-| Generous patronage | 15,000d | 40 days | +1.0 | +6 per notable | +5.0 | +10 per notable |
-| Grand investment | 40,000d | 60 days | +2.0 | +10 per notable | +10.0 | +20 per notable |
+| Modest gift | 5,000d | 20 days | +0.5 | +3 per notable | +10.0 | +5 per notable |
+| Generous patronage | 15,000d | 40 days | +1.0 | +6 per notable | +25.0 | +10 per notable |
+| Grand investment | 40,000d | 60 days | +2.0 | +10 per notable | +50.0 | +20 per notable |
 
 ### Key Rules
 
@@ -420,21 +512,32 @@ There are **three ways** to acquire slaves:
 3. In the town menu, look for: **⛓ Enslave prisoners (X T1–3 eligible)**
 4. **Click it** to enter the slave trade submenu.
 5. Click **"Enslave prisoners"** — by default this converts all your non-hero prisoners at **Tier 3 or below** into Slave trade goods (1:1). Heroes and T4+ prisoners are never enslaved.
-   - **Selection UI (new):** If `Enable slave conversion selection` is ON in MCM → Slave Economy, clicking enslave opens a **selection screen** where you pick exactly which prisoners to convert (useful with mods like Lowborn that add valuable low-tier troops). Use +/− buttons or Select All / Deselect All.
+   - **Selection UI (new):** If `Enable slave conversion selection UI` is ON (the default) in MCM → Slave Economy, clicking enslave opens a **selection screen** where you pick exactly which prisoners to convert (useful with mods like Lowborn that add valuable low-tier troops). Use +/− buttons or Select All / Deselect All.
+   - The prisoner window stays compact for short lists and scrolls for longer ones. Framed buttons control quantities and confirmation. Smaller action buttons have slightly wider faces and subdued borders that brighten on hover; the confirmation keeps its stronger frame. The prisoner selector and management menus share dark headers and metal frames. Management headers separate resource summaries from section labels and notices. Management menus retain their existing layout; the ledger uses gold text for the active tab and sorted column.
 6. A gold notification confirms: *"⛓ Enslaved X T1–3 prisoners. Slave goods in inventory: Y. Open the Trade screen to sell them to the market."* By default, the action also grants **Roguery XP matching vanilla prisoner sales**.
 
-> **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they become elite recruits after a waiting period) or ransom them at the town tavern.
+> **What happens to T4+ prisoners?** They stay in your prison roster. Take them to a castle for recruitment conversion (they gradually become eligible recruits by earning conformity) or ransom them at the town tavern.
 
 > **Tip:** The menu clearly shows how many prisoners are eligible (T1–3) and how many T4+ are kept. If you only have T4+ prisoners, the option appears greyed out with a tooltip explaining why.
 
 #### Method 3: Automatic (AI Lords)
-When AI lords enter a town, their T1–3 prisoners are automatically enslaved into the town market as slave goods via a Harmony Prefix that runs before vanilla's prisoner sell handler. The town pays the lord the current slave market price for each enslaved prisoner (gold is deducted from town treasury). If the town runs out of gold, remaining prisoners fall through to vanilla sell behavior. T4+ prisoners are left for vanilla behavior (ransomed at the tavern) or deposited at castles for recruitment conversion. This happens in the background — you'll see the slave count in town markets growing over time. The tier cap is the same for both player and AI (`CastlePrisonerAutoEnslaveTierMax` MCM setting, default 3), and the same Roguery XP rules apply there too.
+When AI lords enter a town, their T1–3 prisoners are automatically enslaved into the town market as slave goods before the game's normal prisoner sale runs. The town pays the lord the current slave market price for each enslaved prisoner (gold is deducted from town treasury). If the town runs out of gold, remaining prisoners fall through to vanilla sell behavior. T4+ prisoners are left for vanilla behavior (ransomed at the tavern) or deposited at castles for recruitment conversion. This happens in the background — you'll see the slave count in town markets growing over time. The tier cap is the same for both player and AI (**Auto-enslave tier max** in MCM → Castle Recruitment, default 3), and the same Roguery XP rules apply there too.
 
 ### How to Sell Slaves
 
 1. After enslaving prisoners, **Slave goods appear in your inventory** like any trade item.
 2. **Open the Trade screen** at any town (the normal trade button).
 3. **Sell the Slave goods** to the town market at market price.
+
+### Carrying and Storing Slaves
+
+Slaves remain trade goods, but carrying them now uses **one prisoner slot per slave**. The party's displayed prisoner limit shows the space left for ordinary prisoners; its tooltip lists the slots occupied by slaves. In the normal party screen, the limit and warning update when you transfer troops or undo a transfer. The prisoner-capacity warning also appears when slaves alone exceed capacity, even if you have no ordinary prisoners. Converting prisoners does not free shared capacity. Buying, looting or transferring slaves can exceed that capacity, just like taking too many prisoners: hourly escape checks then affect both slave goods and ordinary prisoners. Slave escapes produce a message for your party.
+
+Carried slaves also slow land travel through their escort burden, in addition to their existing cargo weight. Attached parties contribute to the army's escort burden.
+
+Caravans, including your own, are not affected: they carry slaves as ordinary trade goods, without using prisoner slots, slowing down or losing slaves to escapes.
+
+The existing **Food consumption per slave per day** setting now covers food-consuming parties and town/castle stashes as well as town markets. At the default **0.05**, 100 slaves consume **5 food/day**. Carried slaves eat party supplies, with normal party food perks and sea-travel modifiers applied to their rations. Stashed slaves draw from settlement food stocks and provide no construction or prosperity bonus. Vanilla food exemptions for caravans, bandits, villagers, garrisons, militia and patrols remain unchanged. Setting food upkeep to zero does not remove escort or capacity costs.
 
 ### Town Bonuses from Slaves
 
@@ -444,7 +547,7 @@ While Slave goods remain in a town's market, the town gets **daily bonuses**:
 |-------|----------------------|
 | Prosperity | +0.01 |
 | Construction speed | +0.75 progress |
-| Food drain | -0.075 food |
+| Food drain | -0.05 food |
 
 Slaves also **decay at 1%/day** — they don’t last forever. A town with 100 slaves loses ~1 slave per day.
 
@@ -473,7 +576,7 @@ Each town has a **slave cap** based on prosperity: `max(10, prosperity × 0.02)`
 |-------|-------------------|
 | **Your village is raided** | -15% of bound settlement's MP pool (capped at 20%/day) |
 | **Your castle/town is besieged** | After siege: pool set to 10% (Devastate), 40% (Pillage), or 70% (Show Mercy) |
-| **Your troops die in battle** | Each casualty drains 0.5 MP from their home settlement |
+| **Your troops die in battle** | No drain by default; with **Battle casualty drain multiplier** above 0, each casualty drains MP from their home settlement |
 | **You lose a settlement** | New owner keeps only 50% of the current pool (depleted castles below 25% keep up to 85% — conquest protection) |
 
 ### Frontier Devastation
@@ -520,33 +623,34 @@ Every kingdom accumulates **war exhaustion** (0–100) from fighting:
 
 | Event | Exhaustion Gained |
 |-------|-------------------|
-| Battle casualties | +0.001 per casualty |
+| Battle casualties | None by default (see below) |
 | Village raid (your village raided) | +2.0 |
 | Siege aftermath (defender) | +5.0 |
 | Siege aftermath (attacker) | +3.0 |
 | Settlement conquered | +4.0 |
-| Noble captured | +5.0 |
+| Noble captured | +3.0 |
 
-Exhaustion **decays at 0.65/day** naturally. Recovery from 100→0 takes ~154 days (~1.8 in-game years).
+**Battles add no exhaustion with the default settings.** Battle effects only run when **Battle casualty drain multiplier** (MCM → War Effects) is above 0, and its default is 0. Raise it to turn on both the manpower drain and battle exhaustion (+0.001 per casualty, and only in battles against another kingdom).
+
+Exhaustion **decays at 1.0/day** naturally. Recovery from 100→0 takes 100 days (~1.2 in-game years).
 
 ### What Exhaustion Does
 
 | Exhaustion Level | Effect |
 |-----------------|--------|
 | **35+ (Rising)** | AI increasingly pressured toward peace; moderate war declaration penalties |
-| **65+ (Crisis)** | AI strongly pushed toward peace; new war declarations blocked |
-| **80+** | **Forced peace triggered** — the mod auto-ends the most diplomatically favorable war |
+| **85+ (Crisis)** | AI strongly pushed toward peace; new war declarations blocked, and allies can't call the kingdom into their wars. **Forced peace** can trigger — the mod auto-ends the most diplomatically favorable war |
 
-The system uses **pressure bands** (Low → Rising → Crisis) with hysteresis to prevent oscillation when exhaustion hovers near a boundary.
+The system uses **pressure bands** (Low → Rising → Crisis) with hysteresis to prevent oscillation when exhaustion hovers near a boundary: a kingdom enters Crisis at 85 and stays there until exhaustion falls below 80. Each kingdom's band is kept in your save, so loading a game never moves a kingdom out of Crisis.
 
-Multi-front wars still accelerate collapse: each extra war beyond 2 reduces the forced-peace threshold by 5 (80→75→70).
+Multi-front wars still accelerate collapse: from a kingdom's second war on, each war adds extra peace pressure to council votes.
 
 Forced peace has safety rails:
 - Minimum 40 days into a war before it can be force-ended.
 - 10-day cooldown between forced peaces for the same kingdom.
 - Won't fire if an enemy is actively besieging one of your core settlements.
 - Won't fire against a faction your kingdom is actively besieging — sieges are completed before peace is forced.
-- 30-day truce enforced after any peace (no instant re-declarations).
+- 30-day truce enforced after any peace (no instant re-declarations, and an ally can't call either kingdom back into that war).
 
 If a kingdom is in a true multi-front collapse, those rails can loosen slightly instead of breaking entirely:
 - By default, the minimum war age can drop from 40 days to 15 days.
@@ -559,7 +663,7 @@ If a kingdom is in a true multi-front collapse, those rails can loosen slightly 
 
 ### Does This Affect the Player?
 
-**Yes, by default.** `DiplomacyEnforcePlayerParity` is ON, meaning forced peace applies to your kingdom too — full AI parity. If you want to exempt yourself, disable it in MCM.
+**Yes, by default.** **Enforce player parity** is ON, meaning forced peace applies to your kingdom too — full AI parity. If you want to exempt yourself, disable it in MCM.
 
 ### How to Monitor Exhaustion
 
@@ -583,20 +687,59 @@ The mod makes higher-tier troops significantly more expensive:
 
 Default preset is **Moderate** for hire and upgrade costs, and **Severe** for daily wages.
 
-### Tier Survivability
+### Recruiting Outside Your Own Kingdom
 
-Higher-tier troops are more likely to **survive autoresolve battles** as wounded instead of killed:
+Once you belong to a kingdom or own a fief, recruiting in a settlement your realm does not own costs extra gold — you are outbidding the local lord for men who owe him service and owe you nothing.
 
-| Tier | Survival Bonus | Damage Reduction |
-|------|---------------|-----------------|
-| T1 | +0% | 0% |
-| T2 | +0% | 0% |
-| T3 | +5% | -6% |
-| T4 | +10% | -12% |
-| T5 | +15% | -18% |
-| T6 | +20% | -24% |
+The premium is added to the troop's **base** price, and Campaign++ is already charging well above that through the hire and upgrade preset. Both land on the same bill, so at the default settings you pay:
 
-This means your expensive elite troops are **less likely to die** in autoresolve — they're worth the investment.
+| Troop | At home | Abroad |
+|---|---|---|
+| Village recruit (T1) | 11g | 21g |
+| T2 | 65g | 115g |
+| T3 | 175g | 275g |
+| T5 | 1400g | 1800g |
+| T6 | 3000g | 3600g |
+
+So it bites hardest on cheap village volunteers, which is where most foreign recruiting happens, and barely shows on elite troops, whose price is already dominated by their tier. Set the preset to 3 if you want the full doubling to hold at the top end as well.
+
+This includes landless vassals and mercenaries. The kingdom you serve is your realm; every other kingdom is abroad.
+
+| Setting | What it does |
+|---|---|
+| **Foreign recruitment cost preset** | 0 = off, 1 = 1.5×, 2 = 2× *(default)*, 3 = 3× |
+| **Block recruiting in enemy realms** | On by default — no recruiting at all in a kingdom you are at war with |
+
+The **manpower** cost never changes. Manpower belongs to the settlement, so charging you extra manpower would just drain that village faster and punish the kingdom you are visiting instead of you. Gold is yours, so gold is what you pay.
+
+**Tavern mercenaries and caravan guards cost the same everywhere.** They are wandering soldiers who owe no lord anything, so there is nobody to outbid for them — it makes no difference whose town they are drinking in. Your caravans are never charged the premium either; a caravan trades abroad by design.
+
+Enemy lords pay the same premium you do.
+
+### Elite Survivability
+
+Higher-tier troops are tougher in **battles the game resolves for you** — autoresolve, and sieges you do not fight yourself. They take less damage and are more likely to come out wounded than dead, so your expensive veterans are worth the investment.
+
+One setting controls how strong this is: **Combat Realism → Elite survivability preset**.
+
+| Preset | What it does |
+|--------|--------------|
+| **0** | Off — vanilla behaviour |
+| **1** *(default)* | Light — a small edge for T3 and above |
+| **2** | Moderate |
+| **3** | Strong — the setting used before v1.0.2.5 |
+
+| Tier | Preset 1 | Preset 2 | Preset 3 |
+|------|----------|----------|----------|
+| T1–T2 | no change | no change | no change |
+| T3 | −3% damage, +2% survival | −5%, +3% | −6%, +5% |
+| T4 | −6% damage, +4% survival | −10%, +6% | −12%, +10% |
+| T5 | −9% damage, +6% survival | −15%, +9% | −18%, +15% |
+| T6+ | −12% damage, +8% survival | −20%, +12% | −24%, +20% |
+
+Before v1.0.2.5 this was two separate toggles that quietly stacked, which is why elite troops felt unkillable. If you preferred it that way, set the preset to **3**. Enemy lords get exactly the same treatment as you do.
+
+**Lords now know it.** Until v1.0.3.7 the toughness was real but invisible to the AI — lords still sized up an army as if veterans died as easily as recruits, so they backed away from fights they would have won and stormed fortresses held by elite defenders. They now judge a force by how much punishment it can actually take. Expect a lord with a hardened retinue to stand and fight more often, and expect enemies to think twice about your own veteran garrisons. Armies still form and wars are still declared about as often as before, and at preset **0** lords behave exactly as they always did.
 
 ---
 
@@ -605,20 +748,20 @@ This means your expensive elite troops are **less likely to die** in autoresolve
 ### How to Access MCM
 
 1. From the **main menu** or **in-game pause menu**, click **Mod Options** (requires MCM mod).
-2. Find **"Campaign++"** in the list (two tabs: full settings + Quick Settings).
+2. Find **"Campaign++"** in the list (three entries: **Campaign++** for the full settings, **Campaign++ - Quick Settings**, and **Campaign++ Compatibility**).
 3. Browse through the full settings tab for detailed system-by-system tuning, or use Quick Settings for the master toggles.
 
 ### Quick Settings Tab
 
-The **Campaign++ - Quick Settings** tab gathers all 22 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
+The **Campaign++ - Quick Settings** tab gathers all 29 system master toggles into one screen. Use it to enable or disable any system without searching through the full settings list:
 
 | Group | Toggles |
 |-------|---------|
-| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace, Delayed Recovery, Militia Link |
-| Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount |
-| Recruitment & Military | Castle Recruitment, Open Castle Access, Combat Tier Survivability, Combat Tier Armor Simulation, Clan Survival |
+| Core Systems | War Effects, War Exhaustion, Diplomacy Pressure, Forced Peace at Crisis, Truce Enforcement, Delayed Recovery, Militia Link |
+| Economy & Investment | Slave Economy, Village Investment, Town Investment, Minor Faction Economy, Garrison Wage Discount, Settlement Revenue Taper |
+| Recruitment & Military | Castle Recruitment, Open Castle Access, Elite Survivability (0–3), AI Lords Seek Campaign++ Recruits, Clan Survival, Troop Service |
 | Province & Governance | Governance Strain, Provincial Stabilization, Frontier Devastation, Castle Supply Chain |
-| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay, Manpower Alerts |
+| Immersion & Modifiers | Seasonal Regen, Peace Dividend, Culture Discount, Governor Bonus, Overlay (M key), Manpower Alerts |
 
 All toggles are mirrors of the corresponding settings in the full tab — changing one changes the other.
 
@@ -627,56 +770,155 @@ All toggles are mirrors of the corresponding settings in the full tab — changi
 | Setting | Where in MCM | Default | What It Does |
 |---------|-------------|---------|--------------|
 | Enable castle recruitment | Castle Recruitment | ON | Master toggle for the entire castle system |
-| Open castle access | Castle Recruitment | ON | Removes bribe/clan-tier restriction at neutral castles |
+| Open castle access (early game) | Castle Recruitment | ON | Removes bribe/clan-tier restriction at neutral castles |
 | Castle holding fee % | Castle Recruitment | 30% | Commission the castle owner takes from cross-clan prisoner processing |
 | Village volunteer tier max | Recruitment Cost | 2 | Highest troop tier recruitable from village volunteer boards |
 | Town volunteer tier max | Recruitment Cost | 4 | Highest troop tier recruitable from town volunteer boards |
 | Enable village investment | Village Investment | ON | Master toggle for village patronage system |
 | Enable slave economy | Slave Economy | ON | Master toggle for slave acquisition, trade, and town bonuses |
 | Enable war exhaustion | War Exhaustion | ON | Turns on per-kingdom exhaustion from combat |
-| Enforce player parity | Diplomacy | ON | Player kingdom follows same forced-peace rules as AI |
-| Forced peace threshold | Diplomacy | 80 | Exhaustion level that triggers forced peace |
-| Early-war peace vote penalty | Diplomacy | 300 | Makes very young wars much harder to end through council votes |
-| Enable multi-front war relief | Diplomacy | ON | Lets a kingdom in true multi-front collapse seek peace earlier instead of waiting the full minimum |
+| Enforce player parity | Diplomacy (War Exhaustion) | ON | Player kingdom follows same forced-peace rules as AI |
+| Forced peace threshold | Diplomacy (War Exhaustion) | 80 | Exhaustion level that triggers forced peace; with pressure bands on, the kingdom must also be in Crisis |
+| Early-war peace vote penalty | Diplomacy (War Exhaustion) | 300 | Makes very young wars much harder to end through council votes |
+| Enable multi-front war relief | Diplomacy (War Exhaustion) | ON | Lets a kingdom in true multi-front collapse seek peace earlier instead of waiting the full minimum |
 | Hotkey (0-6) | Overlay | 0 (M key) | Change the overlay toggle key |
 | Hire & upgrade cost preset | Army Economics | 2 (Moderate) | 0=Vanilla, 1=Light, 2=Moderate, 3=Severe |
 | Daily wage preset | Army Economics | 3 (Severe) | 0=Vanilla, 1=Light, 2=Moderate, 3=Severe |
 | Garrison wage % of field | Army Economics | 80 | Garrisons pay 80% of field wages (20% discount) |
 | Slave price decay rate | Slave Economy | 0.98 | Controls how steeply slave prices fall per unit of stock (exponential decay). Lower = steeper drop. |
-| Slave cap per prosperity | Slave Economy | 0.03 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
+| Slave cap per prosperity | Slave Economy | 0.02 | Max slaves per point of prosperity. Excess manumitted daily into MP. |
+| AI Lords Seek Campaign++ Recruits | AI Recovery | ON | Under-strength AI lords head for a friendly settlement that actually has men waiting — local volunteers, veterans, castle troops, or converted prisoners — and are steered away from ones with nobody left to give; active orders remain protected. A lord who is merely running low on supplies is no longer skipped, but he is nudged rather than sent, so a food market can still win out. A lord too poor to hire anyone is left where he is rather than sent on a trip he cannot pay for |
+| Recovery Takes Priority | AI Recovery | ON | Makes an eligible recovery stop beat newly proposed tasks; turn it off to let the improved settlement score compete normally |
+| Recovery intent days | AI Recovery | 1 | Ends a confirmed recovery journey after this many campaign days if the lord has not rebuilt to 80%; range 1–30 |
 | Enable manpower alerts | Alerts & Militia | ON | Warning when pools drop below 25% |
+| Enable telemetry debug logs | Developer Tools | OFF | Writes a daily record of what the AI is doing to the mod's Logs folder — see below |
+| Enable settlement revenue tuning | Settlement Revenue | ON | Reduces trade payouts for player and AI clans; see the preset below |
+| Town tariff strength (%) | Settlement Revenue | 90 | The most of its usual tariff a town can keep. Lower it to slow down runaway town income first |
+| Town tax strength (%) | Settlement Revenue | 100 | The most of its usual tax a town can keep. This is the biggest of the three income lines |
+| Village tariff strength (%) | Settlement Revenue | 90 | Same, for villages. Set separately — a village's trade is much smaller than its town's |
+| Town tariff starts at (denars/day) | Settlement Revenue | 2,000 | Towns earning this much or less keep exactly the strength share; above it bigger towns keep less. Aims the deep cuts at the biggest towns |
+| Village tariff starts at (denars/day) | Settlement Revenue | 500 | Same, for villages, on a village's smaller scale |
+| Town tax starts at (prosperity) | Settlement Revenue | 0 | Towns at or below this prosperity keep exactly the strength share; above it bigger towns keep less. The one threshold you can read off the settlement screen |
+
+### Watching What the AI Does (v1.0.3.8)
+
+Several recent changes affect how lords judge army strength and where they go to rebuild. Those play out slowly, across the whole map, so they are hard to spot by watching a single lord.
+
+Turn on **Enable telemetry debug logs** in Developer Tools and Campaign++ writes a short summary once per in-game day into the mod's `Logs` folder — how many lords are in the field, how many armies and new wars there are, how the lords rate their own troops, how often they head somewhere to recruit and come away empty-handed, and what they are paying to keep veterans in service. Two files are written: a readable log and a spreadsheet-friendly `.csv` you can chart.
+
+This is for troubleshooting and for anyone curious about what the AI is up to. It changes nothing in your campaign, and it costs a little performance, so leave it off for normal play.
+
+---
+
+## 13A. Settlement Revenue Tuning
+
+Settlement revenue tuning reduces the trade income paid to owners of towns and villages. It applies equally to player and AI clans. **It is enabled by default in v1.0.4.0; town tax is unchanged by the default preset.**
+
+### Default Preset
+
+Open MCM → **Settlement Revenue** to adjust these values:
+
+| Setting | Default |
+|---|---:|
+| Enable settlement revenue tuning | ON |
+| Town tariff strength (%) | 90 |
+| Town tariff curve | 1.00 |
+| Town tariff starts at (denars/day) | 2,000 |
+| Village tariff strength (%) | 90 |
+| Village tariff curve | 1.00 |
+| Village tariff starts at (denars/day) | 500 |
+| Town tax strength (%) | 100 |
+| Town tax curve | 2.00 (inactive at 100% strength) |
+| Town tax starts at (prosperity) | 0 (inactive at 100% strength) |
+
+**Existing settings profiles receive this preset once when updating to v1.0.4.0.** Review it in MCM after loading. Later changes you make, including disabling it, are preserved on subsequent loads.
+
+### What the Controls Mean
+
+- **Strength** is the maximum percentage retained, not the percentage removed. At 90, income below the threshold keeps 90%. Setting a strength to 100 completely bypasses that income line's taper.
+- **Starts at** marks where the extra reduction begins. The portion up to the threshold still receives the strength reduction; only the excess receives the extra curved reduction. A threshold does not completely exempt a small settlement.
+- **Curve 1** makes the trade-based payout approach a ceiling as trade grows. Higher values reduce income less and allow continued growth. Growing trade never reduces the total payout.
+
+Town and village thresholds use the daily trade amount before perks and other income modifiers. The tax threshold uses prosperity, added above a fixed 40-prosperity floor and capped at an effective 4,000 prosperity. These are separate controls: adjusting tariffs does not adjust tax.
+
+### What the Preset Does
+
+Examples below assume the normal payout equals its daily trade basis, with no additional income modifiers:
+
+| Income source | Before per day | After, approximately |
+|---|---:|---:|
+| Town tariffs | 3,000 | 2,630 |
+| Town tariffs | 12,000 | 6,709 |
+| Town tariffs | 48,000 | 10,365 |
+| Village income | 2,500 | 1,450 |
+| Village income | 40,000 | 2,566 |
+
+The underlying town tariff payout approaches 12,600 denars/day, and village income approaches 2,700. Perks and buildings can change the actual payout. These are not hard caps on a settlement's combined income, and they do not compare income to a kingdom's treasury. The preset is a starting balance choice; long-campaign balance still needs observation.
+
+### Checking and Disabling It
+
+Town tax and town tariff breakdowns show a **Revenue Taper** reduction when applicable. The default leaves town tax unchanged, so no tax reduction is expected. Village income is reduced in its final amount rather than gaining a separate explanation line. Compare finance previews with actual daily payments when testing.
+
+Switch **Enable settlement revenue tuning** off to restore untapered future income, or set an individual strength to 100 to exempt that income line. Previously reduced payments are not refunded. The feature adds no campaign save data.
+
+Caravans, workshops, mercenary pay, tribute and trade agreements are unchanged. If you choose to reduce town tax, the **War Tax** policy's tax-derived payment also falls.
+
+### Calibrating a Campaign
+
+The session log echoes the active revenue settings and records town/village daily trade bases. End-of-session `TariffBasisSpread` entries count observations in size bands; these are readings over time, not counts of unique settlements. Use them with your finance panel to decide whether to adjust the thresholds. The reference sizes are 12,000 daily denars for town tariffs, 2,500 for villages, and 3,960 prosperity above the fixed tax floor.
 
 ---
 
 ## 14. Clan Survival
 
-When a kingdom is destroyed in vanilla, all member clans are annihilated and their heroes killed. Campaign++ rescues eligible clans instead.
+Bannerlord can process a collapsing kingdom through several different lifecycle paths. Some paths detach clans; another may call clan destruction and eliminate their heroes and parties. Campaign++ applies one survival policy across those paths so eligible noble clans can continue as independent factions.
 
 ### What Happens
 
-1. **Kingdom falls** — the kingdom is destroyed via war, diplomacy, or leader death with no successor.
-2. **Rescue check** — each clan is evaluated: do they have living adult lords? If yes, they're rescued. If no surviving heroes exist, vanilla destruction proceeds normally.
-3. **Fiefs transferred** — any settlements owned by the rescued clan go to a suitable heir clan (same as vanilla's fief inheritance).
-4. **Independent survival** — the clan detaches from the dead kingdom and becomes an independent faction.
-5. **War reset** — inherited wars are cleared so the rescued clan starts neutral.
-6. **Tracking** — the mod keeps rescued clans alive and tracked while they are independent; if they join a kingdom later through vanilla systems or other mods, tracking ends.
+1. **Kingdom falls** — the kingdom reaches a destruction path through settlement loss or leader death.
+2. **Rescue check** — an eligible clan must be non-player, non-bandit, have a living adult hero, and already have a valid living leader after vanilla succession has run.
+3. **Independent survival** — the clan is detached from the dying kingdom and registered as an independent faction. Campaign++ suppresses the current vanilla destruction call only after that registration succeeds.
+4. **Fiefs stay put** — these clans normally have no settlements by this point. If an unusual game or mod path leaves one behind, Campaign++ does not start a nested ownership transfer; the independent clan keeps it.
+5. **War cleanup** — on later daily ticks, inherited non-permanent wars are cleared on a best-effort basis so the clan can remain neutral.
+6. **Tracking** — maintenance continues while the clan is independent. Tracking ends if it joins a kingdom. If it later reaches a genuine final-leader destruction state, Campaign++ releases it to the current vanilla destruction call.
 
 ### What's NOT Rescued
 
 - Clans destroyed by **failed rebellions** (legitimate consequence — the rebellion itself was defeated)
+- **Rebel clans whose rebellion was crushed** — since v1.0.2.6 these die as they do in vanilla, whether they lose their last town or their leader dies. See below if you want the old behaviour back.
 - Clans with **no living adult heroes** (no one to carry on)
+- Clans with a **dead, missing, or detached leader** at the rescue boundary. Campaign++ does not start succession from inside a destruction callback; vanilla must establish the successor first.
 - The **player's own clan** (vanilla handles this separately)
+- **Bandit clans**
 
-### Rebel Clan Rescue
+### Rebel Clan Rescue — Off by Default Since v1.0.2.6
 
-Rebel clans — spawned when a town rebels — are also rescued when they would otherwise be destroyed:
+**A crushed rebellion now dies, exactly as in vanilla.** The town goes back to its old owner and the rebel lords are gone.
+
+Why it changed: keeping a rebel clan alive meant turning it into a **mercenary company**, because that is the only way it can draw Frontier Revenue. Every crushed rebellion therefore left a permanent company for hire, with no limit — players reported over 40 of them by day 800.
+
+Turn **Rescue crushed rebel clans** on in MCM → Clan Survival if you want the old behaviour. Nothing was removed. Noble clans of a *destroyed kingdom* are still rescued either way; this setting only covers rebels.
+
+**Already have dozens of them in your save?** Turn on **Clean up leftover rebel mercenary companies**, load the save, and wait one campaign day. **Back up your save first — it destroys clans.**
+
+Nothing happens until you say so:
+
+1. On the next campaign day a window tells you how many leftover companies it found in *your* save and asks whether to remove them. Say no and nothing is touched.
+2. If you agree, they are disbanded a **few each day** rather than all at once. Removing 40–100 companies in a single day would empty a large part of the map at a stroke; a few a day looks like ordinary attrition. You are told how many are left each day.
+3. When it has finished you get a message, and you can turn the setting back off.
+
+It only removes companies that came from a rebellion, were made mercenaries by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions like the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement.
+
+If you are loading an older save and leave both settings alone, Campaign++ tells you once that the rescue is off and that your existing companies are being left in place. Nothing is done to them without your say-so.
+
+With the setting **on**, rebel clans are rescued when they would otherwise be destroyed:
 
 - When a rebel clan **loses its last settlement** (e.g., another faction reconquers the town), Campaign++ intercepts the destruction and rescues the clan.
-- When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net promotes an heir (if one exists) and rescues the clan.
-- Rescued rebel clans are **normalized**: `IsRebelClan` is cleared, `IsMinorFaction` is set to `true`, and the clan is removed from vanilla's internal rebel tracking. The clan is also **renamed** from its settlement-based name (e.g., "Pen Cannoc rebels") to a leader-derived warband name (e.g., "Borun's Warband") for uniqueness.
+- When a rebel clan's **leader dies** and vanilla calls `DestroyClanAction`, the safety net rescues the clan only if vanilla succession has already installed a valid living leader. Campaign++ never promotes an heir from inside the destruction callback.
+- Rescued rebel clans are **normalized**: `IsRebelClan` must be cleared and `IsMinorFaction` must be set to `true`, or the rescue is aborted. Removal from vanilla's internal rebel tracking and renaming from a settlement-based name (e.g., "Pen Cannoc rebels") to a leader-derived warband name (e.g., "Borun's Warband") are best-effort cleanup steps.
 - Because `IsMinorFaction` is now `true`, rescued rebel clans qualify for **Frontier Revenue** — the same unaligned stipend that other minor factions receive.
-- They then survive as an independent warband until vanilla's AI recruits them into a kingdom as a vassal or mercenary.
-- **Save/load coverage**: Rebel clans that lost their settlement in a *previous session* (before Campaign++ was installed or before the save was loaded) are automatically detected and rescued on session start. You don't need to worry about timing — the mod scans for homeless rebel clans every time you load a save.
+- They then survive as an independent warband until they join a kingdom through vanilla behavior or another mod, or later reach a legitimate final-leader destruction.
+- **Save/load coverage**: when both clan survival and rebel rescue are enabled, Campaign++ scans once at session launch for homeless rebel clans from an earlier session. Only clans with a valid living leader are normalized and rescued.
 
 > **Note:** Rebel clans destroyed during the *rebellion itself* (i.e., the revolt fails before the town is taken) are NOT rescued — that's a legitimate consequence of a failed uprising.
 
@@ -684,15 +926,17 @@ Rebel clans — spawned when a town rebels — are also rescued when they would 
 
 | Setting | Default | What It Does |
 |---------|---------|-------------|
-| Enable clan survival | On | Master toggle |
-| Grace period (days) | 30 | Reserved for planned auto-placement logic (no forced placement in v0.2.0.1) |
-| Culture match weight | 2.0 | Reserved for planned auto-placement scoring (no forced placement in v0.2.0.1) |
+| Enable clan survival | On | Enables new rescues. Turning it off does not abandon clans already rescued; their safe daily maintenance continues until they join a kingdom or reach legitimate vanilla destruction. |
+| Rescue crushed rebel clans | **Off** | Keeps crushed rebellions alive as mercenary companies (pre-v1.0.2.6 behaviour) |
+| Clean up leftover rebel mercenary companies | **Off** | One-off cleanup for an existing save. Destroys clans — back up first |
+| Grace period (days) | 30 | Currently unused and reserved for a possible future auto-placement flow. Changing it has no effect. |
+| Culture match weight | 2.0 | Currently unused and reserved for possible future placement scoring. Changing it has no effect. |
 
 ### Tips
 
 - If you want to audit rescue behavior, enable verbose logging in MCM and review the session or game logs.
 - Rescued clans are not hard-assigned by this system in v0.2.0.1; later kingdom entry depends on vanilla campaign behavior or other mods.
-- Keep clan survival enabled if you want more late-game noble continuity after kingdom collapse events.
+- Turning clan survival off stops future rescues only. It does not remove, destroy, or stop safe maintenance for clans already tracked.
 
 ---
 
@@ -734,7 +978,7 @@ At the top of the **Campaign++ Compatibility** MCM tab, the **Summary** group sh
 | **Report status** | `Partial — load any campaign` = Harmony scan is done but Core Game Systems have not been checked yet (title screen only). `Up to date` = full scan including model checks has run this session. |
 | **Don't show this popup at startup** | Toggle to suppress the startup popup once you've reviewed the report. |
 | **Running alongside** | How many mods were detected and their overall status. |
-| **Core game systems** | Whether the food/volunteer/militia/prosperity models are intact (only meaningful after loading a campaign). |
+| **Core game systems** | Whether the food, volunteer, prosperity, loyalty, security, building and clan finance systems are intact (only meaningful after loading a campaign). |
 | **Tip** | Reminds you that loading a campaign triggers the full report and popup. |
 | **Open Full Report** | Re-opens the popup at any time. |
 | **Rebuild Sources** | Re-scans volunteer boards and refreshes castle recruitment caches after troop-tree mods change mid-save. |
@@ -743,10 +987,10 @@ At the top of the **Campaign++ Compatibility** MCM tab, the **Summary** group sh
 
 ### Core Game Systems
 
-The MCM tab also shows a **Core Game Systems** section that checks whether any other mod has fully replaced the food, volunteer, militia, or prosperity model. This runs when you load a campaign (not at the title screen). Status values:
-- **Campaign++ active** — no replacement detected; Campaign++ model is active normally.
-- **Replaced - auto-patched** — another mod replaced the model but Campaign++ detected it and compensated automatically.
-- **[ISSUE] Features may be off** — another mod fully replaced the model and this area may no longer be patched by Campaign++.
+The MCM tab also shows a **Core Game Systems** section. It checks whether another mod has replaced the town food, village volunteer, town prosperity, loyalty, security, building construction or clan finance system, or changed one in a way that skips the game's own calculation. Either can switch off the Campaign++ changes in that area without any error. This runs when you load a campaign (not at the title screen). Status values:
+- **Campaign++ active** — no other mod has replaced or bypassed this system; Campaign++ is working here normally.
+- **Replaced - auto-patched** — another mod replaced the system, but Campaign++ detected it and compensated automatically. Only town food has this fallback.
+- **[ISSUE] Features may be off** — another mod replaced the system, or skips the game's own calculation, and some Campaign++ features in this area may not be active. Hover the row for details.
 
 > No action is required unless a system shows [ISSUE]. Everything else is informational.
 
@@ -758,19 +1002,19 @@ Some mods (like RBM) apply their Harmony patches at campaign load rather than at
 
 ## 15b. Known Mod Interactions
 
-Some third-party mods have specific interactions with Campaign++ systems. These are not bugs in Campaign++ but are documented here so you know what to expect.
+Some third-party mods have specific interactions with Campaign++ systems. The limitations below are documented so you know what to expect.
 
-### Warsails (Naval DLC)
+### War Sails (Naval DLC)
 
-Fully compatible — no action needed. Warsails swaps in its own versions of several campaign systems Campaign++ also modifies (prosperity, security, garrison, militia, wages, clan finance and others), but each one still hands the calculation back to the base game, so Campaign++'s changes continue to apply on top. Warsails is never reported as a conflict in the compatibility report, and Campaign++ works whether or not you own the DLC.
+Campaign++ is designed to work with War Sails, and the current build is checked against the installed game assemblies. Version matching still matters, so this is not a blanket guarantee for older game/DLC combinations. A historical report on Bannerlord 1.4.8 / War Sails 1.2.8 ended in a native null-read shortly after a rescued rebel leader died; the available log does not prove that War Sails caused it, and that exact historical runtime has not been reproduced. The current clan-survival flow avoids starting succession, fief-transfer, or diplomacy actions from inside the destruction callback that surrounded that failure.
 
-One small exception: in port towns, the Boatswain perk's militia bonus from Warsails is not applied while Campaign++'s militia system is active. This affects militia growth only, nothing else.
+One known gameplay exception: in port towns, the Boatswain perk's militia bonus from War Sails is not applied while Campaign++'s militia system is active. This affects militia growth only.
 
 ### Realms of Thrones (ROT)
 
-ROT's `HeroSpawnCampaignBehaviorPatches` may crash with a null reference when **Clan Survival (Protect Eliminated Clans)** is enabled. ROT assumes certain data exists on all clans, but clans rescued by Campaign++'s clan survival system may not have that data.
+ROT's `HeroSpawnCampaignBehaviorPatches` may throw a null-reference exception when it encounters a rescued rebel-origin warband. ROT assumes data exists on every clan that a normalized former-rebel may not have. Campaign++ does not currently install an automatic ROT-specific guard.
 
-**Workaround:** Disable **Protect Eliminated Clans** in MCM → Clan Survival, or report the null-check issue to the ROT mod author.
+**Workaround:** leave **Rescue crushed rebel clans** off (the default) to prevent new rebel warbands. If an older save already contains them, the opt-in **Clean up leftover rebel mercenary companies** tool can remove eligible leftovers gradually; back up the save first. Turning off **Enable clan survival** also stops new rescues, but it does not retroactively remove clans already tracked.
 
 ### Retinues / Custom Troop Tree Mods
 
@@ -787,7 +1031,7 @@ If you add or remove one of these mods mid-save, use **Campaign++ Compatibility 
 | **See manpower/war data** | Press **M** on campaign map |
 | **Check a specific settlement** | Click it on the map, then look at the **Current** tab |
 | **Find settlements near me** | Press **M** → **Nearby** tab |
-| **Search for anything** | Press **M** → **Search** tab → type your query |
+| **Search for anything** | Press **M** → **Search** tab → type your query → **Enter** |
 | **Recruit elite troops** | Go to a non-hostile castle → click **🏰 Recruit troops** |
 | **Deposit prisoners** | Go to a castle → dungeon → **Donate prisoners** (allied) or **⚔️ Deposit prisoners** (neutral) |
 | **Invest in a village** | Go to a non-hostile village → click **🏠 Invest in village** → pick a tier |
@@ -799,9 +1043,9 @@ If you add or remove one of these mods mid-save, use **Campaign++ Compatibility 
 | **Copy compatibility report** | Compatibility popup → **Copy Report** |
 | **Quick-toggle any system** | Pause → **Mod Options** → **Campaign++ - Quick Settings** |
 | **Change mod settings** | Pause → **Mod Options** → **Campaign++** |
-| **Change overlay hotkey** | MCM → Overlay → Hotkey (0=M, 1=N, 2=K, 3=F9–F12) |
-| **Disable forced peace on player** | MCM → Diplomacy → Enforce player parity → OFF |
-| **Disable castle bribe removal** | MCM → Castle Recruitment → Open castle access → OFF |
+| **Change overlay hotkey** | MCM → Overlay → Hotkey (0=M, 1=N, 2=K, 3–6=F9–F12) |
+| **Disable forced peace on player** | MCM → Diplomacy (War Exhaustion) → Enforce player parity → OFF |
+| **Disable castle bribe removal** | MCM → Castle Recruitment → Open castle access (early game) → OFF |
 
 ---
 

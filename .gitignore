@@ -365,14 +365,21 @@ FodyWeavers.xsd
 # Other files to ignore
 Docs/AUDIT_v0.1.7.5.md
 .claude/
+CLAUDE.md
 .vscode/
 .github/copilot-instructions.md
 .github/
 NextFeatures.md 
 Scenario_audit.md
 .serena/
+# Local-only helper scripts (see Tools/README.md)
+Tools/
+
 
 # Accidental PowerShell placeholder artifact
 $null
 
 Docs/plan.md
+Docs/WARSAILS_PLAN.md
+output.txt
+Docs/NexusRefresh/

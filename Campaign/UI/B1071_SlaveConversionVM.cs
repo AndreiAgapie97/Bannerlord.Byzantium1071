@@ -32,6 +32,9 @@ namespace Byzantium1071.Campaign.UI
         private MBBindingList<B1071_SlaveConversionTroopVM> _troops;
         private bool _hasTroops;
         private bool _canConfirm;
+        // SuggestedHeight bindings must be floats because Gauntlet can write sizes back.
+        private float _windowHeight = 302f;
+        private float _listHeight = 62f;
 
         public B1071_SlaveConversionVM(
             Action? onClose,
@@ -77,10 +80,17 @@ namespace Byzantium1071.Campaign.UI
                 if (element.Character != null && !element.Character.IsHero
                     && element.Number > 0 && element.Character.Tier <= maxTier)
                 {
-                    _troops.Add(new B1071_SlaveConversionTroopVM(this, element.Character, element.Number));
+                    _troops.Add(new B1071_SlaveConversionTroopVM(this, element.Character, element.Number)
+                    {
+                        IsAlternateRow = _troops.Count % 2 != 0
+                    });
                 }
             }
 
+            // Keep two rows of breathing room, capped at the original scroll area.
+            ListHeight = Math.Min(260f, Math.Max(62f, _troops.Count * 31f));
+            // Preserve the original non-list allowance: 500 panel - 260 list = 240 (chrome and slack).
+            WindowHeight = 240f + ListHeight;
             HasTroops = _troops.Count > 0;
             RefreshTotalSelected();
         }
@@ -138,6 +148,20 @@ namespace Byzantium1071.Campaign.UI
         }
 
         // ── Data-bound properties ─────────────────────────────────────────────────
+
+        [DataSourceProperty]
+        public float WindowHeight
+        {
+            get => _windowHeight;
+            set { if (_windowHeight != value) { _windowHeight = value; OnPropertyChangedWithValue(value, nameof(WindowHeight)); } }
+        }
+
+        [DataSourceProperty]
+        public float ListHeight
+        {
+            get => _listHeight;
+            set { if (_listHeight != value) { _listHeight = value; OnPropertyChangedWithValue(value, nameof(ListHeight)); } }
+        }
 
         [DataSourceProperty]
         public string TitleText

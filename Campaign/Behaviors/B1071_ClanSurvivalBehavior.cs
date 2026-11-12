@@ -43,8 +43,9 @@ namespace Byzantium1071.Campaign.Behaviors
     ///   Survives save/load via SyncData.
     ///
     /// Mod removal safety:
-    ///   Rescued clans are never destroyed. Without this behavior, they remain as
-    ///   independent clans forever — vanilla handles them on leader death.
+    ///   Rescued clans are protected while independent and led by a living hero.
+    ///   When vanilla reaches clan destruction with a dead or missing leader, tracking is
+    ///   cleared and the current vanilla destruction call is allowed to finish.
     /// </summary>
     public sealed class B1071_ClanSurvivalBehavior : CampaignBehaviorBase
     {
@@ -68,12 +69,28 @@ namespace Byzantium1071.Campaign.Behaviors
         }
 
         /// <summary>
+        /// Stops tracking a rescued clan before vanilla destruction is allowed to proceed.
+        /// This also clears persisted tracking and the in-memory rescue guard.
+        /// </summary>
+        internal void UnregisterRescuedClan(Clan clan)
+        {
+            if (clan == null) return;
+            StopTracking(clan.StringId);
+        }
+
+        /// <summary>
         /// Returns true if the specified clan is currently tracked as rescued.
         /// </summary>
         public bool IsTracked(Clan clan)
         {
             if (clan == null) return false;
             return _rescuedClans.ContainsKey(clan.StringId);
+        }
+
+        internal void StopTracking(string clanId)
+        {
+            _rescuedClans.Remove(clanId);
+            B1071_ClanSurvivalPatch._alreadyRescued.Remove(clanId);
         }
 
         /// <summary>
@@ -118,7 +135,7 @@ namespace Byzantium1071.Campaign.Behaviors
             // preventing vanilla's DailyTickClan from killing them.
             try
             {
-                if (Settings.EnableClanSurvival)
+                if (Settings.EnableClanSurvival && Settings.RescueRebelClans)
                 {
                     ScanAndRescueHomelessRebelClans();
                 }
@@ -168,23 +185,17 @@ namespace Byzantium1071.Campaign.Behaviors
                 B1071_SessionFileLog.WriteTagged("ClanSurvival",
                     $"[StartupScan] Homeless rebel '{clanName}' ({livingAdults.Count} heroes). Rescuing.");
 
-                // Promote heir if leader is dead
-                if (clan.Leader == null || !clan.Leader.IsAlive)
+                // Vanilla succession must already have produced a living leader. Starting
+                // ChangeClanLeaderAction during session launch is not a safe repair path.
+                if (clan.Leader == null || !clan.Leader.IsAlive || clan.Leader.Clan != clan)
                 {
-                    try
-                    {
-                        ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][StartupScan] " +
-                            $"Heir promotion failed for {clanName}: {ex.Message}");
-                        continue;
-                    }
-                    if (clan.Leader == null || !clan.Leader.IsAlive) continue;
+                    Debug.Print($"[Byzantium1071][ClanSurvival][StartupScan] " +
+                        $"Skipped {clanName}: dead, missing, or detached leader after vanilla succession.");
+                    continue;
                 }
 
-                NormalizeRebelClan(clan, "StartupScan");
+                if (!NormalizeRebelClan(clan, "StartupScan"))
+                    continue;
                 RegisterRescuedClan(clan);
                 B1071_ClanSurvivalPatch._alreadyRescued.Add(clan.StringId);
                 rescued++;
@@ -258,39 +269,15 @@ namespace Byzantium1071.Campaign.Behaviors
                     return;
                 }
 
-                // If leader is dead, try heir promotion
-                if (clan.Leader == null || !clan.Leader.IsAlive)
+                // Vanilla succession is synchronous. Do not start a nested clan-leader
+                // action from inside ChangeKingdomAction's event callback.
+                if (clan.Leader == null || !clan.Leader.IsAlive || clan.Leader.Clan != clan)
                 {
-                    var heirs = clan.GetHeirApparents();
-                    if (heirs.Count == 0)
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
-                            $"leader dead, no heir apparents.");
-                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                            $"SKIP {clanName}: leader dead, no heir apparents");
-                        return;
-                    }
-                    try
-                    {
-                        ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader(clan);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
-                            $"heir promotion threw: {ex.Message}");
-                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                            $"ERROR SKIP {clanName}: heir promotion threw: {ex.Message}");
-                        return;
-                    }
-                    if (clan.Leader == null || !clan.Leader.IsAlive)
-                    {
-                        Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
-                            $"heir promotion failed.");
-                        return;
-                    }
-                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] {clanName} heir promoted to {clan.Leader.Name}.");
+                    Debug.Print($"[Byzantium1071][ClanSurvival][Event] SKIP {clanName}: " +
+                        "dead, missing, or detached leader after vanilla succession.");
                     B1071_SessionFileLog.WriteTagged("ClanSurvival",
-                        $"{clanName} heir promoted to {clan.Leader.Name}");
+                        $"SKIP {clanName}: dead, missing, or detached leader after vanilla succession");
+                    return;
                 }
 
                 // ── Register for tracking (daily tick will clear inherited wars) ──
@@ -382,6 +369,18 @@ namespace Byzantium1071.Campaign.Behaviors
                 // Only interested in rebel-origin clans
                 if (!IsRebelClanOrigin(clan)) return;
 
+                // Off by default: a crushed rebellion dies, as it does in vanilla.
+                //
+                // Rescuing it means marking the clan a minor faction, which is the only
+                // way it can draw frontier revenue - but minor faction is Bannerlord's
+                // mercenary-company category, so every crushed rebellion left a permanent
+                // hireable company behind. There is no cap and no exit, so by the late
+                // game a campaign accumulated dozens of them (reported at 40+ by day 800).
+                //
+                // The whole rescue path is kept intact behind this toggle rather than
+                // removed, so the behaviour can be restored without rebuilding it.
+                if (!Settings.RescueRebelClans) return;
+
                 // Already rescued?
                 if (B1071_ClanSurvivalPatch._alreadyRescued.Contains(clan.StringId)) return;
                 if (IsTracked(clan)) return;
@@ -417,7 +416,12 @@ namespace Byzantium1071.Campaign.Behaviors
                 }
 
                 // ── Normalize rebel state ──
-                NormalizeRebelClan(clan, "RebelRescue");
+                if (!NormalizeRebelClan(clan, "RebelRescue"))
+                {
+                    B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                        $"Rebel rescue SKIP {clanName}: normalization invariant failed.");
+                    return;
+                }
 
                 // ── Register for tracking (daily tick will clear any wars) ──
                 //
@@ -468,9 +472,10 @@ namespace Byzantium1071.Campaign.Behaviors
         ///   3. Removes from vanilla's _rebelClansAndDaysPassedAfterCreation tracking
         ///      (via reflection on RebellionsCampaignBehavior)
         /// </summary>
-        internal static void NormalizeRebelClan(Clan clan, string context)
+        internal static bool NormalizeRebelClan(Clan clan, string context)
         {
             string clanName = clan.Name?.ToString() ?? clan.StringId;
+            bool originalRebelState = clan.IsRebelClan;
 
             // 1. Clear rebel flag
             try
@@ -526,8 +531,30 @@ namespace Byzantium1071.Campaign.Behaviors
                     $"Failed to set IsMinorFaction for {clanName}: {ex.Message}");
             }
 
-            // 3. Remove from vanilla's RebellionsCampaignBehavior tracking
-            //    Field: Dictionary<Clan, float> _rebelClansAndDaysPassedAfterCreation
+            // These two flags are the minimum valid post-normalization state. Do not
+            // commit tracking or suppress vanilla destruction if either mutation failed.
+            if (!IsRebelNormalizationComplete(clan.IsRebelClan, clan.IsMinorFaction))
+            {
+                try
+                {
+                    clan.IsRebelClan = originalRebelState;
+                }
+                catch
+                {
+                    // Best-effort rollback only; the failed invariant is logged below.
+                }
+
+                Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
+                    $"Normalization aborted for {clanName}: IsRebelClan={clan.IsRebelClan}, " +
+                    $"IsMinorFaction={clan.IsMinorFaction}.");
+                B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                    $"NORMALIZATION_ABORTED '{clanName}'; IsRebelClan={clan.IsRebelClan}, " +
+                    $"IsMinorFaction={clan.IsMinorFaction}.");
+                return false;
+            }
+
+            // 3. Remove from vanilla's RebellionsCampaignBehavior tracking. The private
+            //    dictionary's value type has changed across game versions, so use IDictionary.
             //    If not removed, vanilla's daily tick may still try to manage/destroy this clan.
             try
             {
@@ -607,6 +634,220 @@ namespace Byzantium1071.Campaign.Behaviors
                 Debug.Print($"[Byzantium1071][ClanSurvival][{context}] " +
                     $"Failed to rename {clanName}: {ex.Message}");
             }
+
+            return true;
+        }
+
+        internal static bool IsRebelNormalizationComplete(
+            bool isRebelClan,
+            bool isMinorFaction) =>
+            !isRebelClan && isMinorFaction;
+
+        // ── One-off cleanup of leftover rebel mercenary companies ────────
+
+        /// <summary>
+        /// How many leftover companies the cleanup disbands per campaign day.
+        ///
+        /// Deliberately a drip rather than one sweep. A long campaign can hold 40-100 of
+        /// these, and removing them all on a single day empties a large slice of the map's
+        /// parties at once - caravans lose their escorts' buyers, war parties vanish
+        /// mid-siege, and the player sees a mass extinction with no explanation. A few a day
+        /// looks like ordinary attrition.
+        /// </summary>
+        private const int RebelPurgePerDay = 3;
+
+        /// <summary>
+        /// Raised only while the cleanup is calling DestroyClanAction on purpose, so
+        /// B1071_ClanSurvivalDestroyClanPatch stands aside instead of rescuing the very
+        /// clans we are removing.
+        /// </summary>
+        internal static bool IsPurgingRebelClans { get; private set; }
+
+        // Per-session, deliberately NOT serialised. Both flags re-arm every load, which is
+        // what lets a player enable the cleanup mid-campaign and be asked about it, and what
+        // makes a save/reload part-way through a drip re-ask with the remaining count rather
+        // than silently continuing.
+        private bool _rebelPurgeAsked;
+        private bool _rebelPurgeConfirmed;
+        private bool _rebelNoticeShown;
+        private int _rebelPurgeTotal;
+
+        /// <summary>
+        /// Every clan the cleanup would consider. Also used to count them for the
+        /// confirmation prompt and the returning-player notice, so what the player is told
+        /// and what is actually removed can never drift apart.
+        /// </summary>
+        private static IEnumerable<Clan> EnumerateLeftoverRebelClans()
+        {
+            foreach (Clan clan in Clan.All.ToList())
+            {
+                if (clan == null || clan.IsEliminated) continue;
+                if (clan == Clan.PlayerClan) continue;
+                if (clan.IsBanditFaction) continue;
+
+                if (!IsRebelClanOrigin(clan)) continue;
+                if (!clan.IsMinorFaction) continue;
+                if (clan.Settlements != null && clan.Settlements.Any()) continue;
+
+                // A company under an active mercenary contract has Kingdom set to its
+                // employer. Destroying it mid-contract risks leaving that kingdom holding a
+                // dangling mercenary entry, and such a company is not "leftover" in any case
+                // - it is employed and doing something in the world. It becomes a candidate
+                // again once the contract lapses.
+                if (clan.Kingdom != null) continue;
+
+                yield return clan;
+            }
+        }
+
+        /// <summary>
+        /// Tells a returning player, once per session, that the rescue is off and what that
+        /// means for the companies already in their save. Nothing is done to them: the point
+        /// is that the player finds out from the game rather than from a changelog, and is
+        /// pointed at the cleanup instead of discovering it by accident.
+        /// </summary>
+        private void NotifyLeftoverRebelClans()
+        {
+            if (_rebelNoticeShown) return;
+            if (Settings.RescueRebelClans) return;
+            if (Settings.PurgeLeftoverRebelClans) return; // the prompt below says all this already
+
+            _rebelNoticeShown = true;
+
+            try
+            {
+                int count = EnumerateLeftoverRebelClans().Count();
+                if (count <= 0) return;
+
+                var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_notice}Campaign++ no longer rescues crushed rebellions. This campaign still has {COUNT} mercenary companies left over from earlier ones. They are being left alone. An optional cleanup for them is under Clan Survival in the mod settings.");
+                msg.SetTextVariable("COUNT", count);
+                InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+            }
+            catch (Exception ex)
+            {
+                Debug.Print($"[Byzantium1071][ClanSurvival] Leftover rebel notice error: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Removes mercenary companies left behind by the old rebel rescue.
+        ///
+        /// Turning RescueRebelClans off stops NEW ones appearing, but a campaign that has
+        /// already been running keeps the ones it accumulated. This is the opt-in cleanup
+        /// for that save. It destroys clans, so it is off by default and never runs
+        /// unattended.
+        ///
+        /// The selection is deliberately narrow. IsRebelClanOrigin also matches on a
+        /// StringId containing "rebel_clan", which is what still identifies these clans
+        /// after NormalizeRebelClan cleared IsRebelClan — and no vanilla clan carries that
+        /// StringId, so the Ghilman, the Jawwal and every other hand-authored minor faction
+        /// are structurally out of reach. Requiring IsMinorFaction on top means we only
+        /// remove clans this mod itself flagged. Requiring zero settlements spares any
+        /// rebel clan that went on to take a fief and become a real power.
+        ///
+        /// Runs on the daily tick rather than at session launch: DestroyClanAction touches
+        /// kingdoms, parties and diplomacy, and driving that during load — or from inside
+        /// another action's event callback — is what corrupted saves before.
+        /// </summary>
+        private void PurgeLeftoverRebelMercenaryClans()
+        {
+            if (!Settings.PurgeLeftoverRebelClans) return;
+
+            try
+            {
+                // ── Ask first, once per session ──────────────────────────
+                //
+                // The setting alone is not consent. It is a checkbox in a long list, its
+                // hint text is easy to skip, and what it does is irreversible and large.
+                // The player is shown the real count from their own save and has to agree
+                // before anything is destroyed.
+                if (!_rebelPurgeAsked)
+                {
+                    _rebelPurgeAsked = true;
+
+                    int pending = EnumerateLeftoverRebelClans().Count();
+                    if (pending <= 0)
+                    {
+                        B1071_VerboseLog.Log("ClanSurvival", "Rebel mercenary cleanup found nothing to remove.");
+                        return;
+                    }
+
+                    var body = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_confirm}Campaign++ has found {COUNT} mercenary companies left behind by crushed rebellions in this campaign. Removing them cannot be undone, so back up your save first. They will be disbanded a few each day rather than all at once, so your campaign is not emptied overnight. Remove them?");
+                    body.SetTextVariable("COUNT", pending);
+
+                    InformationManager.ShowInquiry(new InquiryData(
+                        titleText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_title}Leftover Rebel Companies").ToString(),
+                        text: body.ToString(),
+                        isAffirmativeOptionShown: true,
+                        isNegativeOptionShown: true,
+                        affirmativeText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_yes}Remove them").ToString(),
+                        negativeText: new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_no}Leave them alone").ToString(),
+                        affirmativeAction: () => { _rebelPurgeConfirmed = true; },
+                        negativeAction: null),
+                        pauseGameActiveState: true);
+
+                    return; // Removal starts on the next campaign day, after an answer.
+                }
+
+                if (!_rebelPurgeConfirmed) return;
+
+                // ── Disband a few, then stop for the day ─────────────────
+                int removed = 0;
+                IsPurgingRebelClans = true;
+                try
+                {
+                    foreach (Clan clan in EnumerateLeftoverRebelClans())
+                    {
+                        if (removed >= RebelPurgePerDay) break;
+
+                        string clanName = clan.Name?.ToString() ?? clan.StringId;
+                        try
+                        {
+                            DestroyClanAction.Apply(clan);
+                            StopTracking(clan.StringId);
+                            removed++;
+                            _rebelPurgeTotal++;
+                            B1071_VerboseLog.Log("ClanSurvival",
+                                $"Disbanded leftover rebel mercenary clan {clanName} ({clan.StringId}).");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Print($"[Byzantium1071][ClanSurvival] Failed to disband {clanName}: {ex.Message}");
+                        }
+                    }
+                }
+                finally
+                {
+                    IsPurgingRebelClans = false;
+                }
+
+                int remaining = EnumerateLeftoverRebelClans().Count();
+
+                if (removed > 0 && remaining > 0)
+                {
+                    var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge_progress}Campaign++ disbanded {COUNT} leftover rebel company(s). {LEFT} still to go.");
+                    msg.SetTextVariable("COUNT", removed);
+                    msg.SetTextVariable("LEFT", remaining);
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+                }
+                else if (remaining <= 0)
+                {
+                    // Done. Stand down rather than re-running every day for the rest of the
+                    // campaign; the player is told they can switch the setting off.
+                    _rebelPurgeConfirmed = false;
+
+                    Debug.Print($"[Byzantium1071][ClanSurvival] Leftover rebel cleanup finished: {_rebelPurgeTotal} clan(s).");
+
+                    var msg = new TaleWorlds.Localization.TextObject("{=b1071_ui_rebel_purge}Campaign++ has finished removing leftover rebel mercenary companies ({COUNT} disbanded). You can switch the cleanup off in the mod settings now.");
+                    msg.SetTextVariable("COUNT", _rebelPurgeTotal);
+                    InformationManager.DisplayMessage(new InformationMessage(msg.ToString(), Colors.Yellow));
+                }
+            }
+            catch (Exception ex)
+            {
+                IsPurgingRebelClans = false;
+                Debug.Print($"[Byzantium1071][ClanSurvival] Rebel mercenary cleanup error: {ex}");
+            }
         }
 
         // ── Daily Tick: clear wars for independent rescued clans ─────────
@@ -615,7 +856,12 @@ namespace Byzantium1071.Campaign.Behaviors
         {
             try
             {
-                if (!Settings.EnableClanSurvival) return;
+                // Cleanup runs on its own setting. Existing tracked clans are also maintained
+                // when the master toggle is off: disabling prevents new rescues, but abandoning
+                // an already-rescued clan with inherited wars would leave a half-disabled state.
+                PurgeLeftoverRebelMercenaryClans();
+                NotifyLeftoverRebelClans();
+
                 if (_rescuedClans.Count == 0) return;
 
                 float currentDay = (float)CampaignTime.Now.ToDays;
@@ -630,7 +876,7 @@ namespace Byzantium1071.Campaign.Behaviors
                     Clan? clan = Clan.FindFirst(c => c.StringId == clanId);
                     if (clan == null)
                     {
-                        _rescuedClans.Remove(clanId);
+                        StopTracking(clanId);
                         B1071_VerboseLog.Log("ClanSurvival",
                             $"Removed tracking for {clanId}: clan no longer exists.");
                         continue;
@@ -638,7 +884,7 @@ namespace Byzantium1071.Campaign.Behaviors
 
                     if (clan.IsEliminated)
                     {
-                        _rescuedClans.Remove(clanId);
+                        StopTracking(clanId);
                         B1071_VerboseLog.Log("ClanSurvival",
                             $"Stopped tracking {clan.Name}: eliminated.");
                         continue;
@@ -647,13 +893,27 @@ namespace Byzantium1071.Campaign.Behaviors
                     // Clan joined a kingdom — stop tracking, they're vanilla's problem now
                     if (clan.Kingdom != null)
                     {
-                        _rescuedClans.Remove(clanId);
+                        StopTracking(clanId);
                         string role = clan.IsUnderMercenaryService ? "mercenary" : "vassal";
                         Debug.Print($"[Byzantium1071][ClanSurvival] {clan.Name} joined " +
                             $"{clan.Kingdom.Name} as {role} after {(int)elapsedDays} day(s). Done.");
                         B1071_VerboseLog.Log("ClanSurvival",
                             $"{clan.Name} joined {clan.Kingdom.Name} as {role} " +
                             $"after {(int)elapsedDays} day(s) of independence.");
+                        continue;
+                    }
+
+                    // A normal leader death resolves succession or clan destruction in the
+                    // same KillCharacterAction call. Seeing a dead leader here therefore means
+                    // a legacy save or another mod already interrupted that lifecycle. Do not
+                    // launch diplomacy or destruction actions against that invalid state.
+                    if (clan.Leader == null || !clan.Leader.IsAlive || clan.Leader.Clan != clan)
+                    {
+                        Debug.Print($"[Byzantium1071][ClanSurvival] Tracked clan {clan.Name} " +
+                            "has a dead, missing, or detached leader; maintenance skipped pending vanilla destruction.");
+                        B1071_SessionFileLog.WriteTagged("ClanSurvival",
+                            $"TRACKED_INVALID_LEADER '{clan.Name}' ({clan.StringId}); " +
+                            "no campaign actions issued.");
                         continue;
                     }
 

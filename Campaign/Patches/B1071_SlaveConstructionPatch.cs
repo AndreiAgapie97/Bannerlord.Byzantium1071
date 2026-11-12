@@ -43,10 +43,7 @@ namespace Byzantium1071.Campaign.Patches
                 int slaveCount = behavior.GetSlaveCountForTown(town);
                 if (slaveCount <= 0) return;
 
-                float eff   = Settings.SlaveRansomMultiplier;
-                float bonus = Math.Min(
-                    Settings.SlaveConstructionBonusCap,
-                    slaveCount * Settings.SlaveConstructionAcceleration * eff);
+                float bonus = B1071_SlaveMath.ConstructionBonus(slaveCount, Settings);
 
                 if (bonus > 0f)
                     __result.Add(bonus, _slaveLabel);

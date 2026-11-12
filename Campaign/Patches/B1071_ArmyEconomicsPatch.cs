@@ -4,6 +4,7 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -168,22 +169,9 @@ namespace Byzantium1071.Campaign.Patches
     {
         private static readonly TextObject _label = new TextObject("{=b1071_lbl_tier_econ}B1071 Tier Economics");
         private static readonly TextObject _cancelLabel = new TextObject("{=b1071_lbl_norm_occ}B1071 Normalises Occupation");
+        private static readonly TextObject _foreignLabel = new TextObject("{=b1071_lbl_foreign_hire}B1071 Foreign Recruitment");
 
-        // [preset 0-3][tier_index 0-5]  — AddFactor values
-        // tier_index = Math.Clamp(troop.Tier - 1, 0, 5)
-        private static readonly float[][] _hireFactors =
-        {
-            // 0 = Off (vanilla)
-            new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f },
-            // 1 = Light
-            new[] { 0.00f, 0.15f, 0.35f, 0.65f, 1.00f, 1.50f },
-            // 2 = Moderate
-            new[] { 0.10f, 0.30f, 0.75f, 1.50f, 2.50f, 4.00f },
-            // 3 = Severe
-            new[] { 0.25f, 0.75f, 1.75f, 3.50f, 6.00f, 10.0f },
-        };
-
-        public static void Postfix(CharacterObject troop, ref ExplainedNumber __result)
+        public static void Postfix(CharacterObject troop, Hero buyerHero, ref ExplainedNumber __result)
         {
             try
             {
@@ -192,8 +180,7 @@ namespace Byzantium1071.Campaign.Patches
             int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).HireUpgradeCostPreset;
             if (preset <= 0 || preset > 3) return;
 
-            int tierIdx = Math.Max(0, Math.Min(5, troop.Tier - 1));
-            float factor = _hireFactors[preset][tierIdx];
+            float factor = B1071_EconomyMath.HireFactor(preset, troop.Tier);
 
             // Vanilla GetTroopRecruitmentCost applies result.Add(BaseNumber * 2f) for
             // Occupation.Mercenary, Occupation.Gangster, and Occupation.CaravanGuard.
@@ -219,8 +206,76 @@ namespace Byzantium1071.Campaign.Patches
 
             if (factor != 0f)
                 __result.AddFactor(factor, _label);
+
+            float foreignFactor = GetForeignFactor(troop, buyerHero);
+            if (foreignFactor != 0f)
+                __result.AddFactor(foreignFactor, _foreignLabel);
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] HireCostPatch error: {ex}"); }
+        }
+
+        /// <summary>
+        /// Premium for hiring outside your own realm.
+        ///
+        /// Manpower is a property of the SETTLEMENT, not of the recruiter. Charging a
+        /// foreigner extra manpower would drain the host settlement faster and punish
+        /// that kingdom for the recruiter's behaviour - the wrong party pays. Gold is a
+        /// property of the recruiter, so gold is the correct lever: you are outbidding
+        /// the local lord for men who owe him service and owe you nothing.
+        ///
+        /// Without this, a player can tour every kingdom at peace and refill from full
+        /// volunteer boards indefinitely, while AI lords stay home and drain only their
+        /// own realm. That asymmetry made the manpower system a net player ADVANTAGE.
+        ///
+        /// Exempt only when the clan has NO kingdom AND NO fief - the early-game player,
+        /// for whom every settlement in Calradia would otherwise be foreign. A landless
+        /// VASSAL or MERCENARY is deliberately not exempt: swearing to a kingdom makes that
+        /// kingdom your realm, so every other realm is abroad whether or not you personally
+        /// hold a fief. Exempting them would have left the whole gate trivially bypassable
+        /// by simply not accepting a fief.
+        ///
+        /// Tavern mercenaries and caravan guards are exempt everywhere. The premium exists
+        /// because a settlement's volunteers owe service to their own lord and you are
+        /// outbidding him for them. A wandering mercenary owes nobody anything, so there is
+        /// no local lord to outbid and no reason his price should depend on whose town he is
+        /// drinking in. Occupation is the exact test: tavern hires come from the culture's
+        /// BasicMercenaryTroops (Occupation.Mercenary) or are caravan guards
+        /// (Occupation.CaravanGuard), while every settlement volunteer is Occupation.Soldier.
+        /// Testing the troop rather than a call-path flag covers the displayed price, the
+        /// AI's affordability pre-check and the actual charge in one place - those are three
+        /// separate call sites in vanilla and only one of them passes through ApplyInternal.
+        ///
+        /// Caravans are checked separately as well. They only ever buy tavern guards, so the
+        /// occupation test already covers them, but a caravan is the player's trade party
+        /// running abroad by design and must never be taxed for being where it belongs.
+        /// </summary>
+        private static float GetForeignFactor(CharacterObject? troop, Hero? buyerHero)
+        {
+            if (buyerHero?.Clan == null) return 0f;
+
+            int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).ForeignRecruitCostPreset;
+            if (preset <= 0 || preset > 3) return 0f;
+
+            if (troop != null &&
+                (troop.Occupation == Occupation.Mercenary || troop.Occupation == Occupation.CaravanGuard))
+                return 0f;
+
+            if (buyerHero.PartyBelongedTo != null && buyerHero.PartyBelongedTo.IsCaravan) return 0f;
+
+            if (buyerHero.Clan.Kingdom == null &&
+                (buyerHero.Clan.Settlements == null || buyerHero.Clan.Settlements.Count == 0)) return 0f;
+
+            // Where the buyer actually is. Heroes inside a settlement report it directly;
+            // a party leader reports it through the party.
+            Settlement? host = buyerHero.CurrentSettlement ?? buyerHero.PartyBelongedTo?.CurrentSettlement;
+            if (host == null) return 0f;
+
+            IFaction? hostFaction = host.OwnerClan?.MapFaction;
+            IFaction? buyerFaction = buyerHero.MapFaction;
+            if (hostFaction == null || buyerFaction == null) return 0f;
+            if (hostFaction == buyerFaction) return 0f;
+
+            return B1071_EconomyMath.ForeignHireFactor(preset);
         }
     }
 
@@ -229,20 +284,6 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultPartyWageModel), nameof(DefaultPartyWageModel.GetCharacterWage))]
     public static class B1071_WagePatch
     {
-        // [preset 0-3][tier_index 0-5]  — multiplicative factors
-        // applied as: result = Round(vanilla * (1 + factor))
-        private static readonly float[][] _wageFactors =
-        {
-            // 0 = Off (vanilla)
-            new[] { 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f },
-            // 1 = Light
-            new[] { 0.00f, 0.00f, 0.20f, 0.40f, 0.70f, 1.00f },
-            // 2 = Moderate
-            new[] { 0.00f, 0.10f, 0.50f, 1.00f, 1.60f, 2.50f },
-            // 3 = Severe
-            new[] { 0.10f, 0.25f, 0.70f, 1.50f, 2.50f, 4.00f },
-        };
-
         public static void Postfix(CharacterObject character, ref int __result)
         {
             try
@@ -258,13 +299,12 @@ namespace Byzantium1071.Campaign.Patches
             int preset = (B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults).WagePreset;
             if (preset <= 0 || preset > 3) return;
 
-            int tierIdx = Math.Max(0, Math.Min(5, character.Tier - 1));
-            float factor = _wageFactors[preset][tierIdx];
+            float factor = B1071_EconomyMath.WageFactor(preset, character.Tier);
             if (factor == 0f) return;
 
             // Preserve a minimum of 1d/day (LimitMin in GetTotalWage handles the party
             // aggregate floor, but individual wages should not go below 1 either).
-            __result = Math.Max(1, (int)Math.Round(__result * (1f + factor)));
+            __result = B1071_EconomyMath.AdjustedWage(__result, preset, character.Tier);
             }
             catch (Exception ex) { TaleWorlds.Library.Debug.Print($"[Byzantium1071] WagePatch error: {ex}"); }
         }
@@ -312,7 +352,7 @@ namespace Byzantium1071.Campaign.Patches
             // Convert percent-of-field to AddFactor offset:
             //   GarrisonWagePercent = 60 → factor = 60/100 - 1 = -0.40 (40% discount)
             //   GarrisonWagePercent = 100 → factor = 0 (no change)
-            float factor = settings.GarrisonWagePercent / 100f - 1f;
+            float factor = B1071_EconomyMath.GarrisonWageAddFactor(settings.GarrisonWagePercent);
             if (factor >= 0f) return;
 
             __result.AddFactor(factor, _label);

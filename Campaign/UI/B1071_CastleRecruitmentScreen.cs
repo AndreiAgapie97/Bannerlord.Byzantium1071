@@ -20,6 +20,7 @@ namespace Byzantium1071.Campaign.UI
 
         private ScreenBase? _parentScreen;
         private GauntletLayer? _gauntletLayer;
+        private GauntletMovieIdentifier? _movie;
         private B1071_CastleRecruitmentVM? _viewModel;
 
         /// <summary>
@@ -37,7 +38,9 @@ namespace Byzantium1071.Campaign.UI
             {
                 _viewModel = new B1071_CastleRecruitmentVM(castle, OnCloseRequested);
                 _gauntletLayer = new GauntletLayer("B1071_CastleRecruitment", 500);
-                _gauntletLayer.LoadMovie("B1071_CastleRecruitment", _viewModel);
+                var context = _gauntletLayer.UIContext;
+                _viewModel.SetViewportHeight(context.TwoDimensionContext.Height * context.CustomInverseScale);
+                _movie = _gauntletLayer.LoadMovie("B1071_CastleRecruitment", _viewModel);
                 _gauntletLayer.InputRestrictions.SetInputRestrictions();
                 _parentScreen.AddLayer(_gauntletLayer);
             }
@@ -48,7 +51,7 @@ namespace Byzantium1071.Campaign.UI
                         .SetTextVariable("ERR", ex.Message)
                         .ToString(),
                     Colors.Red));
-                Cleanup();
+                OnCloseRequested();
             }
         }
 
@@ -56,9 +59,11 @@ namespace Byzantium1071.Campaign.UI
         {
             try
             {
-                if (_gauntletLayer != null && _parentScreen != null)
+                if (_gauntletLayer != null && !_gauntletLayer.IsFinalized && _parentScreen != null)
                 {
                     _gauntletLayer.InputRestrictions.ResetInputRestrictions();
+                    // Release bindings before RemoveLayer finalizes the UI context.
+                    if (_movie != null) _gauntletLayer.ReleaseMovie(_movie);
                     _parentScreen.RemoveLayer(_gauntletLayer);
                 }
             }
@@ -72,6 +77,7 @@ namespace Byzantium1071.Campaign.UI
 
         private void Cleanup()
         {
+            _movie = null;
             _gauntletLayer = null;
             _viewModel?.OnFinalize();
             _viewModel = null;

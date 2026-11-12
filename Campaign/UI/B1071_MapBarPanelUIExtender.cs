@@ -1,9 +1,13 @@
 using Bannerlord.UIExtenderEx;
 using Bannerlord.UIExtenderEx.Attributes;
-using Bannerlord.UIExtenderEx.Prefabs2;
+using Bannerlord.UIExtenderEx.Prefabs;
 using Bannerlord.UIExtenderEx.ViewModels;
+using System.Xml;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapBar;
 using TaleWorlds.Library;
+using TaleWorlds.TwoDimension;
+using TaleWorlds.Core.ViewModelCollection.Information;
+using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.UI
 {
@@ -21,40 +25,78 @@ namespace Byzantium1071.Campaign.UI
             "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"MapTextBrush\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ToggleText\"/>" +
             "</Children>" +
             "</ButtonWidget>" +
-            // Main panel (1180 x dynamic height)
+            // Main panel (1200 x configured height)
             "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"1200\" SuggestedHeight=\"@B1071PanelHeight\" MarginTop=\"6\" IsVisible=\"@B1071PanelExpanded\">" +
             "<Children>" +
             "<BrushWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.Frame\" DoNotAcceptEvents=\"true\"/>" +
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"5\" MarginRight=\"5\" MarginTop=\"5\" MarginBottom=\"5\" Sprite=\"Encyclopedia\\canvas\" DoNotAcceptEvents=\"true\"/>" +
             // Tab bar background strip — removed, using tab-row-level background instead
             // Inner content stack
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"24\" MarginRight=\"24\" MarginTop=\"14\" MarginBottom=\"16\" StackLayout.LayoutMethod=\"VerticalBottomToTop\">" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"24\" MarginRight=\"24\" MarginTop=\"14\" MarginBottom=\"16\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
             "<Children>" +
-            // === FOOTER ROW (renders at BOTTOM) ===
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            // === TAB ROW (renders at TOP) — with navbar background ===
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"36\" MarginTop=\"4\" MarginBottom=\"2\">" +
             "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginTop=\"1\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071PrevPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Previous.Page.Navigation.Button\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginLeft=\"4\" MarginTop=\"1\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071NextPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Next.Page.Navigation.Button\"/></Children></ButtonWidget>" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"16\" MarginTop=\"1\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071PageText\" />" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\"/>" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" MarginRight=\"4\" MarginTop=\"3\" MarginBottom=\"3\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            "<Children>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabCurrentSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCurrent\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCurrentText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCurrentText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabCurrentSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabNearbySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabNearby\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabNearbyText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabNearbyText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabNearbySelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabCastlesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCastles\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCastlesText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCastlesText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabCastlesSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabTownsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabTowns\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabTownsText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabTownsText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabTownsSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabVillagesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabVillages\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabVillagesText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabVillagesText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabVillagesSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabFactionsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabFactions\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabFactionsText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabFactionsText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabFactionsSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabArmiesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabArmies\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabArmiesText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabArmiesText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabArmiesSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabWarsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabWars\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabWarsText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabWarsText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabWarsSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabCasualtiesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCasualties\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCasualtiesText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCasualtiesText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabCasualtiesSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabRebellionSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabRebellion\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabRebellionText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabRebellionText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabRebellionSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabPrisonersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabPrisoners\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabPrisonersSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabInstabilitySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabInstability\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabInstabilitySelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabCharactersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCharacters\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCharactersText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCharactersText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabCharactersSelected\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"B1071.QuietButton\" IsSelected=\"@B1071TabSearchSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabSearch\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabSearchText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabSearchText\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071TabSearchSelected\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
+            "</Children>" +
+            "</Widget>" +
             // === DIVIDER ===
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"6\" MarginBottom=\"6\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
-            // === CONTENT AREA (fixed height; clips overflow) ===
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginTop=\"6\" ClipContents=\"true\" StackLayout.LayoutMethod=\"VerticalBottomToTop\">" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"4\" MarginBottom=\"4\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
+            // Title (top visually)
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071TitleText\" />" +
+            // === SEARCH CONTROLS ===
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"28\" MarginTop=\"4\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071SearchControlsVisible\">" +
             "<Children>" +
-            // Totals row (bottom visually — 4-column, gold)
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071TotalsVisible\">" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginRight=\"6\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"320\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals1\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals2\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"200\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals3\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals4\" />" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" MarginLeft=\"12\" Text=\"@B1071Totals5\" />" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.85\"/>" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.5\" Color=\"#000000FF\"/>" +
+            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" Brush.FontSize=\"15\" DefaultSearchText=\"@B1071SearchPlaceholder\" IsAutoFocused=\"true\" IsVisible=\"@B1071SearchControlsVisible\"/>" +
+            "</Children>" +
+            "</Widget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071SearchButtonText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"58\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071ClearSearch\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071ClearText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterAll\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterAllText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterAllText\" IsVisible=\"@B1071FilterAllSelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterHero\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterHeroText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterHeroText\" IsVisible=\"@B1071FilterHeroSelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterPlace\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterPlaceText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterPlaceText\" IsVisible=\"@B1071FilterPlaceSelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterArmy\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterArmyText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterArmyText\" IsVisible=\"@B1071FilterArmySelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterMarket\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterMarketText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterMarketText\" IsVisible=\"@B1071FilterMarketSelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"64\" MarginLeft=\"6\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071FilterOther\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterOtherText\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FilterOtherText\" IsVisible=\"@B1071FilterOtherSelected\" DoNotAcceptEvents=\"true\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
-            // Data-total divider (appears above Total row visually)
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.75\" IsVisible=\"@B1071TotalsVisible\"/>" +
+            // === CONTENT AREA (fills remaining space; rows anchored at top) ===
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginTop=\"6\" ClipContents=\"true\" StackLayout.LayoutMethod=\"VerticalTopToBottom\">" +
+            "<Children>" +
+            // Column headers (parchment text, existing font size)
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            "<Children>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"20\" SuggestedWidth=\"@B1071Width1\" ClipContents=\"true\" IsEnabled=\"@B1071CanSort\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol1\" Command.HoverBegin=\"ExecuteB1071HeaderHint1Begin\" Command.HoverEnd=\"ExecuteB1071HeaderHint1End\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header1\" /><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header1\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Header1Sorted\" /></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"20\" SuggestedWidth=\"@B1071Width2\" ClipContents=\"true\" IsEnabled=\"@B1071CanSort\" MarginLeft=\"24\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol2\" Command.HoverBegin=\"ExecuteB1071HeaderHint2Begin\" Command.HoverEnd=\"ExecuteB1071HeaderHint2End\"><Children><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left2\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right2\" /></Children></Widget><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Header2Sorted\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header2\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left2\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header2\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right2\" /></Children></Widget></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"20\" SuggestedWidth=\"@B1071Width3\" ClipContents=\"true\" IsEnabled=\"@B1071CanSort\" MarginLeft=\"24\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol3\" Command.HoverBegin=\"ExecuteB1071HeaderHint3Begin\" Command.HoverEnd=\"ExecuteB1071HeaderHint3End\"><Children><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left3\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right3\" /></Children></Widget><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Header3Sorted\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header3\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left3\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header3\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right3\" /></Children></Widget></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"20\" SuggestedWidth=\"@B1071Width4\" ClipContents=\"true\" IsEnabled=\"@B1071CanSort\" MarginLeft=\"24\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol4\" Command.HoverBegin=\"ExecuteB1071HeaderHint4Begin\" Command.HoverEnd=\"ExecuteB1071HeaderHint4End\"><Children><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left4\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right4\" /></Children></Widget><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Header4Sorted\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header4\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left4\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header4\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right4\" /></Children></Widget></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"20\" SuggestedWidth=\"@B1071Width5\" ClipContents=\"true\" IsEnabled=\"@B1071CanSort\" MarginLeft=\"24\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol5\" Command.HoverBegin=\"ExecuteB1071HeaderHint5Begin\" Command.HoverEnd=\"ExecuteB1071HeaderHint5End\"><Children><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left5\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" DoNotAcceptEvents=\"true\" Text=\"@B1071Header5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right5\" /></Children></Widget><Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Header5Sorted\" DoNotAcceptEvents=\"true\"><Children><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header5\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Left5\" /><TextWidget Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header5\" DoNotAcceptEvents=\"true\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" IsVisible=\"@B1071Right5\" /></Children></Widget></Children></ButtonWidget>" +
+            "</Children>" +
+            "</ListPanel>" +
+            // Divider between column headings and data
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.62\"/>" +
             // Data rows — collection-bound row template
             "<ListPanel DataSource=\"{B1071LedgerRows}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginTop=\"2\" StackLayout.LayoutMethod=\"VerticalBottomToTop\">" +
             "<ItemTemplate>" +
@@ -66,76 +108,50 @@ namespace Byzantium1071.Campaign.UI
             // Player-faction highlight — gold tint on rows belonging to/involving the player
             "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"BlankWhiteSquare_9\" Color=\"#D4B870\" AlphaFactor=\"0.12\" DoNotAcceptEvents=\"true\" IsVisible=\"@IsHighlighted\"/>" +
             // Row content
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@IsTableRow\">" +
             "<Children>" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"320\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell1\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell2\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"200\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" MarginLeft=\"12\" Text=\"@Cell3\" />" +
-            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"160\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" MarginLeft=\"12\" Text=\"@Cell4\" />" +
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" MarginLeft=\"12\" Text=\"@Cell5\" />" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"@Width1\" ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell1\" />" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"@Width2\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Left2\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Right2\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"@Width3\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Left3\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Right3\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"@Width4\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Left4\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Right4\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"@Width5\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Left5\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"15\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Center\" Text=\"@Cell5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@Right5\" /></Children></Widget>" +
             "</Children>" +
             "</ListPanel>" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@IsDetail\"><Children><TextWidget WidthSizePolicy=\"Fixed\" SuggestedWidth=\"180\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" ClipContents=\"true\" Text=\"@DetailLabel\" DoNotAcceptEvents=\"true\"/><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"24\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Center\" ClipContents=\"true\" Text=\"@DetailText\" DoNotAcceptEvents=\"true\"/></Children></ListPanel>" +
+            "<HintWidget DataSource=\"{Hint}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Command.HoverBegin=\"ExecuteBeginHint\" Command.HoverEnd=\"ExecuteEndHint\"/>" +
             "</Children>" +
             "</Widget>" +
             "</ItemTemplate>" +
             "</ListPanel>" +
-            // Settlement-data divider (appears below header row visually)
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.62\"/>" +
-            // Column headers (muted, small)
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
+            // Divider between data and totals
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.75\" IsVisible=\"@B1071TotalsVisible\"/>" +
+            // Additive totals follow columns; mixed summaries use the full width.
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"24\" IsVisible=\"@B1071TotalsVisible\"><Children>" +
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071ColumnTotalsVisible\">" +
             "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"320\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol1\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header1\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol2\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header2\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"200\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol3\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header3\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"CoverChildren\" SuggestedWidth=\"160\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol4\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header4\" /></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"12\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071SortCol5\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#9F947DFF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Header5\" /></Children></ButtonWidget>" +
+            "<TextWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"22\" SuggestedWidth=\"@B1071Width1\" ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals1\" />" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"@B1071Width2\" SuggestedHeight=\"22\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Left2\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals2\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Right2\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"@B1071Width3\" SuggestedHeight=\"22\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Left3\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals3\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Right3\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"@B1071Width4\" SuggestedHeight=\"22\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Left4\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals4\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Right4\" /></Children></Widget>" +
+            "<Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"@B1071Width5\" SuggestedHeight=\"22\" MarginLeft=\"24\" DoNotAcceptEvents=\"true\"><Children><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Left5\" /><TextWidget ClipContents=\"true\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Right\" Brush.TextVerticalAlignment=\"Top\" Text=\"@B1071Totals5\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" DoNotAcceptEvents=\"true\" IsVisible=\"@B1071Right5\" /></Children></Widget>" +
             "</Children>" +
             "</ListPanel>" +
-            // Header-data divider (appears between headers and first data row visually)
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"1\" MarginTop=\"0\" MarginBottom=\"0\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.62\"/>" +
-            // Title (top visually)
-            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"16\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071TitleText\" />" +
-            "</Children>" +
-            "</ListPanel>" +
-            // === SEARCH CONTROLS ===
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"28\" MarginTop=\"4\" MarginBottom=\"2\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\" IsVisible=\"@B1071SearchControlsVisible\">" +
-            "<Children>" +
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginRight=\"6\">" +
-            "<Children>" +
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.85\"/>" +
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\" AlphaFactor=\"0.5\" Color=\"#000000FF\"/>" +
-            "<EditableTextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"10\" MarginRight=\"6\" MarginTop=\"2\" MarginBottom=\"2\" Text=\"@B1071SearchQuery\" Brush=\"SaveLoad.Search.InputText\" DefaultSearchText=\"@B1071SearchPlaceholder\" IsAutoFocused=\"true\"/>" +
-            "</Children>" +
-            "</Widget>" +
-            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"StretchToParent\" SuggestedWidth=\"86\" Brush=\"Encyclopedia.FilterListButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071Search\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071SearchButtonText\"/></Children></ButtonWidget>" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.History.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D4B870FF\" Brush.TextHorizontalAlignment=\"Left\" Brush.TextVerticalAlignment=\"Top\" ClipContents=\"true\" Text=\"@B1071SummaryText\" IsVisible=\"@B1071SummaryVisible\" DoNotAcceptEvents=\"true\"/>" +
+            "<HintWidget DataSource=\"{B1071TotalsHint}\" WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Command.HoverBegin=\"ExecuteBeginHint\" Command.HoverEnd=\"ExecuteEndHint\"/></Children></Widget>" +
             "</Children>" +
             "</ListPanel>" +
             // === DIVIDER ===
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"4\" MarginBottom=\"4\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
-            // === TAB ROW (renders at TOP) — with navbar background ===
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"36\" MarginTop=\"4\" MarginBottom=\"2\">" +
+            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"Fixed\" SuggestedHeight=\"3\" MarginTop=\"6\" MarginBottom=\"6\" Sprite=\"Encyclopedia\\list_divider\" AlphaFactor=\"0.85\"/>" +
+            // === FOOTER ROW (remaining space is assigned to the content area) ===
+            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
             "<Children>" +
-            "<Widget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Sprite=\"Encyclopedia\\navbar\" DoNotAcceptEvents=\"true\"/>" +
-            "<ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" MarginRight=\"4\" MarginTop=\"3\" MarginBottom=\"3\" StackLayout.LayoutMethod=\"HorizontalLeftToRight\">" +
-            "<Children>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCurrentSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCurrent\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCurrentText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabNearbySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabNearby\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabNearbyText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCastlesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCastles\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCastlesText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabTownsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabTowns\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabTownsText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabVillagesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabVillages\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabVillagesText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabFactionsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabFactions\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabFactionsText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabArmiesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabArmies\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabArmiesText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabWarsSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabWars\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabWarsText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCasualtiesSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCasualties\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCasualtiesText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabRebellionSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabRebellion\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabRebellionText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabPrisonersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabPrisoners\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabPrisonersText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabInstabilitySelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabInstability\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabInstabilityText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabCharactersSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabCharacters\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabCharactersText\"/></Children></ButtonWidget>" +
-            "<ButtonWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" MarginLeft=\"4\" Brush=\"Encyclopedia.FilterListButton\" IsSelected=\"@B1071TabSearchSelected\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" Command.Click=\"ExecuteB1071TabSearch\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"13\" Brush.FontColor=\"#D8CCB0FF\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071TabSearchText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginTop=\"1\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" IsEnabled=\"@B1071CanPreviousPage\" Command.Click=\"ExecuteB1071PrevPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Previous.Page.Navigation.Button\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"52\" SuggestedHeight=\"25\" MarginLeft=\"4\" MarginTop=\"1\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" UpdateChildrenStates=\"true\" IsEnabled=\"@B1071CanNextPage\" Command.Click=\"ExecuteB1071NextPage\"><Children><ImageWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"22\" SuggestedHeight=\"22\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Center\" Brush=\"Encyclopedia.Next.Page.Navigation.Button\"/></Children></ButtonWidget>" +
+            "<TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" MarginLeft=\"16\" MarginTop=\"1\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.FontColor=\"#D0C2A5FF\" Brush.TextHorizontalAlignment=\"Left\" Text=\"@B1071PageText\" />" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"140\" SuggestedHeight=\"25\" MarginLeft=\"12\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071CloseLedger\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071CloseText\"/></Children></ButtonWidget>" +
+            "<ButtonWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"140\" SuggestedHeight=\"25\" MarginLeft=\"12\" Brush=\"B1071.QuietButton\" DoNotPassEventsToChildren=\"true\" Command.Click=\"ExecuteB1071FullScreen\"><Children><TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" Brush=\"Encyclopedia.SubPage.Element.Name.Text\" Brush.FontSize=\"14\" Brush.TextHorizontalAlignment=\"Center\" Brush.TextVerticalAlignment=\"Center\" Text=\"@B1071FullScreenText\"/></Children></ButtonWidget>" +
             "</Children>" +
             "</ListPanel>" +
-            "</Children>" +
-            "</Widget>" +
             "</Children>" +
             "</ListPanel>" +
             "</Children>" +
@@ -146,38 +162,47 @@ namespace Byzantium1071.Campaign.UI
             "</Widget>";
     }
 
-    // Injection guard: prevents the panel from being inserted multiple times
-    // if multiple PrefabExtension paths match in a given game version.
-    internal static class B1071_PanelInjectionGuard
+    /// <summary>
+    /// Inserts the ledger panel into the map bar prefab: after the map bar ListPanel, or after
+    /// the info bar in a game version without that ListPanel.
+    ///
+    /// One document patch instead of one insert patch per anchor. Both anchors exist in the
+    /// same prefab, so two insert patches would each add the panel. That used to be prevented
+    /// by a static one-shot guard on the patch text, which broke under UIExtenderEx 3.x:
+    /// every patch re-runs each time the prefab is processed, each pass starting from the
+    /// pristine XML, and 3.x processes the map bar more than once — for its compiled prefab
+    /// as well as for the screen. The first pass spent the guard, every later pass inserted
+    /// an empty widget, and M toggled a panel that was not there. Apply reads no state, so
+    /// every pass produces the same prefab.
+    ///
+    /// UIExtenderEx matches movies by bare file name (WidgetPrefabPatch.ProcessMovie ->
+    /// Path.GetFileNameWithoutExtension), so "MapBar" is the only registration that resolves.
+    /// </summary>
+    // No XPath: UIExtenderEx hands a CustomPatch<XmlDocument> the whole document. The
+    // explicit null only picks the two-argument constructor; with one argument the call is
+    // ambiguous with the obsolete three-argument overload.
+    [PrefabExtension("MapBar", null)]
+    public sealed class B1071_MapBarPanelPrefabExtension : CustomPatch<XmlDocument>
     {
-        private static bool _injected;
-        internal static bool TryInject()
+        internal const string PrimaryAnchor = "descendant::ListPanel[@Id='MapBar']";
+        internal const string FallbackAnchor = "descendant::MapInfoBarWidget[@Id='InfoBarWidget']";
+
+        public override string Id => "B1071MapBarPanel";
+
+        public override void Apply(XmlDocument document)
         {
-            if (_injected) return false;
-            _injected = true;
-            return true;
+            XmlNode? anchor = document.SelectSingleNode(PrimaryAnchor) ?? document.SelectSingleNode(FallbackAnchor);
+            XmlNode? parent = anchor?.ParentNode;
+            if (anchor == null || parent == null)
+            {
+                Debug.Print("[Byzantium1071][MapBar] MapBar prefab has neither ledger anchor; panel not inserted.");
+                return;
+            }
+
+            XmlDocument panel = new XmlDocument();
+            panel.LoadXml(B1071_MapBarPanelLayout.Text);
+            parent.InsertAfter(document.ImportNode(panel.DocumentElement!, deep: true), anchor);
         }
-        internal static void Reset() => _injected = false;
-    }
-
-    [PrefabExtension("MapBar", "descendant::ListPanel[@Id='MapBar']")]
-    [PrefabExtension("Map/MapBar", "descendant::ListPanel[@Id='MapBar']")]
-    public sealed class B1071_MapBarPanelPrefabExtension : PrefabExtensionInsertPatch
-    {
-        public override InsertType Type => InsertType.Append;
-
-        [PrefabExtensionText(false)]
-        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
-    }
-
-    [PrefabExtension("MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    [PrefabExtension("Map/MapBar", "descendant::MapInfoBarWidget[@Id='InfoBarWidget']")]
-    public sealed class B1071_MapBarPanelPrefabExtensionAlt : PrefabExtensionInsertPatch
-    {
-        public override InsertType Type => InsertType.Append;
-
-        [PrefabExtensionText(false)]
-        public string Text => B1071_PanelInjectionGuard.TryInject() ? B1071_MapBarPanelLayout.Text : "<Widget />";
     }
 
     [ViewModelMixin(nameof(MapBarVM.OnRefresh), true)]
@@ -238,8 +263,11 @@ namespace Byzantium1071.Campaign.UI
         private string _header4 = string.Empty;
         private string _header5 = string.Empty;
 
+        private readonly MapBarVM _mapBar;
+
         public B1071_MapBarVMMixin(MapBarVM vm) : base(vm)
         {
+            _mapBar = vm;
             B1071_OverlayController.SetPanelMode(true);
             // Register force-sync callback so the controller can push UI state synchronously
             // (e.g., hide the search widget in the same frame the overlay closes).
@@ -255,6 +283,7 @@ namespace Byzantium1071.Campaign.UI
 
         public override void OnFinalize()
         {
+            B1071_FullScreenLedger.Close();
             B1071_OverlayController._forceSyncCallback = null;
             B1071_OverlayController.SetPanelMode(false);
             base.OnFinalize();
@@ -541,8 +570,7 @@ namespace Byzantium1071.Campaign.UI
                     return;
 
                 B1071_OverlayController.SetSearchQuery(value);
-                if (B1071_OverlayController.IsTabSearchActive)
-                    RefreshLedgerBindings();
+
             }
         }
 
@@ -612,39 +640,75 @@ namespace Byzantium1071.Campaign.UI
             set => SetField(ref _totalsVisible, value, nameof(B1071TotalsVisible));
         }
 
+        // Use the displayed sort marker so the highlight follows the existing per-tab mapping.
+        [DataSourceProperty]
+        public bool B1071Header1Sorted => _header1.EndsWith(" \u2191") || _header1.EndsWith(" \u2193");
+
+        [DataSourceProperty]
+        public bool B1071Header2Sorted => _header2.EndsWith(" \u2191") || _header2.EndsWith(" \u2193");
+
+        [DataSourceProperty]
+        public bool B1071Header3Sorted => _header3.EndsWith(" \u2191") || _header3.EndsWith(" \u2193");
+
+        [DataSourceProperty]
+        public bool B1071Header4Sorted => _header4.EndsWith(" \u2191") || _header4.EndsWith(" \u2193");
+
+        [DataSourceProperty]
+        public bool B1071Header5Sorted => _header5.EndsWith(" \u2191") || _header5.EndsWith(" \u2193");
+
         [DataSourceProperty]
         public string B1071Header1
         {
             get => _header1;
-            set => SetField(ref _header1, value, nameof(B1071Header1));
+            set
+            {
+                SetField(ref _header1, value, nameof(B1071Header1));
+                OnPropertyChangedWithValue(B1071Header1Sorted, nameof(B1071Header1Sorted));
+            }
         }
 
         [DataSourceProperty]
         public string B1071Header2
         {
             get => _header2;
-            set => SetField(ref _header2, value, nameof(B1071Header2));
+            set
+            {
+                SetField(ref _header2, value, nameof(B1071Header2));
+                OnPropertyChangedWithValue(B1071Header2Sorted, nameof(B1071Header2Sorted));
+            }
         }
 
         [DataSourceProperty]
         public string B1071Header3
         {
             get => _header3;
-            set => SetField(ref _header3, value, nameof(B1071Header3));
+            set
+            {
+                SetField(ref _header3, value, nameof(B1071Header3));
+                OnPropertyChangedWithValue(B1071Header3Sorted, nameof(B1071Header3Sorted));
+            }
         }
 
         [DataSourceProperty]
         public string B1071Header4
         {
             get => _header4;
-            set => SetField(ref _header4, value, nameof(B1071Header4));
+            set
+            {
+                SetField(ref _header4, value, nameof(B1071Header4));
+                OnPropertyChangedWithValue(B1071Header4Sorted, nameof(B1071Header4Sorted));
+            }
         }
 
         [DataSourceProperty]
         public string B1071Header5
         {
             get => _header5;
-            set => SetField(ref _header5, value, nameof(B1071Header5));
+            set
+            {
+                SetField(ref _header5, value, nameof(B1071Header5));
+                OnPropertyChangedWithValue(B1071Header5Sorted, nameof(B1071Header5Sorted));
+            }
         }
 
         [DataSourceMethod]
@@ -819,6 +883,89 @@ namespace Byzantium1071.Campaign.UI
             RefreshLedgerBindings();
         }
 
+        [DataSourceProperty] public int B1071FullScreenWidth => B1071_OverlayController.FullScreenWidth;
+        [DataSourceProperty] public int B1071FullScreenHeight => B1071_OverlayController.FullScreenHeight;
+        [DataSourceProperty] public bool B1071FullScreenSearchVisible => B1071_OverlayController.IsFullScreen && B1071_OverlayController.IsSearchControlsVisible;
+        [DataSourceProperty] public string B1071FullScreenText => new TextObject("{=b1071_ledger_fullscreen}Full Screen").ToString();
+        [DataSourceProperty] public string B1071CompactText => new TextObject("{=b1071_ledger_compact}Compact").ToString();
+        [DataSourceProperty] public string B1071CloseText => new TextObject("{=b1071_ledger_close}Close").ToString();
+        [DataSourceMethod] public void ExecuteB1071FullScreen() => B1071_FullScreenLedger.RequestOpen(_mapBar);
+        [DataSourceMethod] public void ExecuteB1071Compact() => B1071_FullScreenLedger.RequestClose(false);
+        [DataSourceMethod] public void ExecuteB1071CloseLedger() => B1071_FullScreenLedger.RequestClose(true);
+
+        [DataSourceProperty] public bool B1071CanPreviousPage => B1071_OverlayController.CanPreviousPage;
+        [DataSourceProperty] public bool B1071CanNextPage => B1071_OverlayController.CanNextPage;
+        [DataSourceProperty] public bool B1071CanSort => !B1071_OverlayController.IsTabCurrentActive;
+        [DataSourceProperty] public string B1071ClearText => new TextObject("{=b1071_ledger_clear}Clear").ToString();
+        private B1071_LedgerColumns? _columns;
+        private B1071LedgerTab? _hintTab;
+        private string _headerHintLabels = string.Empty;
+        private string _totalsHintText = string.Empty;
+        [DataSourceProperty] public bool B1071SummaryVisible => B1071_OverlayController.TotalsVisible && B1071_OverlayController.UsesSummary;
+        [DataSourceProperty] public bool B1071ColumnTotalsVisible => B1071_OverlayController.TotalsVisible && !B1071_OverlayController.UsesSummary;
+        private string _summaryText = string.Empty;
+        [DataSourceProperty] public string B1071SummaryText
+        {
+            get => _summaryText;
+            set => SetField(ref _summaryText, value, nameof(B1071SummaryText));
+        }
+
+        [DataSourceProperty] public HintViewModel B1071TotalsHint { get; private set; } = new HintViewModel();
+        // Alignment enums cannot be registered as data sources by Bannerlord.
+        // Boolean visibility selects literal left/right text widgets instead.
+        [DataSourceProperty] public float B1071Width1 => B1071_OverlayController.Columns.Widths[0];
+        [DataSourceMethod] public void ExecuteB1071HeaderHint1Begin() => B1071HeaderHint1.ExecuteBeginHint();
+        [DataSourceMethod] public void ExecuteB1071HeaderHint1End() => B1071HeaderHint1.ExecuteEndHint();
+        [DataSourceProperty] public HintViewModel B1071HeaderHint1 { get; private set; } = new HintViewModel();
+        [DataSourceProperty] public bool B1071Right2 => B1071_OverlayController.Columns.Alignments[1] == TextHorizontalAlignment.Right;
+        [DataSourceProperty] public bool B1071Left2 => !B1071Right2;
+        [DataSourceProperty] public float B1071Width2 => B1071_OverlayController.Columns.Widths[1];
+        [DataSourceMethod] public void ExecuteB1071HeaderHint2Begin() => B1071HeaderHint2.ExecuteBeginHint();
+        [DataSourceMethod] public void ExecuteB1071HeaderHint2End() => B1071HeaderHint2.ExecuteEndHint();
+        [DataSourceProperty] public HintViewModel B1071HeaderHint2 { get; private set; } = new HintViewModel();
+        [DataSourceProperty] public bool B1071Right3 => B1071_OverlayController.Columns.Alignments[2] == TextHorizontalAlignment.Right;
+        [DataSourceProperty] public bool B1071Left3 => !B1071Right3;
+        [DataSourceProperty] public float B1071Width3 => B1071_OverlayController.Columns.Widths[2];
+        [DataSourceMethod] public void ExecuteB1071HeaderHint3Begin() => B1071HeaderHint3.ExecuteBeginHint();
+        [DataSourceMethod] public void ExecuteB1071HeaderHint3End() => B1071HeaderHint3.ExecuteEndHint();
+        [DataSourceProperty] public HintViewModel B1071HeaderHint3 { get; private set; } = new HintViewModel();
+        [DataSourceProperty] public bool B1071Right4 => B1071_OverlayController.Columns.Alignments[3] == TextHorizontalAlignment.Right;
+        [DataSourceProperty] public bool B1071Left4 => !B1071Right4;
+        [DataSourceProperty] public float B1071Width4 => B1071_OverlayController.Columns.Widths[3];
+        [DataSourceMethod] public void ExecuteB1071HeaderHint4Begin() => B1071HeaderHint4.ExecuteBeginHint();
+        [DataSourceMethod] public void ExecuteB1071HeaderHint4End() => B1071HeaderHint4.ExecuteEndHint();
+        [DataSourceProperty] public HintViewModel B1071HeaderHint4 { get; private set; } = new HintViewModel();
+        [DataSourceProperty] public bool B1071Right5 => B1071_OverlayController.Columns.Alignments[4] == TextHorizontalAlignment.Right;
+        [DataSourceProperty] public bool B1071Left5 => !B1071Right5;
+        [DataSourceProperty] public float B1071Width5 => B1071_OverlayController.Columns.Widths[4];
+        [DataSourceMethod] public void ExecuteB1071HeaderHint5Begin() => B1071HeaderHint5.ExecuteBeginHint();
+        [DataSourceMethod] public void ExecuteB1071HeaderHint5End() => B1071HeaderHint5.ExecuteEndHint();
+        [DataSourceProperty] public HintViewModel B1071HeaderHint5 { get; private set; } = new HintViewModel();
+        [DataSourceMethod]
+        public void ExecuteB1071ClearSearch()
+        {
+            B1071_OverlayController.ClearSearch();
+            RefreshLedgerBindings();
+        }
+        [DataSourceProperty] public string B1071FilterAllText => new TextObject("{=b1071_ledger_filter_all}All").ToString();
+        [DataSourceProperty] public bool B1071FilterAllSelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.All;
+        [DataSourceMethod] public void ExecuteB1071FilterAll() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.All); RefreshLedgerBindings(); }
+        [DataSourceProperty] public string B1071FilterHeroText => new TextObject("{=b1071_ledger_filter_hero}Heroes").ToString();
+        [DataSourceProperty] public bool B1071FilterHeroSelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.Hero;
+        [DataSourceMethod] public void ExecuteB1071FilterHero() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.Hero); RefreshLedgerBindings(); }
+        [DataSourceProperty] public string B1071FilterPlaceText => new TextObject("{=b1071_ledger_filter_place}Places").ToString();
+        [DataSourceProperty] public bool B1071FilterPlaceSelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.Place;
+        [DataSourceMethod] public void ExecuteB1071FilterPlace() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.Place); RefreshLedgerBindings(); }
+        [DataSourceProperty] public string B1071FilterArmyText => new TextObject("{=b1071_ledger_filter_army}Armies").ToString();
+        [DataSourceProperty] public bool B1071FilterArmySelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.Army;
+        [DataSourceMethod] public void ExecuteB1071FilterArmy() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.Army); RefreshLedgerBindings(); }
+        [DataSourceProperty] public string B1071FilterMarketText => new TextObject("{=b1071_ledger_filter_market}Markets").ToString();
+        [DataSourceProperty] public bool B1071FilterMarketSelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.Market;
+        [DataSourceMethod] public void ExecuteB1071FilterMarket() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.Market); RefreshLedgerBindings(); }
+        [DataSourceProperty] public string B1071FilterOtherText => new TextObject("{=b1071_ledger_filter_other}Other").ToString();
+        [DataSourceProperty] public bool B1071FilterOtherSelected => B1071_OverlayController.SearchFilter == B1071SearchFilter.Other;
+        [DataSourceMethod] public void ExecuteB1071FilterOther() { B1071_OverlayController.SetSearchFilter(B1071SearchFilter.Other); RefreshLedgerBindings(); }
+
         private void RefreshLedgerBindings()
         {
             B1071_OverlayController.RefreshNow();
@@ -828,7 +975,10 @@ namespace Byzantium1071.Campaign.UI
         private void SyncFromController(bool notifyAll)
         {
             _isSyncingFromController = true;
-            B1071PanelVisible = B1071_OverlayController.IsVisible;
+            B1071PanelVisible = B1071_OverlayController.IsVisible && !B1071_OverlayController.IsFullScreen;
+            OnPropertyChangedWithValue(B1071FullScreenWidth, nameof(B1071FullScreenWidth));
+            OnPropertyChangedWithValue(B1071FullScreenHeight, nameof(B1071FullScreenHeight));
+            OnPropertyChangedWithValue(B1071FullScreenSearchVisible, nameof(B1071FullScreenSearchVisible));
             B1071PanelExpanded = B1071_OverlayController.IsExpanded;
             B1071PanelLeftOffset = B1071_OverlayController.PanelLeftOffset;
             B1071PanelTopOffset = B1071_OverlayController.PanelTopOffset;
@@ -863,23 +1013,75 @@ namespace Byzantium1071.Campaign.UI
             B1071TabCharactersSelected = B1071_OverlayController.IsTabCharactersActive;
             B1071TabSearchSelected = B1071_OverlayController.IsTabSearchActive;
             B1071TabCasualtiesSelected = B1071_OverlayController.IsTabCasualtiesActive;
-            B1071SearchControlsVisible = B1071_OverlayController.IsSearchControlsVisible;
+            B1071SearchControlsVisible = B1071_OverlayController.IsSearchControlsVisible && !B1071_OverlayController.IsFullScreen;
             B1071SearchQuery = B1071_OverlayController.SearchQuery;
             B1071SortText = B1071_OverlayController.SortText;
             B1071PageText = B1071_OverlayController.PageText;
             B1071TitleText = B1071_OverlayController.TitleText;
             // B1071LedgerRows is bound directly to the controller's MBBindingList (no copy needed)
-            B1071Totals1 = B1071_OverlayController.Totals1;
-            B1071Totals2 = B1071_OverlayController.Totals2;
-            B1071Totals3 = B1071_OverlayController.Totals3;
-            B1071Totals4 = B1071_OverlayController.Totals4;
-            B1071Totals5 = B1071_OverlayController.Totals5;
+            B1071Totals1 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals1, (int)(B1071Width1 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals2 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals2, (int)(B1071Width2 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals3 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals3, (int)(B1071Width3 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals4 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals4, (int)(B1071Width4 / B1071_OverlayController.Columns.CharacterWidth));
+            B1071Totals5 = B1071_DisplayMath.TruncateForColumn(B1071_OverlayController.Totals5, (int)(B1071Width5 / B1071_OverlayController.Columns.CharacterWidth));
             B1071TotalsVisible = B1071_OverlayController.TotalsVisible;
+            string summaryText = B1071_OverlayController.SummaryText;
+            B1071SummaryText = B1071_DisplayMath.TruncateForColumn(summaryText, B1071_OverlayController.IsFullScreen
+                ? (B1071FullScreenWidth - 2 * B1071_FullScreenLedgerLayout.SidePadding) / 9 : 164);
+            OnPropertyChangedWithValue(B1071SummaryVisible, nameof(B1071SummaryVisible));
+            OnPropertyChangedWithValue(B1071ColumnTotalsVisible, nameof(B1071ColumnTotalsVisible));
             B1071Header1 = B1071_OverlayController.Header1;
             B1071Header2 = B1071_OverlayController.Header2;
             B1071Header3 = B1071_OverlayController.Header3;
             B1071Header4 = B1071_OverlayController.Header4;
             B1071Header5 = B1071_OverlayController.Header5;
+            OnPropertyChangedWithValue(B1071CanPreviousPage, nameof(B1071CanPreviousPage));
+            OnPropertyChangedWithValue(B1071CanNextPage, nameof(B1071CanNextPage));
+            OnPropertyChangedWithValue(B1071CanSort, nameof(B1071CanSort));
+            OnPropertyChangedWithValue(B1071FilterAllSelected, nameof(B1071FilterAllSelected));
+            OnPropertyChangedWithValue(B1071FilterHeroSelected, nameof(B1071FilterHeroSelected));
+            OnPropertyChangedWithValue(B1071FilterPlaceSelected, nameof(B1071FilterPlaceSelected));
+            OnPropertyChangedWithValue(B1071FilterArmySelected, nameof(B1071FilterArmySelected));
+            OnPropertyChangedWithValue(B1071FilterMarketSelected, nameof(B1071FilterMarketSelected));
+            OnPropertyChangedWithValue(B1071FilterOtherSelected, nameof(B1071FilterOtherSelected));
+            string headerHintLabels = string.Join("|", new[] { B1071Header1, B1071Header2, B1071Header3, B1071Header4, B1071Header5 });
+            if (!ReferenceEquals(_columns, B1071_OverlayController.Columns) || _hintTab != B1071_OverlayController.ActiveTab || _headerHintLabels != headerHintLabels)
+            {
+                _columns = B1071_OverlayController.Columns;
+                _hintTab = B1071_OverlayController.ActiveTab;
+                _headerHintLabels = headerHintLabels;
+                OnPropertyChangedWithValue(B1071Width1, nameof(B1071Width1));
+                B1071HeaderHint1 = new HintViewModel(new TextObject("{=!}" + B1071_OverlayController.HeaderHint(1)));
+                OnPropertyChangedWithValue(B1071HeaderHint1, nameof(B1071HeaderHint1));
+                OnPropertyChangedWithValue(B1071Width2, nameof(B1071Width2));
+                OnPropertyChangedWithValue(B1071Right2, nameof(B1071Right2));
+                OnPropertyChangedWithValue(B1071Left2, nameof(B1071Left2));
+                B1071HeaderHint2 = new HintViewModel(new TextObject("{=!}" + B1071_OverlayController.HeaderHint(2)));
+                OnPropertyChangedWithValue(B1071HeaderHint2, nameof(B1071HeaderHint2));
+                OnPropertyChangedWithValue(B1071Width3, nameof(B1071Width3));
+                OnPropertyChangedWithValue(B1071Right3, nameof(B1071Right3));
+                OnPropertyChangedWithValue(B1071Left3, nameof(B1071Left3));
+                B1071HeaderHint3 = new HintViewModel(new TextObject("{=!}" + B1071_OverlayController.HeaderHint(3)));
+                OnPropertyChangedWithValue(B1071HeaderHint3, nameof(B1071HeaderHint3));
+                OnPropertyChangedWithValue(B1071Width4, nameof(B1071Width4));
+                OnPropertyChangedWithValue(B1071Right4, nameof(B1071Right4));
+                OnPropertyChangedWithValue(B1071Left4, nameof(B1071Left4));
+                B1071HeaderHint4 = new HintViewModel(new TextObject("{=!}" + B1071_OverlayController.HeaderHint(4)));
+                OnPropertyChangedWithValue(B1071HeaderHint4, nameof(B1071HeaderHint4));
+                OnPropertyChangedWithValue(B1071Width5, nameof(B1071Width5));
+                OnPropertyChangedWithValue(B1071Right5, nameof(B1071Right5));
+                OnPropertyChangedWithValue(B1071Left5, nameof(B1071Left5));
+                B1071HeaderHint5 = new HintViewModel(new TextObject("{=!}" + B1071_OverlayController.HeaderHint(5)));
+                OnPropertyChangedWithValue(B1071HeaderHint5, nameof(B1071HeaderHint5));
+            }
+            string totalsHint = B1071_OverlayController.UsesSummary ? summaryText : string.Join("\n", new[] { B1071_OverlayController.Totals1, B1071_OverlayController.Totals2,
+                B1071_OverlayController.Totals3, B1071_OverlayController.Totals4, B1071_OverlayController.Totals5 });
+            if (_totalsHintText != totalsHint)
+            {
+                _totalsHintText = totalsHint;
+                B1071TotalsHint = new HintViewModel(new TextObject("{=!}" + totalsHint));
+                OnPropertyChangedWithValue(B1071TotalsHint, nameof(B1071TotalsHint));
+            }
             _isSyncingFromController = false;
 
             if (!notifyAll) return;

@@ -1,0 +1,13 @@
+<Brushes>
+  <!-- Outer frame only: drawn after the canvas so cropped backgrounds cannot cover it. -->
+  <Brush Name="B1071.PanelFrame">
+    <Layers>
+      <BrushLayer Name="Frame" ExtendLeft="5" ExtendRight="5" ExtendTop="5" ExtendBottom="5" Sprite="Frame1_frame" OverlayMethod="CoverWithTexture" OverlaySprite="stone_texture_overlay" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Frame" />
+      </Style>
+    </Styles>
+  </Brush>
+</Brushes>

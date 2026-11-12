@@ -150,8 +150,7 @@ namespace Byzantium1071.Campaign.Patches
             // No gold paid — lords deliver prisoners to their faction's castles as duty.
             foreach (var (troop, count, wounded) in toDeposit)
             {
-                partyPrison.AddToCounts(troop, -count, insertAtFront: false, -wounded);
-                castlePrison.AddToCounts(troop, count, insertAtFront: false, wounded);
+                TransferCastlePrisoners(partyPrison, castlePrison, troop, count, wounded);
             }
 
             // Record depositor for consignment income tracking.
@@ -187,6 +186,21 @@ namespace Byzantium1071.Campaign.Patches
                     }
                 }
             }
+        }
+
+        internal static void TransferCastlePrisoners(TroopRoster source, TroopRoster destination,
+            CharacterObject troop, int count, int wounded)
+        {
+            var entry = source.GetElementCopyAtIndex(source.FindIndexOfTroop(troop));
+            int cost = Math.Max(1, troop.ConformityNeededToRecruitPrisoner);
+            int points = Math.Max(0, Math.Min(entry.Xp, B1071_CastleConformityMath.Capacity(entry.Number, cost)));
+            // Match native player deposits: retain ready prisoners in the party first.
+            // Read live XP (GetTroopRoster caches it) and debit it explicitly even on
+            // partial transfers, where changing the count alone does not clamp XP.
+            int moved = Math.Max(0, points - B1071_CastleConformityMath.Capacity(entry.Number - count, cost));
+            source.SetElementXp(source.FindIndexOfTroop(troop), points - moved);
+            source.AddToCounts(troop, -count, insertAtFront: false, -wounded);
+            destination.AddToCounts(troop, count, insertAtFront: false, wounded, moved);
         }
 
         // ── Town branch: enslave T1-T3 prisoners into slave goods ──────────────

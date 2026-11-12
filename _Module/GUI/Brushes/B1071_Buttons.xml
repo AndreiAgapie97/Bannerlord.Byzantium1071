@@ -1,0 +1,27 @@
+<Brushes>
+  <!-- Local secondary controls: subdued metal at rest, clear hover and press feedback. -->
+  <Brush Name="B1071.QuietButton" FontColor="#FAF4DEFF" TransitionDuration="0">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="button_canvas_9" ExtendLeft="5" ExtendRight="5" OverlayMethod="CoverWithTexture" OverlaySprite="button_marble" />
+      <BrushLayer Name="Overlay" Sprite="button_frame_9" ExtendLeft="5" ExtendRight="5" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Default" ColorFactor="0.75" />
+        <BrushLayer Name="Overlay" ColorFactor="0.55" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Default" ColorFactor="1.15" />
+        <BrushLayer Name="Overlay" ColorFactor="1.0" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Default" ColorFactor="0.55" />
+        <BrushLayer Name="Overlay" ColorFactor="0.70" />
+      </Style>
+      <Style Name="Disabled" FontColor="#FAF4DEAA">
+        <BrushLayer Name="Default" ColorFactor="0.30" />
+        <BrushLayer Name="Overlay" ColorFactor="0.30" />
+      </Style>
+    </Styles>
+  </Brush>
+</Brushes>

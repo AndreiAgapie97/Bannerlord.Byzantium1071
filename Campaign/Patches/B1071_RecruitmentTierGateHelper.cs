@@ -185,29 +185,53 @@ namespace Byzantium1071.Campaign.Patches
                 $"({settlementType} cap T{tierCap}, troop T{troop.Tier}).");
         }
 
-        private static bool TryGetTierCap(
-            Settlement recruitmentSettlement,
-            out TextObject settlementType,
-            out int tierCap)
+        /// <summary>
+        /// The settlement's volunteer tier cap on its own, without the localized
+        /// settlement-type name that every message builder needs and no bulk check does.
+        ///
+        /// This exists for callers that test many troops against one settlement.
+        /// TryGetTierCap allocates a TextObject on entry and a second on success, so the AI
+        /// recovery quoter -- which tests every volunteer slot of every notable of every
+        /// candidate settlement, once an hour, for every recovering lord -- would allocate
+        /// two objects per slot and immediately discard both. Resolving the cap once per
+        /// settlement and comparing tiers inline costs nothing.
+        /// </summary>
+        internal static bool TryGetVolunteerTierCap(Settlement? recruitmentSettlement, out int tierCap)
         {
-            settlementType = new TextObject(string.Empty);
             tierCap = 0;
+
+            if (recruitmentSettlement == null)
+                return false;
 
             if (recruitmentSettlement.IsVillage)
             {
-                settlementType = new TextObject("{=b1071_recruit_type_village}village");
                 tierCap = Math.Max(1, Settings.VillageVolunteerTierMax);
                 return true;
             }
 
             if (recruitmentSettlement.IsTown && !recruitmentSettlement.IsCastle)
             {
-                settlementType = new TextObject("{=b1071_recruit_type_town}town");
                 tierCap = Math.Max(1, Settings.TownVolunteerTierMax);
                 return true;
             }
 
             return false;
+        }
+
+        private static bool TryGetTierCap(
+            Settlement recruitmentSettlement,
+            out TextObject settlementType,
+            out int tierCap)
+        {
+            settlementType = new TextObject(string.Empty);
+
+            if (!TryGetVolunteerTierCap(recruitmentSettlement, out tierCap))
+                return false;
+
+            settlementType = recruitmentSettlement.IsVillage
+                ? new TextObject("{=b1071_recruit_type_village}village")
+                : new TextObject("{=b1071_recruit_type_town}town");
+            return true;
         }
 
         private static CharacterObject? FindHighestAllowedAncestor(CharacterObject troop, int tierCap)
@@ -432,6 +456,62 @@ namespace Byzantium1071.Campaign.Patches
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// Villagers will not take service under the banner burning their fields.
+        /// Recruiting is refused outright in any settlement belonging to a faction the
+        /// recruiter's realm is at war with.
+        ///
+        /// In practice this closes the enemy VILLAGE route. Hostile towns and castles
+        /// cannot be entered at all, but enemy villages can, and touring them was free
+        /// manpower: the player refilled from the very pools their war was draining while
+        /// their own settlements stayed untouched. That asymmetry is what made the
+        /// manpower system a net player advantage rather than a constraint.
+        ///
+        /// This is the ACCESS half of the recruiting-abroad gate; the gold premium in
+        /// B1071_ArmyEconomicsPatch is the price half, for realms merely at peace.
+        /// Manpower cost is deliberately left alone in both: manpower belongs to the
+        /// settlement, not to the recruiter, so charging more of it would punish the
+        /// settlement being recruited from instead of the lord doing the recruiting.
+        ///
+        /// Exempt only when the clan has no kingdom AND no fief, matching the gold premium:
+        /// locking the early-game player out of every realm at war would be punishing. A
+        /// landless vassal or mercenary is not exempt - their realm is the kingdom they
+        /// serve, and its wars are their wars.
+        /// </summary>
+        internal static bool IsBlockedByWar(Settlement? settlement, Hero? buyer, out TextObject? hostFactionName)
+        {
+            hostFactionName = null;
+
+            if (settlement == null || buyer?.Clan == null)
+                return false;
+
+            if (!Settings.BlockEnemyRealmRecruitment)
+                return false;
+
+            if (buyer.Clan.Kingdom == null &&
+                (buyer.Clan.Settlements == null || buyer.Clan.Settlements.Count == 0))
+                return false;
+
+            IFaction? hostFaction = settlement.OwnerClan?.MapFaction;
+            IFaction? buyerFaction = buyer.MapFaction;
+            if (hostFaction == null || buyerFaction == null || hostFaction == buyerFaction)
+                return false;
+
+            if (!FactionManager.IsAtWarAgainstFaction(hostFaction, buyerFaction))
+                return false;
+
+            hostFactionName = hostFaction.Name;
+            return true;
+        }
+
+        internal static TextObject BuildWarBlockedMessage(Settlement settlement, TextObject hostFactionName)
+        {
+            TextObject msg = new TextObject("{=b1071_ui_war_recruit_block}{SETTLEMENT} will not raise men for you - your realm is at war with {FACTION}.");
+            msg.SetTextVariable("SETTLEMENT", settlement.Name);
+            msg.SetTextVariable("FACTION", hostFactionName);
+            return msg;
         }
     }
 }

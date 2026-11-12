@@ -43,8 +43,8 @@ namespace Byzantium1071.Campaign.Patches
                 float strain = behavior.GetStrainForTown(fortification);
                 if (strain <= 0f) return;
 
-                float cap = Math.Max(1f, Settings.GovernanceStrainCap);
-                float penalty = -(strain / cap) * Settings.GovernanceMaxProsperityPenalty;
+                float penalty = B1071_GovernanceMath.GovernancePenalty(
+                    strain, Settings.GovernanceMaxProsperityPenalty, Settings);
 
                 // Apply combined B1071 prosperity penalty cap (G-1).
                 penalty = B1071_ProsperityPenaltyCapPatch.ClampPenalty(penalty);

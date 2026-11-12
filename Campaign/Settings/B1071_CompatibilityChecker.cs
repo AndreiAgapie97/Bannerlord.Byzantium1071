@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Reflection.Emit;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Localization;
@@ -38,6 +39,7 @@ namespace Byzantium1071.Campaign.Settings
             public string ModelName = string.Empty;        // "Settlement Food Model"
             public string ActiveTypeName = string.Empty;   // "BLM_TownProductionModel"
             public bool IsDynamicallyHandled;              // true = B1071 has a runtime workaround
+            public bool SkipsOriginal;                     // true = a subclass override skips the patched original
             public ConflictRisk Risk;
             public string Explanation = string.Empty;
         }
@@ -216,7 +218,7 @@ namespace Byzantium1071.Campaign.Settings
             new("Village Volunteers",
                 m => m.VolunteerModel,
                 typeof(DefaultVolunteerModel),
-                IsDynamicallyHandled: true),   // converted to Harmony Postfix, not AddModel
+                IsDynamicallyHandled: false),  // a Harmony postfix since it stopped using AddModel; nothing re-patches a replacement
 
             new("Town Prosperity System",
                 m => m.SettlementProsperityModel,
@@ -319,7 +321,7 @@ namespace Byzantium1071.Campaign.Settings
                     // (which patch SandBoxCore rather than TaleWorlds.*) are never missed.
                     foreach (var p in info.Prefixes.Concat(info.Postfixes)
                                            .Concat(info.Transpilers).Concat(info.Finalizers))
-                        if (p.owner != B1071HarmonyId && !IsFrameworkId(p.owner))
+                        if (p.owner != B1071HarmonyId && !B1071_CompatibilityMath.IsFrameworkId(p.owner))
                             _allGameplayOwners.Add(p.owner);
 
                     bool b1071Patches = info.Prefixes.Any(p => p.owner == B1071HarmonyId)
@@ -447,16 +449,46 @@ namespace Byzantium1071.Campaign.Settings
                     var activeType = activeModel.GetType();
                     string? activeAssembly = activeType.Assembly?.GetName()?.Name;
 
-                    // If the active model IS the expected type (or a subclass), our patches fire normally.
-                    // Note: IsAssignableFrom covers both exact match and subclass, so if this passes,
-                    // all Harmony patches on the expected type will fire via virtual dispatch.
-                    if (check.ExpectedType.IsAssignableFrom(activeType)) continue;
+                    // The expected type itself, or a subclass of it. Harmony patches the method
+                    // body on the expected type, not the virtual slot, so a subclass reaches a
+                    // patch only through overrides that call base. One that never calls base cuts
+                    // off every patch on that method, and nothing at runtime shows it.
+                    if (check.ExpectedType.IsAssignableFrom(activeType))
+                    {
+                        List<string> skipped = FindMethodsSkippingOriginal(check.ExpectedType, activeType);
+                        if (skipped.Count == 0) continue;
+
+                        string methods = string.Join(", ", skipped);
+                        if (B1071_CompatibilityMath.IsNativeAssembly(activeAssembly))
+                        {
+                            // Not another mod, so the player-facing text would be wrong. A game
+                            // update that does this is for the game-version sweep to catch.
+                            TaleWorlds.Library.Debug.Print(
+                                $"[Byzantium1071] CompatibilityChecker: native model '{activeType.FullName}' overrides {methods} without calling the original; Campaign++ patches on them do not run.");
+                            continue;
+                        }
+
+                        _modelIssues.Add(new ModelIssue
+                        {
+                            ModelName = check.Name,
+                            ActiveTypeName = activeType.Name,
+                            IsDynamicallyHandled = check.IsDynamicallyHandled,
+                            SkipsOriginal = true,
+                            Risk = check.IsDynamicallyHandled ? ConflictRisk.Safe : ConflictRisk.Warning,
+                            Explanation = check.IsDynamicallyHandled
+                                ? $"'{activeType.Name}' overrides {methods} without calling the original. " +
+                                  "Campaign++ dynamic patching is ACTIVE - handled at runtime. No action needed."
+                                : $"'{activeType.Name}' overrides {methods} without calling the original. " +
+                                  $"Campaign++ patches on {check.ExpectedType.Name} do not run for those methods.",
+                        });
+                        continue;
+                    }
 
                     // If the replacing type is from a native game assembly or official DLC
                     // (TaleWorlds.*, SandBox, NavalDLC, etc.), it is NOT a third-party mod
                     // replacement. Official DLC models delegate via BaseModel to the Default*
                     // model, so our Harmony patches still fire through the delegation chain.
-                    if (IsNativeAssembly(activeAssembly)) continue;
+                    if (B1071_CompatibilityMath.IsNativeAssembly(activeAssembly)) continue;
 
                     // Non-vanilla model detected — a completely different type hierarchy.
                     // Harmony patches on the expected vanilla type will NOT fire.
@@ -495,6 +527,92 @@ namespace Byzantium1071.Campaign.Settings
             finally
             {
                 _modelChecksRan = true;
+            }
+        }
+
+        // ─── Override detection ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Names of the Campaign++-patched methods on <paramref name="expectedType"/> that an
+        /// instance of <paramref name="activeType"/> never reaches, because an override between
+        /// the two skips the original. Distinct and sorted, so the message is stable.
+        /// </summary>
+        private static List<string> FindMethodsSkippingOriginal(Type expectedType, Type activeType) =>
+            Harmony.GetAllPatchedMethods()
+                .OfType<MethodInfo>()
+                .Where(m => m.DeclaringType != null && m.DeclaringType.IsAssignableFrom(expectedType))
+                .Where(m => Harmony.GetPatchInfo(m)?.Owners.Contains(B1071HarmonyId) == true)
+                .Where(m => FindOverrideSkippingOriginal(activeType, m) != null)
+                .Select(m => m.Name)
+                .Distinct()
+                .OrderBy(n => n, StringComparer.Ordinal)
+                .ToList();
+
+        /// <summary>
+        /// The override that stops <paramref name="original"/> from running when the game calls
+        /// it on an instance of <paramref name="activeType"/>, or null if none does.
+        ///
+        /// Walks the override chain from the most derived implementation up to the original.
+        /// Each override must call the next implementation up with a non-virtual <c>call</c>,
+        /// which is what <c>base.Method(...)</c> compiles to; the first one that does not is
+        /// returned. An override that reaches the original only through a helper method is
+        /// reported as skipping it, so the error is a false warning rather than a false
+        /// all-clear. An override whose body cannot be read is assumed to call base.
+        /// </summary>
+        internal static MethodInfo? FindOverrideSkippingOriginal(Type activeType, MethodInfo original)
+        {
+            if (!original.IsVirtual || original.IsFinal)
+                return null;
+
+            MethodInfo slot = original.GetBaseDefinition();
+            MethodInfo? current = FindImplementation(activeType, slot);
+            while (current != null && !IsSameMethod(current, original))
+            {
+                MethodInfo? next = FindImplementation(current.DeclaringType?.BaseType, slot);
+                if (next == null || !CallsDirectly(current, next))
+                    return current;
+                current = next;
+            }
+
+            return null;
+        }
+
+        // The implementation of the virtual slot that a call on an instance of type runs: the
+        // first override, walking up from type, whose base definition is the slot.
+        private static MethodInfo? FindImplementation(Type? type, MethodInfo slot)
+        {
+            for (; type != null; type = type.BaseType)
+            {
+                foreach (MethodInfo method in type.GetMethods(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                {
+                    if (method.Name == slot.Name && IsSameMethod(method.GetBaseDefinition(), slot))
+                        return method;
+                }
+            }
+
+            return null;
+        }
+
+        // MethodInfo equality also compares the type the method was looked up through, so two
+        // lookups of one method can differ. The metadata token and module identify the method.
+        private static bool IsSameMethod(MethodInfo a, MethodInfo b) =>
+            a.MetadataToken == b.MetadataToken && a.Module == b.Module;
+
+        private static bool CallsDirectly(MethodInfo caller, MethodInfo target)
+        {
+            try
+            {
+                return PatchProcessor.ReadMethodBody(caller).Any(instruction =>
+                    instruction.Key == OpCodes.Call &&
+                    instruction.Value is MethodInfo called &&
+                    IsSameMethod(called, target));
+            }
+            catch (Exception ex)
+            {
+                TaleWorlds.Library.Debug.Print(
+                    $"[Byzantium1071] CompatibilityChecker: could not read {caller.DeclaringType?.Name}.{caller.Name}, assuming it calls base: {ex.GetType().Name}: {ex.Message}");
+                return true;
             }
         }
 
@@ -615,6 +733,12 @@ namespace Byzantium1071.Campaign.Settings
             if (issue.IsDynamicallyHandled)
                 return new TextObject("{=b1071_compat_model_hint_handled}{MODEL}: Another mod has replaced this system, but Campaign++ detected this and compensated automatically. No action needed.")
                     .SetTextVariable("MODEL", modelName).ToString();
+
+            if (issue.SkipsOriginal)
+                return new TextObject("{=b1071_compat_model_hint_skips_original}{MODEL}: Another mod has changed this system and skips the game's own calculation. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off.")
+                    .SetTextVariable("MODEL", modelName)
+                    .SetTextVariable("MODEL_LOWER", modelName.ToLower())
+                    .ToString();
 
             return new TextObject("{=b1071_compat_model_hint_replaced}{MODEL}: Another mod has fully replaced this system. Some Campaign++ features that affect {MODEL_LOWER} may not be active. Check in-game if something feels off.")
                 .SetTextVariable("MODEL", modelName)
@@ -853,47 +977,6 @@ namespace Byzantium1071.Campaign.Settings
             return methodName; // fallback: raw method name
         }
 
-        // ─── Gameplay mod detection helpers ───────────────────────────────────────────────
-
-        /// <summary>
-        /// Returns true if the assembly name belongs to the native Bannerlord game or an official
-        /// TaleWorlds DLC.  Covers TaleWorlds.*, SandBox*, StoryMode*, CustomBattle*, and
-        /// NavalDLC* (official Naval DLC).  NavalDLC replaces several models with thin decorator
-        /// wrappers that delegate to the Default* model via BaseModel, so our Harmony patches
-        /// on the Default* type still fire through the delegation chain.
-        /// </summary>
-        private static bool IsNativeAssembly(string? assemblyName)
-        {
-            if (string.IsNullOrEmpty(assemblyName)) return false;
-            string name = assemblyName!;
-            return name.StartsWith("TaleWorlds", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("SandBox", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("StoryMode", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("CustomBattle", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("NavalDLC", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("BirthAndDeath", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Multiplayer", StringComparison.OrdinalIgnoreCase) ||
-                name.StartsWith("Native", StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Returns true if the Harmony owner ID belongs to an infrastructure mod
-        /// (game core, patch framework, MCM, UI extension) rather than a gameplay mod.
-        /// Heuristic: pure frameworks never patch TaleWorlds.CampaignSystem gameplay code.
-        /// </summary>
-        private static bool IsFrameworkId(string harmonyId)
-        {
-            if (string.IsNullOrEmpty(harmonyId)) return true;
-            var lc = harmonyId.ToLowerInvariant();
-            return lc.Contains("taleworlds")     || lc.Contains("butterlib")        ||
-                   lc.Contains("butlib")         || lc.Contains(".mcm")             ||
-                   lc.Contains("modlib")         || lc.Contains("uiextender")       ||
-                   lc.Contains("mboptionscreen") || lc.Contains("betterexception")  ||
-                   lc.Contains("debugmode")      || lc.Contains("nativemodule")     ||
-                   lc.Contains("unpatch")        || lc.Contains("blse")             ||
-                   lc.Contains("launcherex")     ||
-                   lc == "0harmony"              || lc.StartsWith("0harmony.");
-        }
 
         /// <summary>All non-framework mods detected patching gameplay methods this session.</summary>
         internal static IReadOnlyList<string> GetAllGameplayModOwners() =>

@@ -7,7 +7,7 @@ using TaleWorlds.Localization;
 
 namespace Byzantium1071.Campaign.Settings
 {
-    public sealed class B1071_McmSettings : AttributeGlobalSettings<B1071_McmSettings>
+    public sealed class B1071_McmSettings : AttributeGlobalSettings<B1071_McmSettings>, IB1071Settings
     {
         // Shared fallback instance — avoids creating multiple AttributeGlobalSettings
         // objects that could confuse MCM's lifecycle. All consumers share this one.
@@ -24,7 +24,7 @@ namespace Byzantium1071.Campaign.Settings
         // new balance defaults, existing users keep the old values forever.
         // This version counter gates one-time hard migration of specific settings.
         // Bump LATEST_PROFILE_VERSION and add a new migration block below.
-        internal const int LATEST_PROFILE_VERSION = 20;
+        internal const int LATEST_PROFILE_VERSION = 28;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyInteger("{=b1071_mcm_t_428cb3c3b0}Settings profile version (do not change)", 0, 1000, "0", Order = 99, HintText = "{=b1071_mcm_h_a122e143ec}Tracks which balance profile was last applied. Do not change manually — the mod migrates this automatically on update.")]
@@ -359,6 +359,137 @@ namespace Byzantium1071.Campaign.Settings
                 migrated += "troop service toggled off by default. Enable via MCM → Troop Service or Quick Settings. ";
             }
 
+            // ── Profile v21: tier survivability + tier armor merged into one preset ──
+            // The two booleans are retired (Legacy group, no longer read). Everyone lands on
+            // the new default of 1 (Light) EXCEPT players who had deliberately switched both
+            // systems off — silently re-enabling a feature someone opted out of would be wrong,
+            // so they carry over to preset 0 (Vanilla).
+            if (SettingsProfileVersion < 21)
+            {
+                if (!EnableTierSurvivability && !EnableTierArmorSimulation)
+                {
+                    EliteSurvivabilityPreset = 0;
+                    migrated += "tier survivability and tier armor were both off, so the new Elite survivability preset starts at 0 (Vanilla). ";
+                }
+                else
+                {
+                    migrated += "tier survivability and tier armor merged into the Elite survivability preset, now at 1 (Light) — they used to stack, which made elite troops far too hard to kill. Set it to 3 for the old values. ";
+                }
+            }
+
+            // ── Profile v22: veterans go home, longer service, cheaper extensions, calmer rotation ──
+            // Discharged soldiers used to be deleted outright, which quietly destroyed the
+            // manpower that settlement had spent to raise them. They now return to the
+            // settlement they were recruited from and can be hired back from its veteran
+            // register. With recall available, service terms are lengthened so a campaign
+            // army is a long-term investment rather than a leaky bucket.
+            if (SettingsProfileVersion < 22)
+            {
+                EnableDemobilizationVeteranReturn = true;
+                DemobilizationManpowerReturnPercent = 100;
+                DemobilizationVeteranRetentionDays = 84;
+                DemobilizationVeteranScatterPercent = 50;
+                DemobilizationRecallGoldPerTier = 40;
+                DemobilizationVeteranRecallAccess = 1;
+
+                // Service terms roughly doubled. A Bannerlord year is about 84 days, so the
+                // new Moderate baseline runs from half a year (T1) to three years (T6).
+                bool customDefaultsStillV17 =
+                    DemobilizationT1ServiceDays == 21 &&
+                    DemobilizationT2ServiceDays == 32 &&
+                    DemobilizationT3ServiceDays == 45 &&
+                    DemobilizationT4ServiceDays == 63 &&
+                    DemobilizationT5ServiceDays == 84 &&
+                    DemobilizationT6ServiceDays == 112;
+
+                if (customDefaultsStillV17)
+                {
+                    DemobilizationT1ServiceDays = 42;
+                    DemobilizationT2ServiceDays = 63;
+                    DemobilizationT3ServiceDays = 84;
+                    DemobilizationT4ServiceDays = 126;
+                    DemobilizationT5ServiceDays = 168;
+                    DemobilizationT6ServiceDays = 252;
+                }
+
+                // Extensions were priced so high they were never worth buying: one T5 soldier
+                // cost 525g for 21 days, once, forever. Now cheaper and repeatable.
+                DemobilizationExtensionGoldPerTierDay = 2;
+                DemobilizationMaxExtensions = 3;
+
+                // Large armies were bleeding men every single day instead of rotating in waves.
+                DemobilizationDailyCapPercent = 8;
+                DemobilizationMaxDailyDepartures = 5;
+
+                // Quieter warnings: throttle the daily message and the popup.
+                DemobilizationNotifyIntervalDays = 3;
+
+                migrated += "troop service reworked — discharged soldiers now return to the settlement that raised them and can be recalled from its veteran register, service terms roughly doubled, extensions are cheaper and repeatable up to 3 times, and daily departures and warnings are quieter. ";
+            }
+
+            // ── Profile v23: the veteran register is a clan matter, not a kingdom one ──
+            // Kingdom access let you walk into any allied town and hire the men every other
+            // lord of your realm had discharged there, which is most of the map's veterans.
+            // Clan only keeps other lords' countrymen for their own clan; your own discharged
+            // soldiers are still yours to collect anywhere you are not at war. Only the old
+            // default is moved — 0 and 2 are deliberate choices and are left alone.
+            if (SettingsProfileVersion < 23)
+            {
+                if (DemobilizationVeteranRecallAccess == 1)
+                {
+                    DemobilizationVeteranRecallAccess = 2;
+                    migrated += "veteran recall access tightened from Kingdom to Clan only — other lords' discharged men now stay with their own clan, while your own veterans remain yours to collect anywhere. ";
+                }
+            }
+
+            // ── Profile v24: AI lords pay for castle elites and keep a reserve ──
+            // A same-clan AI lord recruited from his own clan's castle elite pool for free,
+            // while the player paid the 50% family discount at the same castle. He also spent
+            // down to his last coin on castle elites and prisoners with no cushion behind it.
+            // Both are now the player's rules plus a treasury buffer. The buffer setting ships
+            // its own default, so only the message belongs here.
+            if (SettingsProfileVersion < 24)
+            {
+                migrated += "AI lords now pay the same 50% family discount you do when recruiting from their own clan's castle elite pool, instead of taking those troops for free, and they keep a treasury reserve before spending on castle elites or prisoners. ";
+            }
+
+            // ── Profile v25: native AI recovery awareness for Campaign++ recruits ──
+            if (SettingsProfileVersion < 25)
+            {
+                EnableAiRecoveryRouting = true;
+                migrated += "AI lords now consider available Campaign++ veterans, castle troops, and converted prisoners while rebuilding under-strength parties. ";
+            }
+
+            // ── Profile v26: recovery routing priority is player-tunable ──
+            if (SettingsProfileVersion < 26)
+            {
+                AiRecoveryTakesPriorityOverNewTasks = true;
+                migrated += "AI recovery may take priority over a new assignment while active orders remain protected; this can now be changed in MCM. ";
+            }
+
+            // ── Profile v27: recovery intent lifetime ──
+            if (SettingsProfileVersion < 27)
+            {
+                AiRecoveryIntentDurationDays = 1;
+                migrated += "Confirmed AI recovery journeys now expire after a configurable number of campaign days. ";
+            }
+
+            // ── Profile v28: enable the settlement trade-income preset ──
+            if (SettingsProfileVersion < 28)
+            {
+                EnableSettlementRevenueTuning = true;
+                SettlementTariffStrengthTown = 90;
+                SettlementTariffCurveTown = 1.0f;
+                SettlementTariffKneeTown = 2000;
+                SettlementTariffStrengthVillage = 90;
+                SettlementTariffCurveVillage = 1.0f;
+                SettlementTariffKneeVillage = 500;
+                SettlementTaxStrength = 100;
+                SettlementTaxCurve = 2.0f;
+                SettlementTaxKnee = 0;
+                migrated += "Settlement revenue tuning is enabled: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500; town tax remains unchanged. ";
+            }
+
             SettingsProfileVersion = LATEST_PROFILE_VERSION;
 
             try
@@ -468,6 +599,14 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableCastleSupplyChain { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("{=b1071_mcm_t_7d3a9c4e18}Castle village levy %", 0, 100, "0", Order = 79, HintText = "{=b1071_mcm_h_6f2b8d5a37}When a castle's faction owns no town anywhere, the castle raises this percentage of the manpower it would have requested from a supply town from its own bound villages instead. At 100 the castle keeps the whole request, including the emergency recovery bonus that would otherwise be lost with no town to draw on. Applied on top of the cut-off daily regen floor, whichever is higher. Default: 100.")]
+        public int CastleVillageLevyPercent { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
+        [SettingPropertyInteger("{=b1071_mcm_t_3e91c7ab04}Castle cut-off daily regen", 0, 50, "0", Order = 80, HintText = "{=b1071_mcm_h_5c2df08b16}Daily manpower a castle recovers on its own when its faction owns no town anywhere - an independent realm made only of castles, typically a player who has just declared independence or a kingdom beaten down to its castles. Such a castle has no town to rotate garrison troops in from, so without this it is pinned at the ordinary castle trickle floor and can never rebuild. Kingdoms that hold towns never take this path and are unaffected. Reverts to the normal supply chain the moment the faction takes a town. Default: 4.")]
+        public int CastleCutOffDailyRegen { get; set; } = 4;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_0af8e19a6e}Regen", GroupOrder = 2)]
         [SettingPropertyBool("{=b1071_mcm_t_56177f3ec4}Enable depleted emergency regen", Order = 82, HintText = "{=b1071_mcm_h_1617c104c4}When a pool drops below a threshold, a bonus flat regen is added that scales inversely with fill ratio (emptier = faster recovery). Models limited Crown frontier investment — historically, devastated provinces took decades to recover.")]
         public bool EnableDepletedEmergencyRegen { get; set; } = true;
 
@@ -547,15 +686,23 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("{=b1071_mcm_t_9065705d19}[Legacy] Cost multiplier %", 1, 1000, "0", Order = 11, HintText = "{=b1071_mcm_h_29e86259f4}[LEGACY — NOT USED] This setting is no longer active. Manpower cost is now flat per troop (BaseManpowerCostPerTroop). Kept for save compatibility.")]
         public int CostMultiplierPercent { get; set; } = 100;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}[Legacy] Enable tier survivability", Order = 12, HintText = "{=b1071_mcm_h_e1a2720769}[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility.")]
+        public bool EnableTierSurvivability { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}[Legacy] Enable tier armor simulation", Order = 13, HintText = "{=b1071_mcm_h_54fe9937da}[LEGACY — NOT USED] This setting is no longer active. Replaced by the Elite survivability preset in Combat Realism, which sets damage reduction and survival bonus together so they cannot double-dip. Kept for save compatibility.")]
+        public bool EnableTierArmorSimulation { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyBool("{=b1071_mcm_t_a6a089949c}[Legacy] Enable settlement manpower tooltips", Order = 14, HintText = "{=b1071_mcm_h_ff96994b56}[LEGACY — NOT USED] This setting is no longer active. Replaced by Enable settlement tooltips in the Tooltips group, which drives the campaign-map settlement tooltips and the devastation marker. Kept for save compatibility.")]
+        public bool EnableSettlementManpowerTooltips { get; set; } = false;
+
         // ─── Combat Realism ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_12279242a5}Enable tier survivability", Order = 0, HintText = "{=b1071_mcm_h_e1a2720769}Higher-tier troops are more likely to survive as wounded rather than die in autoresolve. T1=+0%, T2=+0%, T3=+5%, T4=+10%, T5=+15%, T6=+20% flat bonus to survival chance on top of Medicine-based base rate.")]
-        public bool EnableTierSurvivability { get; set; } = true;
-
-        [SettingPropertyGroup("{=b1071_mcm_g_0a3a606283}Combat Realism", GroupOrder = 5)]
-        [SettingPropertyBool("{=b1071_mcm_t_e668bee792}Enable tier armor simulation", Order = 1, HintText = "{=b1071_mcm_h_54fe9937da}Higher-tier troops receive reduced simulated hit damage in autoresolve (T2=0%, T3=-6%, T4=-12%, T5=-18%, T6=-24%). Lowers the probability of the fatal-hit gate firing per tick. Works together with tier survivability: fewer casualty checks AND better survival within each check.")]
-        public bool EnableTierArmorSimulation { get; set; } = true;
+        [SettingPropertyInteger("{=b1071_mcm_t_4b9e1f7a25}Elite survivability preset", 0, 3, "0", Order = 0, HintText = "{=b1071_mcm_h_2c8d5b3e41}How much tougher high-tier troops are in battles the game resolves for you (autoresolve, sieges you do not fight yourself). Sets reduced simulated hit damage and a higher wounded-instead-of-killed chance together. 0=Vanilla | 1=Light (T3-T6 damage -3/-6/-9/-12%, survival +2/+4/+6/+8) | 2=Moderate (-5/-10/-15/-20%, +3/+6/+9/+12) | 3=Strong (-6/-12/-18/-24%, +5/+10/+15/+20, the pre-v1.0.2.5 values). Applies to AI and player equally. Replaces the two separate tier toggles, which compounded. Default: 1.")]
+        public int EliteSurvivabilityPreset { get; set; } = 1;
 
         // ─── Army Economics ───
 
@@ -575,6 +722,14 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("{=b1071_mcm_t_2443dcece8}Garrison wage % of field", 10, 100, "0", Order = 3, HintText = "{=b1071_mcm_h_c4e1a056bd}Garrison party total wage as a percentage of what the same troops would cost in a field party. 80 = garrison pays 80% (20% discount). 100 = no discount. Default: 80.")]
         public int GarrisonWagePercent { get; set; } = 80;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
+        [SettingPropertyBool("{=b1071_mcm_t_9c4e2a7b51}Block recruiting in enemy realms", Order = 4, HintText = "{=b1071_mcm_h_2d7f8a3c60}Villagers will not take service under the banner burning their fields. When enabled, no lord may recruit in a settlement belonging to a faction their realm is at war with. Hostile towns and castles cannot be entered anyway, so in practice this closes the enemy village route, which was free manpower. Manpower cost is unchanged - see the foreign recruitment cost preset for why. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: ON.")]
+        public bool BlockEnemyRealmRecruitment { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_fcb9366bda}Army Economics", GroupOrder = 14)]
+        [SettingPropertyInteger("{=b1071_mcm_t_3e8b1d6f9c}Foreign recruitment cost preset", 0, 3, "0", Order = 5, HintText = "{=b1071_mcm_h_5a4c7e2b8d}Gold premium for recruiting in a settlement your realm does not own - you are outbidding the local lord. 0=Off | 1=1.5x | 2=2x | 3=3x. The multiplier applies to the game's base hire price and stacks additively with the hire and upgrade cost preset, so at the default presets an ordinary village recruit costs roughly twice as much abroad while an elite troop costs about a quarter more. Manpower cost is unchanged: manpower belongs to the settlement, so charging extra manpower would only punish the settlement you recruit from. Exempt only if your clan has no kingdom AND no fief, so the early game is unaffected - once you swear to a kingdom its lands are your realm and every other realm is foreign, fief or not. Applies to AI and player equally. Default: 2.")]
+        public int ForeignRecruitCostPreset { get; set; } = 2;
+
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_41c5ad1112}Enable verbose mod log", Order = -1, HintText = "{=b1071_mcm_h_3574df9fb7}Master switch: logs ALL mod activity (manpower, slaves, diplomacy, patches) to the Bannerlord rgl_log file. Superset of every other debug toggle. Performance cost — disable for normal play.")]
         public bool EnableVerboseModLog { get; set; } = false;
@@ -590,6 +745,18 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_46ca60a1ea}Log AI manpower consumption", Order = 2, HintText = "{=b1071_mcm_h_cc5a5907b4}Logs AI manpower consumption bands to the Bannerlord logs.")]
         public bool LogAiManpowerConsumption { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
+        [SettingPropertyBool("{=b1071_mcm_t_ai_recovery}AI Lords Seek Campaign++ Recruits", Order = 0, HintText = "{=b1071_mcm_h_ai_recovery}AI lords below 60% party capacity may favor friendly settlements holding veterans, castle troops, or converted prisoners. They rebuild toward 80%. Active armies, battles, sieges, raids, defence, patrols, retreats, and urgent food runs remain protected. Default: true.")]
+        public bool EnableAiRecoveryRouting { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
+        [SettingPropertyBool("{=b1071_mcm_t_ai_recovery_priority}Recovery Takes Priority", Order = 1, HintText = "{=b1071_mcm_h_ai_recovery_priority}When enabled, an eligible under-strength lord chooses a Campaign++ recruitment stop before starting a new task. Active orders remain protected. Turn this off to let the improved settlement score compete normally with Bannerlord's other new orders. Default: true.")]
+        public bool AiRecoveryTakesPriorityOverNewTasks { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_ai_recovery}AI Recovery", GroupOrder = 26)]
+        [SettingPropertyInteger("{=b1071_mcm_t_ai_recovery_days}Recovery intent days", 1, 30, "0", Order = 2, HintText = "{=b1071_mcm_h_ai_recovery_days}How many campaign days a confirmed recruitment journey may continue while the lord remains below 80% party capacity. After this, the lord must fall below 60% to begin another recovery journey. Default: 1.")]
+        public int AiRecoveryIntentDurationDays { get; set; } = 1;
 
         [SettingPropertyGroup("{=b1071_mcm_g_1ec44dbc2c}Developer Tools", GroupOrder = 98)]
         [SettingPropertyBool("{=b1071_mcm_t_36c35ecdc1}Enable telemetry debug logs", Order = 3, HintText = "{=b1071_mcm_h_0df00598bc}Logs structured WP1 telemetry events (regen snapshots, diplomacy rationale, truce/forced peace updates).")]
@@ -1010,8 +1177,8 @@ namespace Byzantium1071.Campaign.Settings
         public bool DiplomacyDebugLogs { get; set; } = false;
 
         [SettingPropertyGroup("{=b1071_mcm_g_5d88ab11a0}Tooltips", GroupOrder = 97)]
-        [SettingPropertyBool("{=b1071_mcm_t_a6a089949c}Enable settlement manpower tooltips", Order = 0, HintText = "{=b1071_mcm_h_ff96994b56}Appends manpower info to settlement property tooltips in campaign UI.")]
-        public bool EnableSettlementManpowerTooltips { get; set; } = false;
+        [SettingPropertyBool("{=b1071_mcm_t_nameplate_tooltips}Enable settlement tooltips", Order = 0, HintText = "{=b1071_mcm_h_nameplate_tooltips}Shows manpower and devastation when you hover a settlement on the campaign map — both on the nameplate tooltip and in the full settlement tooltip — and marks heavily devastated settlements with a red icon.")]
+        public bool EnableSettlementNameplateTooltips { get; set; } = true;
 
         // ─── Slave Economy ───
 
@@ -1049,7 +1216,7 @@ namespace Byzantium1071.Campaign.Settings
         public float SlaveConstructionBonusCap { get; set; } = 150f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_ea75746b26}Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "{=b1071_mcm_h_adb939cb85}Food consumed per slave per day. Creates a natural economic cap on slave hoarding. At 0.05: 50 slaves = -2.5 food/day, 100 slaves = -5.0 food/day (roughly a village's output), 200 slaves = -10.0 food/day (severe). Historically, enslaved labourers received subsistence rations comparable to garrison troops (~0.04–0.06 food units). Set to 0 to disable. Default: 0.05.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_ea75746b26}Food consumption per slave per day", 0f, 0.1f, "0.000", Order = 7, HintText = "{=b1071_mcm_h_adb939cb85}Food consumed per slave per day in town markets, settlement stashes and food-consuming parties. Stashes draw from settlement food stocks and grant no labor bonuses. Vanilla party food exemptions remain. At 0.05, 100 slaves consume 5 food/day. Set to 0 to disable food upkeep. Default: 0.05.")]
         public float SlaveFoodConsumptionPerUnit { get; set; } = 0.05f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_42f6940752}Slave Economy", GroupOrder = 15)]
@@ -1115,8 +1282,8 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationExtensionDays { get; set; } = 21;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_cost}Extension gold per tier-day", 0, 100, "0", Order = 8, HintText = "{=b1071_mcm_h_demob_extend_cost}Cost formula per soldier: troop tier x extension days x this value. Default: 5.")]
-        public int DemobilizationExtensionGoldPerTierDay { get; set; } = 5;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_extend_cost}Extension gold per tier-day", 0, 100, "0", Order = 8, HintText = "{=b1071_mcm_h_demob_extend_cost}Cost formula per soldier: troop tier x extension days x this value. Each further extension of the same soldier costs 50% more than the last. Default: 2.")]
+        public int DemobilizationExtensionGoldPerTierDay { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
         [SettingPropertyBool("{=b1071_mcm_t_demob_ai_extend}AI can pay for extensions", Order = 9, HintText = "{=b1071_mcm_h_demob_ai_extend}Allows AI lord field parties to buy the same one-time paid service extension before soldiers leave. Uses the same cost formula and excludes garrisons, militia, caravans, villagers, and bandits. Default: true.")]
@@ -1131,12 +1298,12 @@ namespace Byzantium1071.Campaign.Settings
         public int DemobilizationPromotionBonusDays { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_pct}Daily departure cap %", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_daily_pct}Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Default: 15.")]
-        public int DemobilizationDailyCapPercent { get; set; } = 15;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_pct}Daily departure cap %", 1, 100, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_daily_pct}Maximum percent of overdue soldiers of one troop type that can leave in one daily tick. Lower values make troops rotate out in waves instead of trickling away every day. Default: 8.")]
+        public int DemobilizationDailyCapPercent { get; set; } = 8;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
-        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_max}Max departures per party/day", 1, 200, "0", Order = 13, HintText = "{=b1071_mcm_h_demob_daily_max}Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 10.")]
-        public int DemobilizationMaxDailyDepartures { get; set; } = 10;
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_daily_max}Max departures per party/day", 1, 200, "0", Order = 13, HintText = "{=b1071_mcm_h_demob_daily_max}Hard cap on how many troops can leave one party in a day. AI uses the same value as its daily extension cap. Default: 5.")]
+        public int DemobilizationMaxDailyDepartures { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
         [SettingPropertyBool("{=b1071_mcm_t_demob_seasonal}Enable service seasonality", Order = 14, HintText = "{=b1071_mcm_h_demob_seasonal}Optional realism pressure. Lightly adjusts service thresholds by Bannerlord season, which can shift soldiers closer to or farther from departure. Default: false.")]
@@ -1158,29 +1325,99 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyInteger("{=b1071_mcm_t_demob_crisis_pct}Crisis service %", 50, 150, "0", Order = 18, HintText = "{=b1071_mcm_h_demob_crisis_pct}Threshold multiplier while a kingdom is in Crisis. 90 means troops rotate out 10% sooner. Default: 90.")]
         public int DemobilizationCrisisThresholdPercent { get; set; } = 90;
 
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_max_extends}Extensions allowed per soldier", 1, 10, "0", Order = 19, HintText = "{=b1071_mcm_h_demob_max_extends}How many times the same soldier may have his service extended. Each extension after the first costs 50% more than the one before it. Default: 3.")]
+        public int DemobilizationMaxExtensions { get; set; } = 3;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob}Troop Service", GroupOrder = 16)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_notify_interval}Days between warning messages", 1, 21, "0", Order = 20, HintText = "{=b1071_mcm_h_demob_notify_interval}Minimum days between troop-service warning messages and popups. 1 means every day, as before. Default: 3.")]
+        public int DemobilizationNotifyIntervalDays { get; set; } = 3;
+
+        // ─── Troop Service - Veterans ───
+        // Soldiers who complete their term return to the settlement that raised them
+        // instead of being deleted. The manpower they cost goes back into that pool,
+        // and they stay on the settlement's veteran register for a while, where they
+        // can be hired back at the tier they had reached.
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_vet_enable}Discharged soldiers return home", Order = 0, HintText = "{=b1071_mcm_h_demob_vet_enable}When a soldier finishes his service he walks back to the settlement he was recruited from, returning its manpower and joining that settlement's veteran register. With this off, discharged soldiers simply disappear as they used to. Default: true.")]
+        public bool EnableDemobilizationVeteranReturn { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_manpower}Manpower returned %", 0, 100, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_vet_manpower}How much of a discharged soldier's manpower cost goes back to his home settlement. 100 means every man who survives his term is available to be raised again. Lower it if you want war to permanently thin the countryside. Default: 100.")]
+        public int DemobilizationManpowerReturnPercent { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_retention}Veteran register days", 7, 1000, "0", Order = 2, HintText = "{=b1071_mcm_h_demob_vet_retention}How many Bannerlord days a discharged soldier stays available for recall before he settles down for good. His manpower stays in the pool either way. One in-game year is about 84 days. Default: 84.")]
+        public int DemobilizationVeteranRetentionDays { get; set; } = 84;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_settle}Days at home before recall", 0, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_vet_settle}How many Bannerlord days a discharged soldier rests at home before he will take service again. Until then he is on the register but nobody can hire him, you or an AI lord. Set this to 0 to allow calling a man back the same day you released him. Default: 7.")]
+        public int DemobilizationVeteranSettlingDays { get; set; } = 7;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_scatter}Raid/capture scatter %", 0, 100, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_vet_scatter}Percent of a settlement's veteran register lost when the settlement is raided or changes hands to another realm. Veterans scatter when their home is sacked. 0 disables scattering. Default: 50.")]
+        public int DemobilizationVeteranScatterPercent { get; set; } = 50;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_gold}Recall gold per tier", 0, 500, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_vet_gold}Re-enlistment bounty paid per recalled soldier, multiplied by his troop tier. A tier 5 veteran at 40 costs 200 gold. Recall also draws manpower from the settlement's pool exactly like a normal recruit. Default: 40.")]
+        public int DemobilizationRecallGoldPerTier { get; set; } = 40;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_vet_access}Recall access restriction", 0, 2, "0", Order = 6, HintText = "{=b1071_mcm_h_demob_vet_access}When cross-clan veteran recruitment is enabled, who may recall veterans employed by another clan from a settlement. 0 = Open (any lord not at war with the owner). 1 = Kingdom only (must share the owner's kingdom). 2 = Clan only (only the settlement's owning clan). Same rules apply to player and AI. Any non-hostile clan may always recall veterans whose latest employer is its own clan. Default: 2.")]
+        public int DemobilizationVeteranRecallAccess { get; set; } = 2;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_vet_cross_clan}Allow cross-clan veteran recruitment", Order = 7, HintText = "{=b1071_mcm_h_demob_vet_cross_clan}When off, every clan may recall only veterans whose latest employer is that clan; this protects both player and AI veterans. When on, the recall access restriction decides who may recruit veterans employed by another clan. War always closes a register. Default: false.")]
+        public bool EnableDemobilizationVeteranCrossClanRecruitment { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_remote}Allow recall from a distance", Order = 8, HintText = "{=b1071_mcm_h_demob_remote}Lets you send a recall order to any settlement on the map instead of riding there yourself. Your order takes time to reach the settlement, and the men then march to wherever you are. Gold and manpower are charged when the order goes out. Turn this off to require standing inside the settlement. Default: true.")]
+        public bool EnableDemobilizationRemoteRecall { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_recall_hotkey_enable}Enable register hotkey", Order = 9, HintText = "{=b1071_mcm_h_demob_recall_hotkey_enable}Allows opening the map-wide veteran register from the campaign map. Default: true.")]
+        public bool EnableVeteranRecallHotkey { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_recall_hotkey}Register hotkey", 0, 3, "0", Order = 10, HintText = "{=b1071_mcm_h_demob_recall_hotkey}0=F8, 1=F10, 2=F11, 3=F12. Default: F8.")]
+        public int VeteranRecallHotkeyChoice { get; set; } = 0;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_courier}Courier speed", 20, 400, "0", Order = 11, HintText = "{=b1071_mcm_h_demob_courier}How far a recall order travels in a day, in map distance. A rider covers roughly the width of one region per day at 120. Higher means orders arrive sooner. Default: 120.")]
+        public int DemobilizationCourierSpeed { get; set; } = 120;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyInteger("{=b1071_mcm_t_demob_march}Veteran march speed", 10, 300, "0", Order = 12, HintText = "{=b1071_mcm_h_demob_march}How far recalled veterans march in a day on their way to join you, in map distance. They head for wherever you are, recalculated every day. Default: 60.")]
+        public int DemobilizationMarchSpeed { get; set; } = 60;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_demob_vets}Troop Service - Veterans", GroupOrder = 18)]
+        [SettingPropertyBool("{=b1071_mcm_t_demob_ai_recall}AI lords hire veterans", Order = 13, HintText = "{=b1071_mcm_h_demob_ai_recall}An AI lord who enters a settlement holding veterans he is entitled to hires them on the spot, paying the same gold and manpower you would. He never travels out of his way for them. Default: true.")]
+        public bool EnableDemobilizationAiRecall { get; set; } = true;
+
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t1}Custom T1 service days", 1, 300, "0", Order = 0, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT1ServiceDays { get; set; } = 21;
+        public int DemobilizationT1ServiceDays { get; set; } = 42;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t2}Custom T2 service days", 1, 300, "0", Order = 1, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT2ServiceDays { get; set; } = 32;
+        public int DemobilizationT2ServiceDays { get; set; } = 63;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t3}Custom T3 service days", 1, 300, "0", Order = 2, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT3ServiceDays { get; set; } = 45;
+        public int DemobilizationT3ServiceDays { get; set; } = 84;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t4}Custom T4 service days", 1, 300, "0", Order = 3, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT4ServiceDays { get; set; } = 63;
+        public int DemobilizationT4ServiceDays { get; set; } = 126;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t5}Custom T5 service days", 1, 300, "0", Order = 4, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT5ServiceDays { get; set; } = 84;
+        public int DemobilizationT5ServiceDays { get; set; } = 168;
 
         [SettingPropertyGroup("{=b1071_mcm_g_demob_custom}Troop Service - Custom Days", GroupOrder = 17)]
         [SettingPropertyInteger("{=b1071_mcm_t_demob_t6}Custom T6 service days", 1, 300, "0", Order = 5, HintText = "{=b1071_mcm_h_demob_custom}Used only when Intensity preset is Custom. Values are Bannerlord days; one in-game year is about 84 days.")]
-        public int DemobilizationT6ServiceDays { get; set; } = 112;
+        public int DemobilizationT6ServiceDays { get; set; } = 252;
 
         [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
         [SettingPropertyInteger("{=b1071_mcm_t_28f7f149d6}[Legacy] Construction bonus duration (days)", 1, 180, "0", Order = 12, HintText = "{=b1071_mcm_h_3ad968ac32}[LEGACY — NOT USED] Previously set how long the one-time construction bonus lasted after a slave sale. Superseded by the continuous market-based daily bonus in v3. Kept for save compatibility.")]
@@ -1367,23 +1604,23 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Castle Recruitment ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyBool("{=b1071_mcm_t_0a9b801539}Enable castle recruitment", Order = 0, HintText = "{=b1071_mcm_h_26939354d2}Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, T4+ become recruitable after a waiting period) and the castle recruitment menu.")]
+        [SettingPropertyBool("{=b1071_mcm_t_0a9b801539}Enable castle recruitment", Order = 0, HintText = "{=b1071_mcm_h_26939354d2}Master toggle. Enables castle prisoner auto-processing (T1-T3 enslaved to nearest town market, higher-tier prisoners gradually earn conformity from a shared castle budget, boosted by governor Leadership) and the castle recruitment menu.")]
         public bool EnableCastleRecruitment { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("{=b1071_mcm_t_3a8a2610f7}Auto-enslave tier max", 1, 6, "0", Order = 1, HintText = "{=b1071_mcm_h_5c9008c96e}Unified enslavement tier cap (player + AI parity). Prisoners at or below this tier can be enslaved: (1) player 'Enslave prisoners' at towns, (2) AI auto-enslave at towns, (3) castle auto-enslave to nearest market. Prisoners above this tier must be taken to castles for recruitment conversion or ransomed. Default: 3 (T1-T3 enslaved, T4+ recruitable).")]
         public int CastlePrisonerAutoEnslaveTierMax { get; set; } = 3;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 2, HintText = "{=b1071_mcm_h_e6b821a5cd}Days a Tier 4 prisoner must be held before becoming recruitable. Represents the time needed to break resistance and negotiate loyalty. Default: 10.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_d12ea29baa}T4 recruitment wait (days)", 1, 60, "0", Order = 90, HintText = "{=b1071_mcm_h_e6b821a5cd}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT4Days { get; set; } = 10;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 3, HintText = "{=b1071_mcm_h_f6d04613d7}Days a Tier 5 prisoner must be held before becoming recruitable. Elite troops resist longer. Default: 21.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_819da19a70}T5 recruitment wait (days)", 1, 60, "0", Order = 91, HintText = "{=b1071_mcm_h_f6d04613d7}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT5Days { get; set; } = 21;
 
-        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
-        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 4, HintText = "{=b1071_mcm_h_adbcaeef5e}Days a Tier 6+ prisoner must be held before becoming recruitable. Champion-tier troops resist the longest. Default: 35.")]
+        [SettingPropertyGroup("{=b1071_mcm_g_228c70bfc5}Legacy", GroupOrder = 99)]
+        [SettingPropertyInteger("{=b1071_mcm_t_28ee03f1f7}T6+ recruitment wait (days)", 1, 60, "0", Order = 92, HintText = "{=b1071_mcm_h_adbcaeef5e}Legacy save migration only. Converts old prisoner timers into conformity on first load. Does not control the current recruitment rate.")]
         public int CastleRecruitT6Days { get; set; } = 35;
 
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
@@ -1477,6 +1714,10 @@ namespace Byzantium1071.Campaign.Settings
         [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
         [SettingPropertyInteger("{=b1071_mcm_t_dafebce110}Dynamic pool wall level bonus", 0, 20, "0", Order = 27, HintText = "{=b1071_mcm_h_dafebce110}Pool capacity bonus per wall level (only used in dynamic mode). E.g., at 3: L2 walls = +6 troops. Default: 3.")]
         public int CastleElitePoolWallBonus { get; set; } = 3;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_e850019718}Castle Recruitment", GroupOrder = 22)]
+        [SettingPropertyInteger("{=b1071_mcm_t_cr_ai_buffer}AI recruitment treasury buffer", 1, 50, "0", Order = 28, HintText = "{=b1071_mcm_h_cr_ai_buffer}An AI lord only buys from a castle's elite pool or its converted prisoners while his treasury is worth more than the whole purchase times this multiplier, so recruiting never leaves him unable to pay the men he already has. Higher keeps more in reserve and makes him buy fewer of the expensive troops. 1 lets him spend down to his last coin, as he used to. Separate from the troop service buffer. Default: 3.")]
+        public int CastleAiGoldBufferMultiplier { get; set; } = 3;
 
         // ─── Village Investment (Patronage) ───
 
@@ -1599,27 +1840,27 @@ namespace Byzantium1071.Campaign.Settings
         public bool EnableTownInvestment { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9756c85392}Modest investment cost", 1000, 25000, "0", Order = 1, HintText = "{=b1071_mcm_h_8cc407e3bb}Gold cost for a Modest town investment. Default: 5000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_modest}Modest investment cost", 1000, 25000, "0", Order = 1, HintText = "{=b1071_mcm_h_8cc407e3bb}Gold cost for a Modest town investment. Default: 5000.")]
         public int TownInvestCostModest { get; set; } = 5000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_2507cf8802}Generous investment cost", 3000, 50000, "0", Order = 2, HintText = "{=b1071_mcm_h_a947183ed6}Gold cost for a Generous town investment. Default: 15000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_generous}Generous investment cost", 3000, 50000, "0", Order = 2, HintText = "{=b1071_mcm_h_a947183ed6}Gold cost for a Generous town investment. Default: 15000.")]
         public int TownInvestCostGenerous { get; set; } = 15000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_506fc29e2e}Grand investment cost", 5000, 100000, "0", Order = 3, HintText = "{=b1071_mcm_h_97d3107072}Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cost_grand}Grand investment cost", 5000, 100000, "0", Order = 3, HintText = "{=b1071_mcm_h_97d3107072}Gold cost for a Grand town investment. Highest tier with the strongest bonuses and longest duration. Default: 40000.")]
         public int TownInvestCostGrand { get; set; } = 40000;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_494eb521fc}Modest duration (days)", 5, 120, "0", Order = 4, HintText = "{=b1071_mcm_h_2fbb35aab0}How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_modest}Modest duration (days)", 5, 120, "0", Order = 4, HintText = "{=b1071_mcm_h_2fbb35aab0}How many days the Modest town investment lasts. Also serves as the cooldown. Default: 20.")]
         public int TownInvestDurationModest { get; set; } = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_744b667ef5}Generous duration (days)", 10, 180, "0", Order = 5, HintText = "{=b1071_mcm_h_3322cd490c}How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_generous}Generous duration (days)", 10, 180, "0", Order = 5, HintText = "{=b1071_mcm_h_3322cd490c}How many days the Generous town investment lasts. Also serves as the cooldown. Default: 40.")]
         public int TownInvestDurationGenerous { get; set; } = 40;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9314ade9c2}Grand duration (days)", 15, 240, "0", Order = 6, HintText = "{=b1071_mcm_h_a45f13eae8}How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_duration_grand}Grand duration (days)", 15, 240, "0", Order = 6, HintText = "{=b1071_mcm_h_a45f13eae8}How many days the Grand town investment lasts. Also serves as the cooldown. Default: 60.")]
         public int TownInvestDurationGrand { get; set; } = 60;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
@@ -1635,47 +1876,47 @@ namespace Byzantium1071.Campaign.Settings
         public float TownInvestProsperityGrand { get; set; } = 2.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_04ca6fac7d}Modest relation gain", 0, 20, "0", Order = 10, HintText = "{=b1071_mcm_h_1bda097a56}Relation gained with each town notable from a Modest investment. Default: 3.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_modest}Modest relation gain", 0, 20, "0", Order = 10, HintText = "{=b1071_mcm_h_1bda097a56}Relation gained with each town notable from a Modest investment. Default: 3.")]
         public int TownInvestRelationModest { get; set; } = 3;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_d8c28d3d5b}Generous relation gain", 0, 30, "0", Order = 11, HintText = "{=b1071_mcm_h_3748411212}Relation gained with each town notable from a Generous investment. Default: 6.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_generous}Generous relation gain", 0, 30, "0", Order = 11, HintText = "{=b1071_mcm_h_3748411212}Relation gained with each town notable from a Generous investment. Default: 6.")]
         public int TownInvestRelationGenerous { get; set; } = 6;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_bcb2514534}Grand relation gain", 0, 50, "0", Order = 12, HintText = "{=b1071_mcm_h_b5c09f9d63}Relation gained with each town notable from a Grand investment. Default: 10.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_relation_grand}Grand relation gain", 0, 50, "0", Order = 12, HintText = "{=b1071_mcm_h_b5c09f9d63}Relation gained with each town notable from a Grand investment. Default: 10.")]
         public int TownInvestRelationGrand { get; set; } = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_0c1fa8c3c0}Modest influence gain", 0f, 25f, "0.0", Order = 13, HintText = "{=b1071_mcm_h_8c178760ed}Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_modest}Modest influence gain", 0f, 25f, "0.0", Order = 13, HintText = "{=b1071_mcm_h_8c178760ed}Influence gained from a Modest town investment (only if town is in your kingdom). Default: 10.")]
         public float TownInvestInfluenceModest { get; set; } = 10.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_28e890fbbc}Generous influence gain", 0f, 50f, "0.0", Order = 14, HintText = "{=b1071_mcm_h_aba304d75f}Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_generous}Generous influence gain", 0f, 50f, "0.0", Order = 14, HintText = "{=b1071_mcm_h_aba304d75f}Influence gained from a Generous town investment (only if town is in your kingdom). Default: 25.")]
         public float TownInvestInfluenceGenerous { get; set; } = 25.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_d74548c067}Grand influence gain", 0f, 100f, "0.0", Order = 15, HintText = "{=b1071_mcm_h_0f079f126d}Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_town_invest_influence_grand}Grand influence gain", 0f, 100f, "0.0", Order = 15, HintText = "{=b1071_mcm_h_0f079f126d}Influence gained from a Grand town investment (only if town is in your kingdom). Default: 50.")]
         public float TownInvestInfluenceGrand { get; set; } = 50.0f;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9e446c836a}Modest power gain", 0, 50, "0", Order = 16, HintText = "{=b1071_mcm_h_14cc7f2c2a}Power added to each town notable from a Modest investment. Default: 5.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_modest}Modest power gain", 0, 50, "0", Order = 16, HintText = "{=b1071_mcm_h_14cc7f2c2a}Power added to each town notable from a Modest investment. Default: 5.")]
         public int TownInvestPowerModest { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_ad875bbbf1}Generous power gain", 0, 75, "0", Order = 17, HintText = "{=b1071_mcm_h_8b83bc3e79}Power added to each town notable from a Generous investment. Default: 10.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_generous}Generous power gain", 0, 75, "0", Order = 17, HintText = "{=b1071_mcm_h_8b83bc3e79}Power added to each town notable from a Generous investment. Default: 10.")]
         public int TownInvestPowerGenerous { get; set; } = 10;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_f756638832}Grand power gain", 0, 100, "0", Order = 18, HintText = "{=b1071_mcm_h_e55ef8ccea}Power added to each town notable from a Grand investment. Default: 20.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_grand}Grand power gain", 0, 100, "0", Order = 18, HintText = "{=b1071_mcm_h_e55ef8ccea}Power added to each town notable from a Grand investment. Default: 20.")]
         public int TownInvestPowerGrand { get; set; } = 20;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_6167980909}Notable power cap", 50, 500, "0", Order = 19, HintText = "{=b1071_mcm_h_f786952c1d}Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_power_cap}Notable power cap", 50, 500, "0", Order = 19, HintText = "{=b1071_mcm_h_f786952c1d}Maximum notable power allowed via town investment. Investment power bonus is skipped if notable already at or above this level. Default: 200.")]
         public int TownInvestPowerCap { get; set; } = 200;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_9b391ff669}Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "{=b1071_mcm_h_5f1a43fa3a}Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_cross_clan_relation}Cross-clan relation gain", 0, 20, "0", Order = 20, HintText = "{=b1071_mcm_h_5f1a43fa3a}Relation gained with the town owner's clan leader when investing in another clan's town. Default: 2.")]
         public int TownInvestCrossClanRelation { get; set; } = 2;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
@@ -1683,19 +1924,19 @@ namespace Byzantium1071.Campaign.Settings
         public bool TownInvestAiEnabled { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_65a39833e0}AI gold safety multiplier", 2, 30, "0", Order = 22, HintText = "{=b1071_mcm_h_c8401bec75}AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_gold_multiplier}AI gold safety multiplier", 2, 30, "0", Order = 22, HintText = "{=b1071_mcm_h_c8401bec75}AI will only invest when their gold exceeds the tier cost multiplied by this value. Higher for towns since costs are higher (e.g., 15 means a lord needs 600,000d for Grand). Default: 15.")]
         public int TownInvestAiGoldMultiplier { get; set; } = 15;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_35befd4d96}AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "{=b1071_mcm_h_a3c2806b96}Percentage chance that an AI lord will invest when entering an eligible town. Default: 30.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_chance}AI investment chance (%)", 5, 100, "0", Order = 23, HintText = "{=b1071_mcm_h_a3c2806b96}Percentage chance that an AI lord will invest when entering an eligible town. Default: 30.")]
         public int TownInvestAiChance { get; set; } = 30;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyBool("{=b1071_mcm_t_589ebea8c2}AI random tier selection", Order = 24, HintText = "{=b1071_mcm_h_0a2e5891f0}When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_town_invest_ai_random_tier}AI random tier selection", Order = 24, HintText = "{=b1071_mcm_h_0a2e5891f0}When enabled, AI randomly picks from all affordable tiers instead of always choosing the highest. Default: true.")]
         public bool TownInvestAiRandomTier { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
-        [SettingPropertyInteger("{=b1071_mcm_t_0571c47e15}AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "{=b1071_mcm_h_a4d717ad4f}Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5.")]
+        [SettingPropertyInteger("{=b1071_mcm_t_town_invest_ai_hero_cooldown}AI hero cooldown (days)", 0, 30, "0", Order = 25, HintText = "{=b1071_mcm_h_a4d717ad4f}Minimum in-game days between any two town investments by the same AI lord. Prevents carpet-bombing every town on a travel route. Set to 0 to disable. Default: 5.")]
         public int TownInvestAiHeroCooldownDays { get; set; } = 5;
 
         [SettingPropertyGroup("{=b1071_mcm_g_462cca2189}Town Investment", GroupOrder = 24)]
@@ -1709,16 +1950,83 @@ namespace Byzantium1071.Campaign.Settings
         // ─── Clan Survival ───
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyBool("{=b1071_mcm_t_e01075c9d2}Enable clan survival", Order = 0, HintText = "{=b1071_mcm_h_c6dedb0344}Master toggle. When a kingdom is destroyed, eligible clans are rescued instead of annihilated. They become independent factions during a grace period, then seek mercenary service with a culture-weighted kingdom. Default: true.")]
+        [SettingPropertyBool("{=b1071_mcm_t_e01075c9d2}Enable clan survival", Order = 0, HintText = "{=b1071_mcm_h_c6dedb0344}Master toggle for new rescues. When disabled, Campaign++ stops rescuing additional clans but safely maintains clans already rescued until they join a kingdom or vanilla destroys them after a leader death. Default: on.")]
         public bool EnableClanSurvival { get; set; } = true;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyInteger("{=b1071_mcm_t_8c4c2be8dc}Grace period (days)", 1, 120, "0", Order = 1, HintText = "{=b1071_mcm_h_b41e07e2b2}Number of in-game days a rescued clan stays independent before seeking mercenary service. During this period they patrol near their home settlement. Default: 30.")]
+        [SettingPropertyBool("{=b1071_mcm_t_4b7d9e1a52}Rescue crushed rebel clans", Order = 3, HintText = "{=b1071_mcm_h_8c3f6b0d74}OFF (default): a rebellion that is crushed dies, exactly as in vanilla - the town returns to its old owner and the rebel lords are gone. ON: the rebel clan is kept alive as a mercenary company so it can draw frontier revenue. Leave this OFF unless you want that. Every crushed rebellion leaves a permanent mercenary company behind, with no cap and no way out, so a long campaign accumulates dozens of them. This toggle only affects REBEL clans - noble clans of a destroyed kingdom are still rescued either way.")]
+        public bool RescueRebelClans { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
+        [SettingPropertyBool("{=b1071_mcm_t_6e2a8f4b93}Clean up leftover rebel mercenary companies", Order = 4, HintText = "{=b1071_mcm_h_1f5d7c0e26}ONE-OFF CLEANUP, DESTROYS CLANS - back up your save first. OFF by default. Turn this on to remove mercenary companies left behind by crushed rebellions in a campaign you are already playing. The game asks you to confirm on the next campaign day and shows how many it found in your save - nothing is destroyed until you agree. They are then disbanded a few each day rather than all at once, so your campaign is not emptied overnight, and you are told when it has finished. It only removes clans that came from a rebellion, were made mercenary companies by this mod, hold no fief, and are not currently hired by a kingdom. Vanilla minor factions such as the Ghilman and the Jawwal are never touched, and neither is any clan that owns a settlement.")]
+        public bool PurgeLeftoverRebelClans { get; set; } = false;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
+        [SettingPropertyInteger("{=b1071_mcm_t_8c4c2be8dc}Grace period (days)", 1, 120, "0", Order = 1, HintText = "{=b1071_mcm_h_b41e07e2b2}Currently unused. Reserved for a possible future clan auto-placement flow. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 30.")]
         public int ClanSurvivalGracePeriodDays { get; set; } = 30;
 
         [SettingPropertyGroup("{=b1071_mcm_g_bac0aa28ca}Clan Survival", GroupOrder = 25)]
-        [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}How strongly same-culture kingdoms are preferred when assigning mercenary service. Higher values make culture almost mandatory. At 2.0, same-culture kingdoms score 3× higher. Default: 2.0.")]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_2dd7c36498}Culture match weight", 0f, 10f, "0.0", Order = 2, HintText = "{=b1071_mcm_h_e5ffddeee0}Currently unused. Reserved for possible future culture-based clan placement scoring. Changing this setting has no effect in the current version. Retained for configuration compatibility. Default: 2.0.")]
         public float ClanSurvivalCultureWeight { get; set; } = 2.0f;
+
+        // ─── Settlement Revenue ───
+        // Vanilla pays a fief's owner a fixed share of the settlement's revenue with no curvature:
+        // tax rises with prosperity without limit, and the tariff pool rises with trade volume
+        // without limit because every sale adds a commission to it and nothing resets it. By the
+        // late game a mature town out-earns an early-game kingdom. These settings add the missing
+        // curvature. They scale only the clan's payout -- the settlement's own side of the
+        // transaction is untouched -- so the feature can remove gold but never create it.
+        //
+        // Strength is a percentage for a reason: the curve multiplies a share in [0, 1], and a raw
+        // 0..1 float slider would spend most of its travel in a range nobody would ever use.
+        // 100 bypasses an income line. Defaults enable trade tapering at 90% with curve 1,
+        // thresholds of 2,000/500 for towns/villages, and unchanged tax. Profile v28 applies this once.
+        //
+        // Strength is the maximum retained share: 70 cuts at least 30% from each positive
+        // income line. The knee protects the portion below it from the EXTRA curved reduction;
+        // it does not exempt a settlement from the strength reduction. Only the excess is
+        // tapered further, so increasing the basis cannot lower the total payout.
+        // A zero knee applies the curve from the first denar; default trade knees protect the lower portion.
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyBool("{=b1071_mcm_t_settle_rev_enable}Enable settlement revenue tuning", Order = 0, HintText = "{=b1071_mcm_h_settle_rev_enable}Reduces town tariffs and village income for player and AI clans. Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays at 100%, unchanged. Disable to restore untapered income.")]
+        public bool EnableSettlementRevenueTuning { get; set; } = true;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_strength_town}Town tariff strength (%)", 5, 100, "0", Order = 1, HintText = "{=b1071_mcm_h_settle_tariff_strength_town}Maximum share of normal town tariffs retained. 90 keeps 90% below the threshold; only the portion above it receives an extra reduction. 100 bypasses the entire town tariff taper. Default: 90.")]
+        public int SettlementTariffStrengthTown { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tariff_curve_town}Town tariff curve", 1f, 10f, "0.00", Order = 2, HintText = "{=b1071_mcm_h_settle_tariff_curve_town}Curve 1 makes the trade-based payout approach a ceiling as trade grows. Higher values reduce income less and allow continued growth. Perks and buildings can change the final payout. Only active below 100% strength. Default: 1.00.")]
+        public float SettlementTariffCurveTown { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_knee_town}Town tariff starts at (denars/day)", 0, 30000, "0", Order = 3, HintText = "{=b1071_mcm_h_settle_tariff_knee_town}Daily trade basis above which the extra reduction begins. The portion up to this threshold still receives the strength reduction. Growing trade never lowers total income. 0 applies the curve from the first denar. Default: 2,000.")]
+        public int SettlementTariffKneeTown { get; set; } = 2000;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_strength_village}Village tariff strength (%)", 5, 100, "0", Order = 4, HintText = "{=b1071_mcm_h_settle_tariff_strength_village}Maximum share of normal village income retained. The portion above the threshold receives an extra reduction. 100 bypasses the village taper. Default: 90.")]
+        public int SettlementTariffStrengthVillage { get; set; } = 90;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tariff_curve_village}Village tariff curve", 1f, 10f, "0.00", Order = 5, HintText = "{=b1071_mcm_h_settle_tariff_curve_village}Curve 1 makes the trade-based village payout approach a ceiling. Higher values allow continued growth. The village reference is 2,500 daily denars. Only active below 100% strength. Default: 1.00.")]
+        public float SettlementTariffCurveVillage { get; set; } = 1.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tariff_knee_village}Village tariff starts at (denars/day)", 0, 10000, "0", Order = 6, HintText = "{=b1071_mcm_h_settle_tariff_knee_village}Daily trade basis above which the extra village reduction begins. The portion up to the threshold keeps the strength share. Growing trade never lowers total income. Default: 500.")]
+        public int SettlementTariffKneeVillage { get; set; } = 500;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tax_strength}Town tax strength (%)", 5, 100, "0", Order = 7, HintText = "{=b1071_mcm_h_settle_tax_strength}The most of its usual tax a town can keep. 100 leaves tax exactly as it is. Tax is the largest of the three lines, so it is the one worth tuning first -- and the safest to leave alone, because unlike a tariff pool it is capped by prosperity and cannot run away on its own. At 60 a town of 2,000 prosperity pays about 54% of its usual tax, one of 6,000 pays about 45%, and one of 20,000 pays about 32%. Anything at or below 40 prosperity is never touched. Default: 100.")]
+        public int SettlementTaxStrength { get; set; } = 100;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyFloatingInteger("{=b1071_mcm_t_settle_tax_curve}Town tax curve", 1f, 10f, "0.00", Order = 8, HintText = "{=b1071_mcm_h_settle_tax_curve}Shape of the town tax taper. A low value spreads the reduction evenly across every taxable town; a high value leaves small towns untouched and bends hard near the 4,000 prosperity reference. Only matters when strength is below 100. Default: 2.00.")]
+        public float SettlementTaxCurve { get; set; } = 2.0f;
+
+        [SettingPropertyGroup("{=b1071_mcm_g_settlement_revenue}Settlement Revenue", GroupOrder = 27)]
+        [SettingPropertyInteger("{=b1071_mcm_t_settle_tax_knee}Town tax starts at (prosperity)", 0, 4000, "0", Order = 9, HintText = "{=b1071_mcm_h_settle_tax_knee}Sets where the extra tax taper begins. The portion below the threshold keeps the strength share; only the excess gets the additional taper. Added to the fixed 40-prosperity floor; the effective threshold stops at 4,000 prosperity. With 0, the curve applies immediately above the fixed floor. Default: 0.")]
+        public int SettlementTaxKnee { get; set; } = 0;
 
     }
 }

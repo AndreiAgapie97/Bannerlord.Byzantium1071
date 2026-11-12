@@ -48,6 +48,7 @@ namespace Byzantium1071.Campaign.UI
             var settings = B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
             if (!settings.EnableDemobilizationSystem || !settings.EnableDemobilizationHotkey) return;
             if (TaleWorlds.CampaignSystem.Campaign.Current == null || MobileParty.MainParty == null) return;
+            if (B1071_HotkeyGuard.BlocksPanelHotkey()) return;
 
             InputKey hotkey = GetConfiguredHotkey(settings.DemobilizationHotkeyChoice);
             if (Input.IsKeyPressed(hotkey))

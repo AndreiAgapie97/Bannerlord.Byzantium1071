@@ -111,6 +111,10 @@ namespace Byzantium1071.Campaign.Settings
                     AddToggle(g, "qs_garrison_wage", L("b1071_qs_name_garrison_wage", "Garrison Wage Discount"),
                         L("b1071_qs_hint_garrison_wage", "Garrison troops cost a reduced percentage of field wages (default 80%)."),
                         4, () => s.EnableGarrisonWageDiscount, v => s.EnableGarrisonWageDiscount = v);
+
+                    AddToggle(g, "qs_settlement_revenue", L("b1071_qs_name_settlement_revenue", "Settlement Revenue Taper"),
+                        L("b1071_qs_hint_settlement_revenue", "Enabled by default: town tariffs 90% / curve 1 / threshold 2,000; villages 90% / curve 1 / threshold 500. Town tax stays unchanged at 100%. Applies equally to player and AI clans. Adjust the preset in the main Campaign++ settings."),
+                        5, () => s.EnableSettlementRevenueTuning, v => s.EnableSettlementRevenueTuning = v);
                 });
 
                 // ── Recruitment & Military ─────────────────────────────────────────
@@ -126,16 +130,16 @@ namespace Byzantium1071.Campaign.Settings
                         L("b1071_qs_hint_castle_access", "Removes the vanilla clan-tier bribe requirement for entering neutral castles."),
                         1, () => s.CastleOpenAccess, v => s.CastleOpenAccess = v);
 
-                    AddToggle(g, "qs_combat_survivability", L("b1071_qs_name_combat_survivability", "Combat Tier Survivability"),
-                        L("b1071_qs_hint_combat_survivability", "Higher-tier troops are more likely to be wounded instead of killed."),
-                        2, () => s.EnableTierSurvivability, v => s.EnableTierSurvivability = v);
+                    AddIntegerSetting(g, "qs_elite_survivability", L("b1071_qs_name_elite_survivability", "Elite Survivability"),
+                        L("b1071_qs_hint_elite_survivability", "How much tougher high-tier troops are in battles resolved for you. 0 = Vanilla, 1 = Light, 2 = Moderate, 3 = Strong."),
+                        2, 0, 3, () => s.EliteSurvivabilityPreset, v => s.EliteSurvivabilityPreset = v);
 
-                    AddToggle(g, "qs_combat_armor", L("b1071_qs_name_combat_armor", "Combat Tier Armor Simulation"),
-                        L("b1071_qs_hint_combat_armor", "Troop armor is factored into autoresolve battle outcomes."),
-                        3, () => s.EnableTierArmorSimulation, v => s.EnableTierArmorSimulation = v);
+                    AddToggle(g, "qs_ai_recovery", L("b1071_qs_name_ai_recovery", "AI Lords Seek Campaign++ Recruits"),
+                        L("b1071_qs_hint_ai_recovery", "Under-strength AI lords may favor friendly settlements holding veterans, castle troops, or converted prisoners while they rebuild. Active orders remain protected."),
+                        3, () => s.EnableAiRecoveryRouting, v => s.EnableAiRecoveryRouting = v);
 
                     AddToggle(g, "qs_clan_survival", L("b1071_qs_name_clan_survival", "Clan Survival"),
-                        L("b1071_qs_hint_clan_survival", "Prevents clan annihilation when their kingdom is destroyed. Rescued clans seek mercenary service."),
+                        L("b1071_qs_hint_clan_survival", "Rescues eligible clans when their kingdom is destroyed. They remain independent until they later join a kingdom through vanilla behavior or another mod, or are legitimately destroyed after losing their final valid leader."),
                         4, () => s.EnableClanSurvival, v => s.EnableClanSurvival = v);
 
                     AddToggle(g, "qs_demobilization", L("b1071_qs_name_demobilization", "Troop Service"),
@@ -214,6 +218,21 @@ namespace Byzantium1071.Campaign.Settings
         {
             g.AddBool(id, name,
                 new ProxyRef<bool>(getter, setter),
+                b =>
+                {
+                    b.SetOrder(order);
+                    b.SetRequireRestart(false);
+                    b.SetHintText(hint);
+                });
+        }
+
+        private static void AddIntegerSetting(
+            MCM.Abstractions.FluentBuilder.ISettingsPropertyGroupBuilder g,
+            string id, string name, string hint, int order, int min, int max,
+            Func<int> getter, Action<int> setter)
+        {
+            g.AddInteger(id, name, min, max,
+                new ProxyRef<int>(getter, setter),
                 b =>
                 {
                     b.SetOrder(order);

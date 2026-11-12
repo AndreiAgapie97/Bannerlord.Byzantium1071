@@ -64,12 +64,6 @@ namespace Byzantium1071.Campaign.Patches
     [HarmonyPatch(typeof(DefaultTradeItemPriceFactorModel), nameof(DefaultTradeItemPriceFactorModel.GetBasePriceFactor))]
     public static class B1071_SlavePricePatch
     {
-        /// <summary>
-        /// The base value of the slave item (from items.xml value="300").
-        /// Used to derive stock count from inStoreValue.
-        /// </summary>
-        private const int SlaveBaseValue = 300;
-
         private static B1071_McmSettings Settings => B1071_McmSettings.Instance ?? B1071_McmSettings.Defaults;
 
         /// <summary>
@@ -94,23 +88,11 @@ namespace Byzantium1071.Campaign.Patches
                 if (settings == null || !settings.EnableSlaveEconomy)
                     return;
 
-                // Derive stock from inStoreValue. Vanilla's GetBasePriceFactor
-                // adds transferValue to a local copy of inStoreValue when
-                // isSelling is true, but the Harmony postfix receives the
-                // ORIGINAL parameter — so we must re-apply the addition here.
-                float effectiveValue = inStoreValue;
-                if (isSelling) effectiveValue += transferValue;
-
-                int stock = (int)(effectiveValue / SlaveBaseValue);
-
-                float decayRate = settings.SlavePriceDecayRate;
-
-                // priceFactor = max(0.1, decayRate ^ stock)
-                // At stock=0: 1.0 (full price). Decays exponentially per unit.
-                float factor = (float)Math.Pow(decayRate, stock);
-
-                // Clamp to [0.1, 10.0] — same bounds as vanilla IsTradeGood.
-                __result = Math.Max(0.1f, Math.Min(10f, factor));
+                __result = B1071_EconomyMath.SlavePriceFactor(
+                    inStoreValue,
+                    isSelling,
+                    transferValue,
+                    settings.SlavePriceDecayRate);
             }
             catch (Exception)
             {
